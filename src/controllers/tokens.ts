@@ -1,8 +1,9 @@
 import { Controller, Param, Body, Get, Post } from "routing-controllers";
 import { Container, Inject } from "typedi";
 import { BotService } from "../services/arbitrageService";
+import { FaucetPayload } from "../payloads/faucet";
 
-@Controller("/tokens")
+@Controller("/api/tokens")
 export class TokenController {
   botService: BotService;
 
@@ -13,5 +14,17 @@ export class TokenController {
   @Get("/")
   getAll() {
     return this.botService.pairList();
+  }
+
+  @Get("/:address")
+  getByAddress(@Param("address") address: string) {
+    console.log(address);
+    return "ok";
+  }
+
+  @Post("/")
+  faucetTokens(@Body() faucetPayload: FaucetPayload) {
+    console.log(faucetPayload);
+    return "ok"
   }
 }
