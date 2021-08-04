@@ -140,24 +140,26 @@ export class BotService {
             continue;
           }
 
-          // try {
-          //   const receipt = await this.botContract.updatePrice(
-          //     router,
-          //     tokenAddress,
-          //     WETH_TOKEN,
-          //     { gasLimit: 500000 }
-          //   );
-          //   await receipt.wait();
-          //   const diff = await this.getDiff(router, tokenAddress);
-          //   console.log(`Updated successfully, current diff is ${diff}`);
-          //
-          //   await pair.updateLastUpdate();
-          //
-          //   await tokenNeeded.updateBalance();
-          //   await this._tokens[WETH_TOKEN].updateBalance();
-          // } catch (e) {
-          //   console.log("Cant update token pair", e);
-          // }
+          try {
+            await this._mutex.runExclusive(async () => {
+              const receipt = await this.botContract.updatePrice(
+                router,
+                tokenAddress,
+                WETH_TOKEN,
+                { gasLimit: 500000 }
+              );
+              await receipt.wait();
+            });
+            const diff = await this.getDiff(router, tokenAddress);
+            console.log(`Updated successfully, current diff is ${diff}`);
+
+            await pair.updateLastUpdate();
+
+            await tokenNeeded.updateBalance();
+            await this._tokens[WETH_TOKEN].updateBalance();
+          } catch (e) {
+            console.log("Cant update token pair", e);
+          }
         }
       }
     }
