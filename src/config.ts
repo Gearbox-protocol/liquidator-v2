@@ -9,6 +9,9 @@ export class Config {
   static port: number;
 
   @IsNotEmpty()
+  static databaseUrl: string;
+
+  @IsNotEmpty()
   static ethProviderRpc: string;
 
   @IsNotEmpty()
@@ -21,6 +24,7 @@ export class Config {
     dotenv.config({path: "./.env.local"})
 
     Config.port = parseInt(process.env.PORT || "4000");
+    Config.databaseUrl = process.env.DATABASE_URL || "";
     Config.ethProviderRpc = process.env.ETH_PROVIDER_KOVAN || "";
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.botAddress = process.env.BOT_ADDRESS || "";

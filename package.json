@@ -46,11 +46,15 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "yarn build && npx hardhat coverage --temp artifacts",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "typeorm:gen": "ts-node ./node_modules/typeorm/cli.js migration:generate --config ./src/ormconfig.ts",
+    "typeorm:migrate": "ts-node ./node_modules/.bin/typeorm migration:run --config ./src/ormconfig.ts",
+    "typeorm:revert": "ts-node ./node_modules/.bin/typeorm migration:revert --config ./src/ormconfig.ts"
   },
   "dependencies": {
     "@types/body-parser": "^1.19.1",
     "@types/express": "^4.17.13",
+    "async-mutex": "^0.3.1",
     "body-parser": "^1.19.0",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
@@ -60,10 +64,12 @@
     "express": "^4.17.1",
     "forever": "^4.0.1",
     "moment": "^2.29.1",
+    "pg": "^8.6.0",
     "reflect-metadata": "^0.1.13",
     "routing-controllers": "^0.9.0",
     "tslib": "^2.3.0",
     "typedi": "^0.10.0",
+    "typeorm": "^0.2.34",
     "winston": "^3.3.3"
   }
 }

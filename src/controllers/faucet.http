@@ -1,0 +1,8 @@
+POST http://localhost:4000/api/faucet/token/
+Content-Type: application/json
+
+{
+  "address": "0x59f446464Ad2159c008C7A2f84605d8AB95B7D43",
+  "token": "0xE36bC5d8b689AD6d80e78c3e736670e80d4b329D",
+  "signature": "fffs"
+}

@@ -1,9 +1,9 @@
-import { Controller, Param, Body, Get, Post } from "routing-controllers";
-import { Container, Inject } from "typedi";
+import { Body, Get, JsonController, Param, Post } from "routing-controllers";
+import { Container } from "typedi";
 import { BotService } from "../services/arbitrageService";
-import { FaucetPayload } from "../payloads/faucet";
+import { FaucetRequest } from "../payloads/faucet";
 
-@Controller("/api/tokens")
+@JsonController("/api/tokens")
 export class TokenController {
   botService: BotService;
 
@@ -23,7 +23,7 @@ export class TokenController {
   }
 
   @Post("/")
-  faucetTokens(@Body() faucetPayload: FaucetPayload) {
+  faucetTokens(@Body() faucetPayload: FaucetRequest) {
     console.log(faucetPayload);
     return "ok"
   }

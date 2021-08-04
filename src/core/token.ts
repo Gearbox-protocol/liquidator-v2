@@ -1,11 +1,5 @@
 import { BigNumber } from "ethers";
-import {
-  AggregatorV3Interface,
-  ERC20,
-  ERC20__factory,
-} from "../types/ethers-v5";
-import { Signer } from "crypto";
-import { resolveSrv } from "dns";
+import { ERC20 } from "../types/ethers-v5";
 
 export class Token {
   public readonly address: string;
@@ -20,7 +14,7 @@ export class Token {
     const symbol = await contract.symbol();
     const decimals = await contract.decimals();
     const newToken = new Token({ address, contract, symbol, decimals });
-    await newToken.updateBalance()
+    await newToken.updateBalance();
     return newToken;
   }
 
@@ -47,5 +41,13 @@ export class Token {
 
   static set botAddress(value: string) {
     this._botAddress = value;
+  }
+
+  async transfer(recipient: string, amount: number) {
+    const amountBN = BigNumber.from(10)
+      .pow(this.decimals - 6)
+      .mul(Math.floor(amount * 1e6));
+    const receipt = await this._contract.transfer(recipient, amountBN, {gasLimit: 100000});
+    await receipt.wait(2)
   }
 }

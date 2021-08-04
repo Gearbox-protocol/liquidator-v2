@@ -17,6 +17,8 @@ import { Pair } from "../core/pair";
 import { Token } from "../core/token";
 import { TokenPayload } from "../payloads/pairs";
 import { Job } from "../core/job";
+import { Mutex } from "async-mutex";
+import { WAD } from "../core/constants";
 
 @Service()
 export class BotService {
@@ -24,6 +26,7 @@ export class BotService {
   protected _tokens: Record<string, Token> = {};
   protected _pairs: Record<string, Record<string, Pair>> = {};
   protected _jobs: Array<Job> = [];
+  protected _mutex: Mutex;
 
   wallet: Wallet;
   routers: Array<string>;
@@ -32,6 +35,7 @@ export class BotService {
   constructor() {
     this.tokensToCheck = tokenData;
     this.routers = [UNISWAP_V2_ADDRESS, SUSHISWAP_ADDRESS];
+    this._mutex = new Mutex();
   }
 
   async launch(wallet: Wallet) {
@@ -85,13 +89,17 @@ export class BotService {
 
     for (const router of this.routers) {
       if (!this._pairs[router]) this._pairs[router] = {};
-      this._pairs[router][address] = new Pair(address, this._tokens[address].decimals, priceFeedContract);
+      this._pairs[router][address] = new Pair(
+        address,
+        this._tokens[address].decimals,
+        priceFeedContract
+      );
       await this._pairs[router][address].updateChainlinkLastUpdate();
     }
   }
 
   async updateTokens() {
-    const jobPromises = this._jobs.map(job => this.updatePairs(job));
+    const jobPromises = this._jobs.map((job) => this.updatePairs(job));
     await Promise.all(jobPromises);
 
     for (const router of this.routers) {
@@ -132,24 +140,24 @@ export class BotService {
             continue;
           }
 
-          try {
-            const receipt = await this.botContract.updatePrice(
-              router,
-              tokenAddress,
-              WETH_TOKEN,
-              { gasLimit: 500000 }
-            );
-            await receipt.wait();
-            const diff = await this.getDiff(router, tokenAddress);
-            console.log(`Updated successfully, current diff is ${diff}`);
-
-            await pair.updateLastUpdate();
-
-            await tokenNeeded.updateBalance();
-            await this._tokens[WETH_TOKEN].updateBalance();
-          } catch (e) {
-            console.log("Cant update token pair", e);
-          }
+          // try {
+          //   const receipt = await this.botContract.updatePrice(
+          //     router,
+          //     tokenAddress,
+          //     WETH_TOKEN,
+          //     { gasLimit: 500000 }
+          //   );
+          //   await receipt.wait();
+          //   const diff = await this.getDiff(router, tokenAddress);
+          //   console.log(`Updated successfully, current diff is ${diff}`);
+          //
+          //   await pair.updateLastUpdate();
+          //
+          //   await tokenNeeded.updateBalance();
+          //   await this._tokens[WETH_TOKEN].updateBalance();
+          // } catch (e) {
+          //   console.log("Cant update token pair", e);
+          // }
         }
       }
     }
@@ -197,5 +205,32 @@ export class BotService {
     }
 
     return result;
+  }
+
+  getRate(address: string): number | undefined {
+    const pair = this._pairs[UNISWAP_V2_ADDRESS][address];
+    return pair?.rateCL;
+  }
+
+  async pay(recipient: string, token: string): Promise<number> {
+    const t = this._tokens[token];
+    if (!t) {
+      throw new Error("Token not found");
+    }
+
+    const amount = tokenData[t.symbol].faucetSize;
+    await this._mutex.runExclusive(() => t.transfer(recipient, amount));
+    return amount;
+  }
+
+  async sendEth(recipient: string) {
+    await this._mutex.runExclusive(async () => {
+      const receipt = await this.wallet.sendTransaction({
+        to: recipient,
+        value: WAD.div(10),
+        gasLimit: 42000,
+      });
+      await receipt.wait(2);
+    });
   }
 }
