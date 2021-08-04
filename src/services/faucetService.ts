@@ -22,20 +22,22 @@ export class FaucetService {
     const nextTimeByTokens: Record<string, number> = {};
     faucets.forEach((f) => (nextTimeByTokens[f.token] = f.nextUpdate));
 
-    return Object.entries(tokenData).map((t) => {
-      const nextTime = Math.floor(
-        (nextTimeByTokens[t[1].address] || 0) - Date.now() / 1000
-      );
+    return Object.entries(tokenData)
+      .filter((t) => t[1].isPool)
+      .map((t) => {
+        const nextTime = Math.floor(
+          (nextTimeByTokens[t[1].address] || 0) - Date.now() / 1000
+        );
 
-      const delay = nextTime > 0 ? nextTime : 0;
-      return {
-        symbol: t[0],
-        address: t[1].address,
-        delay,
-        rate: this.botService.getRate(t[1].address),
-        faucetSize: t[1].faucetSize,
-      };
-    });
+        const delay = nextTime > 0 ? nextTime : 0;
+        return {
+          symbol: t[0],
+          address: t[1].address,
+          delay,
+          rate: this.botService.getRate(t[1].address),
+          faucetSize: t[1].faucetSize,
+        };
+      });
   }
 
   async getEthDelay(address: string): Promise<EthDelayPayload> {
@@ -51,7 +53,10 @@ export class FaucetService {
     address: string,
     token: string
   ): Promise<Array<FaucetResponse>> {
-    console.log("POP", address, token);
+
+    if (!tokenData[address] || !tokenData[address].isPool) {
+      throw new Error("Can fulfill isPool tokens only")
+    }
 
     const id = `${address}_${token}`;
     let faucet = await this.repo.findOne({ id });
