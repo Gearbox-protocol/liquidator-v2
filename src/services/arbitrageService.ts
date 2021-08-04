@@ -220,6 +220,11 @@ export class BotService {
       throw new Error("Token not found");
     }
 
+    const isPool = tokenData[t.symbol].isPool
+    if (!isPool) {
+      throw new Error("token is not in the pool")
+    }
+
     const amount = tokenData[t.symbol].faucetSize;
     await this._mutex.runExclusive(() => t.transfer(recipient, amount));
     return amount;

@@ -54,10 +54,6 @@ export class FaucetService {
     token: string
   ): Promise<Array<FaucetResponse>> {
 
-    if (!tokenData[address] || !tokenData[address].isPool) {
-      throw new Error("Can fulfill isPool tokens only")
-    }
-
     const id = `${address}_${token}`;
     let faucet = await this.repo.findOne({ id });
     if (!faucet) {
