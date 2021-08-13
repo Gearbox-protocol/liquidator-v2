@@ -1,30 +1,18 @@
-import { Body, Get, JsonController, Param, Post } from "routing-controllers";
+import { Get, JsonController } from "routing-controllers";
 import { Container } from "typedi";
-import { BotService } from "../services/arbitrageService";
-import { FaucetRequest } from "../payloads/faucet";
+import { TerminatorService } from "../services/terminatorService";
 
 @JsonController("/api/tokens")
 export class TokenController {
-  botService: BotService;
+  botService: TerminatorService;
 
   constructor() {
-    this.botService = Container.get(BotService);
+    this.botService = Container.get(TerminatorService);
   }
 
   @Get("/")
   getAll() {
-    return this.botService.pairList();
+    return "Ok";
   }
 
-  @Get("/:address")
-  getByAddress(@Param("address") address: string) {
-    console.log(address);
-    return "ok";
-  }
-
-  @Post("/")
-  faucetTokens(@Body() faucetPayload: FaucetRequest) {
-    console.log(faucetPayload);
-    return "ok"
-  }
 }

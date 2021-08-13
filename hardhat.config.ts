@@ -4,7 +4,7 @@ import { HardhatUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
-import "hardhat-typechain";
+import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
     },
 
     kovan: {
-      url: process.env.ETH_PROVIDER_KOVAN,
+      url: process.env.JSON_RPC_PROVIDER,
       accounts: [KOVAN_PRIVATE_KEY],
     },
 

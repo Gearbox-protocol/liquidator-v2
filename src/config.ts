@@ -1,7 +1,6 @@
-import { IsNotEmpty, validate } from "class-validator";
+import { IsEthereumAddress, IsNotEmpty, Min, validate } from "class-validator";
 import dotenv from "dotenv";
 
-export const WETH_TOKEN = "0xd0a1e359811322d97991e03f863a0c30c2cf029c";
 export const SUSHISWAP_ADDRESS = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
 export const UNISWAP_V2_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 
@@ -9,7 +8,8 @@ export class Config {
   static port: number;
 
   @IsNotEmpty()
-  static databaseUrl: string;
+  @IsEthereumAddress()
+  static addressProvider: string;
 
   @IsNotEmpty()
   static ethProviderRpc: string;
@@ -18,16 +18,31 @@ export class Config {
   static privateKey: string;
 
   @IsNotEmpty()
-  static botAddress: string
+  @IsEthereumAddress()
+  static botAddress: string;
+
+  @IsNotEmpty()
+  @Min(0.05)
+  static slippage: number
+
+
+  @IsNotEmpty()
+  static walletPassword: string;
+
+  @IsNotEmpty()
+  static ampqUrl: string;
 
   static init() {
-    dotenv.config({path: "./.env.local"})
+    dotenv.config({ path: "./.env.local" });
 
     Config.port = parseInt(process.env.PORT || "4000");
-    Config.databaseUrl = process.env.DATABASE_URL || "";
-    Config.ethProviderRpc = process.env.ETH_PROVIDER_KOVAN || "";
+    Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
+    Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.botAddress = process.env.BOT_ADDRESS || "";
+    Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
+    Config.walletPassword = process.env.WALLET_PASSWORD || "";
+    Config.ampqUrl = process.env.CLOUDAMQP_URL || "";
   }
 
   static async validate(): Promise<void> {

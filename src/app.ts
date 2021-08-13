@@ -1,31 +1,43 @@
 import { Container } from "typedi";
-import { SyncService } from "./services/syncService";
 import { createExpressServer } from "routing-controllers";
 import { TokenController } from "./controllers/tokens";
 import config from "./config";
-import { createConnection } from "typeorm";
-import { ConnectionOptions } from "typeorm/connection/ConnectionOptions";
-import * as dbConfig from "./ormconfig";
-import { FaucetController } from "./controllers/faucet";
+import winston, { format, transports } from "winston";
+import { TerminatorService } from "./services/terminatorService";
 
-export const createApp = async (): Promise<void> => {
-  // Connecting Database
-  try {
-    // @ts-ignore
-    await createConnection(dbConfig as ConnectionOptions);
-  } catch (e) {
-    console.log("TypeORM connection error: ", e);
-    process.abort();
-  }
+export const createApp = async () => {
+  winston.configure({
+    transports: [
+      new transports.Console({
+        level: "debug",
+        handleExceptions: true,
+        format:
+          process.env.NODE_ENV !== "development"
+            ? format.combine(format.json(), format.timestamp())
+            : format.combine(
+                format.colorize(),
+                format.simple(),
+                format.timestamp(),
+                format.printf(({ label, message, timestamp, level }) => {
+                  return `${timestamp} ${level}: ${label} ${message}`;
+                })
+              ),
+      }),
+    ],
+  });
 
-  const syncService = Container.get(SyncService);
-  await syncService.launch();
-  console.log("Bot started");
+  const log = winston.child({ label: "[App]" });
+
+  log.info("Starting server...");
 
   const app = createExpressServer({
     cors: true,
-    controllers: [TokenController, FaucetController],
+    controllers: [TokenController],
   });
 
   app.listen(config.port);
+
+  const terminatorService = Container.get(TerminatorService);
+  await terminatorService.launch();
+  console.log("Bot started");
 };
