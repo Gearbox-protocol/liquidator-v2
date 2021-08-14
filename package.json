@@ -49,7 +49,7 @@
     "dev": "export NODE_ENV=development && nodemon"
   },
   "dependencies": {
-    "@diesellabs/gearbox-sdk": "^0.0.116",
+    "@diesellabs/gearbox-sdk": "^0.0.118",
     "@ethersproject/abi": "^5.4.0",
     "@ethersproject/bytes": "^5.4.0",
     "@ethersproject/providers": "^5.4.3",

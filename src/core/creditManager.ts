@@ -1,30 +1,12 @@
-import {
-  CreditAccountData,
-  CreditAccountDataExtended,
-  CreditManagerData,
-  CreditManagerDataExtended,
-  CreditManagerDataPayload,
-  TokenData,
-} from "@diesellabs/gearbox-sdk";
-import {
-  ICreditFilter,
-  ICreditManager,
-  ICreditManager__factory,
-  IDataCompressor,
-} from "../types/ethers-v5";
-import { BigNumber, Signer } from "ethers";
+import { CreditManagerData, CreditManagerDataPayload, typedEventsComparator } from "@diesellabs/gearbox-sdk";
+import { ICreditFilter, ICreditManager, ICreditManager__factory, IDataCompressor } from "../types/ethers-v5";
+import { Signer } from "ethers";
 import { LoggerInterface } from "../decorators/logger";
 import { IPoolService } from "@diesellabs/gearbox-sdk/src/types/IPoolService";
-import {
-  ICreditFilter__factory,
-  IPoolService__factory,
-} from "@diesellabs/gearbox-sdk/lib/types";
-import { ExecutorJob } from "./executor";
+import { ICreditFilter__factory, IPoolService__factory } from "@diesellabs/gearbox-sdk/lib/types";
 import { CreditAccount } from "./creditAccount";
 import { Pool } from "./pool";
-import { typedEventsComparator } from "../utils/events";
 import { TokenService } from "../services/tokenService";
-import { OracleService } from "../services/oracleService";
 import { Container } from "typedi";
 
 export class CreditManager extends CreditManagerData {

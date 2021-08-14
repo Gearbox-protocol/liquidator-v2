@@ -4,9 +4,9 @@ import { Mutex } from "async-mutex";
 import { providers, Wallet } from "ethers";
 import fs from "fs";
 import { Executor, ExecutorJob } from "../core/executor";
-import { WAD } from "../core/constants";
 import { ContractTransaction } from "@ethersproject/contracts";
 import { Logger, LoggerInterface } from "../decorators/logger";
+import { WAD } from "@diesellabs/gearbox-sdk";
 
 @Service()
 export class ExecutorService {

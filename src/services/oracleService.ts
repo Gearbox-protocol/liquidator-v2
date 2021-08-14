@@ -8,9 +8,7 @@ import {
 import { BigNumber, Signer } from "ethers";
 import { TokenService } from "./tokenService";
 import { Logger, LoggerInterface } from "../decorators/logger";
-import { formatBN } from "@diesellabs/gearbox-sdk";
-import { typedEventsComparator } from "../utils/events";
-import { WAD } from "../core/constants";
+import { formatBN, typedEventsComparator, WAD } from "@diesellabs/gearbox-sdk";
 
 @Service()
 export class OracleService {

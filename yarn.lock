@@ -28,10 +28,10 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
-"@diesellabs/gearbox-sdk@^0.0.116":
-  version "0.0.116"
-  resolved "https://registry.yarnpkg.com/@diesellabs/gearbox-sdk/-/gearbox-sdk-0.0.116.tgz#8b50108a4a5d7bc0cd27eff77b61500f7a5fe71d"
-  integrity sha512-NRTCA5Kiu5xG/0AoU6cLjXQ+NzXw6IERj4dESuOrgKM0o0svzCzAtfFbMk4UH8WW4PP81qlSZGlk4W/3QL0KJQ==
+"@diesellabs/gearbox-sdk@^0.0.118":
+  version "0.0.118"
+  resolved "https://registry.yarnpkg.com/@diesellabs/gearbox-sdk/-/gearbox-sdk-0.0.118.tgz#1060c0a021f196224f1affa571a0b2d76f42c0ee"
+  integrity sha512-grrqYMFRIbEAaV9s6wB6k1uaYGjpckInO63muXSc3yGWvZBcAdqdxPwLODwq5gZHDmkJJbq8azGnW8nWImtVFw==
   dependencies:
     decimal.js-light "^2.5.1"
     ethers "^5.2.0"

@@ -1,6 +1,6 @@
 import { Wallet } from "ethers";
 import { ContractTransaction } from "@ethersproject/contracts";
-import { WAD } from "./constants";
+import { WAD } from "@diesellabs/gearbox-sdk";
 
 export type ExecutorJob = (
   wallet: Wallet
