@@ -11,7 +11,7 @@ export class TokenService {
 
   private readonly _tokenData: Record<string, TokenData> = {};
   public readonly _tokenContract: Record<string, ERC20> = {};
-  public readonly _balance: Record<string, BigNumber> = {};
+  protected readonly _balances: Record<string, BigNumber> = {};
 
   protected _terminatorAddress: string;
   protected _signer: Signer;
@@ -44,13 +44,13 @@ export class TokenService {
       decimals,
       symbol,
     });
-    this._balance[address] = balance;
+    this._balances[address] = balance;
 
     // Subscribing for balance updates
     contract.on(
       contract.filters.Transfer(this._terminatorAddress),
       async () => {
-        this._balance[address] = await contract.balanceOf(
+        this._balances[address] = await contract.balanceOf(
           this._terminatorAddress
         );
       }
@@ -59,7 +59,7 @@ export class TokenService {
     contract.on(
       contract.filters.Transfer(null, this._terminatorAddress),
       async () => {
-        this._balance[address] = await contract.balanceOf(
+        this._balances[address] = await contract.balanceOf(
           this._terminatorAddress
         );
       }
@@ -76,5 +76,9 @@ export class TokenService {
     const tokenData = this._tokenData[address];
     if (!tokenData) throw new Error(`Can find token data for ${address}`);
     return tokenData.decimals;
+  }
+
+  getBalance(token: string) : BigNumber {
+    return BigNumber.from(this._balances[token] || 0);
   }
 }

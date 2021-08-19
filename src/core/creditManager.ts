@@ -1,16 +1,30 @@
-import { CreditManagerData, CreditManagerDataPayload, typedEventsComparator } from "@diesellabs/gearbox-sdk";
-import { ICreditFilter, ICreditManager, ICreditManager__factory, IDataCompressor } from "../types/ethers-v5";
+import {
+  CreditManagerData,
+  CreditManagerDataPayload,
+  typedEventsComparator,
+} from "@diesellabs/gearbox-sdk";
+import {
+  ICreditFilter,
+  ICreditManager,
+  ICreditManager__factory,
+  IDataCompressor,
+} from "../types/ethers-v5";
 import { Signer } from "ethers";
 import { LoggerInterface } from "../decorators/logger";
 import { IPoolService } from "@diesellabs/gearbox-sdk/src/types/IPoolService";
-import { ICreditFilter__factory, IPoolService__factory } from "@diesellabs/gearbox-sdk/lib/types";
+import {
+  ICreditFilter__factory,
+  IPoolService__factory,
+} from "@diesellabs/gearbox-sdk/lib/types";
 import { CreditAccount } from "./creditAccount";
 import { Pool } from "./pool";
 import { TokenService } from "../services/tokenService";
 import { Container } from "typedi";
+import { TerminatorService } from "../services/terminatorService";
 
 export class CreditManager extends CreditManagerData {
   protected readonly tokenService: TokenService;
+  protected readonly terminatorService: TerminatorService;
 
   protected log: LoggerInterface;
 
@@ -35,6 +49,7 @@ export class CreditManager extends CreditManagerData {
   ) {
     super(payload);
     this.tokenService = Container.get(TokenService);
+    this.terminatorService = Container.get(TerminatorService);
     this.log = log;
     this.contract = ICreditManager__factory.connect(payload.addr, signer);
     this.dataCompressor = dataCompressor;
@@ -67,8 +82,7 @@ export class CreditManager extends CreditManagerData {
   update(timestamp: number): Array<CreditAccount> {
     const cumulativeIndex = this.pool.calcCurrentCumulativeIndex(timestamp);
 
-    return Object.values(this.creditAccounts)
-    .filter(
+    return Object.values(this.creditAccounts).filter(
       (acc) =>
         acc.calcHealthFactor(this.liquidationThresholds, cumulativeIndex) < 1
     );
@@ -148,6 +162,20 @@ export class CreditManager extends CreditManagerData {
     this.contract.on("OpenCreditAccount", async (sender, onBehalfOf) => {
       await this.reloadAccount(onBehalfOf);
       this.log.info(`${this.logName} New account ${onBehalfOf} added`);
+    });
+
+    this.contract.on("ExecuteOrder", async (address, protocol) => {
+      await this.reloadAccount(address);
+      this.log.info(`${this.logName} New operation ${address} on ${protocol}`);
+      const account = this.creditAccounts[address];
+      if (
+        account.calcHealthFactor(
+          this.liquidationThresholds,
+          this.pool.cumulativeIndex_RAY
+        ) < 1
+      ) {
+        await this.terminatorService.liquidateOne(account);
+      }
     });
 
     this.contract.on("OpenCreditAccount", async (sender, onBehalfOf) => {

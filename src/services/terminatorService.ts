@@ -8,13 +8,16 @@ import {
   Terminator,
   Terminator__factory,
 } from "../types/ethers-v5";
-import { Job } from "../core/job";
 import { Logger, LoggerInterface } from "../decorators/logger";
-import { CreditManagerDataPayload } from "@diesellabs/gearbox-sdk";
+import { CreditManagerDataPayload, formatBN } from "@diesellabs/gearbox-sdk";
 import { CreditManager } from "../core/creditManager";
 import { OracleService } from "./oracleService";
 import { TokenService } from "./tokenService";
 import { ExecutorService } from "./executorService";
+import { ExecutorJob } from "../core/executor";
+import { UniswapService } from "./uniswapService";
+import { CreditAccount } from "../core/creditAccount";
+import { AMPQService } from "./ampqService";
 
 @Service()
 export class TerminatorService {
@@ -30,7 +33,11 @@ export class TerminatorService {
   @Inject()
   executorService: ExecutorService;
 
-  protected _jobs: Array<Job> = [];
+  @Inject()
+  uniswapService: UniswapService;
+
+  @Inject()
+  ampqService: AMPQService;
 
   protected wallet: Wallet;
   protected routers: Array<string>;
@@ -39,15 +46,19 @@ export class TerminatorService {
   protected creditManagers: Array<CreditManager>;
   protected provider: providers.JsonRpcProvider;
 
-  private isUpdating: boolean;
+  protected nextSync: number;
+  protected isUpdating: boolean;
 
   constructor() {
     this.routers = [UNISWAP_V2_ADDRESS, SUSHISWAP_ADDRESS];
+    this.nextSync = 0;
   }
 
   async launch() {
     this.provider = new providers.JsonRpcProvider(config.ethProviderRpc);
     this.wallet = new Wallet(config.privateKey, this.provider);
+
+    await this.ampqService.launch();
 
     this.botContract = await Terminator__factory.connect(
       config.botAddress,
@@ -73,17 +84,36 @@ export class TerminatorService {
 
     await this.tokenService.launch(config.botAddress, this.wallet, wethToken);
     await this.oracleService.launch(priceOracleAddress, this.wallet, wethToken);
+    await this.uniswapService.connect(
+      UNISWAP_V2_ADDRESS,
+      wethToken,
+      this.wallet
+    );
+    await this.executorService.launch(this.wallet, this.provider);
+
+    const executors = this.executorService.getExecutorAddress();
+    for (const ex of executors) {
+      const isExecutorInList = await this.botContract.executors(ex);
+      if (!isExecutorInList) {
+        const receipt = await this.botContract.allowExecutor(ex, {
+          gasLimit: 100000,
+        });
+        await receipt.wait();
+      }
+    }
 
     await this.loadCreditManagers();
+    const blockNum = this.provider.blockNumber;
+    await this._onNewBlock(blockNum);
 
     this.provider.on("block", async (num) => await this._onNewBlock(num));
   }
 
   protected async _onNewBlock(num: number) {
-    if (this.isUpdating) return;
+    if (this.isUpdating || num < this.nextSync) return;
     this.isUpdating = true;
 
-    console.log(`Starting block update ${num}`);
+    this.log.info(`Starting block update ${num}`);
     try {
       const block = await this.provider.getBlock("latest");
       const timestamp = block.timestamp;
@@ -94,14 +124,76 @@ export class TerminatorService {
         .map((cm) => cm.update(timestamp))
         .reduce((a, b) => [...a, ...b]);
 
-      console.log("LIQUIDATE!!!", accountsToLiquidate);
+      console.log("Accounts to liquidatate: ", accountsToLiquidate);
 
-      console.log(`Update block #${num} competed`);
+      const jobs: Array<ExecutorJob> = accountsToLiquidate.map((account) =>
+        this.getLiquidationJob(account)
+      );
+
+      await this.executorService.addToQueue(jobs);
+
+      this.log.info(`Update block #${num} competed`);
+      this.nextSync = num + config.skipBlocks;
     } catch (e) {
-      console.log(`Errors during update block #${num}`, e);
+      this.log.error(`Errors during update block #${num}`, e);
     } finally {
       this.isUpdating = false;
     }
+  }
+
+  async liquidateOne(account: CreditAccount) {
+    this.log.info(`Liquidating ${account.borrower} address`);
+    const job = this.getLiquidationJob(account);
+    await this.executorService.addToQueue([job]);
+  }
+
+  getLiquidationJob(account: CreditAccount): ExecutorJob {
+    return async (executor) => {
+      const botContract = Terminator__factory.connect(
+        this.botContract.address,
+        executor
+      );
+      const paths = await this.uniswapService.findBestRoutes(
+        account.underlyingToken,
+        account.allowedTokens,
+        account.balances
+      );
+
+      const balance = this.tokenService.getBalance(account.underlyingToken);
+      const liquidationAmount = account.liquidationAmount;
+      const decimals = this.tokenService.decimals(account.underlyingToken);
+      if (balance.lt(liquidationAmount)) {
+        const msg = `Not enough balance: ${formatBN(
+          liquidationAmount,
+          decimals
+        )} ${this.tokenService.symbol(
+          account.underlyingToken
+        )} but has only ${formatBN(balance, decimals)}. Please send money to ${
+          this.botContract.address
+        }`;
+
+        this.log.error(msg);
+        this.ampqService.sendMessage(msg);
+        return;
+      }
+
+      const receipt = await botContract.liquidateAndSellOnV2(
+        account.creditManager,
+        account.borrower,
+        UNISWAP_V2_ADDRESS,
+        paths,
+        { gasLimit: 3000000 }
+      );
+
+      await receipt.wait();
+
+      const msg = `Account ${account.borrower} in ${this.tokenService.symbol(
+        account.underlyingToken
+      )} credit manager was liquidated`;
+      this.log.info(msg);
+      this.ampqService.sendMessage(msg);
+      return receipt;
+    };
   }
 
   async loadCreditManagers() {

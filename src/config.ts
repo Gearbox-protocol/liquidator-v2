@@ -23,14 +23,17 @@ export class Config {
 
   @IsNotEmpty()
   @Min(0.05)
-  static slippage: number
-
+  static slippage: number;
 
   @IsNotEmpty()
   static walletPassword: string;
 
   @IsNotEmpty()
   static ampqUrl: string;
+
+  @IsNotEmpty()
+  @Min(1)
+  static skipBlocks: number;
 
   static init() {
     dotenv.config({ path: "./.env.local" });
@@ -43,6 +46,7 @@ export class Config {
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
     Config.ampqUrl = process.env.CLOUDAMQP_URL || "";
+    Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0");
   }
 
   static async validate(): Promise<void> {

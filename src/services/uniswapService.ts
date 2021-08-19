@@ -7,8 +7,7 @@ import {
 import config from "../config";
 import { BigNumber, Signer } from "ethers";
 import { TradePath } from "../core/tradePath";
-import { WETH_TOKEN } from "../../build/config";
-import { PERCENTAGE_FACTOR } from "../core/constants";
+import { PERCENTAGE_FACTOR } from "@diesellabs/gearbox-sdk";
 
 @Service()
 export class UniswapService {
@@ -17,13 +16,15 @@ export class UniswapService {
 
   public readonly slippage: number;
   protected _router: IUniswapV2Router02;
+  protected _wethToken: string;
 
   constructor() {
     this.slippage = config.slippage;
   }
 
-  async connect(router: string, signer: Signer) {
+  async connect(router: string, wethToken: string, signer: Signer) {
     this._router = IUniswapV2Router02__factory.connect(router, signer);
+    this._wethToken = wethToken;
   }
 
   async findBestRoutes(
@@ -49,7 +50,7 @@ export class UniswapService {
 
     const paths = [
       [fromToken, toToken],
-      [fromToken, WETH_TOKEN, toToken],
+      [fromToken, this._wethToken, toToken],
     ];
 
     const promises = paths.map((p) => this._router.getAmountsOut(amount, p));
@@ -75,9 +76,9 @@ export class UniswapService {
 
     return {
       path: bestPath,
-      amountOutMin: bestAmountOut
-        .mul(PERCENTAGE_FACTOR)
-        .div(PERCENTAGE_FACTOR + Math.floor(100 * this.slippage)),
+      amountOutMin: BigNumber.from(0)// bestAmountOut
+        // .mul(PERCENTAGE_FACTOR)
+        // .div(PERCENTAGE_FACTOR + Math.floor(100 * this.slippage)),
     };
   }
 }

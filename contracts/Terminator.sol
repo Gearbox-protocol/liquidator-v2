@@ -20,8 +20,7 @@ contract Terminator is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-
-    mapping(address => bool) executors;
+    mapping(address => bool) public executors;
 
     struct UniV2Params {
         address[] path;
@@ -59,16 +58,15 @@ contract Terminator is Ownable {
             _borrower
         );
 
+        uint256 allowedTokenQty = creditFilter.allowedTokensCount();
+
         // Storing balances, they will not be available after liquidation
-        uint256[] memory caBalances = new uint256[](
-            creditFilter.allowedTokensCount()
-        );
+        uint256[] memory caBalances = new uint256[](allowedTokenQty);
 
         // Getting enabledTokens - token mask which represents non-zero balances
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount);
 
         uint256 tokenMask;
-        uint256 allowedTokenQty = creditFilter.allowedTokensCount();
 
         require(_paths.length == allowedTokenQty);
 
@@ -85,15 +83,29 @@ contract Terminator is Ownable {
         // Providing allowance for creditManager to withdraw liquidation amount
         _provideAllowance(address(creditManager), underlyingToken);
         creditManager.liquidateCreditAccount(_borrower, address(this));
+        console.log("acc is liquidated");
 
         for (uint256 i = 1; i < allowedTokenQty; i++) {
             address tokenAddress = creditFilter.allowedTokens(i);
 
             if (caBalances[i] > 0) {
-                _provideAllowance(_router, tokenAddress);
+                {
+                    uint256 balance = ERC20(tokenAddress).balanceOf(
+                        address(this)
+                    );
 
+                    console.log(tokenAddress);
+                    console.log(_router);
+                    console.log("balance");
+                    console.log(balance);
+                    console.log(caBalances[i].sub(1));
+                    console.log(_paths[i].amountOutMin);
+                    _provideAllowance(_router, tokenAddress);
+                }
+
+                require(tokenAddress == _paths[i].path[0], "incorrect path");
                 IUniswapV2Router02(_router).swapExactTokensForTokens(
-                    caBalances[i],
+                    caBalances[i].sub(1),
                     _paths[i].amountOutMin,
                     _paths[i].path,
                     address(this),
@@ -111,6 +123,7 @@ contract Terminator is Ownable {
     function _provideAllowance(address externalContract, address token)
         internal
     {
+        console.log(ERC20(token).allowance(address(this), externalContract));
         if (
             ERC20(token).allowance(address(this), externalContract) <
             Constants.MAX_INT_4
@@ -118,4 +131,6 @@ contract Terminator is Ownable {
             ERC20(token).approve(externalContract, Constants.MAX_INT);
         }
     }
+
+    receive() external payable {}
 }

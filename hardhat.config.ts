@@ -9,14 +9,12 @@ import "hardhat-gas-reporter";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
-// @ts-ignore
-import { LOCAL_NETWORK, MAINNET_NETWORK } from "./src/core/constants";
+import { LOCAL_NETWORK, MAINNET_NETWORK } from "@diesellabs/gearbox-sdk";
 
 // gets data from .env file
 dotEnvConfig();
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 const KOVAN_PRIVATE_KEY =
   process.env.PRIVATE_KEY! ||
   "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"; // well known private key
