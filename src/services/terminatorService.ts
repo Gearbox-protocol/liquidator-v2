@@ -55,8 +55,7 @@ export class TerminatorService {
   }
 
   async launch() {
-    console.log("RPC", config.ethProviderRpc);
-    this.provider = new providers.JsonRpcProvider(config.ethProviderRpc, 42);
+    this.provider = new providers.JsonRpcProvider(config.ethProviderRpc);
     this.wallet = new Wallet(config.privateKey, this.provider);
 
     await this.ampqService.launch();
