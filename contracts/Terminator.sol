@@ -20,6 +20,8 @@ contract Terminator is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    address public wethToken;
+
     mapping(address => bool) public executors;
 
     struct UniV2Params {
@@ -30,6 +32,10 @@ contract Terminator is Ownable {
     modifier executorOnly() {
         require(executors[msg.sender], "For executors only");
         _;
+    }
+
+    constructor(address _wethToken) {
+        wethToken = _wethToken;
     }
 
     function allowExecutor(address _executor) external onlyOwner {
@@ -82,7 +88,7 @@ contract Terminator is Ownable {
         }
         // Providing allowance for creditManager to withdraw liquidation amount
         _provideAllowance(address(creditManager), underlyingToken);
-        creditManager.liquidateCreditAccount(_borrower, address(this));
+        creditManager.liquidateCreditAccount(_borrower, address(this), false);
         console.log("acc is liquidated");
 
         for (uint256 i = 1; i < allowedTokenQty; i++) {
@@ -104,13 +110,25 @@ contract Terminator is Ownable {
                 }
 
                 require(tokenAddress == _paths[i].path[0], "incorrect path");
-                IUniswapV2Router02(_router).swapExactTokensForTokens(
-                    caBalances[i].sub(1),
-                    _paths[i].amountOutMin,
-                    _paths[i].path,
-                    address(this),
-                    block.timestamp
-                );
+
+                if (tokenAddress == wethToken) {
+                    IUniswapV2Router02(_router).swapExactETHForTokens{
+                        value: caBalances[i].sub(1)
+                    }(
+                        _paths[i].amountOutMin,
+                        _paths[i].path,
+                        address(this),
+                        block.timestamp
+                    );
+                } else {
+                    IUniswapV2Router02(_router).swapExactTokensForTokens(
+                        caBalances[i].sub(1),
+                        _paths[i].amountOutMin,
+                        _paths[i].path,
+                        address(this),
+                        block.timestamp
+                    );
+                }
             }
         }
     }
