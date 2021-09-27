@@ -2,7 +2,7 @@ import { Get, JsonController } from "routing-controllers";
 import { Container } from "typedi";
 import { TerminatorService } from "../services/terminatorService";
 
-@JsonController("/api/tokens")
+@JsonController("/api/executors")
 export class TokenController {
   botService: TerminatorService;
 
@@ -12,7 +12,7 @@ export class TokenController {
 
   @Get("/")
   getAll() {
-    return "Ok";
+    return this.botService.executorService.getExecutorAddress()
   }
 
 }
