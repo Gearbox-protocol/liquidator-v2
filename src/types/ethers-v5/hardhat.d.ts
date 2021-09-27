@@ -37,9 +37,33 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IUniswapV2Router02__factory>;
     getContractFactory(
+      name: "IAppAddressProvider",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IAppAddressProvider__factory>;
+    getContractFactory(
+      name: "IAppCreditManager",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IAppCreditManager__factory>;
+    getContractFactory(
+      name: "IAppERC20",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IAppERC20__factory>;
+    getContractFactory(
+      name: "IAppPoolService",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IAppPoolService__factory>;
+    getContractFactory(
+      name: "IDataCompressor",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IDataCompressor__factory>;
+    getContractFactory(
       name: "IAddressProvider",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IAddressProvider__factory>;
+    getContractFactory(
+      name: "ICreditAccount",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ICreditAccount__factory>;
     getContractFactory(
       name: "ICreditFilter",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -53,9 +77,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IDataCompressor__factory>;
     getContractFactory(
+      name: "IPoolService",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPoolService__factory>;
+    getContractFactory(
       name: "IPriceOracle",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IPriceOracle__factory>;
+    getContractFactory(
+      name: "IWETHGateway",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IWETHGateway__factory>;
     getContractFactory(
       name: "Terminator",
       signerOrOptions?: ethers.Signer | FactoryOptions

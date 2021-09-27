@@ -1,19 +1,17 @@
 import {
   CreditManagerData,
   CreditManagerDataPayload,
-  typedEventsComparator,
-} from "@diesellabs/gearbox-sdk";
-import {
   ICreditFilter,
   ICreditManager,
-  ICreditManager__factory,
   IDataCompressor,
-} from "../types/ethers-v5";
+  IPoolService,
+  typedEventsComparator,
+} from "@diesellabs/gearbox-sdk";
 import { Signer } from "ethers";
 import { LoggerInterface } from "../decorators/logger";
-import { IPoolService } from "@diesellabs/gearbox-sdk/src/types/IPoolService";
 import {
   ICreditFilter__factory,
+  ICreditManager__factory,
   IPoolService__factory,
 } from "@diesellabs/gearbox-sdk/lib/types";
 import { CreditAccount } from "./creditAccount";

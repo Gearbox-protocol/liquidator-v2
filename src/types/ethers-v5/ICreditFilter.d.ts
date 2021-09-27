@@ -33,15 +33,19 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     "calcTotalValue(address)": FunctionFragment;
     "checkAndEnableToken(address,address)": FunctionFragment;
     "checkCollateralChange(address,address,address,uint256,uint256)": FunctionFragment;
+    "checkMultiTokenCollateral(address,uint256[],uint256[],address[],address[])": FunctionFragment;
     "connectCreditManager(address)": FunctionFragment;
     "contractToAdapter(address)": FunctionFragment;
     "enabledTokens(address)": FunctionFragment;
+    "forbidContract(address)": FunctionFragment;
     "getCreditAccountTokenById(address,uint256)": FunctionFragment;
     "initEnabledTokens(address)": FunctionFragment;
     "isTokenAllowed(address)": FunctionFragment;
-    "revertIfAdapterNotAllowed(address)": FunctionFragment;
+    "liquidationThresholds(address)": FunctionFragment;
+    "priceOracle()": FunctionFragment;
     "revertIfTokenNotAllowed(address)": FunctionFragment;
     "underlyingToken()": FunctionFragment;
+    "updateUnderlyingTokenLiquidationThreshold()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -93,6 +97,10 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     values: [string, string, string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "checkMultiTokenCollateral",
+    values: [string, BigNumberish[], BigNumberish[], string[], string[]]
+  ): string;
+  encodeFunctionData(
     functionFragment: "connectCreditManager",
     values: [string]
   ): string;
@@ -102,6 +110,10 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "enabledTokens",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "forbidContract",
     values: [string]
   ): string;
   encodeFunctionData(
@@ -117,8 +129,12 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "revertIfAdapterNotAllowed",
+    functionFragment: "liquidationThresholds",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "priceOracle",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "revertIfTokenNotAllowed",
@@ -126,6 +142,10 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "underlyingToken",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updateUnderlyingTokenLiquidationThreshold",
     values?: undefined
   ): string;
 
@@ -175,6 +195,10 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "checkMultiTokenCollateral",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "connectCreditManager",
     data: BytesLike
   ): Result;
@@ -184,6 +208,10 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "enabledTokens",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "forbidContract",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -199,7 +227,11 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "revertIfAdapterNotAllowed",
+    functionFragment: "liquidationThresholds",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "priceOracle",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -210,14 +242,20 @@ interface ICreditFilterInterface extends ethers.utils.Interface {
     functionFragment: "underlyingToken",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "updateUnderlyingTokenLiquidationThreshold",
+    data: BytesLike
+  ): Result;
 
   events: {
     "ContractAllowed(address,address)": EventFragment;
+    "ContractForbidden(address)": EventFragment;
     "NewFastCheckParameters(uint256,uint256)": EventFragment;
     "TokenAllowed(address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "ContractAllowed"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ContractForbidden"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NewFastCheckParameters"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "TokenAllowed"): EventFragment;
 }
@@ -267,7 +305,7 @@ export class ICreditFilter extends BaseContract {
 
   functions: {
     allowContract(
-      allowedContract: string,
+      targetContract: string,
       adapter: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -327,6 +365,15 @@ export class ICreditFilter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    checkMultiTokenCollateral(
+      creditAccount: string,
+      amountIn: BigNumberish[],
+      amountOut: BigNumberish[],
+      tokenIn: string[],
+      tokenOut: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     connectCreditManager(
       poolService: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -341,6 +388,11 @@ export class ICreditFilter extends BaseContract {
       creditAccount: string,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    forbidContract(
+      targetContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
     getCreditAccountTokenById(
       creditAccount: string,
@@ -365,10 +417,12 @@ export class ICreditFilter extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
-    revertIfAdapterNotAllowed(
-      adapter: string,
+    liquidationThresholds(
+      token: string,
       overrides?: CallOverrides
-    ): Promise<[void]>;
+    ): Promise<[BigNumber]>;
+
+    priceOracle(overrides?: CallOverrides): Promise<[string]>;
 
     revertIfTokenNotAllowed(
       token: string,
@@ -376,10 +430,14 @@ export class ICreditFilter extends BaseContract {
     ): Promise<[void]>;
 
     underlyingToken(overrides?: CallOverrides): Promise<[string]>;
+
+    updateUnderlyingTokenLiquidationThreshold(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
   allowContract(
-    allowedContract: string,
+    targetContract: string,
     adapter: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -436,6 +494,15 @@ export class ICreditFilter extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  checkMultiTokenCollateral(
+    creditAccount: string,
+    amountIn: BigNumberish[],
+    amountOut: BigNumberish[],
+    tokenIn: string[],
+    tokenOut: string[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   connectCreditManager(
     poolService: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -450,6 +517,11 @@ export class ICreditFilter extends BaseContract {
     creditAccount: string,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  forbidContract(
+    targetContract: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   getCreditAccountTokenById(
     creditAccount: string,
@@ -471,10 +543,12 @@ export class ICreditFilter extends BaseContract {
 
   isTokenAllowed(token: string, overrides?: CallOverrides): Promise<boolean>;
 
-  revertIfAdapterNotAllowed(
-    adapter: string,
+  liquidationThresholds(
+    token: string,
     overrides?: CallOverrides
-  ): Promise<void>;
+  ): Promise<BigNumber>;
+
+  priceOracle(overrides?: CallOverrides): Promise<string>;
 
   revertIfTokenNotAllowed(
     token: string,
@@ -483,9 +557,13 @@ export class ICreditFilter extends BaseContract {
 
   underlyingToken(overrides?: CallOverrides): Promise<string>;
 
+  updateUnderlyingTokenLiquidationThreshold(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
     allowContract(
-      allowedContract: string,
+      targetContract: string,
       adapter: string,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -542,6 +620,15 @@ export class ICreditFilter extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    checkMultiTokenCollateral(
+      creditAccount: string,
+      amountIn: BigNumberish[],
+      amountOut: BigNumberish[],
+      tokenIn: string[],
+      tokenOut: string[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     connectCreditManager(
       poolService: string,
       overrides?: CallOverrides
@@ -556,6 +643,11 @@ export class ICreditFilter extends BaseContract {
       creditAccount: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    forbidContract(
+      targetContract: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     getCreditAccountTokenById(
       creditAccount: string,
@@ -577,10 +669,12 @@ export class ICreditFilter extends BaseContract {
 
     isTokenAllowed(token: string, overrides?: CallOverrides): Promise<boolean>;
 
-    revertIfAdapterNotAllowed(
-      adapter: string,
+    liquidationThresholds(
+      token: string,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
+
+    priceOracle(overrides?: CallOverrides): Promise<string>;
 
     revertIfTokenNotAllowed(
       token: string,
@@ -588,6 +682,10 @@ export class ICreditFilter extends BaseContract {
     ): Promise<void>;
 
     underlyingToken(overrides?: CallOverrides): Promise<string>;
+
+    updateUnderlyingTokenLiquidationThreshold(
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
   filters: {
@@ -598,6 +696,10 @@ export class ICreditFilter extends BaseContract {
       [string, string],
       { protocol: string; adapter: string }
     >;
+
+    ContractForbidden(
+      protocol?: string | null
+    ): TypedEventFilter<[string], { protocol: string }>;
 
     NewFastCheckParameters(
       chiThreshold?: null,
@@ -618,7 +720,7 @@ export class ICreditFilter extends BaseContract {
 
   estimateGas: {
     allowContract(
-      allowedContract: string,
+      targetContract: string,
       adapter: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -678,6 +780,15 @@ export class ICreditFilter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    checkMultiTokenCollateral(
+      creditAccount: string,
+      amountIn: BigNumberish[],
+      amountOut: BigNumberish[],
+      tokenIn: string[],
+      tokenOut: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     connectCreditManager(
       poolService: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -691,6 +802,11 @@ export class ICreditFilter extends BaseContract {
     enabledTokens(
       creditAccount: string,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    forbidContract(
+      targetContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     getCreditAccountTokenById(
@@ -709,10 +825,12 @@ export class ICreditFilter extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    revertIfAdapterNotAllowed(
-      adapter: string,
+    liquidationThresholds(
+      token: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    priceOracle(overrides?: CallOverrides): Promise<BigNumber>;
 
     revertIfTokenNotAllowed(
       token: string,
@@ -720,11 +838,15 @@ export class ICreditFilter extends BaseContract {
     ): Promise<BigNumber>;
 
     underlyingToken(overrides?: CallOverrides): Promise<BigNumber>;
+
+    updateUnderlyingTokenLiquidationThreshold(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
     allowContract(
-      allowedContract: string,
+      targetContract: string,
       adapter: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -788,6 +910,15 @@ export class ICreditFilter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    checkMultiTokenCollateral(
+      creditAccount: string,
+      amountIn: BigNumberish[],
+      amountOut: BigNumberish[],
+      tokenIn: string[],
+      tokenOut: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     connectCreditManager(
       poolService: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -801,6 +932,11 @@ export class ICreditFilter extends BaseContract {
     enabledTokens(
       creditAccount: string,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    forbidContract(
+      targetContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     getCreditAccountTokenById(
@@ -819,10 +955,12 @@ export class ICreditFilter extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    revertIfAdapterNotAllowed(
-      adapter: string,
+    liquidationThresholds(
+      token: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    priceOracle(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     revertIfTokenNotAllowed(
       token: string,
@@ -830,5 +968,9 @@ export class ICreditFilter extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     underlyingToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    updateUnderlyingTokenLiquidationThreshold(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
   };
 }

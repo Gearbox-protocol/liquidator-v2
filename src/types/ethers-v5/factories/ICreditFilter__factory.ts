@@ -30,6 +30,19 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
+        indexed: true,
+        internalType: "address",
+        name: "protocol",
+        type: "address",
+      },
+    ],
+    name: "ContractForbidden",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: false,
         internalType: "uint256",
         name: "chiThreshold",
@@ -68,7 +81,7 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
-        name: "allowedContract",
+        name: "targetContract",
         type: "address",
       },
       {
@@ -295,6 +308,39 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
+        name: "creditAccount",
+        type: "address",
+      },
+      {
+        internalType: "uint256[]",
+        name: "amountIn",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256[]",
+        name: "amountOut",
+        type: "uint256[]",
+      },
+      {
+        internalType: "address[]",
+        name: "tokenIn",
+        type: "address[]",
+      },
+      {
+        internalType: "address[]",
+        name: "tokenOut",
+        type: "address[]",
+      },
+    ],
+    name: "checkMultiTokenCollateral",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "poolService",
         type: "address",
       },
@@ -340,6 +386,19 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "targetContract",
+        type: "address",
+      },
+    ],
+    name: "forbidContract",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -417,12 +476,31 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
-        name: "adapter",
+        name: "token",
         type: "address",
       },
     ],
-    name: "revertIfAdapterNotAllowed",
-    outputs: [],
+    name: "liquidationThresholds",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "priceOracle",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
     stateMutability: "view",
     type: "function",
   },
@@ -450,6 +528,13 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "updateUnderlyingTokenLiquidationThreshold",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
 ];

@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
+
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
+import {IAppCreditManager} from "./app/IAppCreditManager.sol";
+import {DataTypes} from "../libraries/Types.sol";
 
 /// @title Credit Manager interface
 /// @notice It encapsulates business logic for managing credit accounts
 ///
 /// More info: https://dev.gearbox.fi/developers/credit/credit_manager
 
-interface ICreditManager {
+interface ICreditManager is IAppCreditManager {
     // Emits each time when the credit account is opened
     event OpenCreditAccount(
         address indexed sender,
@@ -50,16 +54,18 @@ interface ICreditManager {
     // Emit each time when financial order is executed
     event ExecuteOrder(address indexed borrower, address indexed target);
 
-    // Emits each time when new limits are set
-    event NewLimits(uint256 minAmount, uint256 maxAmount);
-
     // Emits each time when new fees are set
-    event NewFees(
+    event NewParameters(
+        uint256 minAmount,
+        uint256 maxAmount,
+        uint256 maxLeverage,
         uint256 feeSuccess,
         uint256 feeInterest,
         uint256 feeLiquidation,
         uint256 liquidationDiscount
     );
+
+    event TransferAccount(address oldOwner, address newOwner);
 
     //
     // CREDIT ACCOUNT MANAGEMENT
@@ -85,10 +91,10 @@ interface ICreditManager {
      */
     function openCreditAccount(
         uint256 amount,
-        address payable onBehalfOf,
+        address onBehalfOf,
         uint256 leverageFactor,
         uint256 referralCode
-    ) external;
+    ) external override;
 
     /**
      * @dev Closes credit account
@@ -101,11 +107,11 @@ interface ICreditManager {
      * More info: https://dev.gearbox.fi/developers/credit/credit_manager#close-credit-account
      *
      * @param to Address to send remaining funds
-     * @param amountOutTolerance Coefficient to amountOut during sale on default swap
-     *        in percenatage math
+     * @param paths Exchange type data which provides paths + amountMinOut
      */
-    function closeCreditAccount(address to, uint256 amountOutTolerance)
-        external;
+    function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
+        external
+        override;
 
     /**
      * @dev Liquidates credit account
@@ -119,14 +125,19 @@ interface ICreditManager {
      *
      * @param borrower Borrower address
      * @param to Address to transfer all assets from credit account
+     * @param force If true, use transfer function for transferring tokens instead of safeTransfer
      */
-    function liquidateCreditAccount(address borrower, address to) external;
+    function liquidateCreditAccount(
+        address borrower,
+        address to,
+        bool force
+    ) external;
 
     /// @dev Repays credit account
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#repay-credit-account
     ///
     /// @param to Address to send credit account assets
-    function repayCreditAccount(address to) external;
+    function repayCreditAccount(address to) external override;
 
     /// @dev Repays credit account with ETH. Restricted to be called by WETH Gateway only
     ///
@@ -141,7 +152,7 @@ interface ICreditManager {
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#increase-borrowed-amount
     ///
     /// @param amount Amount to increase borrowed amount
-    function increaseBorrowedAmount(uint256 amount) external;
+    function increaseBorrowedAmount(uint256 amount) external override;
 
     /// @dev Adds collateral to borrower's credit account
     /// @param onBehalfOf Address of borrower to add funds
@@ -151,13 +162,14 @@ interface ICreditManager {
         address onBehalfOf,
         address token,
         uint256 amount
-    ) external;
+    ) external override;
 
     /// @dev Returns true if the borrower has opened a credit account
     /// @param borrower Borrower account
     function hasOpenedCreditAccount(address borrower)
         external
         view
+        override
         returns (bool);
 
     /// @dev Calculates Repay amount = borrow amount + interest accrued + fee
@@ -170,6 +182,7 @@ interface ICreditManager {
     function calcRepayAmount(address borrower, bool isLiquidated)
         external
         view
+        override
         returns (uint256);
 
     /// @dev Returns minimal amount for open credit account
@@ -193,9 +206,6 @@ interface ICreditManager {
     /// @dev Returns address of CreditFilter
     function creditAccounts(address borrower) external view returns (address);
 
-    /// @dev Sets min & max account.Restricted for configurator role only
-    function setLimits(uint256 _minAmount, uint256 _maxAmount) external;
-
     /// @dev Executes filtered order on credit account which is connected with particular borrowers
     /// @param borrower Borrower address
     /// @param target Target smart-contract
@@ -206,6 +216,9 @@ interface ICreditManager {
         bytes memory data
     ) external returns (bytes memory);
 
+    /// @dev Approves token for msg.sender's credit account
+    function approve(address targetContract, address token) external;
+
     /// @dev Approve tokens for credit accounts. Restricted for adapters only
     function provideCreditAccountAllowance(
         address creditAccount,
@@ -213,10 +226,25 @@ interface ICreditManager {
         address token
     ) external;
 
+    function transferAccountOwnership(address newOwner) external;
+
     /// @dev Returns address of borrower's credit account and reverts of borrower has no one.
     /// @param borrower Borrower address
     function getCreditAccountOrRevert(address borrower)
         external
         view
+        override
         returns (address);
+
+    function feeSuccess() external view returns (uint256);
+
+    function feeInterest() external view returns (uint256);
+
+    function feeLiquidation() external view returns (uint256);
+
+    function liquidationDiscount() external view returns (uint256);
+
+    function minHealthFactor() external view returns (uint256);
+
+    function defaultSwapContract() external view override returns (address);
 }

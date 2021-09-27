@@ -1,15 +1,14 @@
 import { Inject, Service } from "typedi";
 import config, { SUSHISWAP_ADDRESS, UNISWAP_V2_ADDRESS } from "../config";
 import { providers, Wallet } from "ethers";
+import { Logger, LoggerInterface } from "../decorators/logger";
 import {
-  IAddressProvider__factory,
+  AddressProvider__factory,
+  CreditManagerDataPayload,
+  formatBN,
   IDataCompressor,
   IDataCompressor__factory,
-  Terminator,
-  Terminator__factory,
-} from "../types/ethers-v5";
-import { Logger, LoggerInterface } from "../decorators/logger";
-import { CreditManagerDataPayload, formatBN } from "@diesellabs/gearbox-sdk";
+} from "@diesellabs/gearbox-sdk";
 import { CreditManager } from "../core/creditManager";
 import { OracleService } from "./oracleService";
 import { TokenService } from "./tokenService";
@@ -18,6 +17,7 @@ import { ExecutorJob } from "../core/executor";
 import { UniswapService } from "./uniswapService";
 import { CreditAccount } from "../core/creditAccount";
 import { AMPQService } from "./ampqService";
+import { Terminator, Terminator__factory } from "../types/ethers-v5";
 
 @Service()
 export class TerminatorService {
@@ -65,7 +65,7 @@ export class TerminatorService {
       this.wallet
     );
 
-    const addressProvider = IAddressProvider__factory.connect(
+    const addressProvider = AddressProvider__factory.connect(
       config.addressProvider,
       this.wallet
     );

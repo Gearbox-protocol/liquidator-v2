@@ -1,13 +1,11 @@
-// SPDX-License-Identifier: MIT
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// SPDX-License-Identifier: BSL-1.1
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-// Keep it to be able compile ABI for oracle services
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.7/interfaces/AggregatorV3Interface.sol";
-
 /// @title Price oracle interface
 interface IPriceOracle {
+
     // Emits each time new configurator is set up
     event NewPriceFeed(address indexed token, address indexed priceFeed);
 

@@ -22,24 +22,31 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 interface ICreditManagerInterface extends ethers.utils.Interface {
   functions: {
     "addCollateral(address,address,uint256)": FunctionFragment;
+    "approve(address,address)": FunctionFragment;
     "calcRepayAmount(address,bool)": FunctionFragment;
-    "closeCreditAccount(address,uint256)": FunctionFragment;
+    "closeCreditAccount(address,tuple[])": FunctionFragment;
     "creditAccounts(address)": FunctionFragment;
     "creditFilter()": FunctionFragment;
+    "defaultSwapContract()": FunctionFragment;
     "executeOrder(address,address,bytes)": FunctionFragment;
+    "feeInterest()": FunctionFragment;
+    "feeLiquidation()": FunctionFragment;
+    "feeSuccess()": FunctionFragment;
     "getCreditAccountOrRevert(address)": FunctionFragment;
     "hasOpenedCreditAccount(address)": FunctionFragment;
     "increaseBorrowedAmount(uint256)": FunctionFragment;
-    "liquidateCreditAccount(address,address)": FunctionFragment;
+    "liquidateCreditAccount(address,address,bool)": FunctionFragment;
+    "liquidationDiscount()": FunctionFragment;
     "maxAmount()": FunctionFragment;
     "maxLeverageFactor()": FunctionFragment;
     "minAmount()": FunctionFragment;
+    "minHealthFactor()": FunctionFragment;
     "openCreditAccount(uint256,address,uint256,uint256)": FunctionFragment;
     "poolService()": FunctionFragment;
     "provideCreditAccountAllowance(address,address,address)": FunctionFragment;
     "repayCreditAccount(address)": FunctionFragment;
     "repayCreditAccountETH(address,address)": FunctionFragment;
-    "setLimits(uint256,uint256)": FunctionFragment;
+    "transferAccountOwnership(address)": FunctionFragment;
     "underlyingToken()": FunctionFragment;
   };
 
@@ -48,12 +55,16 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     values: [string, string, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "approve",
+    values: [string, string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "calcRepayAmount",
     values: [string, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "closeCreditAccount",
-    values: [string, BigNumberish]
+    values: [string, { path: string[]; amountOutMin: BigNumberish }[]]
   ): string;
   encodeFunctionData(
     functionFragment: "creditAccounts",
@@ -64,8 +75,24 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "defaultSwapContract",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "executeOrder",
     values: [string, string, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "feeInterest",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "feeLiquidation",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "feeSuccess",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getCreditAccountOrRevert",
@@ -81,7 +108,11 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "liquidateCreditAccount",
-    values: [string, string]
+    values: [string, string, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "liquidationDiscount",
+    values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "maxAmount", values?: undefined): string;
   encodeFunctionData(
@@ -89,6 +120,10 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "minAmount", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "minHealthFactor",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "openCreditAccount",
     values: [BigNumberish, string, BigNumberish, BigNumberish]
@@ -110,8 +145,8 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     values: [string, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "setLimits",
-    values: [BigNumberish, BigNumberish]
+    functionFragment: "transferAccountOwnership",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "underlyingToken",
@@ -122,6 +157,7 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     functionFragment: "addCollateral",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "calcRepayAmount",
     data: BytesLike
@@ -139,9 +175,22 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "defaultSwapContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "executeOrder",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "feeInterest",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "feeLiquidation",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "feeSuccess", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getCreditAccountOrRevert",
     data: BytesLike
@@ -158,12 +207,20 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     functionFragment: "liquidateCreditAccount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "liquidationDiscount",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "maxAmount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "maxLeverageFactor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "minAmount", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "minHealthFactor",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "openCreditAccount",
     data: BytesLike
@@ -184,7 +241,10 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     functionFragment: "repayCreditAccountETH",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "setLimits", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "transferAccountOwnership",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "underlyingToken",
     data: BytesLike
@@ -196,10 +256,10 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
     "ExecuteOrder(address,address)": EventFragment;
     "IncreaseBorrowedAmount(address,uint256)": EventFragment;
     "LiquidateCreditAccount(address,address,uint256)": EventFragment;
-    "NewFees(uint256,uint256,uint256,uint256)": EventFragment;
-    "NewLimits(uint256,uint256)": EventFragment;
+    "NewParameters(uint256,uint256,uint256,uint256,uint256,uint256,uint256)": EventFragment;
     "OpenCreditAccount(address,address,address,uint256,uint256,uint256)": EventFragment;
     "RepayCreditAccount(address,address)": EventFragment;
+    "TransferAccount(address,address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AddCollateral"): EventFragment;
@@ -207,10 +267,10 @@ interface ICreditManagerInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "ExecuteOrder"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "IncreaseBorrowedAmount"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LiquidateCreditAccount"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "NewFees"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "NewLimits"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewParameters"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OpenCreditAccount"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RepayCreditAccount"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "TransferAccount"): EventFragment;
 }
 
 export class ICreditManager extends BaseContract {
@@ -264,6 +324,12 @@ export class ICreditManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    approve(
+      targetContract: string,
+      token: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     calcRepayAmount(
       borrower: string,
       isLiquidated: boolean,
@@ -272,7 +338,7 @@ export class ICreditManager extends BaseContract {
 
     closeCreditAccount(
       to: string,
-      amountOutTolerance: BigNumberish,
+      paths: { path: string[]; amountOutMin: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -283,12 +349,20 @@ export class ICreditManager extends BaseContract {
 
     creditFilter(overrides?: CallOverrides): Promise<[string]>;
 
+    defaultSwapContract(overrides?: CallOverrides): Promise<[string]>;
+
     executeOrder(
       borrower: string,
       target: string,
       data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    feeInterest(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    feeLiquidation(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    feeSuccess(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     getCreditAccountOrRevert(
       borrower: string,
@@ -308,14 +382,19 @@ export class ICreditManager extends BaseContract {
     liquidateCreditAccount(
       borrower: string,
       to: string,
+      force: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    liquidationDiscount(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     maxAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     maxLeverageFactor(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     minAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    minHealthFactor(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     openCreditAccount(
       amount: BigNumberish,
@@ -345,9 +424,8 @@ export class ICreditManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    setLimits(
-      _minAmount: BigNumberish,
-      _maxAmount: BigNumberish,
+    transferAccountOwnership(
+      newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -361,6 +439,12 @@ export class ICreditManager extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  approve(
+    targetContract: string,
+    token: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   calcRepayAmount(
     borrower: string,
     isLiquidated: boolean,
@@ -369,7 +453,7 @@ export class ICreditManager extends BaseContract {
 
   closeCreditAccount(
     to: string,
-    amountOutTolerance: BigNumberish,
+    paths: { path: string[]; amountOutMin: BigNumberish }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -377,12 +461,20 @@ export class ICreditManager extends BaseContract {
 
   creditFilter(overrides?: CallOverrides): Promise<string>;
 
+  defaultSwapContract(overrides?: CallOverrides): Promise<string>;
+
   executeOrder(
     borrower: string,
     target: string,
     data: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  feeInterest(overrides?: CallOverrides): Promise<BigNumber>;
+
+  feeLiquidation(overrides?: CallOverrides): Promise<BigNumber>;
+
+  feeSuccess(overrides?: CallOverrides): Promise<BigNumber>;
 
   getCreditAccountOrRevert(
     borrower: string,
@@ -402,14 +494,19 @@ export class ICreditManager extends BaseContract {
   liquidateCreditAccount(
     borrower: string,
     to: string,
+    force: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  liquidationDiscount(overrides?: CallOverrides): Promise<BigNumber>;
 
   maxAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
   maxLeverageFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
   minAmount(overrides?: CallOverrides): Promise<BigNumber>;
+
+  minHealthFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
   openCreditAccount(
     amount: BigNumberish,
@@ -439,9 +536,8 @@ export class ICreditManager extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  setLimits(
-    _minAmount: BigNumberish,
-    _maxAmount: BigNumberish,
+  transferAccountOwnership(
+    newOwner: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -455,6 +551,12 @@ export class ICreditManager extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    approve(
+      targetContract: string,
+      token: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     calcRepayAmount(
       borrower: string,
       isLiquidated: boolean,
@@ -463,7 +565,7 @@ export class ICreditManager extends BaseContract {
 
     closeCreditAccount(
       to: string,
-      amountOutTolerance: BigNumberish,
+      paths: { path: string[]; amountOutMin: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -474,12 +576,20 @@ export class ICreditManager extends BaseContract {
 
     creditFilter(overrides?: CallOverrides): Promise<string>;
 
+    defaultSwapContract(overrides?: CallOverrides): Promise<string>;
+
     executeOrder(
       borrower: string,
       target: string,
       data: BytesLike,
       overrides?: CallOverrides
     ): Promise<string>;
+
+    feeInterest(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feeLiquidation(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feeSuccess(overrides?: CallOverrides): Promise<BigNumber>;
 
     getCreditAccountOrRevert(
       borrower: string,
@@ -499,14 +609,19 @@ export class ICreditManager extends BaseContract {
     liquidateCreditAccount(
       borrower: string,
       to: string,
+      force: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    liquidationDiscount(overrides?: CallOverrides): Promise<BigNumber>;
 
     maxAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     maxLeverageFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
     minAmount(overrides?: CallOverrides): Promise<BigNumber>;
+
+    minHealthFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
     openCreditAccount(
       amount: BigNumberish,
@@ -533,9 +648,8 @@ export class ICreditManager extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    setLimits(
-      _minAmount: BigNumberish,
-      _maxAmount: BigNumberish,
+    transferAccountOwnership(
+      newOwner: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -583,27 +697,33 @@ export class ICreditManager extends BaseContract {
       { owner: string; liquidator: string; remainingFunds: BigNumber }
     >;
 
-    NewFees(
+    NewParameters(
+      minAmount?: null,
+      maxAmount?: null,
+      maxLeverage?: null,
       feeSuccess?: null,
       feeInterest?: null,
       feeLiquidation?: null,
       liquidationDiscount?: null
     ): TypedEventFilter<
-      [BigNumber, BigNumber, BigNumber, BigNumber],
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
       {
+        minAmount: BigNumber;
+        maxAmount: BigNumber;
+        maxLeverage: BigNumber;
         feeSuccess: BigNumber;
         feeInterest: BigNumber;
         feeLiquidation: BigNumber;
         liquidationDiscount: BigNumber;
       }
-    >;
-
-    NewLimits(
-      minAmount?: null,
-      maxAmount?: null
-    ): TypedEventFilter<
-      [BigNumber, BigNumber],
-      { minAmount: BigNumber; maxAmount: BigNumber }
     >;
 
     OpenCreditAccount(
@@ -629,6 +749,14 @@ export class ICreditManager extends BaseContract {
       owner?: string | null,
       to?: string | null
     ): TypedEventFilter<[string, string], { owner: string; to: string }>;
+
+    TransferAccount(
+      oldOwner?: null,
+      newOwner?: null
+    ): TypedEventFilter<
+      [string, string],
+      { oldOwner: string; newOwner: string }
+    >;
   };
 
   estimateGas: {
@@ -636,6 +764,12 @@ export class ICreditManager extends BaseContract {
       onBehalfOf: string,
       token: string,
       amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    approve(
+      targetContract: string,
+      token: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -647,7 +781,7 @@ export class ICreditManager extends BaseContract {
 
     closeCreditAccount(
       to: string,
-      amountOutTolerance: BigNumberish,
+      paths: { path: string[]; amountOutMin: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -658,12 +792,20 @@ export class ICreditManager extends BaseContract {
 
     creditFilter(overrides?: CallOverrides): Promise<BigNumber>;
 
+    defaultSwapContract(overrides?: CallOverrides): Promise<BigNumber>;
+
     executeOrder(
       borrower: string,
       target: string,
       data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    feeInterest(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feeLiquidation(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feeSuccess(overrides?: CallOverrides): Promise<BigNumber>;
 
     getCreditAccountOrRevert(
       borrower: string,
@@ -683,14 +825,19 @@ export class ICreditManager extends BaseContract {
     liquidateCreditAccount(
       borrower: string,
       to: string,
+      force: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    liquidationDiscount(overrides?: CallOverrides): Promise<BigNumber>;
 
     maxAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     maxLeverageFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
     minAmount(overrides?: CallOverrides): Promise<BigNumber>;
+
+    minHealthFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
     openCreditAccount(
       amount: BigNumberish,
@@ -720,9 +867,8 @@ export class ICreditManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    setLimits(
-      _minAmount: BigNumberish,
-      _maxAmount: BigNumberish,
+    transferAccountOwnership(
+      newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -737,6 +883,12 @@ export class ICreditManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    approve(
+      targetContract: string,
+      token: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     calcRepayAmount(
       borrower: string,
       isLiquidated: boolean,
@@ -745,7 +897,7 @@ export class ICreditManager extends BaseContract {
 
     closeCreditAccount(
       to: string,
-      amountOutTolerance: BigNumberish,
+      paths: { path: string[]; amountOutMin: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -756,12 +908,22 @@ export class ICreditManager extends BaseContract {
 
     creditFilter(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    defaultSwapContract(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     executeOrder(
       borrower: string,
       target: string,
       data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    feeInterest(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    feeLiquidation(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    feeSuccess(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getCreditAccountOrRevert(
       borrower: string,
@@ -781,7 +943,12 @@ export class ICreditManager extends BaseContract {
     liquidateCreditAccount(
       borrower: string,
       to: string,
+      force: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    liquidationDiscount(
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     maxAmount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -789,6 +956,8 @@ export class ICreditManager extends BaseContract {
     maxLeverageFactor(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     minAmount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    minHealthFactor(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     openCreditAccount(
       amount: BigNumberish,
@@ -818,9 +987,8 @@ export class ICreditManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    setLimits(
-      _minAmount: BigNumberish,
-      _maxAmount: BigNumberish,
+    transferAccountOwnership(
+      newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

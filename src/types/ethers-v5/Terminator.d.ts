@@ -29,6 +29,7 @@ interface TerminatorInterface extends ethers.utils.Interface {
     "renounceOwnership()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "transferToOwner(address,uint256)": FunctionFragment;
+    "wethToken()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -62,6 +63,7 @@ interface TerminatorInterface extends ethers.utils.Interface {
     functionFragment: "transferToOwner",
     values: [string, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "wethToken", values?: undefined): string;
 
   decodeFunctionResult(
     functionFragment: "allowExecutor",
@@ -89,6 +91,7 @@ interface TerminatorInterface extends ethers.utils.Interface {
     functionFragment: "transferToOwner",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "wethToken", data: BytesLike): Result;
 
   events: {
     "OwnershipTransferred(address,address)": EventFragment;
@@ -177,6 +180,8 @@ export class Terminator extends BaseContract {
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    wethToken(overrides?: CallOverrides): Promise<[string]>;
   };
 
   allowExecutor(
@@ -216,6 +221,8 @@ export class Terminator extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  wethToken(overrides?: CallOverrides): Promise<string>;
+
   callStatic: {
     allowExecutor(_executor: string, overrides?: CallOverrides): Promise<void>;
 
@@ -245,6 +252,8 @@ export class Terminator extends BaseContract {
       amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    wethToken(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
@@ -294,6 +303,8 @@ export class Terminator extends BaseContract {
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    wethToken(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -336,5 +347,7 @@ export class Terminator extends BaseContract {
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    wethToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

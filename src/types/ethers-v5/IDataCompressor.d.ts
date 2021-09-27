@@ -20,6 +20,7 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface IDataCompressorInterface extends ethers.utils.Interface {
   functions: {
+    "calcExpectedHf(address,address,uint256[])": FunctionFragment;
     "getCreditAccountData(address,address)": FunctionFragment;
     "getCreditAccountDataExtended(address,address)": FunctionFragment;
     "getCreditAccountList(address)": FunctionFragment;
@@ -27,10 +28,14 @@ interface IDataCompressorInterface extends ethers.utils.Interface {
     "getCreditManagersList(address)": FunctionFragment;
     "getPoolData(address)": FunctionFragment;
     "getPoolsList()": FunctionFragment;
-    "getTokenData(address)": FunctionFragment;
+    "getTokenData(address[])": FunctionFragment;
     "hasOpenedCreditAccount(address,address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "calcExpectedHf",
+    values: [string, string, BigNumberish[]]
+  ): string;
   encodeFunctionData(
     functionFragment: "getCreditAccountData",
     values: [string, string]
@@ -58,13 +63,17 @@ interface IDataCompressorInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getTokenData",
-    values: [string]
+    values: [string[]]
   ): string;
   encodeFunctionData(
     functionFragment: "hasOpenedCreditAccount",
     values: [string, string]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "calcExpectedHf",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getCreditAccountData",
     data: BytesLike
@@ -149,6 +158,13 @@ export class IDataCompressor extends BaseContract {
   interface: IDataCompressorInterface;
 
   functions: {
+    calcExpectedHf(
+      creditManager: string,
+      borrower: string,
+      balances: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     getCreditAccountData(
       _creditManager: string,
       borrower: string,
@@ -424,15 +440,15 @@ export class IDataCompressor extends BaseContract {
     >;
 
     getTokenData(
-      addr: string,
+      addr: string[],
       overrides?: CallOverrides
     ): Promise<
       [
-        [string, string, number] & {
+        ([string, string, number] & {
           addr: string;
           symbol: string;
           decimals: number;
-        }
+        })[]
       ]
     >;
 
@@ -442,6 +458,13 @@ export class IDataCompressor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
   };
+
+  calcExpectedHf(
+    creditManager: string,
+    borrower: string,
+    balances: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   getCreditAccountData(
     _creditManager: string,
@@ -695,14 +718,14 @@ export class IDataCompressor extends BaseContract {
   >;
 
   getTokenData(
-    addr: string,
+    addr: string[],
     overrides?: CallOverrides
   ): Promise<
-    [string, string, number] & {
+    ([string, string, number] & {
       addr: string;
       symbol: string;
       decimals: number;
-    }
+    })[]
   >;
 
   hasOpenedCreditAccount(
@@ -712,6 +735,13 @@ export class IDataCompressor extends BaseContract {
   ): Promise<boolean>;
 
   callStatic: {
+    calcExpectedHf(
+      creditManager: string,
+      borrower: string,
+      balances: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getCreditAccountData(
       _creditManager: string,
       borrower: string,
@@ -973,14 +1003,14 @@ export class IDataCompressor extends BaseContract {
     >;
 
     getTokenData(
-      addr: string,
+      addr: string[],
       overrides?: CallOverrides
     ): Promise<
-      [string, string, number] & {
+      ([string, string, number] & {
         addr: string;
         symbol: string;
         decimals: number;
-      }
+      })[]
     >;
 
     hasOpenedCreditAccount(
@@ -993,6 +1023,13 @@ export class IDataCompressor extends BaseContract {
   filters: {};
 
   estimateGas: {
+    calcExpectedHf(
+      creditManager: string,
+      borrower: string,
+      balances: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getCreditAccountData(
       _creditManager: string,
       borrower: string,
@@ -1025,7 +1062,7 @@ export class IDataCompressor extends BaseContract {
 
     getPoolsList(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getTokenData(addr: string, overrides?: CallOverrides): Promise<BigNumber>;
+    getTokenData(addr: string[], overrides?: CallOverrides): Promise<BigNumber>;
 
     hasOpenedCreditAccount(
       creditManager: string,
@@ -1035,6 +1072,13 @@ export class IDataCompressor extends BaseContract {
   };
 
   populateTransaction: {
+    calcExpectedHf(
+      creditManager: string,
+      borrower: string,
+      balances: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getCreditAccountData(
       _creditManager: string,
       borrower: string,
@@ -1071,7 +1115,7 @@ export class IDataCompressor extends BaseContract {
     getPoolsList(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getTokenData(
-      addr: string,
+      addr: string[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

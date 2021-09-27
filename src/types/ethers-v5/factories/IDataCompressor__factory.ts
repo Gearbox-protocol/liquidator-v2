@@ -14,6 +14,35 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
+        name: "creditManager",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "borrower",
+        type: "address",
+      },
+      {
+        internalType: "uint256[]",
+        name: "balances",
+        type: "uint256[]",
+      },
+    ],
+    name: "calcExpectedHf",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "_creditManager",
         type: "address",
       },
@@ -679,9 +708,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "address",
+        internalType: "address[]",
         name: "addr",
-        type: "address",
+        type: "address[]",
       },
     ],
     name: "getTokenData",
@@ -704,9 +733,9 @@ const _abi = [
             type: "uint8",
           },
         ],
-        internalType: "struct DataTypes.TokenInfo",
+        internalType: "struct DataTypes.TokenInfo[]",
         name: "",
-        type: "tuple",
+        type: "tuple[]",
       },
     ],
     stateMutability: "view",

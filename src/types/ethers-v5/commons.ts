@@ -17,7 +17,6 @@ export type TypedListener<
   EventArgsObject
 > = (
   ...listenerArg: [
-    //@ts-ignore
     ...EventArgsArray,
     TypedEvent<EventArgsArray & EventArgsObject>
   ]
