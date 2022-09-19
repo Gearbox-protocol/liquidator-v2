@@ -1,6 +1,5 @@
 import { Container } from "typedi";
-
-import winston, { Logger as WinstonLogger } from "winston";
+import { Logger as TSLogger } from "tslog";
 
 export function Logger(label?: string): PropertyDecorator {
   return (target: any, propertyKey): any => {
@@ -8,9 +7,15 @@ export function Logger(label?: string): PropertyDecorator {
     Container.registerHandler({
       object: target,
       propertyName,
-      value: () => winston.child({ label: label ? `[${label}]` : "" }),
+      value: () =>
+        new TSLogger({
+          name: label,
+          displayFunctionName: false,
+          displayLoggerName: false,
+          displayFilePath: "hidden",
+        }),
     });
   };
 }
 
-export type LoggerInterface = WinstonLogger;
+export type LoggerInterface = TSLogger;

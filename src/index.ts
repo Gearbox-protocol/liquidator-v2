@@ -1,4 +1,6 @@
-import "reflect-metadata"
+#!/usr/bin/env node
+
+import "reflect-metadata";
 import { createApp } from "./app";
 import config from "./config";
 

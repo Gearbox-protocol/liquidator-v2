@@ -1,10 +1,16 @@
-import { IsEthereumAddress, IsNotEmpty, Min, validate } from "class-validator";
-import dotenv from "dotenv";
-
-export const SUSHISWAP_ADDRESS = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
-export const UNISWAP_V2_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+import {
+  IsEthereumAddress,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  validate,
+} from "class-validator";
+import dotenv, { config } from "dotenv";
 
 export class Config {
+  @IsNotEmpty()
+  static appName: string;
+
   static port: number;
 
   @IsNotEmpty()
@@ -18,10 +24,6 @@ export class Config {
   static privateKey: string;
 
   @IsNotEmpty()
-  @IsEthereumAddress()
-  static botAddress: string;
-
-  @IsNotEmpty()
   @Min(0.05)
   static slippage: number;
 
@@ -29,24 +31,49 @@ export class Config {
   static walletPassword: string;
 
   @IsNotEmpty()
-  static ampqUrl: string;
+  static keyPath: string;
+
+  static ampqUrl: string | undefined;
+  static ampqExchange: string | undefined;
+
+  @IsNotEmpty()
+  @IsNumber()
+  static hfThreshold: number;
+
+  @IsNotEmpty()
+  @Min(0)
+  static skipBlocks: number;
 
   @IsNotEmpty()
   @Min(1)
-  static skipBlocks: number;
+  static executorsQty: number;
+
+  @IsNotEmpty()
+  @Min(0)
+  static balanceToNotify: number;
+
+  @IsNotEmpty()
+  static optimisticLiquidations: boolean;
 
   static init() {
     dotenv.config({ path: "./.env.local" });
 
+    Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000");
     Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
     Config.privateKey = process.env.PRIVATE_KEY || "";
-    Config.botAddress = process.env.BOT_ADDRESS || "";
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
-    Config.ampqUrl = process.env.CLOUDAMQP_URL || "";
+    Config.hfThreshold = parseInt(process.env.HF_TRESHOLD || "9950");
+    Config.ampqUrl = process.env.CLOUDAMQP_URL;
+    Config.ampqExchange = process.env.AMPQ_EXCHANGE;
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0");
+    Config.keyPath = process.env.KEY_PATH || "keys/";
+    Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3");
+    Config.optimisticLiquidations =
+      process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
+    Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
   }
 
   static async validate(): Promise<void> {
