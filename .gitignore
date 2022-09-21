@@ -12,3 +12,7 @@ coverage*
 
 /.env.local
 /logs/*.json
+*.log
+*.tsbuildinfo
+.eslintcache
+.eslint.local.json

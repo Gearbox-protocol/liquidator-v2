@@ -1,7 +1,8 @@
-import config from "../config";
 import express from "express";
-import { Logger, LoggerInterface } from "../decorators/logger";
 import { Service } from "typedi";
+
+import config from "../config";
+import { Logger, LoggerInterface } from "../decorators/logger";
 
 @Service()
 export class HealthChecker {

@@ -1,16 +1,17 @@
 import {
   CreditAccountData,
+  getEtherscan,
   IAddressProvider__factory,
   ICreditFacade__factory,
   PathFinder,
+  PathFinderCloseResult,
   tokenSymbolByAddress,
   TxParser,
-  getEtherscan,
-  PathFinderCloseResult,
 } from "@gearbox-protocol/sdk";
 import { providers } from "ethers";
 import * as fs from "fs";
 import { Inject, Service } from "typedi";
+
 import config from "../config";
 import { OptimisticResult } from "../core/optimistic";
 import { Logger, LoggerInterface } from "../decorators/logger";
@@ -50,8 +51,6 @@ export class LiquidatorService {
     this.slippage = Math.floor(config.slippage * 100);
     this.provider = new providers.JsonRpcProvider(config.ethProviderRpc);
 
-    const { chainId } = await this.provider.getNetwork();
-
     const startBlock = await this.provider.getBlockNumber();
 
     this.etherscan = getEtherscan(5);
@@ -60,7 +59,7 @@ export class LiquidatorService {
 
     const addressProvider = IAddressProvider__factory.connect(
       config.addressProvider,
-      this.provider
+      this.provider,
     );
     try {
       const [dataCompressor, priceOracle, pathFinder] = await Promise.all([
@@ -83,7 +82,7 @@ export class LiquidatorService {
         dataCompressor,
         priceOracle,
         this.provider,
-        this
+        this,
       );
     } catch (e) {
       this.ampqService.error(`Error occurred at launch process\n${e}`);
@@ -93,69 +92,64 @@ export class LiquidatorService {
       console.log(this.optimistic);
       fs.writeFileSync(
         this.getJSONName(startBlock),
-        JSON.stringify(this.optimistic)
+        JSON.stringify(this.optimistic),
       );
     }
   }
 
   async liquidate(ca: CreditAccountData, creditFacade: string) {
-    return new Promise<void>(async (resolve) => {
-      this.ampqService.info(
-        `Start liquidation for borrower ${this.getAccountTitle(ca)}`
+    this.ampqService.info(
+      `Start liquidation for borrower ${this.getAccountTitle(ca)}`,
+    );
+
+    const pfResult = await this.findClosePath(ca);
+
+    if (!pfResult) {
+      return;
+    }
+
+    const pathHuman = TxParser.parseMultiCall(pfResult.calls);
+    this.log.debug(pathHuman);
+
+    try {
+      const executor = this.keyService.takeVacantExecutor();
+      const tx = await ICreditFacade__factory.connect(
+        creditFacade,
+        executor,
+      ).liquidateCreditAccount(
+        ca.borrower,
+        this.keyService.address,
+        0,
+        true,
+        pfResult.calls,
       );
 
-      const pfResult = await this.findClosePath(ca);
+      const receipt = await tx.wait(1);
 
-      if (!pfResult) {
-        resolve();
-        return;
-      }
+      this.ampqService.info(
+        `Account for borrower ${this.getAccountTitle(
+          ca,
+        )} was successfully liquidated\nTx receipt: ${this.etherscan}/tx/${
+          tx.hash
+        }\nGas used: ${receipt.gasUsed
+          .toNumber()
+          .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
+      );
 
-      const pathHuman = TxParser.parseMultiCall(pfResult.calls);
-      this.log.debug(pathHuman);
-
-      try {
-        const executor = this.keyService.takeVacantExecutor();
-        const tx = await ICreditFacade__factory.connect(
-          creditFacade,
-          executor
-        ).liquidateCreditAccount(
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
-          pfResult.calls
-        );
-
-        resolve();
-
-        const receipt = await tx.wait(1);
-
-        this.ampqService.info(
-          `Account for borrower ${this.getAccountTitle(
-            ca
-          )} was successfully liquidated\nTx receipt: ${this.etherscan}/tx/${
-            tx.hash
-          }\nGas used: ${receipt.gasUsed
-            .toNumber()
-            .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`
-        );
-
-        await this.keyService.returnExecutor(executor.address);
-      } catch (e) {
-        this.ampqService.error(
-          `Cant liquidate ${this.getAccountTitle(
-            ca
-          )}\nPath using:${pathHuman}\n${e}`
-        );
-      }
-    });
+      await this.keyService.returnExecutor(executor.address);
+    } catch (e) {
+      this.ampqService.error(
+        `Cant liquidate ${this.getAccountTitle(
+          ca,
+        )}\nPath using:${pathHuman}\n${e}`,
+      );
+    }
   }
 
   async liquidateOptimistic(ca: CreditAccountData, creditFacade: string) {
     const snapshotId = await (this.provider as providers.JsonRpcProvider).send(
       "evm_snapshot",
-      []
+      [],
     );
 
     const optimisticResult: OptimisticResult = {
@@ -180,13 +174,13 @@ export class LiquidatorService {
 
       const tx = await ICreditFacade__factory.connect(
         creditFacade,
-        this.keyService.signer
+        this.keyService.signer,
       ).liquidateCreditAccount(
         ca.borrower,
         this.keyService.address,
         0,
         true,
-        pfResult.calls
+        pfResult.calls,
       );
       this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
@@ -198,8 +192,10 @@ export class LiquidatorService {
       optimisticResult.isError = true;
       this.ampqService.error(
         `Cant liquidate ${this.getAccountTitle(
-          ca
-        )}\nPath using:${TxParser.parseMultiCall(optimisticResult.calls)}\n${e}`
+          ca,
+        )}\nPath using:${TxParser.parseMultiCall(
+          optimisticResult.calls,
+        )}\n${e}`,
       );
     }
 
@@ -221,13 +217,15 @@ export class LiquidatorService {
   }
 
   protected async findClosePath(
-    ca: CreditAccountData
+    ca: CreditAccountData,
   ): Promise<PathFinderCloseResult | undefined> {
     try {
       return await this.pathFinder.findBestClosePath(ca, this.slippage);
     } catch (e) {
       this.ampqService.error(
-        `Cant find path for closing account:\n${this.getAccountTitle(ca)}\n${e}`
+        `Cant find path for closing account:\n${this.getAccountTitle(
+          ca,
+        )}\n${e}`,
       );
     }
   }
