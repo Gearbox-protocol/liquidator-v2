@@ -9,6 +9,7 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
+import axios from "axios";
 import { BigNumber, providers } from "ethers";
 import * as fs from "fs";
 import { Inject, Service } from "typedi";
@@ -90,11 +91,19 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
-      console.log(this.optimistic);
-      fs.writeFileSync(
-        this.getJSONName(startBlock),
-        JSON.stringify(this.optimistic),
-      );
+      const output = { startBlock, result: this.optimistic };
+      console.log(output);
+      if (config.outDir) {
+        fs.writeFileSync(this.getJSONName(startBlock), JSON.stringify(output));
+      }
+      if (config.outEndpoint) {
+        await axios.post(config.outEndpoint, output, {
+          headers: {
+            ...JSON.parse(config.outHeaders),
+            "content-type": "application/json",
+          },
+        });
+      }
       process.exit(0);
     }
   }
@@ -225,7 +234,7 @@ export class LiquidatorService {
   }
 
   protected getJSONName(block: number): string {
-    return `logs/${Math.floor(block / 1000) * 1000}-tl.json`;
+    return `${config.outDir}/${Math.floor(block / 1000) * 1000}-tl.json`;
   }
 
   protected getAccountTitle(ca: CreditAccountData): string {

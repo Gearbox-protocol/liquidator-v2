@@ -2,6 +2,8 @@ import {
   IsEthereumAddress,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
+  IsUrl,
   Min,
   validate,
 } from "class-validator";
@@ -55,6 +57,22 @@ export class Config {
   @IsNotEmpty()
   static optimisticLiquidations: boolean;
 
+  /**
+   * Directory to output logs, leave empty if you don't need file output
+   */
+  static outDir: string | undefined;
+
+  @IsOptional()
+  @IsUrl()
+  /**
+   * Endpoint to send POST-request with output.
+   */
+  static outEndpoint: string | undefined;
+  /**
+   * HTTP headers to send with POST request. Serialized as JSON: `{"header1": "value1", "header2": "value2"}`
+   */
+  static outHeaders: string;
+
   static init() {
     dotenv.config({ path: "./.env.local" });
 
@@ -74,6 +92,9 @@ export class Config {
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.outDir = process.env.OUT_DIR;
+    Config.outEndpoint = process.env.OUT_ENDPOINT;
+    Config.outHeaders = process.env.OUT_HEADERS || "{}";
   }
 
   static async validate(): Promise<void> {
