@@ -59,18 +59,18 @@ export class Config {
     dotenv.config({ path: "./.env.local" });
 
     Config.appName = process.env.APP_NAME || "Terminator2";
-    Config.port = parseInt(process.env.PORT || "4000");
+    Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
-    Config.hfThreshold = parseInt(process.env.HF_TRESHOLD || "9950");
+    Config.hfThreshold = parseInt(process.env.HF_TRESHOLD || "9950", 10);
     Config.ampqUrl = process.env.CLOUDAMQP_URL;
     Config.ampqExchange = process.env.AMPQ_EXCHANGE;
-    Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0");
+    Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
     Config.keyPath = process.env.KEY_PATH || "keys/";
-    Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3");
+    Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");

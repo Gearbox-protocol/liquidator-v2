@@ -1,6 +1,7 @@
 import { GOERLI_NETWORK, MAINNET_NETWORK } from "@gearbox-protocol/sdk";
 import * as Amqp from "amqp-ts";
 import { Service } from "typedi";
+
 import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 
@@ -59,7 +60,7 @@ export class AMPQService {
       }
 
       const msg = new Amqp.Message(
-        `[${this.routingKey}]${config.appName}:${text}`
+        `[${this.routingKey}]${config.appName}:${text}`,
       );
 
       this.sentMessages[text] = Date.now() / 1000;

@@ -12,3 +12,5 @@ coverage*
 
 /.env.local
 /logs/*.json
+*.log
+*.tsbuildinfo

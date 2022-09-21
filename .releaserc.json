@@ -1,0 +1,18 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    [
+      "@codedependant/semantic-release-docker",
+      {
+        "dockerTags": ["latest", "{{version}}", "{{major}}"],
+        "dockerImage": "liquidator-v2",
+        "dockerRegistry": "ghcr.io",
+        "dockerProject": "gearbox-protocol",
+        "dockerLogin": false
+      }
+    ]
+  ]
+}
