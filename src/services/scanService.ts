@@ -4,7 +4,6 @@ import {
   CreditAccountWatcher,
   CreditManagerData,
   CreditManagerWatcher,
-  ICreditFacade__factory,
   IPoolService__factory,
   MCall,
   multicall,
@@ -82,6 +81,7 @@ export class ScanService {
     const reqs = Object.values(this.creditManagers).map(async cm =>
       CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
     );
+
     const accountsToUpdate: Array<Array<CreditAccountHash>> = await Promise.all(
       reqs,
     );

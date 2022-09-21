@@ -2,10 +2,12 @@ import {
   CreditAccountData,
   getEtherscan,
   IAddressProvider__factory,
-  ICreditFacade__factory, IERC20__factory, PathFinder,
+  ICreditFacade__factory,
+  IERC20__factory,
+  PathFinder,
   PathFinderCloseResult,
   tokenSymbolByAddress,
-  TxParser
+  TxParser,
 } from "@gearbox-protocol/sdk";
 import { BigNumber, providers } from "ethers";
 import * as fs from "fs";
@@ -93,6 +95,7 @@ export class LiquidatorService {
         this.getJSONName(startBlock),
         JSON.stringify(this.optimistic),
       );
+      process.exit(0);
     }
   }
 
@@ -177,7 +180,7 @@ export class LiquidatorService {
       const getExecutorBalance = async (): Promise<BigNumber> =>
         await IERC20__factory.connect(
           ca.underlyingToken,
-          this.keyService.signer
+          this.keyService.signer,
         ).balanceOf(this.keyService.address);
 
       const balanceBefore = await getExecutorBalance();
