@@ -1,5 +1,5 @@
-import { Container } from "typedi";
 import { Logger as TSLogger } from "tslog";
+import { Container } from "typedi";
 
 export function Logger(label?: string): PropertyDecorator {
   return (target: any, propertyKey): any => {

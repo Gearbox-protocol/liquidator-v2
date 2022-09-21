@@ -1,45 +1,67 @@
 {
-  "name": "liquidation-bot",
+  "name": "@gearbox-protocol/liquidator-v2",
   "description": "Gearbox liquidation bot",
   "version": "1.0.0",
   "license": "MIT",
+  "private": true,
   "bin": {
     "tsliq": "./lib/index.js"
-  },
-  "devDependencies": {
-    "@types/chai": "^4.2.14",
-    "@types/mocha": "^8.0.3",
-    "@types/node": "^14.14.6",
-    "chai": "^4.2.0",
-    "mocha": "^10.0.0",
-    "nodemon": "^2.0.12",
-    "prettier": "^2.3.2",
-    "ts-node": "^9.0.0",
-    "typescript": "^4.3.5"
   },
   "scripts": {
     "build": "tsc",
     "start": "forever --minUptime 10000 --spinSleepTime 1000 -c 'node -r dotenv/config' ./build/index.js",
-    "dev": "export NODE_ENV=development && nodemon"
+    "dev": "export NODE_ENV=development && nodemon",
+    "prepare": "husky install",
+    "prettier": "prettier --write .",
+    "prettier:ci": "npx prettier --check .",
+    "lint": "eslint \"**/*.ts\" --fix",
+    "lint:ci": "eslint \"**/*.ts\"",
+    "typecheck:ci": "tsc --noEmit"
   },
   "dependencies": {
     "@gearbox-protocol/sdk": "^1.7.12",
     "@types/commander": "^2.12.2",
-    "@types/express": "^4.17.13",
+    "@types/express": "^4.17.14",
     "amqp-ts": "^1.8.0",
-    "async-mutex": "^0.3.1",
+    "async-mutex": "^0.4.0",
     "axios": "^0.27.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
+    "dotenv": "^16.0.2",
     "ethers": "^5.7.1",
-    "express": "^4.17.1",
-    "forever": "^4.0.1",
+    "express": "^4.18.1",
+    "forever": "^4.0.3",
     "lodash": "^4.17.21",
     "reflect-metadata": "^0.1.13",
-    "tslib": "^2.3.0",
-    "tslog": "^3.1.1",
+    "tslib": "^2.4.0",
+    "tslog": "^3.3.4",
     "typedi": "^0.10.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
+    "@gearbox-protocol/eslint-config": "^1.5.7",
+    "@gearbox-protocol/prettier-config": "^1.5.0",
+    "@types/chai": "^4.3.3",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^18.7.18",
+    "chai": "^4.3.6",
+    "eslint": "^8.23.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
+    "mocha": "^10.0.0",
+    "nodemon": "^2.0.20",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.3"
+  },
+  "prettier": "@gearbox-protocol/prettier-config",
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": "prettier --write"
   }
 }

@@ -3,6 +3,7 @@ import { Mutex } from "async-mutex";
 import { BigNumber, ContractTransaction, providers, Wallet } from "ethers";
 import fs from "fs";
 import { Inject, Service } from "typedi";
+
 import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
@@ -37,7 +38,7 @@ export class KeyService {
     this.provider = provider;
     this.signer = new Wallet(config.privateKey, this.provider);
     this.minBalanceToNotify = WAD.mul(
-      Math.floor(config.balanceToNotify * 1000)
+      Math.floor(config.balanceToNotify * 1000),
     ).div(10000);
 
     await this.checkBalance();
@@ -53,7 +54,7 @@ export class KeyService {
    * @returns Quantity of job-free executors
    */
   vacantQty(): number {
-    return Object.values(this._isUsed).filter((r) => !r).length;
+    return Object.values(this._isUsed).filter(r => !r).length;
   }
 
   /**
@@ -107,7 +108,7 @@ export class KeyService {
    * Gets all executors addresses
    */
   getExecutorAddress(): Array<string> {
-    return this._executors.map((e) => e.address);
+    return this._executors.map(e => e.address);
   }
 
   protected async _recoverFromFS() {
@@ -122,7 +123,7 @@ export class KeyService {
       }
     } catch (e) {
       this.ampqService.error(
-        `Cant create directory ${config.keyPath} to store keys`
+        `Cant create directory ${config.keyPath} to store keys`,
       );
     }
 
@@ -147,7 +148,7 @@ export class KeyService {
         const encryptedWallet = await fs.promises.readFile(fileName);
         return await Wallet.fromEncryptedJson(
           encryptedWallet.toString(),
-          config.walletPassword
+          config.walletPassword,
         );
       } catch (e) {
         this.ampqService.error(`Cant get key from file: ${fileName} ${e}`);
@@ -164,11 +165,11 @@ export class KeyService {
   protected async checkBalance() {
     const balance = await this.signer.getBalance();
     this.log.info(
-      `Wallet balance for ${this.signer.address} is: ${balance.toString()}`
+      `Wallet balance for ${this.signer.address} is: ${balance.toString()}`,
     );
     if (balance.lte(this.minBalanceToNotify)) {
       this.ampqService.error(
-        `WARNING: Low wallet balance: ${formatBN(balance, 18)}`
+        `WARNING: Low wallet balance: ${formatBN(balance, 18)}`,
       );
     }
   }
