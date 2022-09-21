@@ -362,10 +362,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gearbox-protocol/sdk@^1.7.4":
-  version "1.7.4"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-1.7.4.tgz#e78ccdfaffd7ce8fd2398b0fac4d4a15efb1f429"
-  integrity sha512-KI5W2UVEZkDDM8bBI0NfqJSJhn6S4zRoNV1JXzahQAVZwjBjwqmw0fR8zE2qJCQdQFIpcdw89NuEqbpLdhxa3A==
+"@gearbox-protocol/sdk@^1.7.12":
+  version "1.7.12"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-1.7.12.tgz#ae12ce9087efb4635670835db82e6cb57e2a76d4"
+  integrity sha512-XlJNCtB3XojuZXqgShYefjT5FV5MAVrrfZOVuBTKpiEsUpjQu1QVsiwJln2atR0Ex6rd1TbFW41AL1iSs7jMuw==
   dependencies:
     "@types/deep-eql" "^4.0.0"
     decimal.js-light "^2.5.1"

@@ -5,5 +5,7 @@ export interface OptimisticResult {
   borrower: string;
   gasUsed: number;
   calls: Array<MultiCall>;
+  pathAmount: string;
+  remainingFunds: string;
   isError: boolean;
 }

@@ -7,8 +7,9 @@ import {
   TxParser,
   getEtherscan,
   PathFinderCloseResult,
+  IERC20__factory,
 } from "@gearbox-protocol/sdk";
-import { providers } from "ethers";
+import { BigNumber, providers } from "ethers";
 import * as fs from "fs";
 import { Inject, Service } from "typedi";
 import config from "../config";
@@ -164,6 +165,8 @@ export class LiquidatorService {
       gasUsed: 0,
       calls: [],
       isError: false,
+      pathAmount: "0",
+      remainingFunds: "0",
     };
 
     try {
@@ -174,9 +177,18 @@ export class LiquidatorService {
       }
 
       optimisticResult.calls = pfResult.calls;
+      optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
       const pathHuman = TxParser.parseMultiCall(pfResult.calls);
       this.log.debug(pathHuman);
+
+      const getExecutorBalance = async (): Promise<BigNumber> =>
+        await IERC20__factory.connect(
+          ca.underlyingToken,
+          this.keyService.signer
+        ).balanceOf(this.keyService.address);
+
+      const balanceBefore = await getExecutorBalance();
 
       const tx = await ICreditFacade__factory.connect(
         creditFacade,
@@ -191,6 +203,11 @@ export class LiquidatorService {
       this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
       const receipt = await tx.wait(1);
+
+      const balanceAfter = await getExecutorBalance();
+      optimisticResult.remainingFunds = balanceAfter
+        .sub(balanceBefore)
+        .toString();
 
       optimisticResult.gasUsed = receipt.gasUsed.toNumber();
       this.log.debug(`Gas used: ${receipt.gasUsed}`);
