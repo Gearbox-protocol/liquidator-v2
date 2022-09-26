@@ -32,8 +32,14 @@ export class Config {
   @IsNotEmpty()
   static walletPassword: string;
 
-  @IsNotEmpty()
-  static keyPath: string;
+  /**
+   * Directory with wallet keys
+   */
+  static keyPath: string | undefined;
+  /**
+   * AWS Secrets Manager secret id for wallet keys
+   */
+  static keySecret: string | undefined;
 
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
@@ -102,7 +108,8 @@ export class Config {
     Config.ampqUrl = process.env.CLOUDAMQP_URL;
     Config.ampqExchange = process.env.AMPQ_EXCHANGE;
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
-    Config.keyPath = process.env.KEY_PATH || "keys/";
+    Config.keyPath = process.env.KEY_PATH;
+    Config.keySecret = process.env.KEY_SECRET;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
