@@ -8,6 +8,7 @@
     "tsliq": "./lib/index.js"
   },
   "scripts": {
+    "clean": "rm -rf build",
     "build": "tsc",
     "start": "forever --minUptime 10000 --spinSleepTime 1000 -c 'node -r dotenv/config' ./build/index.js",
     "dev": "export NODE_ENV=development && nodemon",
