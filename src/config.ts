@@ -7,7 +7,7 @@ import {
   Min,
   validate,
 } from "class-validator";
-import dotenv, { config } from "dotenv";
+import dotenv from "dotenv";
 
 export class Config {
   @IsNotEmpty()
@@ -73,6 +73,21 @@ export class Config {
    */
   static outHeaders: string;
 
+  /**
+   * S3 bucket to upload result to
+   */
+  static outS3Bucket: string | undefined;
+  /**
+   * s3 path prefix
+   */
+  static outS3Prefix: string;
+
+  /**
+   * Output suffix to distinguish outputs of different liquidators
+   */
+  @IsNotEmpty()
+  static outSuffix: string;
+
   static init() {
     dotenv.config({ path: "./.env.local" });
 
@@ -92,9 +107,13 @@ export class Config {
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
     Config.outHeaders = process.env.OUT_HEADERS || "{}";
+    Config.outSuffix = process.env.OUT_SUFFIX || "ts";
+    Config.outS3Bucket = process.env.OUT_S3_BUCKET;
+    Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
   }
 
   static async validate(): Promise<void> {

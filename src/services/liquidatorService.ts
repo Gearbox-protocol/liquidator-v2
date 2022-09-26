@@ -9,9 +9,7 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import axios from "axios";
 import { BigNumber, providers } from "ethers";
-import * as fs from "fs";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -20,6 +18,7 @@ import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
 import { HealthChecker } from "./healthChecker";
 import { KeyService } from "./keyService";
+import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
 import { ScanService } from "./scanService";
 
 @Service()
@@ -38,6 +37,9 @@ export class LiquidatorService {
 
   @Inject()
   heathChecker: HealthChecker;
+
+  @Inject(OUTPUT_WRITER)
+  outputWriter: IOptimisticOutputWriter;
 
   protected provider: providers.Provider;
   protected pathFinder: PathFinder;
@@ -91,19 +93,7 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
-      const output = { startBlock, result: this.optimistic };
-      console.log(output);
-      if (config.outDir) {
-        fs.writeFileSync(this.getJSONName(startBlock), JSON.stringify(output));
-      }
-      if (config.outEndpoint) {
-        await axios.post(config.outEndpoint, output, {
-          headers: {
-            ...JSON.parse(config.outHeaders),
-            "content-type": "application/json",
-          },
-        });
-      }
+      await this.outputWriter.write(startBlock, this.optimistic);
       process.exit(0);
     }
   }
@@ -231,10 +221,6 @@ export class LiquidatorService {
     await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
       snapshotId,
     ]);
-  }
-
-  protected getJSONName(block: number): string {
-    return `${config.outDir}/${Math.floor(block / 1000) * 1000}-tl.json`;
   }
 
   protected getAccountTitle(ca: CreditAccountData): string {
