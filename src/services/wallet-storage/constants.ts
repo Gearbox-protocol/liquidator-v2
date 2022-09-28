@@ -1,0 +1,1 @@
+export const WALLET_STORAGE = "WALLET_STORAGE";

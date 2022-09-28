@@ -7,7 +7,7 @@ import {
   Min,
   validate,
 } from "class-validator";
-import dotenv, { config } from "dotenv";
+import dotenv from "dotenv";
 
 export class Config {
   @IsNotEmpty()
@@ -32,8 +32,14 @@ export class Config {
   @IsNotEmpty()
   static walletPassword: string;
 
-  @IsNotEmpty()
-  static keyPath: string;
+  /**
+   * Directory with wallet keys
+   */
+  static keyPath: string | undefined;
+  /**
+   * AWS Secrets Manager secret id for wallet keys
+   */
+  static keySecret: string | undefined;
 
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
@@ -73,6 +79,21 @@ export class Config {
    */
   static outHeaders: string;
 
+  /**
+   * S3 bucket to upload result to
+   */
+  static outS3Bucket: string | undefined;
+  /**
+   * s3 path prefix
+   */
+  static outS3Prefix: string;
+
+  /**
+   * Output suffix to distinguish outputs of different liquidators
+   */
+  @IsNotEmpty()
+  static outSuffix: string;
+
   static init() {
     dotenv.config({ path: "./.env.local" });
 
@@ -87,14 +108,19 @@ export class Config {
     Config.ampqUrl = process.env.CLOUDAMQP_URL;
     Config.ampqExchange = process.env.AMPQ_EXCHANGE;
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
-    Config.keyPath = process.env.KEY_PATH || "keys/";
+    Config.keyPath = process.env.KEY_PATH;
+    Config.keySecret = process.env.KEY_SECRET;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
     Config.outHeaders = process.env.OUT_HEADERS || "{}";
+    Config.outSuffix = process.env.OUT_SUFFIX || "ts";
+    Config.outS3Bucket = process.env.OUT_S3_BUCKET;
+    Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
   }
 
   static async validate(): Promise<void> {

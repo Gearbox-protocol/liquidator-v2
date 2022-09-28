@@ -1,12 +1,12 @@
 import { formatBN, WAD } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
-import { BigNumber, ContractTransaction, providers, Wallet } from "ethers";
-import fs from "fs";
+import { BigNumber, providers, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
+import { IWalletStorage, WALLET_STORAGE } from "./wallet-storage";
 
 @Service()
 export class KeyService {
@@ -15,6 +15,9 @@ export class KeyService {
 
   @Inject()
   ampqService: AMPQService;
+
+  @Inject(WALLET_STORAGE)
+  storage: IWalletStorage;
 
   static readonly minExecutorBalance = WAD.div(2);
 
@@ -42,9 +45,8 @@ export class KeyService {
     ).div(10000);
 
     await this.checkBalance();
-
-    // Gets wallets from disk or creates new ones
-    await this._recoverFromFS();
+    await this.storage.launch();
+    await this._recoverWallets();
     for (let ex of this._executors) {
       await this.returnExecutor(ex.address);
     }
@@ -111,55 +113,15 @@ export class KeyService {
     return this._executors.map(e => e.address);
   }
 
-  protected async _recoverFromFS() {
+  protected async _recoverWallets() {
     if (this._executors.length > 0)
       throw new Error("Executors are already exists");
 
-    const keyExists = fs.existsSync(config.keyPath);
-
-    try {
-      if (!keyExists) {
-        fs.mkdirSync(config.keyPath);
-      }
-    } catch (e) {
-      this.ampqService.error(
-        `Cant create directory ${config.keyPath} to store keys`,
-      );
-    }
-
     for (let i = 0; i < config.executorsQty; i++) {
-      const walletKey = await this._getOrCreateKey(i);
+      const walletKey = await this.storage.getOrCreateKey(i);
       const wallet = walletKey.connect(this.provider);
-
       this._executors.push(wallet);
     }
-  }
-
-  /**
-   * Gets wallet from disc or creates it if not exists with provided password
-   * @param num Stored key on disk
-   * @return promise to wallet
-   */
-  protected async _getOrCreateKey(num: number): Promise<Wallet> {
-    const fileName = `${config.keyPath}${num}.json`;
-    const keyExists = fs.existsSync(fileName);
-    if (keyExists) {
-      try {
-        const encryptedWallet = await fs.promises.readFile(fileName);
-        return await Wallet.fromEncryptedJson(
-          encryptedWallet.toString(),
-          config.walletPassword,
-        );
-      } catch (e) {
-        this.ampqService.error(`Cant get key from file: ${fileName} ${e}`);
-        process.exit(1);
-      }
-    }
-
-    const newWallet = Wallet.createRandom();
-    const encryptedWallet = await newWallet.encrypt(config.walletPassword);
-    await fs.promises.writeFile(fileName, encryptedWallet);
-    return newWallet;
   }
 
   protected async checkBalance() {
