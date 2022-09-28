@@ -160,7 +160,7 @@ export class LiquidatorService {
       calls: [],
       isError: false,
       pathAmount: "0",
-      remainingFunds: "0",
+      liquidatorPremium: "0",
     };
 
     try {
@@ -199,7 +199,7 @@ export class LiquidatorService {
       const receipt = await tx.wait(1);
 
       const balanceAfter = await getExecutorBalance();
-      optimisticResult.remainingFunds = balanceAfter
+      optimisticResult.liquidatorPremium = balanceAfter
         .sub(balanceBefore)
         .toString();
 
