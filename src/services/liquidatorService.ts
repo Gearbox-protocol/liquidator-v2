@@ -1,11 +1,13 @@
 import {
   CreditAccountData,
+  detectNetwork,
   getEtherscan,
   IAddressProvider__factory,
   ICreditFacade__factory,
   IERC20__factory,
   PathFinder,
   PathFinderCloseResult,
+  tokenDataByNetwork,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
@@ -72,7 +74,8 @@ export class LiquidatorService {
         addressProvider.getLeveragedActions(),
       ]);
 
-      this.pathFinder = new PathFinder(pathFinder, this.provider);
+      const network = await detectNetwork(this.provider);
+      this.pathFinder = new PathFinder(pathFinder, this.provider, network);
 
       if (config.optimisticLiquidations) {
         this.log.warn("Running in OPTIMISTIC LIQUIDATION mode");
@@ -233,12 +236,23 @@ export class LiquidatorService {
     ca: CreditAccountData,
   ): Promise<PathFinderCloseResult | undefined> {
     try {
+      // const r = await this.pathFinder.pathFinder.callStatic.findBestClosePath(
+      //   ca.addr,
+      //   [tokenDataByNetwork.Goerli.USDC, tokenDataByNetwork.Goerli.WETH],
+      //   50,
+      //   [],
+      //   1,
+      //   false,
+      // );
+
+      // console.log(r);
+      // return undefined;
       return await this.pathFinder.findBestClosePath(ca, this.slippage);
     } catch (e) {
       this.ampqService.error(
         `Cant find path for closing account:\n${this.getAccountTitle(
           ca,
-        )}\n${e}`,
+        )}\nslippage:${this.slippage}\n${ca.addr}\n${e}`,
       );
     }
   }
