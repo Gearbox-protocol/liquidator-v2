@@ -7,7 +7,6 @@ import {
   IERC20__factory,
   PathFinder,
   PathFinderCloseResult,
-  tokenDataByNetwork,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
@@ -167,7 +166,7 @@ export class LiquidatorService {
     };
 
     try {
-      this.log.debug("Searching path...");
+      this.log.debug(`Searching path for ${ca.hash()}...`);
       const pfResult = await this.findClosePath(ca);
 
       if (!pfResult) {
@@ -180,13 +179,28 @@ export class LiquidatorService {
       const pathHuman = TxParser.parseMultiCall(pfResult.calls);
       this.log.debug(pathHuman);
 
-      const getExecutorBalance = async (): Promise<BigNumber> =>
-        await IERC20__factory.connect(
-          ca.underlyingToken,
-          this.keyService.signer,
-        ).balanceOf(this.keyService.address);
-
+      const getExecutorBalance = async (): Promise<BigNumber> => {
+        return tokenSymbolByAddress[ca.underlyingToken] === "WETH"
+          ? await this.provider.getBalance(this.keyService.address)
+          : await IERC20__factory.connect(
+              ca.underlyingToken,
+              this.keyService.signer,
+            ).balanceOf(this.keyService.address);
+      };
       const balanceBefore = await getExecutorBalance();
+
+      // const ptx = await ICreditFacade__factory.connect(
+      //   creditFacade,
+      //   this.keyService.signer,
+      // ).populateTransaction.liquidateCreditAccount(
+      //   ca.borrower,
+      //   this.keyService.address,
+      //   0,
+      //   true,
+      //   pfResult.calls,
+      // );
+
+      // console.log(ptx);
 
       const tx = await ICreditFacade__factory.connect(
         creditFacade,
@@ -205,6 +219,7 @@ export class LiquidatorService {
       const receipt = await tx.wait();
 
       const balanceAfter = await getExecutorBalance();
+
       optimisticResult.liquidatorPremium = balanceAfter
         .sub(balanceBefore)
         .toString();
