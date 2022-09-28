@@ -167,6 +167,7 @@ export class LiquidatorService {
     };
 
     try {
+      this.log.debug("Searching path...");
       const pfResult = await this.findClosePath(ca);
 
       if (!pfResult) {
@@ -199,7 +200,9 @@ export class LiquidatorService {
       );
       this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
-      const receipt = await tx.wait(1);
+      await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
+
+      const receipt = await tx.wait();
 
       const balanceAfter = await getExecutorBalance();
       optimisticResult.liquidatorPremium = balanceAfter
@@ -236,17 +239,6 @@ export class LiquidatorService {
     ca: CreditAccountData,
   ): Promise<PathFinderCloseResult | undefined> {
     try {
-      // const r = await this.pathFinder.pathFinder.callStatic.findBestClosePath(
-      //   ca.addr,
-      //   [tokenDataByNetwork.Goerli.USDC, tokenDataByNetwork.Goerli.WETH],
-      //   50,
-      //   [],
-      //   1,
-      //   false,
-      // );
-
-      // console.log(r);
-      // return undefined;
       return await this.pathFinder.findBestClosePath(ca, this.slippage);
     } catch (e) {
       this.ampqService.error(
