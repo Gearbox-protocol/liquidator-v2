@@ -46,9 +46,12 @@ export class KeyService {
 
     await this.checkBalance();
     await this.storage.launch();
-    await this._recoverWallets();
-    for (let ex of this._executors) {
-      await this.returnExecutor(ex.address);
+
+    if (!config.optimisticLiquidations) {
+      await this._recoverWallets();
+      for (let ex of this._executors) {
+        await this.returnExecutor(ex.address);
+      }
     }
   }
 
