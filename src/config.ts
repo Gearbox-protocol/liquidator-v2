@@ -22,6 +22,13 @@ export class Config {
   @IsNotEmpty()
   static ethProviderRpc: string;
 
+  /**
+   * JSONRPC calls timeout
+   * With freshly started fork first requests often fail with default ethers.js timeout of 120 seconds.
+   * In this case, increase this timeout
+   */
+  static ethProviderTimeout: number | undefined;
+
   @IsNotEmpty()
   static privateKey: string;
 
@@ -101,6 +108,9 @@ export class Config {
     Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
+    Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
+      ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
+      : undefined;
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
