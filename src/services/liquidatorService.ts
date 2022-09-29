@@ -74,7 +74,11 @@ export class LiquidatorService {
       ]);
 
       const network = await detectNetwork(this.provider);
-      this.pathFinder = new PathFinder(pathFinder, this.provider, network);
+      this.pathFinder = new PathFinder(pathFinder, this.provider, network, [
+        "WETH",
+        "DAI",
+        "USDC",
+      ]);
 
       if (config.optimisticLiquidations) {
         this.log.warn("Running in OPTIMISTIC LIQUIDATION mode");
