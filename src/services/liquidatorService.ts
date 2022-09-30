@@ -54,7 +54,10 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = new providers.JsonRpcProvider(config.ethProviderRpc);
+    this.provider = new providers.JsonRpcProvider({
+      url: config.ethProviderRpc,
+      timeout: config.ethProviderTimeout,
+    });
 
     const startBlock = await this.provider.getBlockNumber();
 
