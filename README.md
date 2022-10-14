@@ -42,7 +42,7 @@ Use environment variables to configure bot
 
 ## How to launch
 
-The liquidator is distributed as docker image: `https://github.com/Gearbox-protocol/liquidator-v2/pkgs/container/liquidator-v2`.
+The liquidator is distributed as [docker image](https://github.com/Gearbox-protocol/liquidator-v2/pkgs/container/liquidator-v2)
 
 For example, write your config into `.env` file and then run:
 
