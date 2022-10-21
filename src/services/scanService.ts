@@ -8,7 +8,7 @@ import {
   MCall,
   multicall,
 } from "@gearbox-protocol/sdk";
-import { IPoolServiceInterface } from "@gearbox-protocol/sdk/lib/types/contracts/interfaces/IPoolService.sol/IPoolService";
+import { IPoolServiceInterface } from "@gearbox-protocol/sdk/lib/types/@gearbox-protocol/core-v2/contracts/interfaces/IPoolService.sol/IPoolService";
 import { BigNumber, BigNumberish, providers } from "ethers";
 import { Inject, Service } from "typedi";
 
@@ -190,7 +190,7 @@ export class ScanService {
         accounts,
         this.dataCompressor,
         this.provider,
-        atBlock,
+        { atBlock, chunkSize: config.multicallChunkSize },
       );
 
       data.forEach(ca => {

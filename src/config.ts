@@ -55,6 +55,9 @@ export class Config {
   @IsNumber()
   static hfThreshold: number;
 
+  @IsNumber()
+  static multicallChunkSize: number;
+
   @IsNotEmpty()
   @Min(0)
   static skipBlocks: number;
@@ -121,6 +124,10 @@ export class Config {
     Config.keyPath = process.env.KEY_PATH;
     Config.keySecret = process.env.KEY_SECRET;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
+    Config.multicallChunkSize = parseInt(
+      process.env.MULTICALL_CHUNK || "30",
+      10,
+    );
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
