@@ -50,6 +50,10 @@ export class Config {
 
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
+  /**
+   * If set, will only work with credit manager with this underlying token (symbol)
+   */
+  static creditManagerSymbol: string | undefined;
 
   @IsNotEmpty()
   @IsNumber()
@@ -123,6 +127,7 @@ export class Config {
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
     Config.keyPath = process.env.KEY_PATH;
     Config.keySecret = process.env.KEY_SECRET;
+    Config.creditManagerSymbol = process.env.CREDIT_MANAGER;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.multicallChunkSize = parseInt(
       process.env.MULTICALL_CHUNK || "30",
