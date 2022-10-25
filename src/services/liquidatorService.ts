@@ -171,6 +171,7 @@ export class LiquidatorService {
       pathAmount: "0",
       liquidatorPremium: "0",
     };
+    const start = Date.now();
 
     try {
       this.log.debug(`Searching path for ${ca.hash()}...`);
@@ -244,6 +245,7 @@ export class LiquidatorService {
       );
     }
 
+    optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
     await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
