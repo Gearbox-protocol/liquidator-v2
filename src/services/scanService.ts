@@ -92,6 +92,7 @@ export class ScanService {
         CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
       );
 
+    this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
     const accountsToUpdate: Array<Array<CreditAccountHash>> = await Promise.all(
       reqs,
     );
@@ -195,6 +196,7 @@ export class ScanService {
     accounts: Array<CreditAccountHash>,
     atBlock: number,
   ) {
+    this.log.info(`Getting data on ${accounts.length} accounts`);
     try {
       const data = await CreditAccountWatcher.batchCreditAccountLoad(
         accounts,
