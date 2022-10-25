@@ -84,7 +84,9 @@ export class LiquidatorService {
       ]);
 
       if (config.optimisticLiquidations) {
-        this.log.warn("Running in OPTIMISTIC LIQUIDATION mode");
+        this.log.warn(
+          `Running ${config.creditManagerSymbol} in OPTIMISTIC LIQUIDATION mode`,
+        );
       } else {
         this.heathChecker.launch();
         this.ampqService.info("Liquidation bot started");
