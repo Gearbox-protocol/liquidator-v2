@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import config from "../../config";
 import { OptimisticResult } from "../../core/optimistic";
+import getFilename from "./filename";
 import { IOptimisticOutputWriter } from "./types";
 
 export default class S3Writer implements IOptimisticOutputWriter {
@@ -10,10 +11,7 @@ export default class S3Writer implements IOptimisticOutputWriter {
     startBlock: number,
     result: OptimisticResult[],
   ): Promise<void> {
-    const key = join(
-      config.outS3Prefix ?? "",
-      `${startBlock}-${config.outSuffix.replaceAll("-", "")}.json`,
-    );
+    const key = join(config.outS3Prefix ?? "", getFilename(startBlock));
     const client = new S3Client({});
     try {
       await client.send(
