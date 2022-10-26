@@ -85,7 +85,7 @@ export class LiquidatorService {
 
       if (config.optimisticLiquidations) {
         this.log.warn(
-          `Running ${config.creditManagerSymbol} in OPTIMISTIC LIQUIDATION mode`,
+          `Running ${config.underlying} in OPTIMISTIC LIQUIDATION mode`,
         );
       } else {
         this.heathChecker.launch();
