@@ -48,11 +48,11 @@ export class AMPQService {
   }
 
   error(text: string) {
-    this.send(`[ERROR]:${text}`);
+    this.send(`[ERROR]:${text}`, true);
     this.log.error(text);
   }
 
-  protected send(text: string) {
+  protected send(text: string, important = false) {
     if (this.exchange && this.routingKey) {
       const lastTime = this.sentMessages[text];
       if (lastTime && lastTime < Date.now() / 1000 + AMPQService.delay) {
@@ -61,6 +61,11 @@ export class AMPQService {
 
       const msg = new Amqp.Message(
         `[${this.routingKey}]${config.appName}:${text}`,
+        {
+          appId: config.appName,
+          headers: { important },
+          persistent: important,
+        },
       );
 
       this.sentMessages[text] = Date.now() / 1000;
