@@ -3,7 +3,7 @@ export default function getFilename(startingBlock: number): string {
   return (
     [
       startingBlock,
-      config.creditManagerSymbol,
+      config.underlying?.toLowerCase(),
       config.outSuffix.replaceAll("-", ""),
     ]
       .filter(i => !!i)

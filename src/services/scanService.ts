@@ -84,8 +84,8 @@ export class ScanService {
         // If single CreditManager mode is on, use only this manager
         const symb = tokenSymbolByAddress[cm.underlyingToken];
         return (
-          !config.creditManagerSymbol ||
-          config.creditManagerSymbol.toLowerCase() === symb.toLowerCase()
+          !config.underlying ||
+          config.underlying.toLowerCase() === symb.toLowerCase()
         );
       })
       .map(async cm =>
