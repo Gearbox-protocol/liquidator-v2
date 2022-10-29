@@ -62,7 +62,7 @@ export class AMPQService {
       this.channel.publish(
         config.ampqExchange!,
         this.routingKey,
-        Buffer.from(`[${this.routingKey}]${config.appName}:${text}`),
+        Buffer.from(text),
         {
           appId: config.appName,
           headers: {

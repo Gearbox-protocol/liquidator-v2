@@ -60,10 +60,11 @@ export class LiquidatorService {
     });
 
     const startBlock = await this.provider.getBlockNumber();
+    const { chainId } = await this.provider.getNetwork();
 
-    this.etherscan = getEtherscan(5);
+    this.etherscan = getEtherscan(chainId);
 
-    await this.ampqService.launch(5);
+    await this.ampqService.launch(chainId);
 
     const addressProvider = IAddressProvider__factory.connect(
       config.addressProvider,
