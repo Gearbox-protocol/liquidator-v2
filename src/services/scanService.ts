@@ -4,8 +4,6 @@ import {
   CreditAccountWatcher,
   CreditManagerData,
   CreditManagerWatcher,
-  ICreditManagerV2__factory,
-  IDataCompressor__factory,
   IPoolService__factory,
   MCall,
   multicall,
