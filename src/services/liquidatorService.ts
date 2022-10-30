@@ -58,9 +58,11 @@ export class LiquidatorService {
 
     const startBlock = await this.provider.getBlockNumber();
 
-    this.etherscan = getEtherscan(5);
+    const { chainId } = await this.provider.getNetwork();
 
-    await this.ampqService.launch(5);
+    this.etherscan = getEtherscan(chainId);
+
+    await this.ampqService.launch(chainId);
 
     const addressProvider = IAddressProvider__factory.connect(
       config.addressProvider,
@@ -215,6 +217,7 @@ export class LiquidatorService {
         0,
         true,
         pfResult.calls,
+        { gasLimit: 29e6 },
       );
       this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 

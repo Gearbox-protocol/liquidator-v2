@@ -7,7 +7,7 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { PriceOracleData } from "@gearbox-protocol/sdk/lib/core/priceOracle";
-import { IPriceOracleV2Interface } from "@gearbox-protocol/sdk/lib/types/contracts/interfaces/IPriceOracle.sol/IPriceOracleV2";
+import { IPriceOracleV2Interface } from "@gearbox-protocol/sdk/lib/types/@gearbox-protocol/core-v2/contracts/interfaces/IPriceOracle.sol/IPriceOracleV2";
 import { BigNumberish, providers, Signer } from "ethers";
 import { Inject, Service } from "typedi";
 
