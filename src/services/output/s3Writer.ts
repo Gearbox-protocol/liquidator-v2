@@ -1,7 +1,9 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { join } from "node:path";
 
 import config from "../../config";
 import { OptimisticResult } from "../../core/optimistic";
+import getFilename from "./filename";
 import { IOptimisticOutputWriter } from "./types";
 
 export default class S3Writer implements IOptimisticOutputWriter {
@@ -9,9 +11,7 @@ export default class S3Writer implements IOptimisticOutputWriter {
     startBlock: number,
     result: OptimisticResult[],
   ): Promise<void> {
-    const key = `${config.outS3Prefix}/${
-      Math.floor(startBlock / 1000) * 1000
-    }-${config.outSuffix}.json`;
+    const key = join(config.outS3Prefix ?? "", getFilename(startBlock));
     const client = new S3Client({});
     try {
       await client.send(

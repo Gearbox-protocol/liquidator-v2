@@ -54,10 +54,12 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = new providers.JsonRpcProvider(config.ethProviderRpc);
+    this.provider = new providers.JsonRpcProvider({
+      url: config.ethProviderRpc,
+      timeout: config.ethProviderTimeout,
+    });
 
     const startBlock = await this.provider.getBlockNumber();
-
     const { chainId } = await this.provider.getNetwork();
 
     this.etherscan = getEtherscan(chainId);
@@ -83,7 +85,9 @@ export class LiquidatorService {
       ]);
 
       if (config.optimisticLiquidations) {
-        this.log.warn("Running in OPTIMISTIC LIQUIDATION mode");
+        this.log.warn(
+          `Running ${config.underlying} in OPTIMISTIC LIQUIDATION mode`,
+        );
       } else {
         this.heathChecker.launch();
         this.ampqService.info("Liquidation bot started");
@@ -170,6 +174,7 @@ export class LiquidatorService {
       pathAmount: "0",
       liquidatorPremium: "0",
     };
+    const start = Date.now();
 
     try {
       this.log.debug(`Searching path for ${ca.hash()}...`);
@@ -244,6 +249,7 @@ export class LiquidatorService {
       );
     }
 
+    optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
     await (this.provider as providers.JsonRpcProvider).send("evm_revert", [

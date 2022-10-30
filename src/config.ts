@@ -22,6 +22,13 @@ export class Config {
   @IsNotEmpty()
   static ethProviderRpc: string;
 
+  /**
+   * JSONRPC calls timeout
+   * With freshly started fork first requests often fail with default ethers.js timeout of 120 seconds.
+   * In this case, increase this timeout
+   */
+  static ethProviderTimeout: number | undefined;
+
   @IsNotEmpty()
   static privateKey: string;
 
@@ -43,10 +50,17 @@ export class Config {
 
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
+  /**
+   * If set, will only work with credit manager with this underlying token symbol (e.g. DAI)
+   */
+  static underlying: string | undefined;
 
   @IsNotEmpty()
   @IsNumber()
   static hfThreshold: number;
+
+  @IsNumber()
+  static multicallChunkSize: number;
 
   @IsNotEmpty()
   @Min(0)
@@ -101,6 +115,9 @@ export class Config {
     Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
+    Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
+      ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
+      : undefined;
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
@@ -110,7 +127,12 @@ export class Config {
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
     Config.keyPath = process.env.KEY_PATH;
     Config.keySecret = process.env.KEY_SECRET;
+    Config.underlying = process.env.UNDERLYING;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
+    Config.multicallChunkSize = parseInt(
+      process.env.MULTICALL_CHUNK || "30",
+      10,
+    );
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");

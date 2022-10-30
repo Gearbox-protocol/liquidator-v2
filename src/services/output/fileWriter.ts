@@ -1,7 +1,9 @@
 import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import config from "../../config";
 import { OptimisticResult } from "../../core/optimistic";
+import getFilename from "./filename";
 import { IOptimisticOutputWriter } from "./types";
 
 export default class FileWriter implements IOptimisticOutputWriter {
@@ -9,9 +11,7 @@ export default class FileWriter implements IOptimisticOutputWriter {
     startBlock: number,
     result: OptimisticResult[],
   ): Promise<void> {
-    const filename = `${config.outDir}/${
-      Math.floor(startBlock / 1000) * 1000
-    }-${config.outSuffix}.json`;
+    const filename = join(config.outDir ?? "", getFilename(startBlock));
     try {
       await writeFile(
         filename,

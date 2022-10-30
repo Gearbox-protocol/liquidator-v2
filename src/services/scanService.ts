@@ -9,6 +9,7 @@ import {
   IPoolService__factory,
   MCall,
   multicall,
+  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { IPoolServiceInterface } from "@gearbox-protocol/sdk/lib/types/@gearbox-protocol/core-v2/contracts/interfaces/IPoolService.sol/IPoolService";
 import { BigNumber, BigNumberish, providers } from "ethers";
@@ -80,10 +81,20 @@ export class ScanService {
 
     await this.updatePoolsCI();
 
-    const reqs = Object.values(this.creditManagers).map(async cm =>
-      CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
-    );
+    const reqs = Object.values(this.creditManagers)
+      .filter(cm => {
+        // If single CreditManager mode is on, use only this manager
+        const symb = tokenSymbolByAddress[cm.underlyingToken];
+        return (
+          !config.underlying ||
+          config.underlying.toLowerCase() === symb.toLowerCase()
+        );
+      })
+      .map(async cm =>
+        CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
+      );
 
+    this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
     const accountsToUpdate: Array<Array<CreditAccountHash>> = await Promise.all(
       reqs,
     );
@@ -187,12 +198,13 @@ export class ScanService {
     accounts: Array<CreditAccountHash>,
     atBlock: number,
   ) {
+    this.log.info(`Getting data on ${accounts.length} accounts`);
     try {
       const data = await CreditAccountWatcher.batchCreditAccountLoad(
         accounts,
         this.dataCompressor,
         this.provider,
-        { atBlock, chunkSize: 20 },
+        { atBlock, chunkSize: config.multicallChunkSize },
       );
 
       data.forEach(ca => {

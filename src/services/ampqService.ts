@@ -1,5 +1,5 @@
 import { GOERLI_NETWORK, MAINNET_NETWORK } from "@gearbox-protocol/sdk";
-import * as Amqp from "amqp-ts";
+import { Channel, connect } from "amqplib";
 import { Service } from "typedi";
 
 import config from "../config";
@@ -12,7 +12,7 @@ export class AMPQService {
 
   static delay = 600;
 
-  protected exchange: Amqp.Exchange | undefined;
+  protected channel: Channel;
   protected sentMessages: Record<string, number> = {};
   protected routingKey: string | undefined;
 
@@ -30,9 +30,8 @@ export class AMPQService {
 
     if (config.ampqUrl && config.ampqExchange && this.routingKey) {
       try {
-        const connection = new Amqp.Connection(config.ampqUrl);
-        this.exchange = connection.declareExchange(config.ampqExchange);
-        await connection.completeConfiguration();
+        const conn = await connect(config.ampqUrl);
+        this.channel = await conn.createChannel();
       } catch (e) {
         console.log("Cant connect AMPQ");
         process.exit(2);
@@ -48,24 +47,32 @@ export class AMPQService {
   }
 
   error(text: string) {
-    this.send(`[ERROR]:${text}`);
+    this.send(`[ERROR]:${text}`, true);
     this.log.error(text);
   }
 
-  protected send(text: string) {
-    if (this.exchange && this.routingKey) {
+  protected send(text: string, important = false) {
+    if (this.channel && this.routingKey) {
       const lastTime = this.sentMessages[text];
       if (lastTime && lastTime < Date.now() / 1000 + AMPQService.delay) {
         return;
       }
-
-      const msg = new Amqp.Message(
-        `[${this.routingKey}]${config.appName}:${text}`,
-      );
-
       this.sentMessages[text] = Date.now() / 1000;
 
-      this.exchange.send(msg, this.routingKey);
+      this.channel.publish(
+        config.ampqExchange!,
+        this.routingKey,
+        Buffer.from(text),
+        {
+          appId: config.appName,
+          headers: {
+            important,
+          },
+          persistent: important,
+          contentType: "text/plain",
+          priority: important ? 9 : 4,
+        },
+      );
     }
   }
 }

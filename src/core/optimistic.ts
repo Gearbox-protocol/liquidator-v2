@@ -22,4 +22,7 @@ export interface OptimisticResult {
 
   // True if errors accrued
   isError: boolean;
+
+  // How much time it took to liquidate this account (ms)
+  duration?: number;
 }
