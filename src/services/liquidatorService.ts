@@ -200,44 +200,54 @@ export class LiquidatorService {
       };
       const balanceBefore = await getExecutorBalance();
 
-      // const ptx = await ICreditFacade__factory.connect(
-      //   creditFacade,
-      //   this.keyService.signer,
-      // ).populateTransaction.liquidateCreditAccount(
-      //   ca.borrower,
-      //   this.keyService.address,
-      //   0,
-      //   true,
-      //   pfResult.calls,
-      // );
+      try {
+        const tx = await ICreditFacade__factory.connect(
+          creditFacade,
+          this.keyService.signer,
+        ).liquidateCreditAccount(
+          ca.borrower,
+          this.keyService.address,
+          0,
+          true,
+          pfResult.calls,
+          { gasLimit: 29e6 },
+        );
+        this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
-      // console.log(ptx);
+        await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
 
-      const tx = await ICreditFacade__factory.connect(
-        creditFacade,
-        this.keyService.signer,
-      ).liquidateCreditAccount(
-        ca.borrower,
-        this.keyService.address,
-        0,
-        true,
-        pfResult.calls,
-        { gasLimit: 29e6 },
-      );
-      this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
+        const receipt = await tx.wait();
 
-      await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
+        const balanceAfter = await getExecutorBalance();
 
-      const receipt = await tx.wait();
+        optimisticResult.liquidatorPremium = balanceAfter
+          .sub(balanceBefore)
+          .toString();
 
-      const balanceAfter = await getExecutorBalance();
+        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
+        this.log.debug(`Gas used: ${receipt.gasUsed}`);
+      } catch (e) {
+        this.log.error(
+          `Cant liquidate ${this.getAccountTitle(
+            ca,
+          )}\nPath using:${TxParser.parseMultiCall(
+            optimisticResult.calls,
+          )}\n${e}`,
+        );
 
-      optimisticResult.liquidatorPremium = balanceAfter
-        .sub(balanceBefore)
-        .toString();
-
-      optimisticResult.gasUsed = receipt.gasUsed.toNumber();
-      this.log.debug(`Gas used: ${receipt.gasUsed}`);
+        const ptx = await ICreditFacade__factory.connect(
+          creditFacade,
+          this.keyService.signer,
+        ).populateTransaction.liquidateCreditAccount(
+          ca.borrower,
+          this.keyService.address,
+          0,
+          true,
+          pfResult.calls,
+          { gasLimit: 29e6 },
+        );
+        console.log(ptx);
+      }
     } catch (e) {
       optimisticResult.isError = true;
       this.ampqService.error(
