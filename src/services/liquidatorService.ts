@@ -63,11 +63,14 @@ export class LiquidatorService {
     const { chainId } = await this.provider.getNetwork();
 
     this.etherscan = getEtherscan(chainId);
+    const network = await detectNetwork(this.provider);
 
     await this.ampqService.launch(chainId);
 
     const addressProvider = IAddressProvider__factory.connect(
-      config.addressProvider,
+      network === "Mainnet"
+        ? config.addressProviderMainnet
+        : config.addressProviderGoerli,
       this.provider,
     );
     try {
@@ -77,7 +80,6 @@ export class LiquidatorService {
         addressProvider.getLeveragedActions(),
       ]);
 
-      const network = await detectNetwork(this.provider);
       this.pathFinder = new PathFinder(pathFinder, this.provider, network, [
         "WETH",
         "DAI",
@@ -277,7 +279,7 @@ export class LiquidatorService {
     ca: CreditAccountData,
   ): Promise<PathFinderCloseResult | undefined> {
     try {
-      return await this.pathFinder.findBestClosePath(ca, this.slippage);
+      return await this.pathFinder.findBestClosePath(ca, this.slippage, true);
     } catch (e) {
       this.ampqService.error(
         `Cant find path for closing account:\n${this.getAccountTitle(

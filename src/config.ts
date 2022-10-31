@@ -17,7 +17,11 @@ export class Config {
 
   @IsNotEmpty()
   @IsEthereumAddress()
-  static addressProvider: string;
+  static addressProviderMainnet: string;
+
+  @IsNotEmpty()
+  @IsEthereumAddress()
+  static addressProviderGoerli: string;
 
   @IsNotEmpty()
   static ethProviderRpc: string;
@@ -113,7 +117,9 @@ export class Config {
 
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProvider = process.env.ADDRESS_PROVIDER || "";
+    Config.addressProviderMainnet = process.env.ADDRESS_PROVIDER_MAINNET || "";
+    Config.addressProviderGoerli = process.env.ADDRESS_PROVIDER_GOERLI || "";
+
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
     Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
       ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
