@@ -279,10 +279,16 @@ export class ScanService {
       `Optimistic liquidation for ${accountsToLiquidate.length} accounts: `,
     );
     this.log.debug(accountsToLiquidate.map(ca => ca.hash()).join("\n"));
-    for (let ca of accountsToLiquidate) {
+    for (let i = 0; i < accountsToLiquidate.length; i++) {
+      const ca = accountsToLiquidate[i];
       await this.liquidatorService.liquidateOptimistic(
         ca,
         this.creditManagers[ca.creditManager].creditFacade,
+      );
+      this.log.info(
+        `Optimistic liquidation progress: ${i + 1}/${
+          accountsToLiquidate.length
+        }`,
       );
     }
   }

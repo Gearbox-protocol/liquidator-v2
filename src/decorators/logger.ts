@@ -1,4 +1,4 @@
-import { Logger as TSLogger } from "tslog";
+import { Logger as TSLogger, TLogLevelName } from "tslog";
 import { Container } from "typedi";
 
 export function Logger(label?: string): PropertyDecorator {
@@ -13,6 +13,7 @@ export function Logger(label?: string): PropertyDecorator {
           displayFunctionName: false,
           displayLoggerName: false,
           displayFilePath: "hidden",
+          minLevel: (process.env.LOG_LEVEL as TLogLevelName) ?? "debug",
         }),
     });
   };
