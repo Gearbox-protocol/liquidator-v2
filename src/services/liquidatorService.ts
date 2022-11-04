@@ -54,7 +54,7 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = new providers.JsonRpcProvider({
+    this.provider = new providers.StaticJsonRpcProvider({
       url: config.ethProviderRpc,
       timeout: config.ethProviderTimeout,
     });
