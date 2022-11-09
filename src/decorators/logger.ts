@@ -25,6 +25,7 @@ export function Logger(label?: string): PropertyDecorator {
           displayLoggerName: false,
           displayFilePath: "hidden",
           minLevel: (process.env.LOG_LEVEL as TLogLevelName) ?? "debug",
+          prefix: process.env.UNDERLYING ? [process.env.UNDERLYING] : undefined,
         }),
     });
   };
