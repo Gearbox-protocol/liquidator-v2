@@ -1,4 +1,3 @@
-import { RetryProvider } from "@gearbox-protocol/devops/lib/utils/RetryProvider";
 import {
   CreditAccountData,
   detectNetwork,
@@ -55,7 +54,7 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = new RetryProvider(config.optimisticLiquidations ? 5 : 0, {
+    this.provider = new providers.StaticJsonRpcProvider({
       url: config.ethProviderRpc,
       timeout: config.ethProviderTimeout,
     });
