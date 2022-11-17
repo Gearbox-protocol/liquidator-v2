@@ -68,9 +68,7 @@ export class LiquidatorService {
     await this.ampqService.launch(chainId);
 
     const addressProvider = IAddressProvider__factory.connect(
-      network === "Mainnet"
-        ? config.addressProviderMainnet
-        : config.addressProviderGoerli,
+      config.addressProviderGoerli,
       this.provider,
     );
     try {
