@@ -197,42 +197,57 @@ export class ScanService {
     atBlock: number,
   ) {
     this.log.info(`Getting data on ${accounts.length} accounts`);
-    try {
-      const data = await CreditAccountWatcher.batchCreditAccountLoad(
-        accounts,
-        this.dataCompressor,
-        this.provider,
-        { atBlock, chunkSize: config.multicallChunkSize },
-      );
 
-      data.forEach(ca => {
-        this.creditAccounts[ca.hash()] = ca;
-      });
-
-      Object.values(this.creditAccounts).forEach(ca => {
-        ca.updateHealthFactor(
-          this.creditManagers[ca.creditManager],
-          this.ci[ca.creditManager],
-          this.oracleService.priceOracle,
+    let chunkSize = accounts.length;
+    let repeat = true;
+    while (repeat) {
+      try {
+        const data = await CreditAccountWatcher.batchCreditAccountLoad(
+          accounts,
+          this.dataCompressor,
+          this.provider,
+          { atBlock, chunkSize },
         );
-      });
-    } catch (e) {
-      this.ampqService.error(
-        `Cant get credit accounts using batch request at block ${atBlock}\nAccounts:\n${accounts.join(
-          "\n",
-        )}\n${e}`,
+
+        data.forEach(ca => {
+          this.creditAccounts[ca.hash()] = ca;
+        });
+
+        Object.values(this.creditAccounts).forEach(ca => {
+          ca.updateHealthFactor(
+            this.creditManagers[ca.creditManager],
+            this.ci[ca.creditManager],
+            this.oracleService.priceOracle,
+          );
+        });
+
+        repeat = false;
+      } catch (e) {
+        chunkSize = Math.floor(chunkSize / 2);
+        this.log.debug(`Reduce chunkSize to${chunkSize}`);
+        if (chunkSize < 2) {
+          this.ampqService.error(
+            `Cant get credit accounts using batch request at block ${atBlock}\nAccounts:\n${accounts.join(
+              "\n",
+            )}\n${e}`,
+          );
+
+          repeat = false;
+        }
+      }
+
+      const accountsToLiquidate = Object.values(this.creditAccounts).filter(
+        ca => ca.healthFactor < config.hfThreshold && !ca.isDeleting,
       );
-    }
 
-    const accountsToLiquidate = Object.values(this.creditAccounts).filter(
-      ca => ca.healthFactor < config.hfThreshold && !ca.isDeleting,
-    );
+      this.log.debug(`Account to liquidate: ${accountsToLiquidate.length}`);
 
-    if (accountsToLiquidate.length) {
-      if (config.optimisticLiquidations) {
-        await this.liquidateOptimistically(accountsToLiquidate);
-      } else {
-        await this.liquidateNormal(accountsToLiquidate);
+      if (accountsToLiquidate.length) {
+        if (config.optimisticLiquidations) {
+          await this.liquidateOptimistically(accountsToLiquidate);
+        } else {
+          await this.liquidateNormal(accountsToLiquidate);
+        }
       }
     }
   }
