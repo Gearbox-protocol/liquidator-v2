@@ -24,19 +24,22 @@ export class HealthChecker {
     const app = express();
 
     const latestBlockGauge = new Gauge({
-      name: "latest_block",
+      name: "eth_block_number",
       help: "Latest processed block",
     });
     const startTimeGauge = new Gauge({
       name: "start_time",
       help: "Start time, in unixtime",
     });
-    startTimeGauge.set(start.valueOf());
-    const healthyGauge = new Gauge({
-      name: "healthy",
-      help: "Is service healthy",
+    startTimeGauge.set(Math.round(start.valueOf() / 1000));
+    // pseudo-metric that provides metadata about the running binary
+    const buildInfo = new Gauge({
+      name: "liquidator_ts_build_info",
+      help: "Build info",
+      labelNames: ["version"],
     });
-    healthyGauge.set(1);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    buildInfo.set({ version: require("../../package.json").version }, 1);
 
     app.get("/", (_, res) => {
       res.send({
