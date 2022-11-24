@@ -35,6 +35,8 @@ export function Logger(label?: string): PropertyDecorator {
                   };
                 },
               },
+              // fluent-bit (which is used in our ecs setup with loki) cannot handle unix epoch in millis out of the box
+              timestamp: () => `,"time":${Date.now() / 1000.0}`,
             }),
     });
   };
