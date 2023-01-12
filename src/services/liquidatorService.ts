@@ -2,9 +2,11 @@ import {
   CreditAccountData,
   detectNetwork,
   getEtherscan,
+  GOERLI_NETWORK,
   IAddressProvider__factory,
   ICreditFacade__factory,
   IERC20__factory,
+  MAINNET_NETWORK,
   PathFinder,
   PathFinderCloseResult,
   tokenSymbolByAddress,
@@ -47,7 +49,7 @@ export class LiquidatorService {
   protected slippage: number;
 
   protected optimistic: Array<OptimisticResult> = [];
-  protected etherscan: string;
+  protected etherscan = "";
 
   /**
    * Launch LiquidatorService
@@ -62,7 +64,14 @@ export class LiquidatorService {
     const startBlock = await this.provider.getBlockNumber();
     const { chainId } = await this.provider.getNetwork();
 
-    this.etherscan = getEtherscan(chainId);
+    switch (chainId) {
+      case MAINNET_NETWORK:
+        this.etherscan = "https://etherscan.io";
+        break;
+      case GOERLI_NETWORK:
+        this.etherscan = "https://goerli.etherscan.io";
+        break;
+    }
     const network = await detectNetwork(this.provider);
 
     await this.ampqService.launch(chainId);
