@@ -37,8 +37,11 @@ export class KeyService {
    * Launches KeyService
    * @param provider Ethers JSON RPC provider
    */
-  async launch(provider: providers.Provider) {
-    this.provider = provider;
+  async launch() {
+    this.provider = new providers.StaticJsonRpcProvider({
+      url: config.flashbotsRpc ?? config.ethProviderRpc,
+      timeout: config.ethProviderTimeout,
+    });
     this.signer = new Wallet(config.privateKey, this.provider);
     this.minBalanceToNotify = WAD.mul(
       Math.floor(config.balanceToNotify * 1000),

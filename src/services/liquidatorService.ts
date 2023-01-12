@@ -95,7 +95,7 @@ export class LiquidatorService {
         this.ampqService.info("Liquidation bot started");
       }
 
-      await this.keyService.launch(this.provider);
+      await this.keyService.launch();
       await this.scanService.launch(
         dataCompressor,
         priceOracle,
