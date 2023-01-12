@@ -1,7 +1,6 @@
 import {
   CreditAccountData,
   detectNetwork,
-  getEtherscan,
   GOERLI_NETWORK,
   IAddressProvider__factory,
   ICreditFacade__factory,
