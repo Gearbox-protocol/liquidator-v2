@@ -2062,10 +2062,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gearbox-protocol/devops@^1.3.2":
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/devops/-/devops-1.3.2.tgz#c30ecd1a7d550afa1967fe3507afa62e5ab70fa7"
-  integrity sha512-T2R6yPrH6ra+njIL28QbtwIn5zSdNnd2sexA5dEj6O+XibzFu2Vsk1w8PxDCHRpIptrpJF7QDOqyN7NY1hd6OQ==
+"@gearbox-protocol/devops@^1.3.5":
+  version "1.3.5"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/devops/-/devops-1.3.5.tgz#fa993e4cce86ffc9a1e6410d45f09ff45c53a9b1"
+  integrity sha512-kLd+EC1UXevlZbrvyTeRwE5Q+pZB+XpxoU0GjC4VIaGt1EkU1pTlHClweQ8wbOwbdXeW6HXtbWAL76dX+qXPtQ==
   dependencies:
     axios "^0.27.2"
     chai "^4.3.6"
@@ -2090,10 +2090,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-1.5.0.tgz#4df8e9fd2305fee6ab8c1417a02e31343836932a"
   integrity sha512-FUoprSsBdZyBjgxXCKL6mTkbeUJytaLzPJqIOoQpDmBRTX0seCc2o5I9PI9tySoRIlNnd/XXnKCXq1xHDEGbxw==
 
-"@gearbox-protocol/sdk@^1.19.4":
-  version "1.19.4"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-1.19.4.tgz#c4a342a052cb8ce52acde843469c4576eb86fa5b"
-  integrity sha512-xxd7yCfg4OJjTVc+M+po/iBY9dFr07MPZpZWHbv0vliQk5AOITnGlhZ5He5A1SCMbOV0EuX4UBgE1d/6Zak91A==
+"@gearbox-protocol/sdk@^1.20.5":
+  version "1.20.5"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-1.20.5.tgz#c3f9e7f751cb3c265d6c204d1076850fea2a7b40"
+  integrity sha512-NYI8eOzz4JG1dsYwCXaTzIPtpw7pzXrBHOJAXjQqxZVCvLlIRrFW6GlCcvBEjZJahGJ1BVALHocaxUOQCzveKw==
   dependencies:
     "@types/deep-eql" "^4.0.0"
     decimal.js-light "^2.5.1"
