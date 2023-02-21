@@ -192,18 +192,13 @@ export class LiquidatorService {
 
       if (!pfResult) {
         throw new Error("Cant find path");
-      } else {
-        this.log.debug(
-          { calls: TxParser.parseMultiCall(optimisticResult.calls) },
-          "Path found",
-        );
       }
 
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
       const pathHuman = TxParser.parseMultiCall(pfResult.calls);
-      this.log.debug(pathHuman);
+      this.log.debug({ pathHuman }, "path found");
 
       const getExecutorBalance = async (): Promise<BigNumber> => {
         return tokenSymbolByAddress[ca.underlyingToken] === "WETH"
@@ -243,7 +238,7 @@ export class LiquidatorService {
         this.log.debug(`Gas used: ${receipt.gasUsed}`);
       } catch (e) {
         optimisticResult.isError = true;
-        this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}`);
+        this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
         const ptx = await ICreditFacade__factory.connect(
           creditFacade,
           this.keyService.signer,
@@ -259,7 +254,9 @@ export class LiquidatorService {
       }
     } catch (e) {
       optimisticResult.isError = true;
-      this.ampqService.error(`Cant liquidate ${this.getAccountTitle(ca)}`);
+      this.ampqService.error(
+        `Cannot liquidate ${this.getAccountTitle(ca)}: ${e}`,
+      );
     }
 
     optimisticResult.duration = Date.now() - start;
