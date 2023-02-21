@@ -192,6 +192,11 @@ export class LiquidatorService {
 
       if (!pfResult) {
         throw new Error("Cant find path");
+      } else {
+        this.log.debug(
+          { calls: TxParser.parseMultiCall(optimisticResult.calls) },
+          "Path found",
+        );
       }
 
       optimisticResult.calls = pfResult.calls;
@@ -237,14 +242,8 @@ export class LiquidatorService {
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         this.log.debug(`Gas used: ${receipt.gasUsed}`);
       } catch (e) {
-        this.log.error(
-          `Cant liquidate ${this.getAccountTitle(
-            ca,
-          )}\nPath using:${TxParser.parseMultiCall(
-            optimisticResult.calls,
-          )}\n${e}`,
-        );
-
+        optimisticResult.isError = true;
+        this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}`);
         const ptx = await ICreditFacade__factory.connect(
           creditFacade,
           this.keyService.signer,
@@ -256,17 +255,11 @@ export class LiquidatorService {
           pfResult.calls,
           { gasLimit: 29e6 },
         );
-        console.log(ptx);
+        this.log.debug({ transaction: ptx });
       }
     } catch (e) {
       optimisticResult.isError = true;
-      this.ampqService.error(
-        `Cant liquidate ${this.getAccountTitle(
-          ca,
-        )}\nPath using:${TxParser.parseMultiCall(
-          optimisticResult.calls,
-        )}\n${e}`,
-      );
+      this.ampqService.error(`Cant liquidate ${this.getAccountTitle(ca)}`);
     }
 
     optimisticResult.duration = Date.now() - start;
