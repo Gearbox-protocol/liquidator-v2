@@ -220,7 +220,6 @@ export class LiquidatorService {
           0,
           true,
           pfResult.calls,
-          { gasLimit: 29e6 },
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
@@ -235,7 +234,12 @@ export class LiquidatorService {
           .toString();
 
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
-        this.log.debug(`Gas used: ${receipt.gasUsed}`);
+        if (receipt.gasUsed.gt(29e6)) {
+          optimisticResult.isError = true;
+          this.log.error(`Too much gas used: ${receipt.gasUsed}`);
+        } else {
+          this.log.debug(`Gas used: ${receipt.gasUsed}`);
+        }
       } catch (e) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
@@ -248,7 +252,6 @@ export class LiquidatorService {
           0,
           true,
           pfResult.calls,
-          { gasLimit: 29e6 },
         );
         this.log.debug({ transaction: ptx });
       }
