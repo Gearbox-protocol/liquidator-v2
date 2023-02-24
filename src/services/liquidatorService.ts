@@ -170,11 +170,7 @@ export class LiquidatorService {
   }
 
   async liquidateOptimistic(ca: CreditAccountData, creditFacade: string) {
-    const snapshotId = await (this.provider as providers.JsonRpcProvider).send(
-      "evm_snapshot",
-      [],
-    );
-
+    let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
@@ -209,7 +205,12 @@ export class LiquidatorService {
             ).balanceOf(this.keyService.address);
       };
       const balanceBefore = await getExecutorBalance();
-
+      // save snapshot after all read requests are done
+      snapshotId = await (this.provider as providers.JsonRpcProvider).send(
+        "evm_snapshot",
+        [],
+      );
+      // Actual liquidation (write requests start here)
       try {
         const tx = await ICreditFacade__factory.connect(
           creditFacade,
@@ -265,9 +266,11 @@ export class LiquidatorService {
     optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
-    await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
-      snapshotId,
-    ]);
+    if (snapshotId) {
+      await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
+        snapshotId,
+      ]);
+    }
   }
 
   protected getAccountTitle(ca: CreditAccountData): string {
