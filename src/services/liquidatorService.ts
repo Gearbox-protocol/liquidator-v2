@@ -112,6 +112,7 @@ export class LiquidatorService {
       );
     } catch (e) {
       this.ampqService.error(`Error occurred at launch process\n${e}`);
+      process.exit(1);
     }
 
     if (config.optimisticLiquidations) {
