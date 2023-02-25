@@ -213,6 +213,10 @@ export class LiquidatorService {
       );
       // Actual liquidation (write requests start here)
       try {
+        await (this.provider as providers.JsonRpcProvider).send(
+          "anvil_setBlockTimestampInterval",
+          [12],
+        );
         const tx = await ICreditFacade__factory.connect(
           creditFacade,
           this.keyService.signer,
@@ -225,7 +229,7 @@ export class LiquidatorService {
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
 
-        await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
+        // await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
 
         const receipt = await tx.wait();
 
