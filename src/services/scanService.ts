@@ -66,7 +66,9 @@ export class ScanService {
     this.provider = provider;
     this.liquidatorService = liquidatorService;
 
-    await this.oracleService.launch(priceOracle, this.provider);
+    if (!config.optimisticLiquidations) {
+      await this.oracleService.launch(priceOracle, this.provider);
+    }
 
     this.dataCompressor = dataCompressor;
 
@@ -223,13 +225,15 @@ export class ScanService {
           this.creditAccounts[ca.hash()] = ca;
         });
 
-        Object.values(this.creditAccounts).forEach(ca => {
-          ca.updateHealthFactor(
-            this.creditManagers[ca.creditManager],
-            this.ci[ca.creditManager],
-            this.oracleService.priceOracle,
-          );
-        });
+        if (!config.optimisticLiquidations) {
+          Object.values(this.creditAccounts).forEach(ca => {
+            ca.updateHealthFactor(
+              this.creditManagers[ca.creditManager],
+              this.ci[ca.creditManager],
+              this.oracleService.priceOracle,
+            );
+          });
+        }
 
         repeat = false;
       } catch (e) {
@@ -247,7 +251,9 @@ export class ScanService {
       }
 
       const accountsToLiquidate = Object.values(this.creditAccounts).filter(
-        ca => ca.healthFactor < config.hfThreshold && !ca.isDeleting,
+        ca =>
+          config.optimisticLiquidations ||
+          (ca.healthFactor < config.hfThreshold && !ca.isDeleting),
       );
 
       this.log.debug(`Account to liquidate: ${accountsToLiquidate.length}`);
