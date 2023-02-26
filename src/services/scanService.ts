@@ -79,25 +79,35 @@ export class ScanService {
 
     await this.updatePoolsCI();
 
-    const reqs = Object.values(this.creditManagers)
-      .filter(cm => {
-        // If single CreditManager mode is on, use only this manager
-        const symb = tokenSymbolByAddress[cm.underlyingToken];
-        return (
-          !config.underlying ||
-          config.underlying.toLowerCase() === symb.toLowerCase()
+    let accountsToUpdate: CreditAccountHash[];
+
+    if (config.accountsToLiquidate) {
+      accountsToUpdate = config.accountsToLiquidate;
+    } else {
+      const reqs = Object.values(this.creditManagers)
+        .filter(cm => {
+          // If single CreditManager mode is on, use only this manager
+          const symb = tokenSymbolByAddress[cm.underlyingToken];
+          return (
+            !config.underlying ||
+            config.underlying.toLowerCase() === symb.toLowerCase()
+          );
+        })
+        .map(async cm =>
+          CreditAccountWatcher.getOpenAccounts(
+            cm,
+            this.provider,
+            startingBlock,
+          ),
         );
-      })
-      .map(async cm =>
-        CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
+
+      this.log.debug(
+        `Getting opened accounts on ${reqs.length} credit managers`,
       );
+      accountsToUpdate = (await Promise.all(reqs)).flat();
+    }
 
-    this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
-    const accountsToUpdate: Array<Array<CreditAccountHash>> = await Promise.all(
-      reqs,
-    );
-
-    await this.updateAccounts(accountsToUpdate.flat(), startingBlock);
+    await this.updateAccounts(accountsToUpdate, startingBlock);
 
     this._lastUpdated = startingBlock;
 
