@@ -228,8 +228,7 @@ export class LiquidatorService {
           pfResult.calls,
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
-
-        // await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
+        await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
 
         const receipt = await tx.wait();
 
