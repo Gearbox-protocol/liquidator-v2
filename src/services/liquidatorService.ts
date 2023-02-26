@@ -213,6 +213,7 @@ export class LiquidatorService {
       );
       // Actual liquidation (write requests start here)
       try {
+        // this is needed because otherwise it's possible to heat deadlines in uniswap calls
         await (this.provider as providers.JsonRpcProvider).send(
           "anvil_setBlockTimestampInterval",
           [12],
