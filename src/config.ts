@@ -60,12 +60,6 @@ export class Config {
    */
   static underlying: string | undefined;
 
-  /**
-   * Experimental
-   * Use these accounts instead of getting list of accounts from logs
-   */
-  static accountsToLiquidate?: string[];
-
   @IsNotEmpty()
   @IsNumber()
   static hfThreshold: number;
@@ -150,12 +144,6 @@ export class Config {
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
-
-    // expiremental feature - to work around tenderly limitation for eth_getLogs block range
-    Config.accountsToLiquidate =
-      Config.optimisticLiquidations && process.env.ACCOUNTS_TO_LIQUIDATE
-        ? process.env.ACCOUNTS_TO_LIQUIDATE.split(",")
-        : undefined;
 
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
