@@ -20,4 +20,5 @@ config
   .then(() => createApp())
   .catch(e => {
     console.log("Cant start bot", e);
+    process.exit(1); // exit code is easily visible for killled docker containers and ecs services
   });

@@ -100,7 +100,7 @@ export class LiquidatorService {
         );
       } else {
         this.heathChecker.launch();
-        this.ampqService.info("Liquidation bot started");
+        this.log.info("Liquidation bot started");
       }
 
       await this.keyService.launch();
@@ -111,7 +111,7 @@ export class LiquidatorService {
         this,
       );
     } catch (e) {
-      this.ampqService.error(`Error occurred at launch process\n${e}`);
+      this.log.error(`Error occurred at launch process: ${e}`);
       process.exit(1);
     }
 
@@ -122,20 +122,13 @@ export class LiquidatorService {
   }
 
   async liquidate(ca: CreditAccountData, creditFacade: string) {
-    this.ampqService.info(
-      `Start liquidation for borrower ${this.getAccountTitle(ca)}`,
-    );
-
-    const pfResult = await this.findClosePath(ca);
-
-    if (!pfResult) {
-      return;
-    }
-
-    const pathHuman = TxParser.parseMultiCall(pfResult.calls);
-    this.log.debug(pathHuman);
+    this.ampqService.info(`Start liquidation of ${this.getAccountTitle(ca)}`);
 
     try {
+      const pfResult = await this.findClosePath(ca);
+      const pathHuman = TxParser.parseMultiCall(pfResult.calls);
+      this.log.debug(pathHuman);
+
       const executor = this.keyService.takeVacantExecutor();
       const tx = await ICreditFacade__factory.connect(
         creditFacade,
@@ -163,14 +156,15 @@ export class LiquidatorService {
       await this.keyService.returnExecutor(executor.address);
     } catch (e) {
       this.ampqService.error(
-        `Cant liquidate ${this.getAccountTitle(
-          ca,
-        )}\nPath using:${pathHuman}\n${e}`,
+        `Cant liquidate ${this.getAccountTitle(ca)}: ${e}`,
       );
     }
   }
 
-  async liquidateOptimistic(ca: CreditAccountData, creditFacade: string) {
+  async liquidateOptimistic(
+    ca: CreditAccountData,
+    creditFacade: string,
+  ): Promise<void> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
@@ -186,11 +180,6 @@ export class LiquidatorService {
     try {
       this.log.debug(`Searching path for ${ca.hash()}...`);
       const pfResult = await this.findClosePath(ca);
-
-      if (!pfResult) {
-        throw new Error("Cant find path");
-      }
-
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
@@ -263,8 +252,9 @@ export class LiquidatorService {
       }
     } catch (e) {
       optimisticResult.isError = true;
-      this.ampqService.error(
-        `Cannot liquidate ${this.getAccountTitle(ca)}: ${e}`,
+      this.log.error(
+        { account: this.getAccountTitle(ca) },
+        `cannot liquidate: ${e}`,
       );
     }
 
@@ -286,15 +276,19 @@ export class LiquidatorService {
 
   protected async findClosePath(
     ca: CreditAccountData,
-  ): Promise<PathFinderCloseResult | undefined> {
+  ): Promise<PathFinderCloseResult> {
     try {
-      return await this.pathFinder.findBestClosePath(ca, this.slippage, true);
-    } catch (e) {
-      this.ampqService.error(
-        `Cant find path for closing account:\n${this.getAccountTitle(
-          ca,
-        )}\nslippage:${this.slippage}\n${ca.addr}\n${e}`,
+      const result = await this.pathFinder.findBestClosePath(
+        ca,
+        this.slippage,
+        true,
       );
+      if (!result) {
+        throw new Error("result is empty");
+      }
+      return result;
+    } catch (e) {
+      throw new Error(`cant find close path: ${e}`);
     }
   }
 }

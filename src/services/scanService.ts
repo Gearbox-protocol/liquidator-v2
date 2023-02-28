@@ -179,7 +179,7 @@ export class ScanService {
           this._lastUpdated = blockNum;
           this.log.info(`Update blocks ${range} competed`);
         } catch (e) {
-          this.ampqService.error(`Errors during update blocks ${range}\n${e}`);
+          this.log.error(`Errors during update blocks ${range}\n${e}`);
         }
 
         try {
@@ -193,7 +193,7 @@ export class ScanService {
             blockNum = blockNow;
           }
         } catch (e) {
-          this.ampqService.error(`Cant get block number \n${e}`);
+          this.log.error(`Cant get block number \n${e}`);
         }
       }
     }
@@ -240,7 +240,7 @@ export class ScanService {
         chunkSize = Math.floor(chunkSize / 2);
         this.log.debug(`Reduce chunkSize to${chunkSize}`);
         if (chunkSize < 2) {
-          this.ampqService.error(
+          this.log.error(
             `Cant get credit accounts using batch request at block ${atBlock}\nAccounts:\n${accounts.join(
               "\n",
             )}\n${e}`,
@@ -280,7 +280,7 @@ export class ScanService {
     const vacantExecutors = this.executorService.vacantQty();
 
     if (vacantExecutors === 0) {
-      this.ampqService.info(`WARN! No vacant executors at the moment!`);
+      this.log.warn("No vacant executors at the moment!");
     }
 
     const itemsToProceed =
@@ -339,7 +339,7 @@ export class ScanService {
         this.ci[cm.address] = BigNumber.from(result[num]);
       });
     } catch (e) {
-      this.ampqService.error(`Cant get CI for pools\n${e}`);
+      this.log.error(`Cant get CI for pools\n${e}`);
     }
   }
 }

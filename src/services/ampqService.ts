@@ -42,12 +42,16 @@ export class AMPQService {
   }
 
   info(text: string) {
-    this.send(`[INFO]:${text}`);
+    if (!config.optimisticLiquidations) {
+      this.send(`[INFO]:${text}`);
+    }
     this.log.info(text);
   }
 
   error(text: string) {
-    this.send(`[ERROR]:${text}`, true);
+    if (!config.optimisticLiquidations) {
+      this.send(`[ERROR]:${text}`, true);
+    }
     this.log.error(text);
   }
 
