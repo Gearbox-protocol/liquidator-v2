@@ -18,7 +18,7 @@
       {
         "dockerTags": [
           "{{#if prerelease.[0]}}{{prerelease.[0]}}{{else}}latest{{/if}}",
-          "{{major}}"
+          "{{version}}"
         ],
         "dockerImage": "liquidator-v2",
         "dockerRegistry": "ghcr.io",

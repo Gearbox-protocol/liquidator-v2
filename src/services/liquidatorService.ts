@@ -81,6 +81,11 @@ export class LiquidatorService {
         : config.addressProviderGoerli,
       this.provider,
     );
+    this.log.debug({
+      chainId,
+      network,
+      addressProvider: addressProvider.address,
+    });
     try {
       const [dataCompressor, priceOracle, pathFinder] = await Promise.all([
         addressProvider.getDataCompressor(),
