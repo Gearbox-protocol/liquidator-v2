@@ -60,10 +60,13 @@ export class ScanService {
   async launch(
     dataCompressor: string,
     priceOracle: string,
-    provider: providers.Provider,
+    startingBlock: number,
     liquidatorService: LiquidatorService,
   ) {
-    this.provider = provider;
+    this.provider = new providers.StaticJsonRpcProvider({
+      url: config.scanProviderRpc ?? config.ethProviderRpc,
+      timeout: config.ethProviderTimeout,
+    });
     this.liquidatorService = liquidatorService;
 
     if (!config.optimisticLiquidations) {
@@ -71,8 +74,6 @@ export class ScanService {
     }
 
     this.dataCompressor = dataCompressor;
-
-    const startingBlock = await this.provider.getBlockNumber();
 
     this.creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       this.dataCompressor,

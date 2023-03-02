@@ -107,7 +107,7 @@ export class LiquidatorService {
       await this.scanService.launch(
         dataCompressor,
         priceOracle,
-        this.provider,
+        startBlock,
         this,
       );
     } catch (e) {

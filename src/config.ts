@@ -26,6 +26,7 @@ export class Config {
   @IsNotEmpty()
   static ethProviderRpc: string;
   static flashbotsRpc?: string;
+  static scanProviderRpc?: string;
 
   /**
    * JSONRPC calls timeout
@@ -122,6 +123,7 @@ export class Config {
     Config.addressProviderGoerli = process.env.ADDRESS_PROVIDER_GOERLI || "";
 
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
+    Config.scanProviderRpc = process.env.SCAN_PROVIDER;
     Config.flashbotsRpc = process.env.FLASHBOTS_RPC;
     Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
       ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
