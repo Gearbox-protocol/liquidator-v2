@@ -1,5 +1,14 @@
 {
-  "branches": ["main"],
+  "branches": [
+    {
+      "name": "main"
+    },
+    {
+      "name": "beta",
+      "channel": "beta",
+      "prerelease": "beta"
+    }
+  ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
@@ -7,7 +16,10 @@
     [
       "@codedependant/semantic-release-docker",
       {
-        "dockerTags": ["latest", "{{version}}", "{{major}}"],
+        "dockerTags": [
+          "{{#if prerelease.[0]}}{{prerelease.[0]}}{{else}}latest{{/if}}",
+          "{{major}}"
+        ],
         "dockerImage": "liquidator-v2",
         "dockerRegistry": "ghcr.io",
         "dockerProject": "gearbox-protocol",
