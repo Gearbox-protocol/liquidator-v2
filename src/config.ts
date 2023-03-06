@@ -7,7 +7,7 @@ import {
   Min,
   validate,
 } from "class-validator";
-import dotenv from "dotenv";
+import dotenv, { config } from "dotenv";
 
 export class Config {
   @IsNotEmpty()
@@ -42,7 +42,6 @@ export class Config {
   @Min(0.05)
   static slippage: number;
 
-  @IsNotEmpty()
   static walletPassword: string;
 
   /**
@@ -161,6 +160,10 @@ export class Config {
     const errors = await validate(Config);
     if (errors.length > 0)
       throw new Error(`Configuration problems: ${errors.join("\n")}`);
+
+    if (!Config.walletPassword && !Config.optimisticLiquidations) {
+      throw new Error("wallet password is requird for normal liquidators");
+    }
   }
 }
 
