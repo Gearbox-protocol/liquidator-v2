@@ -47,9 +47,10 @@ export class KeyService {
       Math.floor(config.balanceToNotify * 1000),
     ).div(10000);
 
+    await this.checkBalance();
+    await this.storage.launch();
+
     if (!config.optimisticLiquidations) {
-      await this.checkBalance();
-      await this.storage.launch();
       await this._recoverWallets();
       for (let ex of this._executors) {
         await this.returnExecutor(ex.address);
