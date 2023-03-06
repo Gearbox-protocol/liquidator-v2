@@ -221,6 +221,10 @@ export class LiquidatorService {
           0,
           true,
           pfResult.calls,
+          // We need gas limit here, because otherwise in case of error we receive uninformative "unpredicatable gas limit" errors
+          // Hovewer, with this limit we might get error about gasLimit * gasPrice > liquidatorBalance
+          // Therefore, it's optimist's job to impersonate hight enough balance for liquidator
+          { gasLimit: 29e6 },
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
         await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
@@ -252,6 +256,7 @@ export class LiquidatorService {
           0,
           true,
           pfResult.calls,
+          { gasLimit: 29e6 },
         );
         this.log.debug({ transaction: ptx });
       }

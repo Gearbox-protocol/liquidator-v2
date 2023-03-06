@@ -84,7 +84,7 @@ export class KeyService {
    * Takes liquidator back, recharge it and mark as "vacant" for further use
    * @param address Executor address
    */
-  async returnExecutor(address: string) {
+  async returnExecutor(address: string): Promise<void> {
     try {
       const balance = await this.provider.getBalance(address);
 
