@@ -305,6 +305,7 @@ export class LiquidatorService {
     dataCompressor: string,
     blockNumber: number,
   ): Promise<void> {
+    this.log.debug("Checking emergency permissions");
     const creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       dataCompressor,
       this.provider,
@@ -340,20 +341,28 @@ export class LiquidatorService {
         })),
       );
 
+    this.log.debug(
+      `Will perform ${calls.length} canLiquidateWhilePaused calls`,
+    );
     const { returnData } = await mc.callStatic.aggregate(calls, {
       blockTag: blockNumber,
     });
 
     returnData.forEach((d, i) => {
       const [enabled] = cmi.decodeFunctionResult("canLiquidateWhilePaused", d);
-      if (!enabled) {
-        const [liquidator] = cmi.decodeFunctionData(
-          "canLiquidateWhilePaused",
-          calls[i].callData,
-        );
+      const [liquidator] = cmi.decodeFunctionData(
+        "canLiquidateWhilePaused",
+        calls[i].callData,
+      );
+      if (enabled) {
         this.log.warn(
           { liquidator, creditManager: calls[i].target },
           "liquidator cannot work in emergency mode",
+        );
+      } else {
+        this.log.debug(
+          { liquidator, creditManager: calls[i].target },
+          "liquidator can work in emergency mode",
         );
       }
     });
