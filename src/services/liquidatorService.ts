@@ -1,11 +1,14 @@
 import {
   CreditAccountData,
+  CreditManagerWatcher,
   detectNetwork,
   GOERLI_NETWORK,
   IAddressProvider__factory,
   ICreditFacade__factory,
+  ICreditManagerV2__factory,
   IERC20__factory,
   MAINNET_NETWORK,
+  Multicall2__factory,
   PathFinder,
   PathFinderCloseResult,
   tokenSymbolByAddress,
@@ -104,6 +107,7 @@ export class LiquidatorService {
       }
 
       await this.keyService.launch();
+      await this.checkEmergencyPermissions(dataCompressor, startBlock);
       await this.scanService.launch(
         dataCompressor,
         priceOracle,
@@ -290,5 +294,68 @@ export class LiquidatorService {
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
     }
+  }
+
+  /**
+   * Performs one-time check that all executors have permissions to liquidate while paused on all enabled credit managers
+   * @param dataCompressor
+   * @param blockNumber
+   */
+  private async checkEmergencyPermissions(
+    dataCompressor: string,
+    blockNumber: number,
+  ): Promise<void> {
+    const creditManagers = await CreditManagerWatcher.getV2CreditManagers(
+      dataCompressor,
+      this.provider,
+    );
+
+    const mc = Multicall2__factory.connect(
+      config.multicallAddress,
+      this.provider,
+    );
+    const cmi = ICreditManagerV2__factory.createInterface();
+
+    const liquidators = [
+      this.keyService.signer.address,
+      ...this.keyService.getExecutorAddress(),
+    ];
+
+    // make one multicall, where for each enabled cm and each liquidator address we check emergency permissions
+    const calls = Object.values(creditManagers)
+      .filter(cm => {
+        // If single CreditManager mode is on, use only this manager
+        const symb = tokenSymbolByAddress[cm.underlyingToken];
+        return (
+          !config.underlying ||
+          config.underlying.toLowerCase() === symb.toLowerCase()
+        );
+      })
+      .flatMap(cm =>
+        liquidators.map(liqAddr => ({
+          target: cm.address,
+          callData: cmi.encodeFunctionData("canLiquidateWhilePaused", [
+            liqAddr,
+          ]),
+        })),
+      );
+
+    const { returnData } = await mc.callStatic.aggregate(calls, {
+      blockTag: blockNumber,
+    });
+
+    returnData.forEach((d, i) => {
+      const [enabled] = cmi.decodeFunctionResult("canLiquidateWhilePaused", d);
+      if (!enabled) {
+        const [liquidator] = cmi.decodeFunctionData(
+          "canLiquidateWhilePaused",
+          calls[i].callData,
+        );
+        this.log.warn(
+          { liquidator, creditManager: calls[i].target },
+          "liquidator cannot work in emergency mode",
+        );
+      }
+    });
   }
 }

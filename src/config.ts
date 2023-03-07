@@ -68,6 +68,9 @@ export class Config {
   static multicallChunkSize: number;
 
   @IsNotEmpty()
+  static multicallAddress: string;
+
+  @IsNotEmpty()
   @Min(0)
   static skipBlocks: number;
 
@@ -141,6 +144,9 @@ export class Config {
       process.env.MULTICALL_CHUNK || "30",
       10,
     );
+    Config.multicallAddress =
+      process.env.MULTICALL_ADDRESS ||
+      "0x5ba1e12693dc8f9c48aad8770482f4739beed696";
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
