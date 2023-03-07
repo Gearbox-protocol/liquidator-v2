@@ -355,14 +355,14 @@ export class LiquidatorService {
         calls[i].callData,
       );
       if (enabled) {
-        this.log.warn(
-          { liquidator, creditManager: calls[i].target },
-          "liquidator cannot work in emergency mode",
-        );
-      } else {
         this.log.debug(
           { liquidator, creditManager: calls[i].target },
-          "liquidator can work in emergency mode",
+          "can work in emergency mode",
+        );
+      } else {
+        this.log.warn(
+          { liquidator, creditManager: calls[i].target },
+          "cannot work in emergency mode",
         );
       }
     });
