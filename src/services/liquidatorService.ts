@@ -121,7 +121,7 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
-      await this.outputWriter.write(startBlock, this.optimistic);
+      await this.outputWriter.write(this.optimistic);
       process.exit(0);
     }
   }

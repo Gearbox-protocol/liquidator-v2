@@ -1,8 +1,8 @@
 import config from "../../config";
-export default function getFilename(startingBlock: number): string {
+export default function getFilename(): string {
   return (
     [
-      startingBlock,
+      config.optimisticForkHead,
       config.underlying?.toLowerCase(),
       config.outSuffix.replaceAll("-", ""),
     ]

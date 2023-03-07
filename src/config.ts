@@ -84,6 +84,11 @@ export class Config {
   static optimisticLiquidations: boolean;
 
   /**
+   * Block number at which fork for optimistic liquidations is pinned. Will use this block number in output filenames
+   */
+  static optimisticForkHead: number;
+
+  /**
    * Directory to output logs, leave empty if you don't need file output
    */
   static outDir: string | undefined;
@@ -147,6 +152,10 @@ export class Config {
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
 
+    Config.optimisticForkHead = parseInt(
+      process.env.OPTIMISTIC_FORK_HEAD ?? "0",
+      10,
+    );
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
     Config.outHeaders = process.env.OUT_HEADERS || "{}";

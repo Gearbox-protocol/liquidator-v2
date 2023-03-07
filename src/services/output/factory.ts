@@ -22,5 +22,5 @@ function createOutputWriter(): IOptimisticOutputWriter {
 
 @Service({ factory: createOutputWriter, id: OUTPUT_WRITER })
 export class OutputWriter implements IOptimisticOutputWriter {
-  write: (startBlock: number, result: OptimisticResult[]) => Promise<void>;
+  write: (result: OptimisticResult[]) => Promise<void>;
 }

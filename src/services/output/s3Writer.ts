@@ -7,11 +7,8 @@ import getFilename from "./filename";
 import { IOptimisticOutputWriter } from "./types";
 
 export default class S3Writer implements IOptimisticOutputWriter {
-  public async write(
-    startBlock: number,
-    result: OptimisticResult[],
-  ): Promise<void> {
-    const key = join(config.outS3Prefix ?? "", getFilename(startBlock));
+  public async write(result: OptimisticResult[]): Promise<void> {
+    const key = join(config.outS3Prefix ?? "", getFilename());
     const client = new S3Client({});
     try {
       await client.send(
@@ -19,7 +16,10 @@ export default class S3Writer implements IOptimisticOutputWriter {
           Bucket: config.outS3Bucket,
           Key: key,
           ContentType: "application/json",
-          Body: JSON.stringify({ startBlock, result }),
+          Body: JSON.stringify({
+            startBlock: config.optimisticForkHead,
+            result,
+          }),
         }),
       );
     } catch (e) {

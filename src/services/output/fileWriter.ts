@@ -7,15 +7,12 @@ import getFilename from "./filename";
 import { IOptimisticOutputWriter } from "./types";
 
 export default class FileWriter implements IOptimisticOutputWriter {
-  public async write(
-    startBlock: number,
-    result: OptimisticResult[],
-  ): Promise<void> {
-    const filename = join(config.outDir ?? "", getFilename(startBlock));
+  public async write(result: OptimisticResult[]): Promise<void> {
+    const filename = join(config.outDir ?? "", getFilename());
     try {
       await writeFile(
         filename,
-        JSON.stringify({ startBlock, result }),
+        JSON.stringify({ startBlock: config.optimisticForkHead, result }),
         "utf-8",
       );
     } catch (e) {
