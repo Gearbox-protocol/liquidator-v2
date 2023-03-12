@@ -199,6 +199,27 @@ export class LiquidatorService {
             ).balanceOf(this.keyService.address);
       };
       const balanceBefore = await getExecutorBalance();
+      const iFacade = ICreditFacade__factory.connect(
+        creditFacade,
+        this.keyService.signer,
+      );
+      // before actual transaction, try to estimate gas
+      // this effectively will load state and contracts from fork origin to anvil
+      // so following actual tx should not be slow
+      // also tx will act as retry in case of anvil external's error
+      try {
+        const estGas = await iFacade.estimateGas.liquidateCreditAccount(
+          ca.borrower,
+          this.keyService.address,
+          0,
+          true,
+          pfResult.calls,
+        );
+        this.log.debug(`estimated gas: ${estGas}`);
+      } catch (e) {
+        this.log.debug(`failed to esitmate gas: ${e}`);
+      }
+
       // save snapshot after all read requests are done
       snapshotId = await (this.provider as providers.JsonRpcProvider).send(
         "evm_snapshot",
@@ -211,10 +232,7 @@ export class LiquidatorService {
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await ICreditFacade__factory.connect(
-          creditFacade,
-          this.keyService.signer,
-        ).liquidateCreditAccount(
+        const tx = await iFacade.liquidateCreditAccount(
           ca.borrower,
           this.keyService.address,
           0,
@@ -242,10 +260,7 @@ export class LiquidatorService {
       } catch (e) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
-        const ptx = await ICreditFacade__factory.connect(
-          creditFacade,
-          this.keyService.signer,
-        ).populateTransaction.liquidateCreditAccount(
+        const ptx = await iFacade.populateTransaction.liquidateCreditAccount(
           ca.borrower,
           this.keyService.address,
           0,
