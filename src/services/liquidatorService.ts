@@ -1,4 +1,8 @@
 import {
+  RetryProvider,
+  RotateProvider,
+} from "@gearbox-protocol/devops/lib/providers";
+import {
   CreditAccountData,
   CreditManagerWatcher,
   detectNetwork,
@@ -64,10 +68,23 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = new providers.StaticJsonRpcProvider({
-      url: config.ethProviderRpc,
-      timeout: config.ethProviderTimeout,
-    });
+    const rpcs = [
+      new RetryProvider(3, {
+        url: config.ethProviderRpc,
+        timeout: config.ethProviderTimeout,
+        allowGzip: true,
+      }),
+    ];
+    if (config.fallbackRpc) {
+      rpcs.push(
+        new RetryProvider(3, {
+          url: config.fallbackRpc,
+          timeout: config.ethProviderTimeout,
+          allowGzip: true,
+        }),
+      );
+    }
+    this.provider = new RotateProvider(rpcs, undefined, this.log);
 
     const startBlock = await this.provider.getBlockNumber();
     const { chainId } = await this.provider.getNetwork();
