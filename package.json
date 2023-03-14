@@ -38,6 +38,7 @@
     "express": "^4.18.1",
     "forever": "^4.0.3",
     "lodash": "^4.17.21",
+    "p-retry": "4.6.2",
     "pino": "^8.7.0",
     "prom-client": "^14.1.0",
     "reflect-metadata": "^0.1.13",

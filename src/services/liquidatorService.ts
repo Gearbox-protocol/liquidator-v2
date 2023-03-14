@@ -14,7 +14,13 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import { BigNumber, providers } from "ethers";
+import {
+  BigNumber,
+  ContractReceipt,
+  ContractTransaction,
+  providers,
+} from "ethers";
+import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -240,9 +246,7 @@ export class LiquidatorService {
           pfResult.calls,
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
-        await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
-
-        const receipt = await tx.wait();
+        const receipt = await this.mine(tx);
 
         const balanceAfter = await getExecutorBalance();
 
@@ -381,5 +385,21 @@ export class LiquidatorService {
         );
       }
     });
+  }
+
+  private async mine(tx: ContractTransaction): Promise<ContractReceipt> {
+    const run = async () => {
+      await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
+      const receipt: ContractReceipt = await Promise.race([
+        tx.wait(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Timeout"));
+          }, 30 * 1000);
+        }),
+      ]);
+      return receipt;
+    };
+    return pRetry(run, { retries: 3 });
   }
 }
