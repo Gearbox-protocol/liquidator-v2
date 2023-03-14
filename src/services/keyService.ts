@@ -43,7 +43,7 @@ export class KeyService {
    */
   async launch() {
     const rpcs = [
-      new RetryProvider(3, {
+      new RetryProvider({
         url: config.ethProviderRpc,
         timeout: config.ethProviderTimeout,
         allowGzip: true,
@@ -51,7 +51,7 @@ export class KeyService {
     ];
     if (config.fallbackRpc) {
       rpcs.push(
-        new RetryProvider(3, {
+        new RetryProvider({
           url: config.fallbackRpc,
           timeout: config.ethProviderTimeout,
           allowGzip: true,
@@ -60,7 +60,7 @@ export class KeyService {
     }
     if (config.flashbotsRpc) {
       rpcs.unshift(
-        new RetryProvider(3, {
+        new RetryProvider({
           url: config.flashbotsRpc,
           timeout: config.ethProviderTimeout,
           allowGzip: true,

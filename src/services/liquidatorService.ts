@@ -69,19 +69,25 @@ export class LiquidatorService {
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
     const rpcs = [
-      new RetryProvider(3, {
-        url: config.ethProviderRpc,
-        timeout: config.ethProviderTimeout,
-        allowGzip: true,
-      }),
+      new RetryProvider(
+        {
+          url: config.ethProviderRpc,
+          timeout: config.ethProviderTimeout,
+          allowGzip: true,
+        },
+        { filterLogRange: 50_000, deployBlock: config.deployBlock },
+      ),
     ];
     if (config.fallbackRpc) {
       rpcs.push(
-        new RetryProvider(3, {
-          url: config.fallbackRpc,
-          timeout: config.ethProviderTimeout,
-          allowGzip: true,
-        }),
+        new RetryProvider(
+          {
+            url: config.fallbackRpc,
+            timeout: config.ethProviderTimeout,
+            allowGzip: true,
+          },
+          { filterLogRange: 50_000, deployBlock: config.deployBlock },
+        ),
       );
     }
     this.provider = new RotateProvider(rpcs, undefined, this.log);

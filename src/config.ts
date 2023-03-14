@@ -112,6 +112,11 @@ export class Config {
   static outS3Prefix: string;
 
   /**
+   * Block before first v2 credit manager was deployed
+   */
+  static deployBlock = 15833465;
+
+  /**
    * Output suffix to distinguish outputs of different liquidators
    */
   @IsNotEmpty()
