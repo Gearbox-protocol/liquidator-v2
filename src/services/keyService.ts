@@ -68,7 +68,9 @@ export class KeyService {
       );
     }
 
-    this.provider = new RotateProvider(rpcs, undefined, this.log);
+    this.provider = config.optimisticLiquidations
+      ? rpcs[0]
+      : new RotateProvider(rpcs, undefined, this.log);
     this.signer = new Wallet(config.privateKey, this.provider);
     this.minBalanceToNotify = WAD.mul(
       Math.floor(config.balanceToNotify * 1000),

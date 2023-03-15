@@ -90,7 +90,9 @@ export class LiquidatorService {
         ),
       );
     }
-    this.provider = new RotateProvider(rpcs, undefined, this.log);
+    this.provider = config.optimisticLiquidations
+      ? rpcs[0]
+      : new RotateProvider(rpcs, undefined, this.log);
 
     const startBlock = await this.provider.getBlockNumber();
     const { chainId } = await this.provider.getNetwork();
@@ -267,6 +269,7 @@ export class LiquidatorService {
           0,
           true,
           pfResult.calls,
+          { gasLimit: 29e6 }, // should be ok because we top up in optimistic
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
         const receipt = await this.mine(tx);
@@ -278,12 +281,6 @@ export class LiquidatorService {
           .toString();
 
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
-        if (receipt.gasUsed.gt(29e6)) {
-          optimisticResult.isError = true;
-          this.log.error(`Too much gas used: ${receipt.gasUsed}`);
-        } else {
-          this.log.debug(`Gas used: ${receipt.gasUsed}`);
-        }
       } catch (e) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
