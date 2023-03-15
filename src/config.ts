@@ -26,6 +26,7 @@ export class Config {
   @IsNotEmpty()
   static ethProviderRpc: string;
   static flashbotsRpc?: string;
+  static fallbackRpc?: string;
 
   /**
    * JSONRPC calls timeout
@@ -111,6 +112,11 @@ export class Config {
   static outS3Prefix: string;
 
   /**
+   * Block before first v2 credit manager was deployed
+   */
+  static deployBlock = 15833465;
+
+  /**
    * Output suffix to distinguish outputs of different liquidators
    */
   @IsNotEmpty()
@@ -126,6 +132,7 @@ export class Config {
 
     Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
     Config.flashbotsRpc = process.env.FLASHBOTS_RPC;
+    Config.fallbackRpc = process.env.FALLBACK_RPC;
     Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
       ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
       : undefined;
