@@ -35,6 +35,12 @@ import { HealthChecker } from "./healthChecker";
 import { KeyService } from "./keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
 import { ScanService } from "./scanService";
+import { ISwapper, SWAPPER } from "./swap";
+
+interface Balance {
+  underlying: BigNumber;
+  eth: BigNumber;
+}
 
 @Service()
 export class LiquidatorService {
@@ -55,6 +61,9 @@ export class LiquidatorService {
 
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
+
+  @Inject(SWAPPER)
+  swapper: ISwapper;
 
   protected provider: providers.Provider;
   protected pathFinder: PathFinder;
@@ -221,15 +230,7 @@ export class LiquidatorService {
       const pathHuman = TxParser.parseMultiCall(pfResult.calls);
       this.log.debug({ pathHuman }, "path found");
 
-      const getExecutorBalance = async (): Promise<BigNumber> => {
-        return tokenSymbolByAddress[ca.underlyingToken] === "WETH"
-          ? await this.provider.getBalance(this.keyService.address)
-          : await IERC20__factory.connect(
-              ca.underlyingToken,
-              this.keyService.signer,
-            ).balanceOf(this.keyService.address);
-      };
-      const balanceBefore = await getExecutorBalance();
+      const balanceBefore = await this.getExecutorBalance(ca);
       const iFacade = ICreditFacade__factory.connect(
         creditFacade,
         this.keyService.signer,
@@ -258,7 +259,7 @@ export class LiquidatorService {
       );
       // Actual liquidation (write requests start here)
       try {
-        // this is needed because otherwise it's possible to heat deadlines in uniswap calls
+        // this is needed because otherwise it's possible to hit deadlines in uniswap calls
         await (this.provider as providers.JsonRpcProvider).send(
           "anvil_setBlockTimestampInterval",
           [12],
@@ -274,12 +275,16 @@ export class LiquidatorService {
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
         const receipt = await this.mine(tx);
 
-        const balanceAfter = await getExecutorBalance();
-
-        optimisticResult.liquidatorPremium = balanceAfter
-          .sub(balanceBefore)
+        const balanceAfter = await this.getExecutorBalance(ca);
+        optimisticResult.liquidatorPremium = balanceAfter.underlying
+          .sub(balanceBefore.underlying)
           .toString();
-
+        // swap underlying back to ETH
+        await this.swapper.swap(
+          this.keyService.signer,
+          ca.underlyingToken,
+          balanceAfter.underlying,
+        );
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
       } catch (e) {
         optimisticResult.isError = true;
@@ -407,6 +412,27 @@ export class LiquidatorService {
     });
   }
 
+  private async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
+    const underlyingP =
+      tokenSymbolByAddress[ca.underlyingToken] === "WETH"
+        ? this.provider.getBalance(this.keyService.address)
+        : IERC20__factory.connect(
+            ca.underlyingToken,
+            this.keyService.signer,
+          ).balanceOf(this.keyService.address);
+    const [eth, underlying] = await Promise.all([
+      this.provider.getBalance(this.keyService.address),
+      underlyingP,
+    ]);
+    return { eth, underlying };
+  }
+
+  /**
+   * Mines transaction on anvil. Because sometimes it gets stuck for unknown reasons,
+   * add retries and timeout
+   * @param tx
+   * @returns
+   */
   private async mine(tx: ContractTransaction): Promise<ContractReceipt> {
     const run = async () => {
       await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
