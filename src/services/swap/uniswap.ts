@@ -1,10 +1,9 @@
 import {
+  CHAINS,
   decimals,
   getDecimals,
   IERC20__factory,
-  IWETH__factory,
-  MAINNET_NETWORK,
-  tokenDataByNetwork,
+  NetworkType,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import {
@@ -29,17 +28,8 @@ import { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../decorators/logger";
+import BaseSwapper from "./base";
 import { ISwapper } from "./types";
-
-type TokenTrade = Trade<Token, Token, TradeType>;
-
-const WETH = new Token(
-  MAINNET_NETWORK,
-  tokenDataByNetwork.Mainnet.WETH,
-  decimals.WETH,
-  "WETH",
-  "Wrapped Ether",
-);
 
 const QUOTER_CONTRACT_ADDRESS = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
 const POOL_FACTORY_CONTRACT_ADDRESS =
@@ -47,23 +37,37 @@ const POOL_FACTORY_CONTRACT_ADDRESS =
 const SWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
 @Service()
-export default class Uniswap implements ISwapper {
+export default class Uniswap extends BaseSwapper implements ISwapper {
   @Logger("uniswap")
   log: LoggerInterface;
 
-  // @ts-ignore
+  private WETH: Token;
+
+  public async launch(network: NetworkType): Promise<void> {
+    await super.launch(network);
+    this.WETH = new Token(
+      CHAINS[network],
+      this.wethAddr,
+      decimals.WETH,
+      "WETH",
+      "Wrapped Ether",
+    );
+  }
+
   public async swap(
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
   ): Promise<void> {
-    this.log.debug(`Swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`);
     try {
-      const token = newToken(tokenAddr);
-      const trade = await this.createTrade(executor, token, amount);
-      await this.executeTrade(executor, token, amount, trade);
-      await this.unwrap(executor);
-      this.log.debug(`Swapped ${tokenSymbolByAddress[tokenAddr]} back to ETH`);
+      if (tokenAddr.toLowerCase() !== this.wethAddr.toLowerCase()) {
+        this.log.debug(
+          `Swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+        );
+        await this.executeTrade(executor, tokenAddr, amount);
+        this.log.debug(`Swapped ${tokenSymbolByAddress[tokenAddr]} to WETH`);
+      }
+      this.log.debug("Unwrapped ETH");
     } catch (e) {
       this.log.error(
         `Failed to swap ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${e}`,
@@ -71,13 +75,21 @@ export default class Uniswap implements ISwapper {
     }
   }
 
-  private async createTrade(
+  private async executeTrade(
     executor: Wallet,
-    token: Token,
+    tokenAddr: string,
     amount: BigNumberish,
-  ): Promise<TokenTrade> {
+  ): Promise<void> {
+    const token = new Token(
+      CHAINS[this.network],
+      tokenAddr,
+      getDecimals(tokenAddr),
+      tokenSymbolByAddress[tokenAddr],
+      tokenSymbolByAddress[tokenAddr],
+    );
+
     const pool = await this.getPool(executor, token);
-    const swapRoute = new Route([pool], token, WETH);
+    const swapRoute = new Route([pool], token, this.WETH);
     const amountOut = await this.getOutputQuote(
       executor,
       token,
@@ -85,20 +97,16 @@ export default class Uniswap implements ISwapper {
       swapRoute,
     );
 
-    return Trade.createUncheckedTrade({
+    const trade = Trade.createUncheckedTrade({
       route: swapRoute,
       inputAmount: CurrencyAmount.fromRawAmount(token, amount.toString()),
-      outputAmount: CurrencyAmount.fromRawAmount(WETH, amountOut.toString()),
+      outputAmount: CurrencyAmount.fromRawAmount(
+        this.WETH,
+        amountOut.toString(),
+      ),
       tradeType: TradeType.EXACT_INPUT,
     });
-  }
 
-  private async executeTrade(
-    executor: Wallet,
-    token: Token,
-    amount: BigNumberish,
-    trade: TokenTrade,
-  ): Promise<void> {
     const erc20 = IERC20__factory.connect(token.address, executor);
     await erc20.approve(SWAP_ROUTER_ADDRESS, amount);
 
@@ -120,18 +128,11 @@ export default class Uniswap implements ISwapper {
     await executor.sendTransaction(tx);
   }
 
-  private async unwrap(executor: Wallet): Promise<void> {
-    const weth = IWETH__factory.connect(WETH.address, executor);
-    const erc20 = IERC20__factory.connect(WETH.address, executor);
-    const balance = await erc20.balanceOf(executor.address);
-    await weth.withdraw(balance);
-  }
-
   private async getPool(executor: Wallet, token: Token): Promise<Pool> {
     const currentPoolAddress = computePoolAddress({
       factoryAddress: POOL_FACTORY_CONTRACT_ADDRESS,
       tokenA: token,
-      tokenB: WETH,
+      tokenB: this.WETH,
       fee: FeeAmount.MEDIUM,
     });
 
@@ -148,7 +149,7 @@ export default class Uniswap implements ISwapper {
 
     return new Pool(
       token,
-      WETH,
+      this.WETH,
       FeeAmount.MEDIUM,
       slot0[0].toString(),
       liquidity,
@@ -183,14 +184,4 @@ export default class Uniswap implements ISwapper {
 
     return amountOut;
   }
-}
-
-function newToken(addr: string): Token {
-  return new Token(
-    MAINNET_NETWORK,
-    addr,
-    getDecimals(tokenSymbolByAddress[addr]),
-    tokenSymbolByAddress[addr],
-    tokenSymbolByAddress[addr],
-  );
 }

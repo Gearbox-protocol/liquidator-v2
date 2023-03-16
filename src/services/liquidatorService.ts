@@ -147,6 +147,7 @@ export class LiquidatorService {
       }
 
       await this.keyService.launch();
+      await this.swapper.launch(network);
       await this.checkEmergencyPermissions(dataCompressor, startBlock);
       await this.scanService.launch(
         dataCompressor,
@@ -276,16 +277,17 @@ export class LiquidatorService {
         const receipt = await this.mine(tx);
 
         const balanceAfter = await this.getExecutorBalance(ca);
+        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
           .toString();
+
         // swap underlying back to ETH
         await this.swapper.swap(
           this.keyService.signer,
           ca.underlyingToken,
           balanceAfter.underlying,
         );
-        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
       } catch (e) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
