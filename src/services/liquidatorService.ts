@@ -296,8 +296,9 @@ export class LiquidatorService {
       } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
+        optimisticResult.txTrace = await this.getTrace(e.transactionHash);
       }
-    } catch (e) {
+    } catch (e: any) {
       optimisticResult.isError = true;
       this.log.error(
         { account: this.getAccountTitle(ca) },
@@ -446,5 +447,17 @@ export class LiquidatorService {
       return receipt;
     };
     return pRetry(run, { retries: 3 });
+  }
+
+  private async getTrace(txHash: string): Promise<unknown> {
+    try {
+      const txTrace = await (this.provider as providers.JsonRpcProvider).send(
+        "trace_transaction",
+        [txHash],
+      );
+      return txTrace;
+    } catch (e) {
+      return undefined;
+    }
   }
 }
