@@ -23,6 +23,7 @@ import {
   ContractReceipt,
   ContractTransaction,
   providers,
+  utils,
 } from "ethers";
 import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
@@ -249,8 +250,12 @@ export class LiquidatorService {
           pfResult.calls,
         );
         this.log.debug(`estimated gas: ${estGas}`);
-      } catch (e) {
-        this.log.debug(`failed to esitmate gas: ${e}`);
+      } catch (e: any) {
+        if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
+          this.log.error(`failed to estimate gas: ${e.reason}`);
+        } else {
+          this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
+        }
       }
 
       // save snapshot after all read requests are done
@@ -288,17 +293,9 @@ export class LiquidatorService {
           ca.underlyingToken,
           balanceAfter.underlying,
         );
-      } catch (e) {
+      } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
-        const ptx = await iFacade.populateTransaction.liquidateCreditAccount(
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
-          pfResult.calls,
-        );
-        this.log.debug({ transaction: ptx });
       }
     } catch (e) {
       optimisticResult.isError = true;
