@@ -65,7 +65,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         // ...rest
       } = swap.data;
 
-      await executor.sendTransaction(tx);
+      await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
       this.log.debug(
         `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
