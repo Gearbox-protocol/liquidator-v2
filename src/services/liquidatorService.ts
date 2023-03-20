@@ -162,7 +162,10 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
-      await this.outputWriter.write(startBlock, this.optimistic);
+      await this.outputWriter.write(startBlock, {
+        result: this.optimistic,
+        startBlock,
+      });
       process.exit(0);
     }
   }
@@ -301,7 +304,7 @@ export class LiquidatorService {
       } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
-        optimisticResult.txTrace = await this.getTrace(e.transactionHash);
+        await this.saveTxTrace(e.transactionHash);
       }
     } catch (e: any) {
       optimisticResult.isError = true;
@@ -454,15 +457,21 @@ export class LiquidatorService {
     return pRetry(run, { retries: 3 });
   }
 
-  private async getTrace(txHash: string): Promise<unknown> {
+  /**
+   * Safely tries to save trace of failed transaction to configured output
+   * @param txHash
+   * @returns
+   */
+  private async saveTxTrace(txHash: string): Promise<void> {
     try {
       const txTrace = await (this.provider as providers.JsonRpcProvider).send(
         "trace_transaction",
         [txHash],
       );
-      return txTrace;
+      await this.outputWriter.write(txHash, txTrace);
+      this.log.debug(`saved trace_transaction result for ${txHash}`);
     } catch (e) {
-      return undefined;
+      this.log.warn(`failed to save tx trace: ${e}`);
     }
   }
 }

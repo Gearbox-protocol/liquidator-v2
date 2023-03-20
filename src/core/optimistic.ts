@@ -42,11 +42,6 @@ export interface OptimisticResult {
   isError: boolean;
 
   /**
-   * Results of trace_transaction (for failed transactions only)
-   */
-  txTrace?: unknown;
-
-  /**
    * How much time it took to liquidate this account (ms)
    */
   duration?: number;
