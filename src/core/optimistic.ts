@@ -31,6 +31,10 @@ export interface OptimisticResult {
    * liquidatorPremium = underlyingBalanceAfterLiquidation - underlyingBalanceBeforeLiquidation
    */
   liquidatorPremium: string;
+  /**
+   * Difference between liquidator ETH balance before and after liquidation and swapping of underlying back to ETH
+   */
+  liquidatorProfit: string;
 
   /**
    * True if errors accrued

@@ -220,6 +220,7 @@ export class LiquidatorService {
       isError: false,
       pathAmount: "0",
       liquidatorPremium: "0",
+      liquidatorProfit: "0",
     };
     const start = Date.now();
 
@@ -281,7 +282,7 @@ export class LiquidatorService {
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
         const receipt = await this.mine(tx);
 
-        const balanceAfter = await this.getExecutorBalance(ca);
+        let balanceAfter = await this.getExecutorBalance(ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
@@ -293,6 +294,10 @@ export class LiquidatorService {
           ca.underlyingToken,
           balanceAfter.underlying,
         );
+        balanceAfter = await this.getExecutorBalance(ca);
+        optimisticResult.liquidatorProfit = balanceAfter.eth
+          .sub(balanceBefore.eth)
+          .toString();
       } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
