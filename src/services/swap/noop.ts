@@ -4,7 +4,10 @@ import { BigNumberish, Wallet } from "ethers";
 import { ISwapper } from "./types";
 
 export default class NoopSwapper implements ISwapper {
-  launch: (network: NetworkType) => Promise<void>;
+  public async launch(_network: NetworkType): Promise<void> {
+    // nothing to do here
+  }
+
   public async swap(
     _executor: Wallet,
     _tokenAddr: string,
