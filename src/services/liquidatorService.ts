@@ -345,17 +345,15 @@ export class LiquidatorService {
   }
 
   private async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
-    const underlyingP =
-      tokenSymbolByAddress[ca.underlyingToken] === "WETH"
-        ? this.provider.getBalance(this.keyService.address)
-        : IERC20__factory.connect(
-            ca.underlyingToken,
-            this.keyService.signer,
-          ).balanceOf(this.keyService.address);
-    const [eth, underlying] = await Promise.all([
-      this.provider.getBalance(this.keyService.address),
-      underlyingP,
-    ]);
+    // using promise.all here sometimes results in anvil being stuck
+    const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
+    const eth = await this.provider.getBalance(this.keyService.address);
+    const underlying = isWeth
+      ? eth
+      : await IERC20__factory.connect(
+          ca.underlyingToken,
+          this.provider,
+        ).balanceOf(this.keyService.address);
     return { eth, underlying };
   }
 
