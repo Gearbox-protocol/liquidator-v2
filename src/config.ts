@@ -87,6 +87,11 @@ export class Config {
   static optimisticLiquidations: boolean;
 
   /**
+   * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
+   */
+  static swapToEth?: string;
+
+  /**
    * Directory to output logs, leave empty if you don't need file output
    */
   static outDir: string | undefined;
@@ -147,6 +152,7 @@ export class Config {
     Config.keySecret = process.env.KEY_SECRET;
     Config.underlying = process.env.UNDERLYING;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
+    Config.swapToEth = process.env.SWAP_TO_ETH;
     Config.multicallChunkSize = parseInt(
       process.env.MULTICALL_CHUNK || "30",
       10,

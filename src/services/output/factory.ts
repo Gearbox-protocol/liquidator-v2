@@ -1,7 +1,6 @@
 import { Service } from "typedi";
 
 import config from "../../config";
-import { OptimisticResult } from "../../core/optimistic";
 import ConsoleWriter from "./consoleWriter";
 import { OUTPUT_WRITER } from "./constants";
 import FileWriter from "./fileWriter";
@@ -22,5 +21,5 @@ function createOutputWriter(): IOptimisticOutputWriter {
 
 @Service({ factory: createOutputWriter, id: OUTPUT_WRITER })
 export class OutputWriter implements IOptimisticOutputWriter {
-  write: (startBlock: number, result: OptimisticResult[]) => Promise<void>;
+  write: (prefix: number | string, result: unknown) => Promise<void>;
 }

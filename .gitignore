@@ -16,3 +16,6 @@ coverage*
 *.tsbuildinfo
 .eslintcache
 .eslint.local.json
+
+# Optimistic output
+/output

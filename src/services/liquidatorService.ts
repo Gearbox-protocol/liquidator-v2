@@ -4,15 +4,12 @@ import {
 } from "@gearbox-protocol/devops/lib/providers";
 import {
   CreditAccountData,
-  CreditManagerWatcher,
   detectNetwork,
   GOERLI_NETWORK,
   IAddressProvider__factory,
   ICreditFacade__factory,
-  ICreditManagerV2__factory,
   IERC20__factory,
   MAINNET_NETWORK,
-  Multicall2__factory,
   PathFinder,
   PathFinderCloseResult,
   tokenSymbolByAddress,
@@ -23,6 +20,7 @@ import {
   ContractReceipt,
   ContractTransaction,
   providers,
+  utils,
 } from "ethers";
 import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
@@ -35,6 +33,12 @@ import { HealthChecker } from "./healthChecker";
 import { KeyService } from "./keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
 import { ScanService } from "./scanService";
+import { ISwapper, SWAPPER } from "./swap";
+
+interface Balance {
+  underlying: BigNumber;
+  eth: BigNumber;
+}
 
 @Service()
 export class LiquidatorService {
@@ -55,6 +59,9 @@ export class LiquidatorService {
 
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
+
+  @Inject(SWAPPER)
+  swapper: ISwapper;
 
   protected provider: providers.Provider;
   protected pathFinder: PathFinder;
@@ -138,7 +145,7 @@ export class LiquidatorService {
       }
 
       await this.keyService.launch();
-      await this.checkEmergencyPermissions(dataCompressor, startBlock);
+      await this.swapper.launch(network);
       await this.scanService.launch(
         dataCompressor,
         priceOracle,
@@ -151,7 +158,10 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
-      await this.outputWriter.write(startBlock, this.optimistic);
+      await this.outputWriter.write(startBlock, {
+        result: this.optimistic,
+        startBlock,
+      });
       process.exit(0);
     }
   }
@@ -209,6 +219,7 @@ export class LiquidatorService {
       isError: false,
       pathAmount: "0",
       liquidatorPremium: "0",
+      liquidatorProfit: "0",
     };
     const start = Date.now();
 
@@ -221,15 +232,7 @@ export class LiquidatorService {
       const pathHuman = TxParser.parseMultiCall(pfResult.calls);
       this.log.debug({ pathHuman }, "path found");
 
-      const getExecutorBalance = async (): Promise<BigNumber> => {
-        return tokenSymbolByAddress[ca.underlyingToken] === "WETH"
-          ? await this.provider.getBalance(this.keyService.address)
-          : await IERC20__factory.connect(
-              ca.underlyingToken,
-              this.keyService.signer,
-            ).balanceOf(this.keyService.address);
-      };
-      const balanceBefore = await getExecutorBalance();
+      const balanceBefore = await this.getExecutorBalance(ca);
       const iFacade = ICreditFacade__factory.connect(
         creditFacade,
         this.keyService.signer,
@@ -247,8 +250,12 @@ export class LiquidatorService {
           pfResult.calls,
         );
         this.log.debug(`estimated gas: ${estGas}`);
-      } catch (e) {
-        this.log.debug(`failed to esitmate gas: ${e}`);
+      } catch (e: any) {
+        if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
+          this.log.error(`failed to estimate gas: ${e.reason}`);
+        } else {
+          this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
+        }
       }
 
       // save snapshot after all read requests are done
@@ -258,7 +265,7 @@ export class LiquidatorService {
       );
       // Actual liquidation (write requests start here)
       try {
-        // this is needed because otherwise it's possible to heat deadlines in uniswap calls
+        // this is needed because otherwise it's possible to hit deadlines in uniswap calls
         await (this.provider as providers.JsonRpcProvider).send(
           "anvil_setBlockTimestampInterval",
           [12],
@@ -274,26 +281,28 @@ export class LiquidatorService {
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
         const receipt = await this.mine(tx);
 
-        const balanceAfter = await getExecutorBalance();
-
-        optimisticResult.liquidatorPremium = balanceAfter
-          .sub(balanceBefore)
+        let balanceAfter = await this.getExecutorBalance(ca);
+        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
+        optimisticResult.liquidatorPremium = balanceAfter.underlying
+          .sub(balanceBefore.underlying)
           .toString();
 
-        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
-      } catch (e) {
+        // swap underlying back to ETH
+        await this.swapper.swap(
+          this.keyService.signer,
+          ca.underlyingToken,
+          balanceAfter.underlying,
+        );
+        balanceAfter = await this.getExecutorBalance(ca);
+        optimisticResult.liquidatorProfit = balanceAfter.eth
+          .sub(balanceBefore.eth)
+          .toString();
+      } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
-        const ptx = await iFacade.populateTransaction.liquidateCreditAccount(
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
-          pfResult.calls,
-        );
-        this.log.debug({ transaction: ptx });
+        await this.saveTxTrace(e.transactionHash);
       }
-    } catch (e) {
+    } catch (e: any) {
       optimisticResult.isError = true;
       this.log.error(
         { account: this.getAccountTitle(ca) },
@@ -335,78 +344,25 @@ export class LiquidatorService {
     }
   }
 
-  /**
-   * Performs one-time check that all executors have permissions to liquidate while paused on all enabled credit managers
-   * @param dataCompressor
-   * @param blockNumber
-   */
-  private async checkEmergencyPermissions(
-    dataCompressor: string,
-    blockNumber: number,
-  ): Promise<void> {
-    this.log.debug("Checking emergency permissions");
-    const creditManagers = await CreditManagerWatcher.getV2CreditManagers(
-      dataCompressor,
-      this.provider,
-    );
-
-    const mc = Multicall2__factory.connect(
-      config.multicallAddress,
-      this.provider,
-    );
-    const cmi = ICreditManagerV2__factory.createInterface();
-
-    const liquidators = [
-      this.keyService.signer.address,
-      ...this.keyService.getExecutorAddress(),
-    ];
-
-    // make one multicall, where for each enabled cm and each liquidator address we check emergency permissions
-    const calls = Object.values(creditManagers)
-      .filter(cm => {
-        // If single CreditManager mode is on, use only this manager
-        const symb = tokenSymbolByAddress[cm.underlyingToken];
-        return (
-          !config.underlying ||
-          config.underlying.toLowerCase() === symb.toLowerCase()
-        );
-      })
-      .flatMap(cm =>
-        liquidators.map(liqAddr => ({
-          target: cm.address,
-          callData: cmi.encodeFunctionData("canLiquidateWhilePaused", [
-            liqAddr,
-          ]),
-        })),
-      );
-
-    this.log.debug(
-      `Will perform ${calls.length} canLiquidateWhilePaused calls`,
-    );
-    const { returnData } = await mc.callStatic.aggregate(calls, {
-      blockTag: blockNumber,
-    });
-
-    returnData.forEach((d, i) => {
-      const [enabled] = cmi.decodeFunctionResult("canLiquidateWhilePaused", d);
-      const [liquidator] = cmi.decodeFunctionData(
-        "canLiquidateWhilePaused",
-        calls[i].callData,
-      );
-      if (enabled) {
-        this.log.debug(
-          { liquidator, creditManager: calls[i].target },
-          "can work in emergency mode",
-        );
-      } else {
-        this.log.warn(
-          { liquidator, creditManager: calls[i].target },
-          "cannot work in emergency mode",
-        );
-      }
-    });
+  private async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
+    // using promise.all here sometimes results in anvil being stuck
+    const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
+    const eth = await this.provider.getBalance(this.keyService.address);
+    const underlying = isWeth
+      ? eth
+      : await IERC20__factory.connect(
+          ca.underlyingToken,
+          this.provider,
+        ).balanceOf(this.keyService.address);
+    return { eth, underlying };
   }
 
+  /**
+   * Mines transaction on anvil. Because sometimes it gets stuck for unknown reasons,
+   * add retries and timeout
+   * @param tx
+   * @returns
+   */
   private async mine(tx: ContractTransaction): Promise<ContractReceipt> {
     const run = async () => {
       await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
@@ -421,5 +377,23 @@ export class LiquidatorService {
       return receipt;
     };
     return pRetry(run, { retries: 3 });
+  }
+
+  /**
+   * Safely tries to save trace of failed transaction to configured output
+   * @param txHash
+   * @returns
+   */
+  private async saveTxTrace(txHash: string): Promise<void> {
+    try {
+      const txTrace = await (this.provider as providers.JsonRpcProvider).send(
+        "trace_transaction",
+        [txHash],
+      );
+      await this.outputWriter.write(txHash, txTrace);
+      this.log.debug(`saved trace_transaction result for ${txHash}`);
+    } catch (e) {
+      this.log.warn(`failed to save tx trace: ${e}`);
+    }
   }
 }
