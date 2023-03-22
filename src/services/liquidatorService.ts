@@ -15,14 +15,7 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import {
-  BigNumber,
-  ContractReceipt,
-  ContractTransaction,
-  providers,
-  utils,
-} from "ethers";
-import pRetry from "p-retry";
+import { BigNumber, ethers, providers, utils } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -34,6 +27,7 @@ import { KeyService } from "./keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
 import { ScanService } from "./scanService";
 import { ISwapper, SWAPPER } from "./swap";
+import { mine } from "./utils";
 
 interface Balance {
   underlying: BigNumber;
@@ -279,7 +273,10 @@ export class LiquidatorService {
           { gasLimit: 29e6 }, // should be ok because we top up in optimistic
         );
         this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
-        const receipt = await this.mine(tx);
+        const receipt = await mine(
+          this.provider as ethers.providers.JsonRpcProvider,
+          tx,
+        );
 
         let balanceAfter = await this.getExecutorBalance(ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
@@ -355,28 +352,6 @@ export class LiquidatorService {
           this.provider,
         ).balanceOf(this.keyService.address);
     return { eth, underlying };
-  }
-
-  /**
-   * Mines transaction on anvil. Because sometimes it gets stuck for unknown reasons,
-   * add retries and timeout
-   * @param tx
-   * @returns
-   */
-  private async mine(tx: ContractTransaction): Promise<ContractReceipt> {
-    const run = async () => {
-      await (this.provider as providers.JsonRpcProvider).send("evm_mine", []);
-      const receipt: ContractReceipt = await Promise.race([
-        tx.wait(),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error("Timeout"));
-          }, 30 * 1000);
-        }),
-      ]);
-      return receipt;
-    };
-    return pRetry(run, { retries: 3 });
   }
 
   /**

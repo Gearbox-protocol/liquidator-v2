@@ -7,10 +7,11 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import axios, { AxiosInstance } from "axios";
-import { BigNumberish, Wallet } from "ethers";
+import { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../decorators/logger";
+import { mine } from "../utils";
 import BaseSwapper from "./base";
 import { ISwapper } from "./types";
 
@@ -46,7 +47,11 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         `Swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
       const erc20 = IERC20__factory.connect(tokenAddr, executor);
-      await erc20.approve(ROUTER_v5, amount);
+      const approveTx = await erc20.approve(ROUTER_v5, amount);
+      await mine(
+        executor.provider as ethers.providers.JsonRpcProvider,
+        approveTx,
+      );
 
       const swap = await this.apiClient.get("/swap", {
         params: {
@@ -65,7 +70,8 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         // ...rest
       } = swap.data;
 
-      await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
+      const txR = await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
+      await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
       this.log.debug(
         `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
