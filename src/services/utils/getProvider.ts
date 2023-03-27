@@ -9,11 +9,14 @@ import { LoggerInterface } from "../../decorators/logger";
 export function getProvider(flashbots = false, logger?: LoggerInterface) {
   const rpcs = config.ethProviderRpcs.map(
     url =>
-      new RetryProvider({
-        url,
-        timeout: config.ethProviderTimeout,
-        allowGzip: true,
-      }),
+      new RetryProvider(
+        {
+          url,
+          timeout: config.ethProviderTimeout,
+          allowGzip: true,
+        },
+        { deployBlock: config.deployBlock, filterLogRange: 50_000 },
+      ),
   );
   if (flashbots && config.flashbotsRpc) {
     rpcs.unshift(

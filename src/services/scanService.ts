@@ -65,18 +65,22 @@ export class ScanService {
   ) {
     this.provider = provider;
     this.liquidatorService = liquidatorService;
-
-    if (!config.optimisticLiquidations) {
-      await this.oracleService.launch(priceOracle, this.provider);
-    }
-
     this.dataCompressor = dataCompressor;
 
     const startingBlock = await this.provider.getBlockNumber();
 
+    if (!config.optimisticLiquidations) {
+      await this.oracleService.launch(
+        priceOracle,
+        this.provider,
+        startingBlock,
+      );
+    }
+
     this.creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       this.dataCompressor,
       this.provider,
+      startingBlock,
     );
 
     await this.updatePoolsCI();

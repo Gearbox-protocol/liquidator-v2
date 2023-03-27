@@ -11,6 +11,7 @@ import { IPriceOracleV2Interface } from "@gearbox-protocol/sdk/lib/types/@gearbo
 import { BigNumberish, providers } from "ethers";
 import { Inject, Service } from "typedi";
 
+import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
 
@@ -33,12 +34,18 @@ export class PriceOracleService {
    * @param address Address of PriceOracle
    * @param provider Ethers provider for fetching data
    */
-  async launch(address: string, provider: providers.Provider) {
+  async launch(
+    address: string,
+    provider: providers.Provider,
+    startingBlock: number,
+  ) {
     this._provider = provider;
     this._contract = IPriceOracleV2__factory.connect(address, provider);
     this.priceOracle = new PriceOracleData([]);
     const query = await this._contract.queryFilter(
       this._contract.filters.NewPriceFeed(),
+      config.deployBlock,
+      startingBlock,
     );
 
     this._tokens = Array.from(
