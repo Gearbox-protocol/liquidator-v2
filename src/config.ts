@@ -116,10 +116,10 @@ export class Config {
   static outS3Prefix: string;
 
   /**
-   * Block before first v2 credit manager was deployed
+   * Block before any of gearbox contracts was deployed
    * To start querying for gearbox events
    */
-  static deployBlock = 15833465;
+  static deployBlock = 13810899;
 
   /**
    * Output suffix to distinguish outputs of different liquidators
