@@ -74,11 +74,6 @@ export class Config {
   @Min(0)
   static skipBlocks: number;
 
-  /**
-   * Block number to start querying for gearbox events
-   */
-  static deployBlock = 13810899;
-
   @IsNotEmpty()
   @Min(1)
   static executorsQty: number;
@@ -122,6 +117,7 @@ export class Config {
 
   /**
    * Block before first v2 credit manager was deployed
+   * To start querying for gearbox events
    */
   static deployBlock = 15833465;
 
