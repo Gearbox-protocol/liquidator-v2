@@ -1,8 +1,4 @@
 import {
-  RetryProvider,
-  RotateProvider,
-} from "@gearbox-protocol/devops/lib/providers";
-import {
   CreditAccountData,
   detectNetwork,
   GOERLI_NETWORK,
@@ -27,7 +23,7 @@ import { KeyService } from "./keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
 import { ScanService } from "./scanService";
 import { ISwapper, SWAPPER } from "./swap";
-import { mine } from "./utils";
+import { getProvider, mine } from "./utils";
 
 interface Balance {
   underlying: BigNumber;
@@ -69,31 +65,7 @@ export class LiquidatorService {
    */
   async launch() {
     this.slippage = Math.floor(config.slippage * 100);
-    const rpcs = [
-      new RetryProvider(
-        {
-          url: config.ethProviderRpc,
-          timeout: config.ethProviderTimeout,
-          allowGzip: true,
-        },
-        { filterLogRange: 50_000, deployBlock: config.deployBlock },
-      ),
-    ];
-    if (config.fallbackRpc) {
-      rpcs.push(
-        new RetryProvider(
-          {
-            url: config.fallbackRpc,
-            timeout: config.ethProviderTimeout,
-            allowGzip: true,
-          },
-          { filterLogRange: 50_000, deployBlock: config.deployBlock },
-        ),
-      );
-    }
-    this.provider = config.optimisticLiquidations
-      ? rpcs[0]
-      : new RotateProvider(rpcs, undefined, this.log);
+    this.provider = getProvider(false, this.log);
 
     const startBlock = await this.provider.getBlockNumber();
     const { chainId } = await this.provider.getNetwork();

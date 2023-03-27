@@ -24,9 +24,8 @@ export class Config {
   static addressProviderGoerli: string;
 
   @IsNotEmpty()
-  static ethProviderRpc: string;
+  static ethProviderRpcs: string[];
   static flashbotsRpc?: string;
-  static fallbackRpc?: string;
 
   /**
    * JSONRPC calls timeout
@@ -134,10 +133,10 @@ export class Config {
     Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProviderMainnet = process.env.ADDRESS_PROVIDER_MAINNET || "";
     Config.addressProviderGoerli = process.env.ADDRESS_PROVIDER_GOERLI || "";
-
-    Config.ethProviderRpc = process.env.JSON_RPC_PROVIDER || "";
+    const providers =
+      process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
+    Config.ethProviderRpcs = providers ? providers.split(",") : [];
     Config.flashbotsRpc = process.env.FLASHBOTS_RPC;
-    Config.fallbackRpc = process.env.FALLBACK_RPC;
     Config.ethProviderTimeout = process.env.JSON_RPC_TIMEOUT
       ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
       : undefined;

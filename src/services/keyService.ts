@@ -1,7 +1,3 @@
-import {
-  RetryProvider,
-  RotateProvider,
-} from "@gearbox-protocol/devops/lib/providers";
 import { formatBN, WAD } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
 import { BigNumber, providers, Wallet } from "ethers";
@@ -10,6 +6,7 @@ import { Inject, Service } from "typedi";
 import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
+import { getProvider } from "./utils";
 import { IWalletStorage, WALLET_STORAGE } from "./wallet-storage";
 
 @Service()
@@ -42,35 +39,7 @@ export class KeyService {
    * @param provider Ethers JSON RPC provider
    */
   async launch() {
-    const rpcs = [
-      new RetryProvider({
-        url: config.ethProviderRpc,
-        timeout: config.ethProviderTimeout,
-        allowGzip: true,
-      }),
-    ];
-    if (config.fallbackRpc) {
-      rpcs.push(
-        new RetryProvider({
-          url: config.fallbackRpc,
-          timeout: config.ethProviderTimeout,
-          allowGzip: true,
-        }),
-      );
-    }
-    if (config.flashbotsRpc) {
-      rpcs.unshift(
-        new RetryProvider({
-          url: config.flashbotsRpc,
-          timeout: config.ethProviderTimeout,
-          allowGzip: true,
-        }),
-      );
-    }
-
-    this.provider = config.optimisticLiquidations
-      ? rpcs[0]
-      : new RotateProvider(rpcs, undefined, this.log);
+    this.provider = getProvider(true, this.log);
     this.signer = new Wallet(config.privateKey, this.provider);
     this.minBalanceToNotify = WAD.mul(
       Math.floor(config.balanceToNotify * 1000),
