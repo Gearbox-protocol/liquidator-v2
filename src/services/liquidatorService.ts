@@ -266,6 +266,10 @@ export class LiquidatorService {
         optimisticResult.liquidatorProfit = balanceAfter.eth
           .sub(balanceBefore.eth)
           .toString();
+
+        if (balanceAfter.eth.lt(balanceBefore.eth)) {
+          this.log.warn("negative liquidator profit");
+        }
       } catch (e: any) {
         optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
