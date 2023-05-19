@@ -1,9 +1,11 @@
 import {
   CreditAccountData,
+  CreditManagerWatcher,
   detectNetwork,
   GOERLI_NETWORK,
   IAddressProvider__factory,
   ICreditFacade__factory,
+  IDataCompressor__factory,
   IERC20__factory,
   MAINNET_NETWORK,
   PathFinder,
@@ -112,12 +114,16 @@ export class LiquidatorService {
 
       await this.keyService.launch();
       await this.swapper.launch(network);
-      await this.scanService.launch(
-        dataCompressor,
-        priceOracle,
-        this.provider,
-        this,
-      );
+      if (config.optimisticBorrowers) {
+        await this.liquidateOptimistically(dataCompressor);
+      } else {
+        await this.scanService.launch(
+          dataCompressor,
+          priceOracle,
+          this.provider,
+          this,
+        );
+      }
     } catch (e) {
       this.log.error(`Error occurred at launch process: ${e}`);
       process.exit(1);
@@ -168,6 +174,37 @@ export class LiquidatorService {
     } catch (e) {
       this.ampqService.error(
         `Cant liquidate ${this.getAccountTitle(ca)}: ${e}`,
+      );
+    }
+  }
+
+  protected async liquidateOptimistically(dc: string) {
+    const dataCompressor = IDataCompressor__factory.connect(dc, this.provider);
+    const borrowers = config.optimisticBorrowers ?? [];
+    this.log.warn(`Optimistic liquidation for ${borrowers} borrowers`);
+    const cms = await CreditManagerWatcher.getV2CreditManagers(
+      dc,
+      this.provider,
+    );
+    const cm = Object.values(cms).find(cm => {
+      const symb = tokenSymbolByAddress[cm.underlyingToken];
+      return config.underlying?.toLowerCase() === symb.toLowerCase();
+    });
+    if (!cm) {
+      throw new Error("CM not found");
+    }
+
+    for (let i = 0; i < borrowers.length; i++) {
+      const ca = await dataCompressor.getCreditAccountData(
+        cm.address,
+        borrowers[i],
+      );
+      await this.liquidateOptimistic(
+        new CreditAccountData(ca),
+        cm.creditFacade,
+      );
+      this.log.info(
+        `Optimistic liquidation progress: ${i + 1}/${borrowers.length}`,
       );
     }
   }
@@ -232,10 +269,14 @@ export class LiquidatorService {
       // Actual liquidation (write requests start here)
       try {
         // this is needed because otherwise it's possible to hit deadlines in uniswap calls
-        await (this.provider as providers.JsonRpcProvider).send(
-          "anvil_setBlockTimestampInterval",
-          [12],
-        );
+        try {
+          await (this.provider as providers.JsonRpcProvider).send(
+            "anvil_setBlockTimestampInterval",
+            [12],
+          );
+        } catch (e) {
+          this.log.debug("anvil_setBlockTimestampInterval failed");
+        }
         const tx = await iFacade.liquidateCreditAccount(
           ca.borrower,
           this.keyService.address,

@@ -85,6 +85,10 @@ export class Config {
   @IsNotEmpty()
   static optimisticLiquidations: boolean;
 
+  // List of borrowers to liquidate optimistically in underlying cm, provided by external source via env
+  // This is workaround for slow eth_getLogs on some providers like tenderly
+  static optimisticBorrowers?: string[];
+
   /**
    * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
    */
@@ -163,6 +167,9 @@ export class Config {
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.optimisticBorrowers = process.env.OPTIMISTIC_BORROWERS
+      ? process.env.OPTIMISTIC_BORROWERS.split(",")
+      : undefined;
 
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
