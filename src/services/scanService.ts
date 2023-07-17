@@ -221,10 +221,15 @@ export class ScanService {
 
         if (!config.optimisticLiquidations) {
           Object.values(this.creditAccounts).forEach(ca => {
+            const prev = ca.healthFactor;
             ca.updateHealthFactor(
               this.creditManagers[ca.creditManager],
               this.ci[ca.creditManager],
               this.oracleService.priceOracle,
+            );
+            const next = ca.healthFactor;
+            this.log.debug(
+              `Updated HF for CA ${ca.addr} of ${ca.borrower}: was ${prev} now is ${next}`,
             );
           });
         }

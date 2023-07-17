@@ -133,7 +133,11 @@ export class LiquidatorService {
   }
 
   async liquidate(ca: CreditAccountData, creditFacade: string) {
-    this.ampqService.info(`Start liquidation of ${this.getAccountTitle(ca)}`);
+    this.ampqService.info(
+      `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
+        ca.healthFactor
+      }`,
+    );
 
     try {
       const pfResult = await this.findClosePath(ca);
@@ -296,7 +300,7 @@ export class LiquidatorService {
   protected getAccountTitle(ca: CreditAccountData): string {
     const cmSymbol = tokenSymbolByAddress[ca.underlyingToken];
 
-    return `${ca.borrower} in ${cmSymbol}[${this.etherscan}/address/${ca.creditManager}]`;
+    return `${ca.addr} of ${ca.borrower} in ${cmSymbol}`;
   }
 
   protected async findClosePath(
