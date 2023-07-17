@@ -1,6 +1,6 @@
 import { formatBN, WAD } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
-import { BigNumber, providers, Wallet } from "ethers";
+import { providers, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -20,7 +20,7 @@ export class KeyService {
   @Inject(WALLET_STORAGE)
   storage: IWalletStorage;
 
-  static readonly minExecutorBalance = WAD.div(2);
+  static readonly minExecutorBalance = WAD / 2n;
 
   signer: Wallet;
   protected provider: providers.Provider;
@@ -28,7 +28,7 @@ export class KeyService {
   protected _isUsed: Record<string, boolean> = {};
   protected _mutex: Mutex = new Mutex();
 
-  protected minBalanceToNotify: BigNumber;
+  protected minBalanceToNotify: bigint;
 
   get address(): string {
     return this.signer.address;
@@ -41,9 +41,7 @@ export class KeyService {
   async launch() {
     this.provider = getProvider(true, this.log);
     this.signer = new Wallet(config.privateKey, this.provider);
-    this.minBalanceToNotify = WAD.mul(
-      Math.floor(config.balanceToNotify * 1000),
-    ).div(10000);
+    this.minBalanceToNotify = WAD * BigInt(config.balanceToNotify);
 
     await this.checkBalance();
     await this.storage.launch();

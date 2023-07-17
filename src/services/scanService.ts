@@ -224,7 +224,7 @@ export class ScanService {
             const prev = ca.healthFactor;
             ca.updateHealthFactor(
               this.creditManagers[ca.creditManager],
-              this.ci[ca.creditManager],
+              this.ci[ca.creditManager].toBigInt(),
               this.oracleService.priceOracle,
             );
             const next = ca.healthFactor;
