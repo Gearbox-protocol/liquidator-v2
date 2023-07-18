@@ -219,21 +219,6 @@ export class ScanService {
           this.creditAccounts[ca.hash()] = ca;
         });
 
-        if (!config.optimisticLiquidations) {
-          Object.values(this.creditAccounts).forEach(ca => {
-            const prev = ca.healthFactor;
-            ca.updateHealthFactor(
-              this.creditManagers[ca.creditManager],
-              this.ci[ca.creditManager].toBigInt(),
-              this.oracleService.priceOracle,
-            );
-            const next = ca.healthFactor;
-            this.log.debug(
-              `Updated HF for CA ${ca.addr} of ${ca.borrower}: was ${prev} now is ${next}`,
-            );
-          });
-        }
-
         repeat = false;
       } catch (e) {
         chunkSize = Math.floor(chunkSize / 2);
