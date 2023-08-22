@@ -89,9 +89,8 @@ export class LiquidatorService {
       this.provider,
     );
     try {
-      const [dataCompressor, priceOracle, pathFinder] = await Promise.all([
+      const [dataCompressor, pathFinder] = await Promise.all([
         addressProvider.getDataCompressor(),
-        addressProvider.getPriceOracle(),
         addressProvider.getLeveragedActions(),
       ]);
 
@@ -112,12 +111,7 @@ export class LiquidatorService {
 
       await this.keyService.launch();
       await this.swapper.launch(network);
-      await this.scanService.launch(
-        dataCompressor,
-        priceOracle,
-        this.provider,
-        this,
-      );
+      await this.scanService.launch(dataCompressor, this.provider, this);
     } catch (e) {
       this.log.error(`Error occurred at launch process: ${e}`);
       process.exit(1);

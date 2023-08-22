@@ -1,4 +1,4 @@
-FROM node:16.17.0 as dev
+FROM node:18.17.1 as dev
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN yarn install --frozen-lockfile \
 
 # Production npm modules
 
-FROM node:16.17.0 as prod
+FROM node:18.17.1 as prod
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN yarn install --production --frozen-lockfile
 
 # Final image
 
-FROM gcr.io/distroless/nodejs:16
+FROM gcr.io/distroless/nodejs:18
 WORKDIR /app
 COPY --from=prod /app /app
 CMD ["/app/build/index.js"]

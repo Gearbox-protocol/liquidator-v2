@@ -4,13 +4,9 @@ import {
   CreditAccountWatcher,
   CreditManagerData,
   CreditManagerWatcher,
-  IPoolService__factory,
-  MCall,
-  multicall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import { IPoolServiceInterface } from "@gearbox-protocol/sdk/lib/types/@gearbox-protocol/core-v2/contracts/interfaces/IPoolService.sol/IPoolService";
-import { BigNumber, BigNumberish, providers } from "ethers";
+import { BigNumber, providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -18,15 +14,11 @@ import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
 import { KeyService } from "./keyService";
 import { LiquidatorService } from "./liquidatorService";
-import { PriceOracleService } from "./priceOracleService";
 
 @Service()
 export class ScanService {
   @Logger("ScanService")
   log: LoggerInterface;
-
-  @Inject()
-  oracleService: PriceOracleService;
 
   @Inject()
   ampqService: AMPQService;
@@ -53,13 +45,11 @@ export class ScanService {
   /**
    * Launches ScanService
    * @param dataCompressor Address of DataCompressor
-   * @param priceOracle Address of PriceOracle
    * @param provider Ethers provider or signer
    * @param liquidatorService Liquidation service
    */
   async launch(
     dataCompressor: string,
-    priceOracle: string,
     provider: providers.Provider,
     liquidatorService: LiquidatorService,
   ) {
@@ -69,21 +59,11 @@ export class ScanService {
 
     const startingBlock = await this.provider.getBlockNumber();
 
-    if (!config.optimisticLiquidations) {
-      await this.oracleService.launch(
-        priceOracle,
-        this.provider,
-        startingBlock,
-      );
-    }
-
     this.creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       this.dataCompressor,
       this.provider,
       startingBlock,
     );
-
-    await this.updatePoolsCI();
 
     const reqs = Object.values(this.creditManagers)
       .filter(cm => {
@@ -126,14 +106,10 @@ export class ScanService {
         range = `[${this._lastUpdated + 1} : ${blockNum}]`;
         this.log.info(`Block update ${range}`);
         try {
-          const [logs] = await Promise.all([
-            this.provider.getLogs({
-              fromBlock: this._lastUpdated + 1,
-              toBlock: blockNum,
-            }),
-            this.oracleService.updatePrices(),
-            this.updatePoolsCI(),
-          ]);
+          const logs = await this.provider.getLogs({
+            fromBlock: this._lastUpdated + 1,
+            toBlock: blockNum,
+          });
 
           if (
             CreditManagerWatcher.detectConfigChanges(
@@ -305,25 +281,6 @@ export class ScanService {
           accountsToLiquidate.length
         }`,
       );
-    }
-  }
-
-  protected async updatePoolsCI() {
-    const calls: Array<MCall<IPoolServiceInterface>> = Object.values(
-      this.creditManagers,
-    ).map(cm => ({
-      address: cm.pool,
-      interface: IPoolService__factory.createInterface(),
-      method: "calcLinearCumulative_RAY()",
-    }));
-
-    try {
-      const result = await multicall<Array<BigNumberish>>(calls, this.provider);
-      Object.values(this.creditManagers).forEach((cm, num) => {
-        this.ci[cm.address] = BigNumber.from(result[num]);
-      });
-    } catch (e) {
-      this.log.error(`Cant get CI for pools\n${e}`);
     }
   }
 }
