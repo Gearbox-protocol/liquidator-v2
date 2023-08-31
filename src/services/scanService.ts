@@ -64,24 +64,24 @@ export class ScanService {
       this.provider,
       startingBlock,
     );
-
-    const reqs = Object.values(this.creditManagers)
-      .filter(cm => {
+    this.creditManagers = Object.fromEntries(
+      Object.entries(this.creditManagers).filter(([_, cm]) => {
         // If single CreditManager mode is on, use only this manager
         const symb = tokenSymbolByAddress[cm.underlyingToken];
         return (
           !config.underlying ||
           config.underlying.toLowerCase() === symb.toLowerCase()
         );
-      })
-      .map(async cm =>
-        CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
-      );
+      }),
+    );
+
+    const reqs = Object.values(this.creditManagers).map(async cm =>
+      CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
+    );
 
     this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
-    const accountsToUpdate: Array<Array<CreditAccountHash>> = await Promise.all(
-      reqs,
-    );
+    const accountsToUpdate: Array<Array<CreditAccountHash>> =
+      await Promise.all(reqs);
 
     await this.updateAccounts(accountsToUpdate.flat(), startingBlock);
 

@@ -1,11 +1,21 @@
 import { pino } from "pino";
-import { Logger as TSLogger, TLogLevelName } from "tslog";
+import { Logger as TSLogger } from "tslog";
 import { Container } from "typedi";
 
 const DEV = process.env.NODE_ENV !== "production";
 const underlying = process.env.UNDERLYING;
 // For optimistic liquidators in AWS StepFunctions
 const executionId = process.env.EXECUTION_ID?.split(":").pop();
+
+const TS_LOG_LEVELS: Record<string, number> = {
+  silly: 0,
+  trace: 1,
+  debug: 2,
+  info: 3,
+  warn: 4,
+  error: 5,
+  fata: 6,
+};
 
 export function Logger(label?: string): PropertyDecorator {
   return (target: any, propertyKey): any => {
@@ -17,12 +27,11 @@ export function Logger(label?: string): PropertyDecorator {
         DEV
           ? new TSLogger({
               type: "pretty",
-              hostname: undefined,
               name: label,
-              displayFunctionName: false,
-              displayLoggerName: false,
-              displayFilePath: "hidden",
-              minLevel: (process.env.LOG_LEVEL as TLogLevelName) ?? "debug",
+              minLevel:
+                TS_LOG_LEVELS[
+                  process.env.LOG_LEVEL?.toLowerCase() ?? "debug"
+                ] ?? 3,
               prefix: underlying ? [underlying] : undefined,
             })
           : pino({
@@ -42,4 +51,4 @@ export function Logger(label?: string): PropertyDecorator {
   };
 }
 
-export type LoggerInterface = TSLogger;
+export type LoggerInterface = TSLogger<any>;

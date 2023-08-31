@@ -56,7 +56,7 @@ export class Config {
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
   /**
-   * If set, will only work with credit manager with this underlying token symbol (e.g. DAI)
+   * If set, will only work with credit manager(s) with this underlying token symbol (e.g. DAI)
    */
   static underlying: string | undefined;
 
