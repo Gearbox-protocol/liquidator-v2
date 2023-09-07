@@ -118,10 +118,12 @@ export class LiquidatorService {
     }
 
     if (config.optimisticLiquidations) {
+      this.log.debug("optimistic liquidation finished, writing output");
       await this.outputWriter.write(startBlock, {
         result: this.optimistic,
         startBlock,
       });
+      this.log.debug("saved optimistic liquidation output, exiting");
       process.exit(0);
     }
   }
