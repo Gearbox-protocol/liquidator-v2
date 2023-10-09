@@ -6,7 +6,7 @@ import { OUTPUT_WRITER } from "./constants";
 import FileWriter from "./fileWriter";
 import RestWriter from "./restWriter";
 import S3Writer from "./s3Writer";
-import { IOptimisticOutputWriter } from "./types";
+import type { IOptimisticOutputWriter } from "./types";
 
 function createOutputWriter(): IOptimisticOutputWriter {
   if (config.outS3Bucket) {

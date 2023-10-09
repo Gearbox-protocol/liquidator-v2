@@ -1,7 +1,7 @@
-import { NetworkType } from "@gearbox-protocol/sdk";
-import { BigNumberish, Wallet } from "ethers";
+import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { BigNumberish, Wallet } from "ethers";
 
-import { ISwapper } from "./types";
+import type { ISwapper } from "./types";
 
 export default class NoopSwapper implements ISwapper {
   public async launch(_network: NetworkType): Promise<void> {

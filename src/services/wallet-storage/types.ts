@@ -1,4 +1,4 @@
-import { Wallet } from "ethers";
+import type { Wallet } from "ethers";
 
 export interface IWalletStorage {
   launch: () => Promise<void>;

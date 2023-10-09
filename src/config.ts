@@ -20,10 +20,6 @@ export class Config {
   static addressProviderMainnet: string;
 
   @IsNotEmpty()
-  @IsEthereumAddress()
-  static addressProviderGoerli: string;
-
-  @IsNotEmpty()
   static ethProviderRpcs: string[];
   static flashbotsRpc?: string;
 
@@ -133,7 +129,6 @@ export class Config {
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProviderMainnet = process.env.ADDRESS_PROVIDER_MAINNET || "";
-    Config.addressProviderGoerli = process.env.ADDRESS_PROVIDER_GOERLI || "";
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];

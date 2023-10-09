@@ -1,5 +1,5 @@
-import { NetworkType } from "@gearbox-protocol/sdk";
-import { BigNumberish, Wallet } from "ethers";
+import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { BigNumberish, Wallet } from "ethers";
 /**
  * Service that used to swap underlying back to ETH after liquidation
  */

@@ -1,19 +1,21 @@
-import {
+import type {
   CreditAccountData,
   CreditAccountHash,
-  CreditAccountWatcher,
   CreditManagerData,
+} from "@gearbox-protocol/sdk";
+import {
+  CreditAccountWatcher,
   CreditManagerWatcher,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import { BigNumber, providers } from "ethers";
+import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
 import { KeyService } from "./keyService";
-import { LiquidatorService } from "./liquidatorService";
+import type { LiquidatorService } from "./liquidatorService";
 
 @Service()
 export class ScanService {
@@ -32,7 +34,6 @@ export class ScanService {
   protected dataCompressor: string;
   protected creditManagers: Record<string, CreditManagerData>;
 
-  protected ci: Record<string, BigNumber> = {};
   protected creditAccounts: Record<string, CreditAccountData> = {};
 
   protected _lastUpdated = 0;

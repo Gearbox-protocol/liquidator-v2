@@ -1,21 +1,23 @@
-import {
+import type {
   CreditAccountData,
+  PathFinderCloseResult,
+} from "@gearbox-protocol/sdk";
+import {
   detectNetwork,
-  GOERLI_NETWORK,
-  IAddressProvider__factory,
-  ICreditFacade__factory,
+  IAddressProviderV3__factory,
+  ICreditFacadeV2__factory,
   IERC20__factory,
   MAINNET_NETWORK,
   PathFinder,
-  PathFinderCloseResult,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import { BigNumber, ethers, providers, utils } from "ethers";
+import type { BigNumber, providers } from "ethers";
+import { ethers, utils } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
-import { OptimisticResult } from "../core/optimistic";
+import type { OptimisticResult } from "../core/optimistic";
 import { Logger, LoggerInterface } from "../decorators/logger";
 import { AMPQService } from "./ampqService";
 import { HealthChecker } from "./healthChecker";
@@ -74,24 +76,25 @@ export class LiquidatorService {
       case MAINNET_NETWORK:
         this.etherscan = "https://etherscan.io";
         break;
-      case GOERLI_NETWORK:
-        this.etherscan = "https://goerli.etherscan.io";
-        break;
     }
     const network = await detectNetwork(this.provider);
 
     await this.ampqService.launch(chainId);
 
-    const addressProvider = IAddressProvider__factory.connect(
-      network === "Mainnet"
-        ? config.addressProviderMainnet
-        : config.addressProviderGoerli,
+    const addressProvider = IAddressProviderV3__factory.connect(
+      config.addressProviderMainnet,
       this.provider,
     );
     try {
       const [dataCompressor, pathFinder] = await Promise.all([
-        addressProvider.getDataCompressor(),
-        addressProvider.getLeveragedActions(),
+        addressProvider.getAddressOrRevert(
+          ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
+          210,
+        ),
+        addressProvider.getAddressOrRevert(
+          ethers.utils.formatBytes32String("ROUTER"),
+          1,
+        ),
       ]);
 
       this.pathFinder = new PathFinder(pathFinder, this.provider, network, [
@@ -141,16 +144,10 @@ export class LiquidatorService {
       this.log.debug(pathHuman);
 
       const executor = this.keyService.takeVacantExecutor();
-      const tx = await ICreditFacade__factory.connect(
-        creditFacade,
-        executor,
-      ).liquidateCreditAccount(
-        ca.borrower,
-        this.keyService.address,
-        0,
-        true,
-        pfResult.calls,
-      );
+      const facade = ICreditFacadeV2__factory.connect(creditFacade, executor);
+      const tx = await facade[
+        "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+      ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
 
       const receipt = await tx.wait(1);
 
@@ -199,7 +196,7 @@ export class LiquidatorService {
       this.log.debug({ pathHuman }, "path found");
 
       const balanceBefore = await this.getExecutorBalance(ca);
-      const iFacade = ICreditFacade__factory.connect(
+      const iFacade = ICreditFacadeV2__factory.connect(
         creditFacade,
         this.keyService.signer,
       );
@@ -208,13 +205,9 @@ export class LiquidatorService {
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        const estGas = await iFacade.estimateGas.liquidateCreditAccount(
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
-          pfResult.calls,
-        );
+        const estGas = await iFacade.estimateGas[
+          "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+        ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
         this.log.debug(`estimated gas: ${estGas}`);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
@@ -236,7 +229,9 @@ export class LiquidatorService {
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await iFacade.liquidateCreditAccount(
+        const tx = await iFacade[
+          "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+        ](
           ca.borrower,
           this.keyService.address,
           0,

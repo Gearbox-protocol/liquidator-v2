@@ -1,11 +1,11 @@
-import { Wallet } from "ethers";
+import type { Wallet } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
 import AwsSecretsManagerStorage from "./awsSecretsManagerStorage";
 import { WALLET_STORAGE } from "./constants";
 import FsStorage from "./fsStorage";
-import { IWalletStorage } from "./types";
+import type { IWalletStorage } from "./types";
 
 function createWalletStorage(): IWalletStorage {
   if (config.keyPath) {

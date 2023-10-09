@@ -1,19 +1,20 @@
+import type { NetworkType } from "@gearbox-protocol/sdk";
 import {
   CHAINS,
   formatBN,
   getDecimals,
   IERC20__factory,
-  NetworkType,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import axios, { AxiosInstance } from "axios";
-import { BigNumberish, ethers, Wallet } from "ethers";
+import type { AxiosInstance } from "axios";
+import axios from "axios";
+import type { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../decorators/logger";
 import { mine } from "../utils";
 import BaseSwapper from "./base";
-import { ISwapper } from "./types";
+import type { ISwapper } from "./types";
 
 const ROUTER_v5 = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";

@@ -8,7 +8,7 @@ import { Inject } from "typedi";
 
 import config from "../../config";
 import { AMPQService } from "../ampqService";
-import { IWalletStorage } from "./types";
+import type { IWalletStorage } from "./types";
 
 export default class AwsSecretsManagerStorage implements IWalletStorage {
   @Inject()

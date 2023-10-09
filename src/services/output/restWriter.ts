@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import config from "../../config";
-import { IOptimisticOutputWriter } from "./types";
+import type { IOptimisticOutputWriter } from "./types";
 
 export default class RestWriter implements IOptimisticOutputWriter {
   public async write(prefix: number | string, result: unknown): Promise<void> {

@@ -1,35 +1,31 @@
+import type { NetworkType } from "@gearbox-protocol/sdk";
 import {
   CHAINS,
   decimals,
   getDecimals,
   IERC20__factory,
-  NetworkType,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import {
-  Currency,
-  CurrencyAmount,
-  Percent,
-  Token,
-  TradeType,
-} from "@uniswap/sdk-core";
+import type { Currency } from "@uniswap/sdk-core";
+import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
 import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json";
+import type { SwapOptions } from "@uniswap/v3-sdk";
 import {
   computePoolAddress,
   FeeAmount,
   Pool,
   Route,
-  SwapOptions,
   SwapQuoter,
   SwapRouter,
   Trade,
 } from "@uniswap/v3-sdk";
-import { BigNumberish, ethers, Wallet } from "ethers";
+import type { BigNumberish, Wallet } from "ethers";
+import { ethers } from "ethers";
 import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../decorators/logger";
 import BaseSwapper from "./base";
-import { ISwapper } from "./types";
+import type { ISwapper } from "./types";
 
 const QUOTER_CONTRACT_ADDRESS = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
 const POOL_FACTORY_CONTRACT_ADDRESS =

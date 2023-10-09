@@ -1,4 +1,4 @@
-import { MultiCall } from "@gearbox-protocol/sdk";
+import type { MultiCall } from "@gearbox-protocol/sdk";
 
 export interface OptimisticResult {
   /**

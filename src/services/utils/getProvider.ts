@@ -4,7 +4,7 @@ import {
 } from "@gearbox-protocol/devops/lib/providers";
 
 import config from "../../config";
-import { LoggerInterface } from "../../decorators/logger";
+import type { LoggerInterface } from "../../decorators/logger";
 
 export function getProvider(flashbots = false, logger?: LoggerInterface) {
   const rpcs = config.ethProviderRpcs.map(
