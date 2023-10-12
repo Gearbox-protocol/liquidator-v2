@@ -152,7 +152,7 @@ export class LiquidatorService {
       const executor = this.keyService.takeVacantExecutor();
       const facade = ICreditFacadeV2__factory.connect(creditFacade, executor);
       const tx = await facade[
-        "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+        "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
       ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
 
       const receipt = await tx.wait(1);
@@ -212,7 +212,7 @@ export class LiquidatorService {
       // also tx will act as retry in case of anvil external's error
       try {
         const estGas = await iFacade.estimateGas[
-          "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
         ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
         this.log.debug(`estimated gas: ${estGas}`);
       } catch (e: any) {
@@ -236,7 +236,7 @@ export class LiquidatorService {
           [12],
         );
         const tx = await iFacade[
-          "liquidateExpiredCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
         ](
           ca.borrower,
           this.keyService.address,
