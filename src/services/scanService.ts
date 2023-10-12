@@ -65,6 +65,11 @@ export class ScanService {
       this.provider,
       startingBlock,
     );
+    this.log.debug(
+      `Detected ${
+        Object.entries(this.creditManagers).length
+      } credit managers total`,
+    );
     this.creditManagers = Object.fromEntries(
       Object.entries(this.creditManagers).filter(([_, cm]) => {
         // If single CreditManager mode is on, use only this manager

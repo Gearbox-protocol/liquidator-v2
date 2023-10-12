@@ -78,6 +78,9 @@ export class LiquidatorService {
         break;
     }
     const network = await detectNetwork(this.provider);
+    this.log.info(
+      `Launching on ${network} (${chainId}) using address provider ${config.addressProviderMainnet}`,
+    );
 
     await this.ampqService.launch(chainId);
 
@@ -96,6 +99,9 @@ export class LiquidatorService {
           1,
         ),
       ]);
+      this.log.debug(
+        `Data compressor: ${dataCompressor}, router: ${pathFinder}`,
+      );
 
       this.pathFinder = new PathFinder(pathFinder, this.provider, network, [
         "WETH",
