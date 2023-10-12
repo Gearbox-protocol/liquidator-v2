@@ -4,7 +4,7 @@ import type {
   CreditManagerData,
 } from "@gearbox-protocol/sdk";
 import {
-  CreditAccountWatcher,
+  CreditAccountWatcherV2,
   CreditManagerWatcher,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
@@ -82,7 +82,7 @@ export class ScanService {
     );
 
     const reqs = Object.values(this.creditManagers).map(async cm =>
-      CreditAccountWatcher.getOpenAccounts(cm, this.provider, startingBlock),
+      CreditAccountWatcherV2.getOpenAccounts(cm, this.provider, startingBlock),
     );
 
     this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
@@ -131,7 +131,7 @@ export class ScanService {
               );
           }
 
-          const updates = CreditAccountWatcher.detectChanges(
+          const updates = CreditAccountWatcherV2.detectChanges(
             logs,
             Object.values(this.creditManagers),
           );
@@ -140,7 +140,7 @@ export class ScanService {
             delete this.creditAccounts[req];
           });
 
-          const directUpdate = CreditAccountWatcher.trackDirectTransfers(
+          const directUpdate = CreditAccountWatcherV2.trackDirectTransfers(
             logs,
             [],
             Object.values(this.creditAccounts),
@@ -190,7 +190,7 @@ export class ScanService {
     let repeat = true;
     while (repeat) {
       try {
-        const data = await CreditAccountWatcher.batchCreditAccountLoad(
+        const data = await CreditAccountWatcherV2.batchCreditAccountLoad(
           accounts,
           this.dataCompressor,
           this.provider,
