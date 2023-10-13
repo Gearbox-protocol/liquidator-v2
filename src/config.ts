@@ -17,7 +17,7 @@ export class Config {
 
   @IsNotEmpty()
   @IsEthereumAddress()
-  static addressProviderMainnet: string;
+  static addressProvider: string;
 
   @IsNotEmpty()
   static ethProviderRpcs: string[];
@@ -55,6 +55,11 @@ export class Config {
    * If set, will only work with credit manager(s) with this underlying token symbol (e.g. DAI)
    */
   static underlying: string | undefined;
+
+  /**
+   * Flag to enable/disable V3 support
+   */
+  static supportsV3: boolean;
 
   @IsNotEmpty()
   @IsNumber()
@@ -128,7 +133,7 @@ export class Config {
 
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProviderMainnet = process.env.ADDRESS_PROVIDER_MAINNET || "";
+    Config.addressProvider = process.env.ADDRESS_PROVIDER_MAINNET || "";
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];
@@ -165,6 +170,7 @@ export class Config {
     Config.outSuffix = process.env.OUT_SUFFIX || "ts";
     Config.outS3Bucket = process.env.OUT_S3_BUCKET;
     Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
+    Config.supportsV3 = process.env.DISABLE_V3 !== "true";
   }
 
   static async validate(): Promise<void> {

@@ -6,63 +6,54 @@ import type {
 import {
   CreditAccountWatcherV2,
   CreditManagerWatcher,
+  IAddressProviderV3__factory,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
+import { ethers, type providers } from "ethers";
 import { Inject, Service } from "typedi";
 
-import config from "../config";
-import { Logger, LoggerInterface } from "../decorators/logger";
-import { AMPQService } from "./ampqService";
-import { KeyService } from "./keyService";
-import type { LiquidatorService } from "./liquidatorService";
+import config from "../../config";
+import { Logger, LoggerInterface } from "../../log";
+import type { ILiquidatorService } from "../liquidate";
+import { LiquidatorServiceV2 } from "../liquidate";
+import AbstractScanService from "./AbstractScanService";
 
 @Service()
-export class ScanService {
-  @Logger("ScanService")
+export class ScanServiceV2 extends AbstractScanService {
+  @Logger("ScanServiceV2")
   log: LoggerInterface;
 
   @Inject()
-  ampqService: AMPQService;
+  liquidarorServiceV2: LiquidatorServiceV2;
 
-  @Inject()
-  executorService: KeyService;
-
-  liquidatorService: LiquidatorService;
-
-  protected provider: providers.Provider;
   protected dataCompressor: string;
   protected creditManagers: Record<string, CreditManagerData>;
-
   protected creditAccounts: Record<string, CreditAccountData> = {};
 
-  protected _lastUpdated = 0;
   protected _isUpdating = false;
 
-  get lastUpdated(): number {
-    return this._lastUpdated;
+  protected override get liquidatorService(): ILiquidatorService {
+    return this.liquidarorServiceV2;
   }
 
-  /**
-   * Launches ScanService
-   * @param dataCompressor Address of DataCompressor
-   * @param provider Ethers provider or signer
-   * @param liquidatorService Liquidation service
-   */
-  async launch(
-    dataCompressor: string,
+  protected override async _launch(
     provider: providers.Provider,
-    liquidatorService: LiquidatorService,
-  ) {
-    this.provider = provider;
-    this.liquidatorService = liquidatorService;
-    this.dataCompressor = dataCompressor;
+  ): Promise<void> {
+    const addressProvider = IAddressProviderV3__factory.connect(
+      config.addressProvider,
+      provider,
+    );
 
-    const startingBlock = await this.provider.getBlockNumber();
+    this.dataCompressor = await addressProvider.getAddressOrRevert(
+      ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
+      210,
+    );
+
+    const startingBlock = await provider.getBlockNumber();
 
     this.creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       this.dataCompressor,
-      this.provider,
+      provider,
       startingBlock,
     );
     this.log.debug(
@@ -82,7 +73,7 @@ export class ScanService {
     );
 
     const reqs = Object.values(this.creditManagers).map(async cm =>
-      CreditAccountWatcherV2.getOpenAccounts(cm, this.provider, startingBlock),
+      CreditAccountWatcherV2.getOpenAccounts(cm, provider, startingBlock),
     );
 
     this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
@@ -92,16 +83,9 @@ export class ScanService {
     await this.updateAccounts(accountsToUpdate.flat(), startingBlock);
 
     this._lastUpdated = startingBlock;
-
-    if (!config.optimisticLiquidations) {
-      this.provider.on("block", async num => await this.on(num));
-    }
   }
 
-  //
-  // ON BLOCK LOOP
-  //
-  protected async on(blockNumber: number) {
+  protected override async onBlock(blockNumber: number): Promise<void> {
     let blockNum = blockNumber;
     if (!this._isUpdating && blockNum > this._lastUpdated + config.skipBlocks) {
       this._isUpdating = true;
@@ -183,7 +167,7 @@ export class ScanService {
   protected async updateAccounts(
     accounts: Array<CreditAccountHash>,
     atBlock: number,
-  ) {
+  ): Promise<void> {
     this.log.info(`Getting data on ${accounts.length} accounts`);
 
     let chunkSize = accounts.length;
@@ -204,14 +188,11 @@ export class ScanService {
         repeat = false;
       } catch (e) {
         chunkSize = Math.floor(chunkSize / 2);
-        this.log.debug(`Reduce chunkSize to${chunkSize}`);
+        this.log.debug(`Reduce chunkSize to ${chunkSize}`);
         if (chunkSize < 2) {
           this.log.error(
-            `Cant get credit accounts using batch request at block ${atBlock}\nAccounts:\n${accounts.join(
-              "\n",
-            )}\n${e}`,
+            `Cant get ${accounts.length} credit accounts using batch request at block ${atBlock}: ${e}`,
           );
-
           repeat = false;
         }
       }
@@ -222,7 +203,7 @@ export class ScanService {
           (ca.healthFactor < config.hfThreshold && !ca.isDeleting),
       );
 
-      this.log.debug(`Account to liquidate: ${accountsToLiquidate.length}`);
+      this.log.debug(`Accounts to liquidate: ${accountsToLiquidate.length}`);
 
       if (accountsToLiquidate.length) {
         if (config.optimisticLiquidations) {
@@ -231,62 +212,6 @@ export class ScanService {
           await this.liquidateNormal(accountsToLiquidate);
         }
       }
-    }
-  }
-
-  /**
-   * Liquidate accounts using NORMAL flow
-   * @param accountsToLiquidate
-   */
-  protected async liquidateNormal(
-    accountsToLiquidate: Array<CreditAccountData>,
-  ) {
-    this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts: `);
-    this.log.debug(accountsToLiquidate.map(ca => ca.hash()).join("\n"));
-    const vacantExecutors = this.executorService.vacantQty();
-
-    if (vacantExecutors === 0) {
-      this.log.warn("No vacant executors at the moment!");
-    }
-
-    const itemsToProceed =
-      accountsToLiquidate.length < vacantExecutors
-        ? accountsToLiquidate.length
-        : vacantExecutors;
-
-    for (let i = 0; i < itemsToProceed; i++) {
-      const ca = accountsToLiquidate[i];
-
-      ca.isDeleting = true;
-      await this.liquidatorService.liquidate(
-        ca,
-        this.creditManagers[ca.creditManager].creditFacade,
-      );
-    }
-  }
-
-  /**
-   * Liquidate accounts using OPTIMISTIC flow
-   * @param accountsToLiquidate
-   */
-  protected async liquidateOptimistically(
-    accountsToLiquidate: Array<CreditAccountData>,
-  ) {
-    this.log.warn(
-      `Optimistic liquidation for ${accountsToLiquidate.length} accounts: `,
-    );
-    this.log.debug(accountsToLiquidate.map(ca => ca.hash()).join("\n"));
-    for (let i = 0; i < accountsToLiquidate.length; i++) {
-      const ca = accountsToLiquidate[i];
-      await this.liquidatorService.liquidateOptimistic(
-        ca,
-        this.creditManagers[ca.creditManager].creditFacade,
-      );
-      this.log.info(
-        `Optimistic liquidation progress: ${i + 1}/${
-          accountsToLiquidate.length
-        }`,
-      );
     }
   }
 }

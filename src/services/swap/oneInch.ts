@@ -11,7 +11,7 @@ import axios from "axios";
 import type { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../../decorators/logger";
+import { Logger, LoggerInterface } from "../../log";
 import { mine } from "../utils";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";

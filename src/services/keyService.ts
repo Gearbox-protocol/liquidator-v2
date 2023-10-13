@@ -5,7 +5,7 @@ import { Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
-import { Logger, LoggerInterface } from "../decorators/logger";
+import { Logger, LoggerInterface } from "../log";
 import { AMPQService } from "./ampqService";
 import { getProvider } from "./utils";
 import { IWalletStorage, WALLET_STORAGE } from "./wallet-storage";

@@ -23,7 +23,7 @@ import type { BigNumberish, Wallet } from "ethers";
 import { ethers } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../../decorators/logger";
+import { Logger, LoggerInterface } from "../../log";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
 
