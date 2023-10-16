@@ -1,6 +1,5 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import {
-  CHAINS,
   formatBN,
   getDecimals,
   IERC20__factory,
@@ -33,7 +32,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       throw new Error("1inch API key not provided");
     }
     this.apiClient = axios.create({
-      baseURL: `https://api.1inch.dev/v5.2/${CHAINS[network]}`,
+      baseURL: `https://api.1inch.dev/swap/v5.2/1`,
       headers: {
         Authorization: `Bearer ${config.oneInchApiKey}`,
         accept: "application/json",
