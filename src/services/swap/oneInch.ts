@@ -11,6 +11,7 @@ import axios from "axios";
 import type { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
+import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { mine } from "../utils";
 import BaseSwapper from "./base";
@@ -28,8 +29,15 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
+    if (!config.oneInchApiKey) {
+      throw new Error("1inch API key not provided");
+    }
     this.apiClient = axios.create({
-      baseURL: `https://api.1inch.io/v5.0/${CHAINS[network]}`,
+      baseURL: `https://api.1inch.dev/v5.2/${CHAINS[network]}`,
+      headers: {
+        Authorization: `Bearer ${config.oneInchApiKey}`,
+        accept: "application/json",
+      },
     });
   }
 
@@ -56,10 +64,10 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
       const swap = await this.apiClient.get("/swap", {
         params: {
-          fromTokenAddress: tokenAddr,
-          toTokenAddress: ETH,
+          src: tokenAddr,
+          dst: ETH,
           amount: amount.toString(),
-          fromAddress: executor.address,
+          from: executor.address,
           slippage: 1,
           disableEstimate: true,
           allowPartialFill: false,
