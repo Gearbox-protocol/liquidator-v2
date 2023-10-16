@@ -89,6 +89,10 @@ export class Config {
    * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
    */
   static swapToEth?: string;
+  /**
+   * 1Inch API Key
+   */
+  static oneInchApiKey?: string;
 
   /**
    * Directory to output logs, leave empty if you don't need file output
@@ -153,6 +157,7 @@ export class Config {
     Config.underlying = process.env.UNDERLYING;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.swapToEth = process.env.SWAP_TO_ETH;
+    Config.oneInchApiKey = process.env.ONE_INCH_API_KEY;
     Config.multicallChunkSize = parseInt(
       process.env.MULTICALL_CHUNK || "30",
       10,
