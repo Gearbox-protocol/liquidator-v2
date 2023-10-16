@@ -141,16 +141,9 @@ export class LiquidatorService {
       this.log.debug(pathHuman);
 
       const executor = this.keyService.takeVacantExecutor();
-      const tx = await ICreditFacade__factory.connect(
-        creditFacade,
-        executor,
-      ).liquidateCreditAccount(
-        ca.borrower,
-        this.keyService.address,
-        0,
-        true,
-        pfResult.calls,
-      );
+      const tx = await ICreditFacade__factory.connect(creditFacade, executor)[
+        "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+      ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
 
       const receipt = await tx.wait(1);
 
@@ -208,13 +201,9 @@ export class LiquidatorService {
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        const estGas = await iFacade.estimateGas.liquidateCreditAccount(
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
-          pfResult.calls,
-        );
+        const estGas = await iFacade.estimateGas[
+          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+        ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
         this.log.debug(`estimated gas: ${estGas}`);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
@@ -236,7 +225,9 @@ export class LiquidatorService {
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await iFacade.liquidateCreditAccount(
+        const tx = await iFacade[
+          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
+        ](
           ca.borrower,
           this.keyService.address,
           0,
