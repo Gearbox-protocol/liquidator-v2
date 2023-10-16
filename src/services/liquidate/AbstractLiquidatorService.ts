@@ -177,6 +177,11 @@ export default abstract class AbstractLiquidatorService {
           this.provider as ethers.providers.JsonRpcProvider,
           tx,
         );
+        this.log.debug(
+          `Liquidation tx receipt: status=${
+            receipt.status
+          }, gas=${receipt.cumulativeGasUsed.toString()}`,
+        );
 
         let balanceAfter = await this.getExecutorBalance(ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();

@@ -89,7 +89,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     } catch (e) {
       let info: any;
       if (axios.isAxiosError(e)) {
-        info = JSON.stringify(e.response?.data);
+        info = e.response?.data?.description;
       }
       info = info || `${e}`;
       this.log.error(
