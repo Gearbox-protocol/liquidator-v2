@@ -1,5 +1,3 @@
-import type { ClientRequest } from "node:http";
-
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import {
   CHAINS,
@@ -90,13 +88,12 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       );
     } catch (e) {
       let info: any;
-      let url: string | undefined;
       if (axios.isAxiosError(e)) {
-        info = e.response?.data;
-        url = (e.request as ClientRequest)?.req?.url;
+        info = JSON.stringify(e.response?.data);
       }
+      info = info || `${e}`;
       this.log.error(
-        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH via ${url}: ${e} ${info}`,
+        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH via: ${info}`,
       );
     }
   }
