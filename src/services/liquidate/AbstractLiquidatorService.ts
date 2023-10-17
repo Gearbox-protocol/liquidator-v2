@@ -172,7 +172,7 @@ export default abstract class AbstractLiquidatorService {
           pfResult.calls,
           true,
         );
-        this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
+        this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
           this.provider as ethers.providers.JsonRpcProvider,
           tx,
