@@ -32,13 +32,15 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     if (!config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
+    const baseURL = `https://api.1inch.dev/swap/v5.2/${CHAINS[network]}`;
     this.apiClient = axios.create({
-      baseURL: `https://api.1inch.dev/v5.2/${CHAINS[network]}`,
+      baseURL,
       headers: {
         Authorization: `Bearer ${config.oneInchApiKey}`,
         accept: "application/json",
       },
     });
+    this.log.debug(`API URL: ${baseURL}`);
   }
 
   public async swap(
@@ -85,8 +87,13 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
     } catch (e) {
+      let info: any;
+      if (axios.isAxiosError(e)) {
+        info = e.response?.data?.description;
+      }
+      info = info || `${e}`;
       this.log.error(
-        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${e}`,
+        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH via: ${info}`,
       );
     }
   }
