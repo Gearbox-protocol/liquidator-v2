@@ -2,7 +2,6 @@ import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import {
   IAddressProviderV3__factory,
   ICreditFacadeV2__factory,
-  ICreditManagerV2__factory,
   PathFinder,
 } from "@gearbox-protocol/sdk";
 import type { providers } from "ethers";
@@ -50,13 +49,8 @@ export class LiquidatorServiceV2
     calls: MultiCall[],
     optimistic: boolean,
   ): Promise<ethers.ContractTransaction> {
-    const creditFacade = await this.#getFacadeForAccount(
-      account,
-      this.keyService.signer,
-    );
     const facade = ICreditFacadeV2__factory.connect(
-      // account.creditFacade,
-      creditFacade,
+      account.creditFacade,
       executor,
     );
 
@@ -77,13 +71,8 @@ export class LiquidatorServiceV2
     account: CreditAccountData,
     calls: MultiCall[],
   ): Promise<void> {
-    const creditFacade = await this.#getFacadeForAccount(
-      account,
-      this.keyService.signer,
-    );
     const iFacade = ICreditFacadeV2__factory.connect(
-      // account.creditFacade,
-      creditFacade,
+      account.creditFacade,
       this.keyService.signer,
     );
     // before actual transaction, try to estimate gas
@@ -94,15 +83,5 @@ export class LiquidatorServiceV2
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](account.borrower, this.keyService.address, 0, true, calls);
     this.log.debug(`estimated gas: ${estGas}`);
-  }
-
-  async #getFacadeForAccount(
-    account: CreditAccountData,
-    signer: ethers.Signer,
-  ): Promise<string> {
-    // for some reason DC 2.1 returns 0x0 in account.creditFacade
-    const cm = ICreditManagerV2__factory.connect(account.creditManager, signer);
-    const creditFacade = await cm.creditFacade();
-    return creditFacade;
   }
 }
