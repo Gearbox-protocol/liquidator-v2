@@ -8,13 +8,13 @@ import {
   CreditAccountWatcherV2,
   CreditManagerWatcher,
   IAddressProviderV3__factory,
+  IDataCompressorV2_10__factory,
   safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { ethers, type providers } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { IDataCompressorV2_10__factory } from "../../../../sdk/src/types";
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
