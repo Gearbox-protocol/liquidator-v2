@@ -34,20 +34,18 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       throw new Error("1inch API key not provided");
     }
     const baseURL = `https://api.1inch.dev/swap/v5.2/${CHAINS[network]}`;
-    this.apiClient = axiosRetry(
-      axios.create({
-        baseURL,
-        headers: {
-          Authorization: `Bearer ${config.oneInchApiKey}`,
-          accept: "application/json",
-        },
-      }),
-      {
-        retries: 5,
-        retryCondition: e => e.response?.status === 429,
-        retryDelay: axiosRetry.exponentialDelay,
+    this.apiClient = axios.create({
+      baseURL,
+      headers: {
+        Authorization: `Bearer ${config.oneInchApiKey}`,
+        accept: "application/json",
       },
-    ) as any as AxiosInstance;
+    });
+    axiosRetry(this.apiClient, {
+      retries: 5,
+      retryCondition: e => e.response?.status === 429,
+      retryDelay: axiosRetry.exponentialDelay,
+    });
     this.log.debug(`API URL: ${baseURL}`);
   }
 
