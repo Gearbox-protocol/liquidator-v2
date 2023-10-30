@@ -137,7 +137,10 @@ export class Config {
 
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProvider = process.env.ADDRESS_PROVIDER_MAINNET || "";
+    Config.addressProvider =
+      process.env.ADDRESS_PROVIDER ||
+      process.env.ADDRESS_PROVIDER_MAINNET ||
+      "";
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];
