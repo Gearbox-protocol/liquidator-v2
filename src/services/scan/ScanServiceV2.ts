@@ -179,7 +179,11 @@ export class ScanServiceV2 extends AbstractScanService {
     let repeat = true;
     while (repeat) {
       try {
-        const data = await this.#batchLoadCreditAccounts(accounts, atBlock);
+        const data = await this.#batchLoadCreditAccounts(
+          accounts,
+          atBlock,
+          chunkSize,
+        );
         for (const v of data) {
           if (v.error) {
             this.log.warn(v.error);
@@ -220,9 +224,8 @@ export class ScanServiceV2 extends AbstractScanService {
   async #batchLoadCreditAccounts(
     accounts: CreditAccountHash[],
     blockTag: number,
+    chunkSize: number,
   ): Promise<Array<{ error?: Error; value?: CreditAccountData }>> {
-    let chunkSize = 1000;
-
     const dcInterface = IDataCompressorV2_10__factory.createInterface();
 
     const calls: MCall<typeof dcInterface>[][] = [];
@@ -244,7 +247,10 @@ export class ScanServiceV2 extends AbstractScanService {
     const results: Array<{ error?: Error; value?: CreditAccountData }> = [];
 
     for (let c of calls) {
-      const result = await safeMulticall(c, this.provider, { blockTag });
+      const result = await safeMulticall(c, this.provider, {
+        blockTag,
+        gasLimit: 30e6,
+      });
       results.push(
         ...result.map((v, i) => ({
           error: v.error
