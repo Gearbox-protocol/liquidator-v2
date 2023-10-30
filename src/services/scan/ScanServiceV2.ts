@@ -1,17 +1,20 @@
 import type {
-  CreditAccountData,
   CreditAccountHash,
   CreditManagerData,
+  MCall,
 } from "@gearbox-protocol/sdk";
 import {
+  CreditAccountData,
   CreditAccountWatcherV2,
   CreditManagerWatcher,
   IAddressProviderV3__factory,
+  safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { ethers, type providers } from "ethers";
 import { Inject, Service } from "typedi";
 
+import { IDataCompressorV2_10__factory } from "../../../../sdk/src/types";
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
@@ -168,23 +171,22 @@ export class ScanServiceV2 extends AbstractScanService {
     accounts: Array<CreditAccountHash>,
     atBlock: number,
   ): Promise<void> {
-    this.log.info(`Getting data on ${accounts.length} accounts`);
+    this.log.info(
+      `Getting data on ${accounts.length} accounts: ${accounts.join(", ")}`,
+    );
 
     let chunkSize = accounts.length;
     let repeat = true;
     while (repeat) {
       try {
-        const data = await CreditAccountWatcherV2.batchCreditAccountLoad(
-          accounts,
-          this.dataCompressor,
-          this.provider,
-          { atBlock, chunkSize },
-        );
-
-        data.forEach(ca => {
-          this.creditAccounts[ca.hash()] = ca;
-        });
-
+        const data = await this.#batchLoadCreditAccounts(accounts, atBlock);
+        for (const v of data) {
+          if (v.error) {
+            this.log.warn(v.error);
+          } else if (v.value) {
+            this.creditAccounts[v.value.hash()] = v.value;
+          }
+        }
         repeat = false;
       } catch (e) {
         chunkSize = Math.floor(chunkSize / 2);
@@ -213,5 +215,46 @@ export class ScanServiceV2 extends AbstractScanService {
         }
       }
     }
+  }
+
+  async #batchLoadCreditAccounts(
+    accounts: CreditAccountHash[],
+    blockTag: number,
+  ): Promise<Array<{ error?: Error; value?: CreditAccountData }>> {
+    let chunkSize = 1000;
+
+    const dcInterface = IDataCompressorV2_10__factory.createInterface();
+
+    const calls: MCall<typeof dcInterface>[][] = [];
+
+    let i = 0;
+    while (i * chunkSize < accounts.length) {
+      const chunk = accounts.slice(i * chunkSize, (i + 1) * chunkSize);
+      calls[i] = chunk.map(c => {
+        return {
+          method: "getCreditAccountData(address,address)",
+          params: c.split(":"),
+          address: this.dataCompressor,
+          interface: dcInterface,
+        };
+      });
+      i++;
+    }
+
+    const results: Array<{ error?: Error; value?: CreditAccountData }> = [];
+
+    for (let c of calls) {
+      const result = await safeMulticall(c, this.provider, { blockTag });
+      results.push(
+        ...result.map((v, i) => ({
+          error: v.error
+            ? new Error(`${c[i].params} failed: ${v.error}`)
+            : undefined,
+          value: v.value ? new CreditAccountData(v.value) : undefined,
+        })),
+      );
+    }
+
+    return results;
   }
 }
