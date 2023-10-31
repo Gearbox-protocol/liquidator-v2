@@ -1,6 +1,7 @@
 import type {
   CreditAccountHash,
   CreditManagerData,
+  IDataCompressorV2_10,
   MCall,
 } from "@gearbox-protocol/sdk";
 import {
@@ -226,9 +227,12 @@ export class ScanServiceV2 extends AbstractScanService {
     blockTag: number,
     chunkSize: number,
   ): Promise<Array<{ error?: Error; value?: CreditAccountData }>> {
-    const dcInterface = IDataCompressorV2_10__factory.createInterface();
+    const dc = IDataCompressorV2_10__factory.connect(
+      this.dataCompressor,
+      this.provider,
+    );
 
-    const calls: MCall<typeof dcInterface>[][] = [];
+    const calls: MCall<IDataCompressorV2_10["interface"]>[][] = [];
 
     let i = 0;
     while (i * chunkSize < accounts.length) {
@@ -238,7 +242,7 @@ export class ScanServiceV2 extends AbstractScanService {
           method: "getCreditAccountData(address,address)",
           params: c.split(":"),
           address: this.dataCompressor,
-          interface: dcInterface,
+          interface: dc.interface,
         };
       });
       i++;
@@ -251,14 +255,36 @@ export class ScanServiceV2 extends AbstractScanService {
         blockTag,
         gasLimit: 30e6,
       });
-      results.push(
-        ...result.map((v, i) => ({
-          error: v.error
-            ? new Error(`${c[i].params} failed: ${v.error}`)
-            : undefined,
-          value: v.value ? new CreditAccountData(v.value) : undefined,
-        })),
-      );
+      for (let i = 0; i < result.length; i++) {
+        const { error, value } = result[i];
+        if (error) {
+          this.log.warn(
+            `Multicall failed for ${c[i].params.join(":")}: ${error}`,
+          );
+          try {
+            const single = await dc.getCreditAccountData(
+              c[i].params[0],
+              c[i].params[1],
+              { blockTag, gasLimit: 30e6 },
+            );
+            results.push({ value: new CreditAccountData(single) });
+          } catch (e) {
+            results.push({
+              error: new Error(
+                `single DC210 call failed for ${c[i].params.join(":")}: ${e}`,
+              ),
+            });
+          }
+        } else if (value) {
+          results.push({ value: new CreditAccountData(value) });
+        } else {
+          this.log.warn(
+            `Multicall failed for ${c[i].params.join(
+              ":",
+            )}: returned empty value`,
+          );
+        }
+      }
     }
 
     return results;
