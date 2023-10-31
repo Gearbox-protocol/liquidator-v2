@@ -10,6 +10,8 @@ import {
 import dotenv from "dotenv";
 
 export class Config {
+  static version: string;
+
   @IsNotEmpty()
   static appName: string;
 
@@ -135,6 +137,12 @@ export class Config {
   static init() {
     dotenv.config({ path: "./.env.local" });
 
+    Config.version =
+      // set in docker build
+      process.env.PACKAGE_VERSION ??
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("../package.json").version ??
+      "dev";
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
     Config.addressProvider =
@@ -187,6 +195,7 @@ export class Config {
     const errors = await validate(Config);
     if (errors.length > 0)
       throw new Error(`Configuration problems: ${errors.join("\n")}`);
+    console.info(`Liquidator TS version: ${Config.version}`);
   }
 }
 

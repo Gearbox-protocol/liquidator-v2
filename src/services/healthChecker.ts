@@ -43,8 +43,7 @@ export class HealthChecker {
       help: "Build info",
       labelNames: ["version"],
     });
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    buildInfo.set({ version: require("../../package.json").version }, 1);
+    buildInfo.set({ version: config.version }, 1);
 
     app.get("/", (_, res) => {
       res.send({

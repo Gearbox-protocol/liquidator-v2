@@ -27,6 +27,9 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 # Final image
 
 FROM gcr.io/distroless/nodejs:18
+ARG PACKAGE_VERSION
+ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
+
 WORKDIR /app
 COPY --from=prod /app /app
 CMD ["/app/build/index.js"]
