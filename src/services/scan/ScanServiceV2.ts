@@ -98,7 +98,7 @@ export class ScanServiceV2 extends AbstractScanService {
 
       while (this._isUpdating) {
         range = `[${this._lastUpdated + 1} : ${blockNum}]`;
-        this.log.info(`Block update ${range}`);
+        this.log.debug(`Block update ${range}`);
         try {
           const logs = await this.provider.getLogs({
             fromBlock: this._lastUpdated + 1,
@@ -141,7 +141,7 @@ export class ScanServiceV2 extends AbstractScanService {
           await this.updateAccounts(accountsToUpdate, blockNum);
 
           this._lastUpdated = blockNum;
-          this.log.info(`Update blocks ${range} competed`);
+          this.log.debug(`Update blocks ${range} completed`);
         } catch (e) {
           this.log.error(`Errors during update blocks ${range}\n${e}`);
         }
@@ -172,7 +172,10 @@ export class ScanServiceV2 extends AbstractScanService {
     accounts: Array<CreditAccountHash>,
     atBlock: number,
   ): Promise<void> {
-    this.log.info(
+    if (!accounts.length) {
+      return;
+    }
+    this.log.debug(
       `Getting data on ${accounts.length} accounts: ${accounts.join(", ")}`,
     );
 
@@ -210,9 +213,8 @@ export class ScanServiceV2 extends AbstractScanService {
           (ca.healthFactor < config.hfThreshold && !ca.isDeleting),
       );
 
-      this.log.debug(`Accounts to liquidate: ${accountsToLiquidate.length}`);
-
       if (accountsToLiquidate.length) {
+        this.log.debug(`Accounts to liquidate: ${accountsToLiquidate.length}`);
         if (config.optimisticLiquidations) {
           await this.liquidateOptimistically(accountsToLiquidate);
         } else {

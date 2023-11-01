@@ -25,6 +25,8 @@ export function getLogger(label?: string): LoggerInterface {
         minLevel:
           TS_LOG_LEVELS[process.env.LOG_LEVEL?.toLowerCase() ?? "debug"] ?? 3,
         prefix: underlying ? [underlying] : undefined,
+        prettyLogTemplate:
+          "{{logLevelName}}\t{{nameWithDelimiterPrefix}}\t{{filePathWithLine}}\t",
       })
     : pino({
         level: process.env.LOG_LEVEL ?? "debug",

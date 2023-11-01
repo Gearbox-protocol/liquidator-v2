@@ -48,7 +48,7 @@ export class ScanServiceV3 extends AbstractScanService {
     await this.updateAccounts(startingBlock);
   }
 
-  protected async onBlock(blockNumber: number): Promise<void> {
+  protected override async onBlock(blockNumber: number): Promise<void> {
     await this.updateAccounts(blockNumber);
   }
 
@@ -62,7 +62,7 @@ export class ScanServiceV3 extends AbstractScanService {
         blockTag: atBlock,
       });
     const accounts = accountsRaw.map(a => new CreditAccountData(a));
-    this.log.debug(`Accounts to liquidate: ${accounts.length}`);
+    this.log.debug(`Accounts to liquidate in ${atBlock}: ${accounts.length}`);
     if (config.optimisticLiquidations) {
       await this.liquidateOptimistically(accounts);
     } else {

@@ -48,6 +48,9 @@ export default abstract class AbstractScanService {
   protected async liquidateNormal(
     accountsToLiquidate: Array<CreditAccountData>,
   ): Promise<void> {
+    if (!accountsToLiquidate.length) {
+      return;
+    }
     this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts`);
     const vacantExecutors = this.executorService.vacantQty();
 
