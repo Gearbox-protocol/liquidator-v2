@@ -2,8 +2,6 @@ import type {
   CreditAccountData,
   MultiCall,
   NetworkType,
-  PathFinder,
-  PathFinderCloseResult,
 } from "@gearbox-protocol/sdk";
 import {
   detectNetwork,
@@ -12,6 +10,7 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
+import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { BigNumber, ethers, providers } from "ethers";
 import { utils } from "ethers";
 import { Inject } from "typedi";
@@ -50,7 +49,6 @@ export default abstract class AbstractLiquidatorService {
   optimistic: OptimisticResults;
 
   protected provider: providers.Provider;
-  protected pathFinder: PathFinder;
   protected slippage: number;
 
   protected etherscan = "";
@@ -231,23 +229,9 @@ export default abstract class AbstractLiquidatorService {
     calls: MultiCall[],
   ): Promise<void>;
 
-  protected async findClosePath(
+  protected abstract findClosePath(
     ca: CreditAccountData,
-  ): Promise<PathFinderCloseResult> {
-    try {
-      const result = await this.pathFinder.findBestClosePath(
-        ca,
-        this.slippage,
-        true,
-      );
-      if (!result) {
-        throw new Error("result is empty");
-      }
-      return result;
-    } catch (e) {
-      throw new Error(`cant find close path: ${e}`);
-    }
-  }
+  ): Promise<PathFinderV1CloseResult>;
 
   protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck

@@ -2,8 +2,9 @@ import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import {
   IAddressProviderV3__factory,
   ICreditFacadeV2__factory,
-  PathFinder,
+  PathFinderV1,
 } from "@gearbox-protocol/sdk";
+import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { providers } from "ethers";
 import { ethers } from "ethers";
 import { Service } from "typedi";
@@ -18,6 +19,8 @@ export class LiquidatorServiceV2
   extends AbstractLiquidatorService
   implements ILiquidatorService
 {
+  #pathFinder: PathFinderV1;
+
   @Logger("LiquidatorServiceV2")
   log: LoggerInterface;
 
@@ -36,11 +39,30 @@ export class LiquidatorServiceV2
     );
     this.log.debug(`Router: ${pathFinder}`);
 
-    this.pathFinder = new PathFinder(pathFinder, this.provider, this.network, [
-      "WETH",
-      "DAI",
-      "USDC",
-    ]);
+    this.#pathFinder = new PathFinderV1(
+      pathFinder,
+      this.provider,
+      this.network,
+      PathFinderV1.connectors,
+    );
+  }
+
+  protected async findClosePath(
+    ca: CreditAccountData,
+  ): Promise<PathFinderV1CloseResult> {
+    try {
+      const result = await this.#pathFinder.findBestClosePath(
+        ca,
+        this.slippage,
+        true,
+      );
+      if (!result) {
+        throw new Error("result is empty");
+      }
+      return result;
+    } catch (e) {
+      throw new Error(`cant find close path: ${e}`);
+    }
   }
 
   protected override async _liquidate(
