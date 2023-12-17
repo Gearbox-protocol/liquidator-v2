@@ -41,7 +41,7 @@ export class LiquidatorServiceV3
       config.addressProvider,
       this.provider,
     );
-    const [pfAddr, dcAddr] = await Promise.all([
+    let [pfAddr, dcAddr] = await Promise.allSettled([
       addressProvider.getAddressOrRevert(
         ethers.utils.formatBytes32String("ROUTER"),
         300,
@@ -51,13 +51,18 @@ export class LiquidatorServiceV3
         300,
       ),
     ]);
-    this.log.debug(`Router: ${pfAddr}, compressor: ${dcAddr}`);
+    if (dcAddr.status === "rejected") {
+      throw new Error(`cannot get DC_300: ${dcAddr.reason}`);
+    }
+    this.log.debug(`Router: ${pfAddr}, compressor: ${dcAddr.value}`);
     this.#compressor = IDataCompressorV3_00__factory.connect(
-      dcAddr,
+      dcAddr.value,
       this.provider,
     );
     this.#pathFinder = new PathFinder(
-      pfAddr,
+      pfAddr.status === "fulfilled"
+        ? pfAddr.value
+        : "0xC46613db74c8B734D8074E7D02239139cB35Ed66",
       this.provider,
       this.network,
       PathFinder.connectors,
