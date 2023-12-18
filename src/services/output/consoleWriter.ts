@@ -1,4 +1,4 @@
-import { IOptimisticOutputWriter } from "./types";
+import type { IOptimisticOutputWriter } from "./types";
 
 export default class ConsoleWriter implements IOptimisticOutputWriter {
   public async write(prefix: string | number, result: unknown): Promise<void> {

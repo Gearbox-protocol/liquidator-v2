@@ -1,42 +1,37 @@
-import {
+import type {
   CreditAccountData,
+  MultiCall,
+  NetworkType,
+} from "@gearbox-protocol/sdk";
+import {
   detectNetwork,
-  GOERLI_NETWORK,
-  IAddressProvider__factory,
-  ICreditFacade__factory,
   IERC20__factory,
   MAINNET_NETWORK,
-  PathFinder,
-  PathFinderCloseResult,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import { BigNumber, ethers, providers, utils } from "ethers";
-import { Inject, Service } from "typedi";
+import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
+import type { BigNumber, ethers, providers } from "ethers";
+import { utils } from "ethers";
+import { Inject } from "typedi";
 
-import config from "../config";
-import { OptimisticResult } from "../core/optimistic";
-import { Logger, LoggerInterface } from "../decorators/logger";
-import { AMPQService } from "./ampqService";
-import { HealthChecker } from "./healthChecker";
-import { KeyService } from "./keyService";
-import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./output";
-import { ScanService } from "./scanService";
-import { ISwapper, SWAPPER } from "./swap";
-import { getProvider, mine } from "./utils";
+import config from "../../config";
+import type { OptimisticResult } from "../../core/optimistic";
+import type { LoggerInterface } from "../../log";
+import { AMPQService } from "../ampqService";
+import { KeyService } from "../keyService";
+import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
+import { ISwapper, SWAPPER } from "../swap";
+import { mine } from "../utils";
+import { OptimisticResults } from "./OptimisiticResults";
 
-interface Balance {
+export interface Balance {
   underlying: BigNumber;
   eth: BigNumber;
 }
 
-@Service()
-export class LiquidatorService {
-  @Logger("LiquidatorService")
+export default abstract class AbstractLiquidatorService {
   log: LoggerInterface;
-
-  @Inject()
-  scanService: ScanService;
 
   @Inject()
   keyService: KeyService;
@@ -44,91 +39,41 @@ export class LiquidatorService {
   @Inject()
   ampqService: AMPQService;
 
-  @Inject()
-  heathChecker: HealthChecker;
-
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
 
   @Inject(SWAPPER)
   swapper: ISwapper;
 
+  @Inject()
+  optimistic: OptimisticResults;
+
   protected provider: providers.Provider;
-  protected pathFinder: PathFinder;
   protected slippage: number;
 
-  protected optimistic: Array<OptimisticResult> = [];
   protected etherscan = "";
+  protected chainId: number;
+  protected network: NetworkType;
 
   /**
    * Launch LiquidatorService
    */
-  async launch() {
+  public async launch(provider: providers.Provider): Promise<void> {
+    this.provider = provider;
     this.slippage = Math.floor(config.slippage * 100);
-    this.provider = getProvider(false, this.log);
 
-    const startBlock = await this.provider.getBlockNumber();
     const { chainId } = await this.provider.getNetwork();
-
+    this.chainId = chainId;
     switch (chainId) {
       case MAINNET_NETWORK:
         this.etherscan = "https://etherscan.io";
         break;
-      case GOERLI_NETWORK:
-        this.etherscan = "https://goerli.etherscan.io";
-        break;
-    }
-    const network = await detectNetwork(this.provider);
-
-    await this.ampqService.launch(chainId);
-
-    const addressProvider = IAddressProvider__factory.connect(
-      network === "Mainnet"
-        ? config.addressProviderMainnet
-        : config.addressProviderGoerli,
-      this.provider,
-    );
-    try {
-      const [dataCompressor, pathFinder] = await Promise.all([
-        addressProvider.getDataCompressor(),
-        addressProvider.getLeveragedActions(),
-      ]);
-
-      this.pathFinder = new PathFinder(pathFinder, this.provider, network, [
-        "WETH",
-        "DAI",
-        "USDC",
-      ]);
-
-      if (config.optimisticLiquidations) {
-        this.log.warn(
-          `Running ${config.underlying} in OPTIMISTIC LIQUIDATION mode`,
-        );
-      } else {
-        this.heathChecker.launch();
-        this.log.info("Liquidation bot started");
-      }
-
-      await this.keyService.launch();
-      await this.swapper.launch(network);
-      await this.scanService.launch(dataCompressor, this.provider, this);
-    } catch (e) {
-      this.log.error(`Error occurred at launch process: ${e}`);
-      process.exit(1);
     }
 
-    if (config.optimisticLiquidations) {
-      this.log.debug("optimistic liquidation finished, writing output");
-      await this.outputWriter.write(startBlock, {
-        result: this.optimistic,
-        startBlock,
-      });
-      this.log.debug("saved optimistic liquidation output, exiting");
-      process.exit(0);
-    }
+    this.network = await detectNetwork(provider);
   }
 
-  async liquidate(ca: CreditAccountData, creditFacade: string) {
+  public async liquidate(ca: CreditAccountData): Promise<void> {
     this.ampqService.info(
       `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
         ca.healthFactor
@@ -141,10 +86,7 @@ export class LiquidatorService {
       this.log.debug(pathHuman);
 
       const executor = this.keyService.takeVacantExecutor();
-      const tx = await ICreditFacade__factory.connect(creditFacade, executor)[
-        "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
-      ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
-
+      const tx = await this._liquidate(executor, ca, pfResult.calls, false);
       const receipt = await tx.wait(1);
 
       this.ampqService.info(
@@ -165,10 +107,14 @@ export class LiquidatorService {
     }
   }
 
-  async liquidateOptimistic(
-    ca: CreditAccountData,
-    creditFacade: string,
-  ): Promise<void> {
+  protected abstract _liquidate(
+    executor: ethers.Wallet,
+    account: CreditAccountData,
+    calls: MultiCall[],
+    optimistic: boolean,
+  ): Promise<ethers.ContractTransaction>;
+
+  public async liquidateOptimistic(ca: CreditAccountData): Promise<void> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
@@ -192,19 +138,12 @@ export class LiquidatorService {
       this.log.debug({ pathHuman }, "path found");
 
       const balanceBefore = await this.getExecutorBalance(ca);
-      const iFacade = ICreditFacade__factory.connect(
-        creditFacade,
-        this.keyService.signer,
-      );
       // before actual transaction, try to estimate gas
       // this effectively will load state and contracts from fork origin to anvil
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        const estGas = await iFacade.estimateGas[
-          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
-        ](ca.borrower, this.keyService.address, 0, true, pfResult.calls);
-        this.log.debug(`estimated gas: ${estGas}`);
+        await this._estimate(ca, pfResult.calls);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -225,20 +164,21 @@ export class LiquidatorService {
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await iFacade[
-          "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
-        ](
-          ca.borrower,
-          this.keyService.address,
-          0,
-          true,
+        const tx = await this._liquidate(
+          this.keyService.signer,
+          ca,
           pfResult.calls,
-          { gasLimit: 29e6 }, // should be ok because we top up in optimistic
+          true,
         );
-        this.log.debug(`Liquidation tx receipt: ${tx.hash}`);
+        this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
           this.provider as ethers.providers.JsonRpcProvider,
           tx,
+        );
+        this.log.debug(
+          `Liquidation tx receipt: status=${
+            receipt.status
+          }, gas=${receipt.cumulativeGasUsed.toString()}`,
         );
 
         let balanceAfter = await this.getExecutorBalance(ca);
@@ -284,31 +224,16 @@ export class LiquidatorService {
     }
   }
 
-  protected getAccountTitle(ca: CreditAccountData): string {
-    const cmSymbol = tokenSymbolByAddress[ca.underlyingToken];
+  protected abstract _estimate(
+    account: CreditAccountData,
+    calls: MultiCall[],
+  ): Promise<void>;
 
-    return `${ca.addr} of ${ca.borrower} in ${cmSymbol}`;
-  }
-
-  protected async findClosePath(
+  protected abstract findClosePath(
     ca: CreditAccountData,
-  ): Promise<PathFinderCloseResult> {
-    try {
-      const result = await this.pathFinder.findBestClosePath(
-        ca,
-        this.slippage,
-        true,
-      );
-      if (!result) {
-        throw new Error("result is empty");
-      }
-      return result;
-    } catch (e) {
-      throw new Error(`cant find close path: ${e}`);
-    }
-  }
+  ): Promise<PathFinderV1CloseResult>;
 
-  private async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
+  protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
     const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
     const eth = await this.provider.getBalance(this.keyService.address);
@@ -321,12 +246,17 @@ export class LiquidatorService {
     return { eth, underlying };
   }
 
+  protected getAccountTitle(ca: CreditAccountData): string {
+    const cmSymbol = tokenSymbolByAddress[ca.underlyingToken];
+    return `${ca.addr} of ${ca.borrower} in ${cmSymbol}`;
+  }
+
   /**
    * Safely tries to save trace of failed transaction to configured output
    * @param txHash
    * @returns
    */
-  private async saveTxTrace(txHash: string): Promise<void> {
+  protected async saveTxTrace(txHash: string): Promise<void> {
     try {
       const txTrace = await (this.provider as providers.JsonRpcProvider).send(
         "trace_transaction",

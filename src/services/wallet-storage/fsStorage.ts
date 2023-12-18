@@ -1,10 +1,11 @@
-import { Wallet } from "ethers";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+
+import { Wallet } from "ethers";
 import { Inject } from "typedi";
 
 import config from "../../config";
 import { AMPQService } from "../ampqService";
-import { IWalletStorage } from "./types";
+import type { IWalletStorage } from "./types";
 
 export default class FsStorage implements IWalletStorage {
   @Inject()

@@ -20,6 +20,9 @@
           "{{#if prerelease.[0]}}{{prerelease.[0]}}{{else}}latest{{/if}}",
           "{{version}}"
         ],
+        "dockerArgs": {
+          "PACKAGE_VERSION": "{{version}}"
+        },
         "dockerImage": "liquidator-v2",
         "dockerRegistry": "ghcr.io",
         "dockerProject": "gearbox-protocol",

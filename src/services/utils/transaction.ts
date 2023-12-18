@@ -1,4 +1,4 @@
-import { ContractReceipt, ContractTransaction, ethers } from "ethers";
+import type { ContractReceipt, ContractTransaction, ethers } from "ethers";
 import pRetry from "p-retry";
 
 /**

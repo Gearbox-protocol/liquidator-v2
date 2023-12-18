@@ -5,8 +5,8 @@ import { Gauge, register } from "prom-client";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
-import { Logger, LoggerInterface } from "../decorators/logger";
-import { ScanService } from "./scanService";
+import { Logger, LoggerInterface } from "../log";
+import { ScanServiceV2, ScanServiceV3 } from "./scan";
 
 @Service()
 export class HealthChecker {
@@ -14,12 +14,17 @@ export class HealthChecker {
   log: LoggerInterface;
 
   @Inject()
-  scanService: ScanService;
+  scanServiceV2: ScanServiceV2;
+  @Inject()
+  scanServiceV3: ScanServiceV3;
 
   /**
    * Launches health checker - simple express server
    */
-  launch() {
+  public launch(): void {
+    if (config.optimisticLiquidations) {
+      return;
+    }
     const start = new Date();
     const app = express();
 
@@ -38,18 +43,25 @@ export class HealthChecker {
       help: "Build info",
       labelNames: ["version"],
     });
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    buildInfo.set({ version: require("../../package.json").version }, 1);
+    buildInfo.set({ version: config.version }, 1);
 
     app.get("/", (_, res) => {
       res.send({
-        latestBlock: this.scanService.lastUpdated,
+        latestBlockV2: this.scanServiceV2.lastUpdated,
+        latestBlockV3: this.scanServiceV3.lastUpdated,
         uptime: formatDuration(intervalToDuration({ start, end: new Date() })),
       });
     });
     app.get("/metrics", async (_, res) => {
       try {
-        latestBlockGauge.set(this.scanService.lastUpdated);
+        const lastUpdated = config.supportsV3
+          ? Math.min(
+              this.scanServiceV2.lastUpdated,
+              this.scanServiceV3.lastUpdated,
+            )
+          : this.scanServiceV2.lastUpdated;
+
+        latestBlockGauge.set(lastUpdated);
         res.set("Content-Type", register.contentType);
         res.end(await register.metrics());
       } catch (ex) {

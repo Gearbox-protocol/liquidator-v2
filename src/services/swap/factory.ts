@@ -1,12 +1,12 @@
-import { NetworkType } from "@gearbox-protocol/sdk";
-import { BigNumberish, Wallet } from "ethers";
+import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { BigNumberish, Wallet } from "ethers";
 import Container, { Service } from "typedi";
 
 import config from "../../config";
 import { SWAPPER } from "./constants";
 import NoopSwapper from "./noop";
 import OneInch from "./oneInch";
-import { ISwapper } from "./types";
+import type { ISwapper } from "./types";
 import Uniswap from "./uniswap";
 
 function createSwapper(): ISwapper {

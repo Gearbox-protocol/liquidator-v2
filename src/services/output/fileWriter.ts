@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import config from "../../config";
 import getFilename from "./filename";
-import { IOptimisticOutputWriter } from "./types";
+import type { IOptimisticOutputWriter } from "./types";
 
 export default class FileWriter implements IOptimisticOutputWriter {
   public async write(prefix: number | string, result: unknown): Promise<void> {

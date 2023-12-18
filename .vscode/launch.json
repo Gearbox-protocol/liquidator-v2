@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Run Liquidator V2",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/build/index.js",
       "preLaunchTask": "tsc: build - tsconfig.json",

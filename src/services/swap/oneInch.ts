@@ -8,11 +8,12 @@ import {
 } from "@gearbox-protocol/sdk";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
+import axiosRetry from "axios-retry";
 import type { BigNumberish, ethers, Wallet } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
-import { Logger, LoggerInterface } from "../../decorators/logger";
+import { Logger, LoggerInterface } from "../../log";
 import { mine } from "../utils";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
@@ -39,6 +40,11 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         Authorization: `Bearer ${config.oneInchApiKey}`,
         accept: "application/json",
       },
+    });
+    axiosRetry(this.apiClient, {
+      retries: 5,
+      retryCondition: e => e.response?.status === 429,
+      retryDelay: axiosRetry.exponentialDelay,
     });
     this.log.debug(`API URL: ${baseURL}`);
   }

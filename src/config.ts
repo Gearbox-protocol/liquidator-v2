@@ -10,6 +10,8 @@ import {
 import dotenv from "dotenv";
 
 export class Config {
+  static version: string;
+
   @IsNotEmpty()
   static appName: string;
 
@@ -17,11 +19,7 @@ export class Config {
 
   @IsNotEmpty()
   @IsEthereumAddress()
-  static addressProviderMainnet: string;
-
-  @IsNotEmpty()
-  @IsEthereumAddress()
-  static addressProviderGoerli: string;
+  static addressProvider: string;
 
   @IsNotEmpty()
   static ethProviderRpcs: string[];
@@ -59,6 +57,11 @@ export class Config {
    * If set, will only work with credit manager(s) with this underlying token symbol (e.g. DAI)
    */
   static underlying: string | undefined;
+
+  /**
+   * Flag to enable/disable V3 support
+   */
+  static supportsV3: boolean;
 
   @IsNotEmpty()
   @IsNumber()
@@ -134,10 +137,18 @@ export class Config {
   static init() {
     dotenv.config({ path: "./.env.local" });
 
+    Config.version =
+      // set in docker build
+      process.env.PACKAGE_VERSION ??
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("../package.json").version ??
+      "dev";
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProviderMainnet = process.env.ADDRESS_PROVIDER_MAINNET || "";
-    Config.addressProviderGoerli = process.env.ADDRESS_PROVIDER_GOERLI || "";
+    Config.addressProvider =
+      process.env.ADDRESS_PROVIDER ||
+      process.env.ADDRESS_PROVIDER_MAINNET ||
+      "";
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];
@@ -175,6 +186,7 @@ export class Config {
     Config.outSuffix = process.env.OUT_SUFFIX || "ts";
     Config.outS3Bucket = process.env.OUT_S3_BUCKET;
     Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
+    Config.supportsV3 = process.env.DISABLE_V3 !== "true";
   }
 
   static async validate(): Promise<void> {
@@ -183,6 +195,7 @@ export class Config {
     const errors = await validate(Config);
     if (errors.length > 0)
       throw new Error(`Configuration problems: ${errors.join("\n")}`);
+    console.info(`Liquidator TS version: ${Config.version}`);
   }
 }
 

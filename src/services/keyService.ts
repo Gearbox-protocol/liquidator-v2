@@ -1,10 +1,11 @@
 import { formatBN, WAD } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
-import { providers, Wallet } from "ethers";
+import type { providers } from "ethers";
+import { Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
-import { Logger, LoggerInterface } from "../decorators/logger";
+import { Logger, LoggerInterface } from "../log";
 import { AMPQService } from "./ampqService";
 import { getProvider } from "./utils";
 import { IWalletStorage, WALLET_STORAGE } from "./wallet-storage";
