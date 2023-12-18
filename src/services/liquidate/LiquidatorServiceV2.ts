@@ -75,7 +75,7 @@ export class LiquidatorServiceV2
       account.creditFacade,
       executor,
     );
-
+    this.log.debug(`liquidating ${account.addr} in ${account.creditManager}`);
     const tx = await facade[
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](

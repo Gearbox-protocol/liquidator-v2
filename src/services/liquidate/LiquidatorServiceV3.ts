@@ -54,7 +54,9 @@ export class LiquidatorServiceV3
     if (dcAddr.status === "rejected") {
       throw new Error(`cannot get DC_300: ${dcAddr.reason}`);
     }
-    this.log.debug(`Router: ${pfAddr}, compressor: ${dcAddr.value}`);
+    this.log.debug(
+      `Router: ${(pfAddr as any)?.value}, compressor: ${dcAddr.value}`,
+    );
     this.#compressor = IDataCompressorV3_00__factory.connect(
       dcAddr.value,
       this.provider,
@@ -79,6 +81,7 @@ export class LiquidatorServiceV3
       account.creditFacade,
       executor,
     );
+    this.log.debug(`liquidating ${account.addr} in ${account.creditManager}`);
     const tx = await facade.liquidateCreditAccount(
       account.addr,
       this.keyService.address,
@@ -127,7 +130,7 @@ export class LiquidatorServiceV3
     // so following actual tx should not be slow
     // also tx will act as retry in case of anvil external's error
     const estGas = await facade.estimateGas.liquidateCreditAccount(
-      account.borrower,
+      account.addr,
       this.keyService.address,
       calls,
     );

@@ -58,11 +58,6 @@ export class Config {
    */
   static underlying: string | undefined;
 
-  /**
-   * Flag to enable/disable V3 support
-   */
-  static supportsV3: boolean;
-
   @IsNotEmpty()
   @IsNumber()
   static hfThreshold: number;
@@ -186,7 +181,6 @@ export class Config {
     Config.outSuffix = process.env.OUT_SUFFIX || "ts";
     Config.outS3Bucket = process.env.OUT_S3_BUCKET;
     Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
-    Config.supportsV3 = process.env.DISABLE_V3 !== "true";
   }
 
   static async validate(): Promise<void> {
