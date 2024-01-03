@@ -81,12 +81,14 @@ export class LiquidatorServiceV3
       account.creditFacade,
       executor,
     );
-    this.log.debug(`liquidating ${account.addr} in ${account.creditManager}`);
+    this.log.debug(
+      `liquidating v3 ${account.addr} in ${account.creditManager}`,
+    );
     const tx = await facade.liquidateCreditAccount(
       account.addr,
       this.keyService.address,
       calls,
-      optimistic ? { gasLimit: 29e6 } : undefined,
+      optimistic ? { gasLimit: 29e6 } : {},
     );
     return tx;
   }

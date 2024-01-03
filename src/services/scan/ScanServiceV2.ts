@@ -214,7 +214,9 @@ export class ScanServiceV2 extends AbstractScanService {
       );
 
       if (accountsToLiquidate.length) {
-        this.log.debug(`Accounts to liquidate: ${accountsToLiquidate.length}`);
+        this.log.debug(
+          `v2 accounts to liquidate: ${accountsToLiquidate.length}`,
+        );
         if (config.optimisticLiquidations) {
           await this.liquidateOptimistically(accountsToLiquidate);
         } else {

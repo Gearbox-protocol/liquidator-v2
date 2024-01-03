@@ -62,7 +62,9 @@ export class ScanServiceV3 extends AbstractScanService {
         blockTag: atBlock,
       });
     const accounts = accountsRaw.map(a => new CreditAccountData(a));
-    this.log.debug(`Accounts to liquidate in ${atBlock}: ${accounts.length}`);
+    this.log.debug(
+      `v3 accounts to liquidate in ${atBlock}: ${accounts.length}`,
+    );
     if (config.optimisticLiquidations) {
       await this.liquidateOptimistically(accounts);
     } else {
