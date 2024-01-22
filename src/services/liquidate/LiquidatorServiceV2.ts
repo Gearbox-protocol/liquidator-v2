@@ -88,6 +88,7 @@ export class LiquidatorServiceV2
       calls,
       optimistic ? { gasLimit: 29e6 } : {},
     );
+    console.log(`tx hash: ${tx.hash}`);
     return tx;
   }
 

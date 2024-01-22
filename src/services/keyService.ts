@@ -49,6 +49,7 @@ export class KeyService {
 
     if (!config.optimisticLiquidations) {
       await this._recoverWallets();
+      this.log.info(`executors: ${this._executors.map(e => e.address)}`);
       for (let ex of this._executors) {
         await this.returnExecutor(ex.address);
       }
