@@ -3,6 +3,7 @@ import {
   CreditAccountData,
   IAddressProviderV3__factory,
   IDataCompressorV3_00__factory,
+  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { ethers, type providers } from "ethers";
 import { Inject, Service } from "typedi";
@@ -61,7 +62,16 @@ export class ScanServiceV3 extends AbstractScanService {
       await this.dataCompressor.callStatic.getLiquidatableCreditAccounts([], {
         blockTag: atBlock,
       });
-    const accounts = accountsRaw.map(a => new CreditAccountData(a));
+    let accounts = accountsRaw.map(a => new CreditAccountData(a));
+
+    // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
+    if (config.underlying) {
+      accounts = accounts.filter(a => {
+        const underlying = tokenSymbolByAddress[a.underlyingToken];
+        return config.underlying?.toLowerCase() === underlying?.toLowerCase();
+      });
+    }
+
     this.log.debug(
       `v3 accounts to liquidate in ${atBlock}: ${accounts.length}`,
     );
