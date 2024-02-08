@@ -55,10 +55,12 @@ export class HealthChecker {
     app.get("/metrics", async (_, res) => {
       try {
         const lastUpdated = Math.min(
-          this.scanServiceV2.lastUpdated,
-          this.scanServiceV3.lastUpdated,
+          ...[
+            this.scanServiceV2.lastUpdated,
+            this.scanServiceV3.lastUpdated,
+          ].filter(Boolean),
         );
-        latestBlockGauge.set(lastUpdated);
+        latestBlockGauge.set(isFinite(lastUpdated) ? lastUpdated : 0);
         res.set("Content-Type", register.contentType);
         res.end(await register.metrics());
       } catch (ex) {

@@ -63,8 +63,12 @@ class App {
 
     await this.keyService.launch();
     await this.swapper.launch(network);
-    await this.scanServiceV3.launch(provider);
-    await this.scanServiceV2.launch(provider);
+    if (config.enabledVersions.has(3)) {
+      await this.scanServiceV3.launch(provider);
+    }
+    if (config.enabledVersions.has(2)) {
+      await this.scanServiceV2.launch(provider);
+    }
 
     if (config.optimisticLiquidations) {
       this.log.debug("optimistic liquidation finished, writing output");
