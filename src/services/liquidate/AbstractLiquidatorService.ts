@@ -124,6 +124,7 @@ export default abstract class AbstractLiquidatorService {
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
+      account: ca.addr,
       gasUsed: 0,
       calls: [],
       isError: false,
