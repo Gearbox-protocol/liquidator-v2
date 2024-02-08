@@ -80,11 +80,15 @@ export class ScanServiceV2 extends AbstractScanService {
       CreditAccountWatcherV2.getOpenAccounts(cm, provider, startingBlock),
     );
 
-    this.log.debug(`Getting opened accounts on ${reqs.length} credit managers`);
+    this.log.debug(
+      `Getting opened v2 accounts on ${reqs.length} credit managers`,
+    );
     const accountsToUpdate: Array<Array<CreditAccountHash>> =
       await Promise.all(reqs);
+    const allAccounts = accountsToUpdate.flat();
+    this.log.debug(`Found ${allAccounts.length} opened v2 accounts`);
 
-    await this.updateAccounts(accountsToUpdate.flat(), startingBlock);
+    await this.updateAccounts(allAccounts, startingBlock);
 
     this._lastUpdated = startingBlock;
   }
@@ -98,7 +102,7 @@ export class ScanServiceV2 extends AbstractScanService {
 
       while (this._isUpdating) {
         range = `[${this._lastUpdated + 1} : ${blockNum}]`;
-        this.log.debug(`Block update ${range}`);
+        this.log.debug(`V2 block update ${range}`);
         try {
           const logs = await this.provider.getLogs({
             fromBlock: this._lastUpdated + 1,
@@ -124,24 +128,14 @@ export class ScanServiceV2 extends AbstractScanService {
             Object.values(this.creditManagers),
           );
 
-          [...updates.deleted, ...updates.updated].forEach(req => {
+          updates.deleted.forEach(req => {
             delete this.creditAccounts[req];
           });
 
-          const directUpdate = CreditAccountWatcherV2.trackDirectTransfers(
-            logs,
-            [],
-            Object.values(this.creditAccounts),
-          );
-
-          const accountsToUpdate = Array.from(
-            new Set([...updates.updated, ...directUpdate]),
-          );
-
-          await this.updateAccounts(accountsToUpdate, blockNum);
+          await this.updateAccounts(Object.keys(this.creditAccounts), blockNum);
 
           this._lastUpdated = blockNum;
-          this.log.debug(`Update blocks ${range} completed`);
+          this.log.debug(`V2 update blocks ${range} completed`);
         } catch (e) {
           this.log.error(`Errors during update blocks ${range}\n${e}`);
         }
@@ -176,7 +170,7 @@ export class ScanServiceV2 extends AbstractScanService {
       return;
     }
     this.log.debug(
-      `Getting data on ${accounts.length} accounts: ${accounts.join(", ")}`,
+      `Getting data on ${accounts.length} v2 accounts: ${accounts.join(", ")}`,
     );
 
     let chunkSize = accounts.length;
