@@ -663,6 +663,16 @@
   dependencies:
     regenerator-runtime "^0.14.0"
 
+"@chainlink/contracts@^0.6.1":
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/@chainlink/contracts/-/contracts-0.6.1.tgz#8842b57e755793cbdbcbc45277fb5d179c993e19"
+  integrity sha512-EuwijGexttw0UjfrW+HygwhQIrGAbqpf1ue28R55HhWMHBzphEH0PhWm8DQmFfj5OZNy8Io66N4L0nStkZ3QKQ==
+  dependencies:
+    "@eth-optimism/contracts" "^0.5.21"
+    "@openzeppelin/contracts" "~4.3.3"
+    "@openzeppelin/contracts-upgradeable" "^4.7.3"
+    "@openzeppelin/contracts-v0.7" "npm:@openzeppelin/contracts@v3.4.2"
+
 "@colors/colors@1.6.0", "@colors/colors@^1.6.0":
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.6.0.tgz#ec6cd237440700bc23ca23087f513c75508958b0"
@@ -875,6 +885,37 @@
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-8.56.0.tgz#ef20350fec605a7f7035a01764731b2de0f3782b"
   integrity sha512-gMsVel9D7f2HLkBma9VbtzZRehRogVRfbr++f06nL2vnCGCNlzOD+/MUov/F4p8myyAHspEhVobgjpX64q5m6A==
 
+"@eth-optimism/contracts@^0.5.21":
+  version "0.5.40"
+  resolved "https://registry.yarnpkg.com/@eth-optimism/contracts/-/contracts-0.5.40.tgz#d13a04a15ea947a69055e6fc74d87e215d4c936a"
+  integrity sha512-MrzV0nvsymfO/fursTB7m/KunkPsCndltVgfdHaT1Aj5Vi6R/doKIGGkOofHX+8B6VMZpuZosKCMQ5lQuqjt8w==
+  dependencies:
+    "@eth-optimism/core-utils" "0.12.0"
+    "@ethersproject/abstract-provider" "^5.7.0"
+    "@ethersproject/abstract-signer" "^5.7.0"
+
+"@eth-optimism/core-utils@0.12.0":
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/@eth-optimism/core-utils/-/core-utils-0.12.0.tgz#6337e4599a34de23f8eceb20378de2a2de82b0ea"
+  integrity sha512-qW+7LZYCz7i8dRa7SRlUKIo1VBU8lvN0HeXCxJR+z+xtMzMQpPds20XJNCMclszxYQHkXY00fOT6GvFw9ZL6nw==
+  dependencies:
+    "@ethersproject/abi" "^5.7.0"
+    "@ethersproject/abstract-provider" "^5.7.0"
+    "@ethersproject/address" "^5.7.0"
+    "@ethersproject/bignumber" "^5.7.0"
+    "@ethersproject/bytes" "^5.7.0"
+    "@ethersproject/constants" "^5.7.0"
+    "@ethersproject/contracts" "^5.7.0"
+    "@ethersproject/hash" "^5.7.0"
+    "@ethersproject/keccak256" "^5.7.0"
+    "@ethersproject/properties" "^5.7.0"
+    "@ethersproject/providers" "^5.7.0"
+    "@ethersproject/rlp" "^5.7.0"
+    "@ethersproject/transactions" "^5.7.0"
+    "@ethersproject/web" "^5.7.0"
+    bufio "^1.0.7"
+    chai "^4.3.4"
+
 "@ethersproject/abi@5.6.4":
   version "5.6.4"
   resolved "https://registry.yarnpkg.com/@ethersproject/abi/-/abi-5.6.4.tgz#f6e01b6ed391a505932698ecc0d9e7a99ee60362"
@@ -1067,7 +1108,7 @@
     "@ethersproject/properties" "^5.6.0"
     "@ethersproject/transactions" "^5.6.2"
 
-"@ethersproject/contracts@5.7.0":
+"@ethersproject/contracts@5.7.0", "@ethersproject/contracts@^5.7.0":
   version "5.7.0"
   resolved "https://registry.yarnpkg.com/@ethersproject/contracts/-/contracts-5.7.0.tgz#c305e775abd07e48aa590e1a877ed5c316f8bd1e"
   integrity sha512-5GJbzEU3X+d33CdfPhcyS+z8MzsTrBGk/sc+G+59+tPa9yFkl6HQ9D6L0QMgNTA9q8dT0XKxxkyp883XsQvbbg==
@@ -1282,7 +1323,7 @@
     bech32 "1.1.4"
     ws "7.4.6"
 
-"@ethersproject/providers@5.7.2":
+"@ethersproject/providers@5.7.2", "@ethersproject/providers@^5.0.10", "@ethersproject/providers@^5.7.0":
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/@ethersproject/providers/-/providers-5.7.2.tgz#f8b1a4f275d7ce58cf0a2eec222269a08beb18cb"
   integrity sha512-g34EWZ1WWAVgr4aptGlVBF8mhl3VWjv+8hoAnzStu8Ah22VHBsuGzP17eb6xDVRzw895G4W7vvx60lFFur/1Rg==
@@ -1587,10 +1628,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^1.16.0":
-  version "1.16.0"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.16.0.tgz#0a4795333175f93afa43331fc1d52c9a73c79e7e"
-  integrity sha512-qr4NkARfjqvN6WHu29Y5zzxoYouMvNdv31flaZ3SyfwNKBOGiokmgh3cFZstN9Qq/mk2u+wW9/R5ooK+D73g9g==
+"@gearbox-protocol/sdk-gov@^1.28.2":
+  version "1.31.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.31.1.tgz#ec0ed0dbe56bd217aa752a33252785cd08562d0c"
+  integrity sha512-XQbvDHl//XSgLKLruIV9Qn9N0w4d/l2yxOlPC7/nuGxJqsRNIARttY3JedftBaXeM2xqoGt9a8+BF25532Qagw==
   dependencies:
     "@types/yaml" "^1.9.7"
     add "^2.0.6"
@@ -1601,12 +1642,12 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.90":
-  version "3.0.0-next.90"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.90.tgz#757a60640d5c6679516d94b229877cfc6f606ccd"
-  integrity sha512-uWFHETm355+FnYrKU3yzcTttujYuN2jSlc56wgzkErEgpyBBiDNw1GO5qKFCxUkZfED85HhcTHKWhGmGdVyuqg==
+"@gearbox-protocol/sdk@^3.0.0-next.116":
+  version "3.0.0-next.116"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.116.tgz#cf2dd5abad2630391fe5fedb3e86143ea4bc758c"
+  integrity sha512-T6kgXie5LOaTcGpyhMRI04mZyn9UwVWdVLLtd1GJfJzMxLfOMt/IUdp/T16yfVQHN7caVkY3jBwAvnOns4F4XQ==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^1.16.0"
+    "@gearbox-protocol/sdk-gov" "^1.28.2"
     axios "^1.2.6"
     decimal.js-light "^2.5.1"
     deep-eql "^4.1.0"
@@ -1675,6 +1716,16 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.7.0.tgz#b139c81999c23e3c8d3c0a7234480e945920fc40"
   integrity sha512-AdY5wvN0P2vXBi3b29hxZgSFvdhdxPB9+f0B6s//P9Q8nibRWeA3cHm8UmLpio9ABigkVHJ5NMPk+Mz8VCCyrw==
 
+"@openzeppelin/contracts-upgradeable@^4.7.3":
+  version "4.9.5"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-4.9.5.tgz#572b5da102fc9be1d73f34968e0ca56765969812"
+  integrity sha512-f7L1//4sLlflAN7fVzJLoRedrf5Na3Oal5PZfIq55NFcVZ90EpV1q5xOvL4lFvg3MNICSDr2hH0JUBxwlxcoPg==
+
+"@openzeppelin/contracts-v0.7@npm:@openzeppelin/contracts@v3.4.2":
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2.tgz#d81f786fda2871d1eb8a8c5a73e455753ba53527"
+  integrity sha512-z0zMCjyhhp4y7XKAcDAi3Vgms4T2PstwBdahiO0+9NaGICQKjynK3wduSRplTgk4LXmoO1yfDGO5RbjKYxtuxA==
+
 "@openzeppelin/contracts@3.4.1-solc-0.7-2":
   version "3.4.1-solc-0.7-2"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.1-solc-0.7-2.tgz#371c67ebffe50f551c3146a9eec5fe6ffe862e92"
@@ -1684,6 +1735,61 @@
   version "3.4.2-solc-0.7"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz#38f4dbab672631034076ccdf2f3201fab1726635"
   integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
+
+"@openzeppelin/contracts@^4.8.1":
+  version "4.9.5"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.9.5.tgz#1eed23d4844c861a1835b5d33507c1017fa98de8"
+  integrity sha512-ZK+W5mVhRppff9BE6YdR8CC52C8zAvsVAiWhEtQ5+oNxFE6h1WdeWo+FJSF8KKvtxxVYZ7MTP/5KoVpAU3aSWg==
+
+"@openzeppelin/contracts@~4.3.3":
+  version "4.3.3"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.3.tgz#ff6ee919fc2a1abaf72b22814bfb72ed129ec137"
+  integrity sha512-tDBopO1c98Yk7Cv/PZlHqrvtVjlgK5R4J6jxLwoO7qxK4xqOiZG+zSkIvGFpPZ0ikc3QOED3plgdqjgNTnBc7g==
+
+"@redstone-finance/evm-connector@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/evm-connector/-/evm-connector-0.3.6.tgz#73407fd06a903e043141b7aa4443a9871e41f222"
+  integrity sha512-4+jnFECKitxHJ731yeiK/wwjBLpIXcO89Jf7gujHpaFOfBD+chksJGRe4Vv4RgNspyZjy2vYpHVbfaCbe6iqcQ==
+  dependencies:
+    "@chainlink/contracts" "^0.6.1"
+    "@openzeppelin/contracts" "^4.8.1"
+    "@redstone-finance/protocol" "^0.3.6"
+    "@redstone-finance/sdk" "^0.3.6"
+    axios "^1.5.1"
+    ethers "^5.7.2"
+
+"@redstone-finance/oracles-smartweave-contracts@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/oracles-smartweave-contracts/-/oracles-smartweave-contracts-0.3.6.tgz#e13add9f87e41d7e2e16c63b1fd1e96bbcf9f9a0"
+  integrity sha512-FSZfZWKm7Lh6pbVxEJZjK77gDDYGPwtU/gh4PChrlK+RuN3B2DceWcMjFSRVECSsSKYkK1fBAl8odXNX/XSjIQ==
+
+"@redstone-finance/protocol@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/protocol/-/protocol-0.3.6.tgz#c09099e4ff74dfdb74ccee44aad541a5b2a4443f"
+  integrity sha512-FGuOxU22Rw4IqMCkQHukhRjd7jUOfXS1qdTKeLCtOJgq6LqWq8el+OB2hFhqZSTsv/1sLE7jQz+OKJCiUnDWqA==
+  dependencies:
+    ethers "^5.7.2"
+
+"@redstone-finance/sdk@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/sdk/-/sdk-0.3.6.tgz#35a7b1d65da6193ab48595282e5cef1b20f354ee"
+  integrity sha512-fvU7amSAK1B9GSTd6W/MyDzhDxWYNX/gV4100s+b6lYK8BlYt2D3mAECQr6/IJ8+XFEzi2lnCsSB+bWt2ysLZg==
+  dependencies:
+    "@redstone-finance/oracles-smartweave-contracts" "^0.3.6"
+    "@redstone-finance/protocol" "^0.3.6"
+    "@redstone-finance/utils" "^0.3.6"
+    axios "^1.5.1"
+    ethers "^5.7.2"
+
+"@redstone-finance/utils@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/utils/-/utils-0.3.6.tgz#f1fe4af380877725bc98af3a4cf025a5827d0f79"
+  integrity sha512-uP+yMjnaoZ0UQRX4+jtX5LM5p9siSUOT6fVGAAaScwVfy1/K0sovyIWHC+Ouz9TfdX2UMuMCOtkzOcl332jb5Q==
+  dependencies:
+    axios "^1.5.1"
+    decimal.js "^10.4.3"
+    ethereum-multicall "^2.19.0"
+    ethers "^5.7.2"
 
 "@smithy/abort-controller@^2.0.15":
   version "2.0.15"
@@ -2853,6 +2959,15 @@ axios@^1.2.6, axios@^1.6.0:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
+axios@^1.5.1:
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.7.tgz#7b48c2e27c96f9c68a2f8f31e2ab19f59b06b0a7"
+  integrity sha512-/hDJGff6/c7u0hDkvkGxR/oy6CbCs8ziCsC7SqmhjfozqiJGc8Z11wrv9z9lYfY4K8l+H9TpjcMDX0xOZmx+RA==
+  dependencies:
+    follow-redirects "^1.15.4"
+    form-data "^4.0.0"
+    proxy-from-env "^1.1.0"
+
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
@@ -3018,6 +3133,11 @@ buffer@^6.0.3:
     base64-js "^1.3.1"
     ieee754 "^1.2.1"
 
+bufio@^1.0.7:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/bufio/-/bufio-1.2.1.tgz#8d4ab3ddfcd5faa90f996f922f9397d41cbaf2de"
+  integrity sha512-9oR3zNdupcg/Ge2sSHQF3GX+kmvL/fTPvD0nd5AGLq8SjUYnTz+SlFjK/GXidndbZtIj+pVKXiWeR9w6e9wKCA==
+
 bytes@3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/bytes/-/bytes-3.1.2.tgz#8b0beeb98605adf1b128fa4386403c009e0221a5"
@@ -3080,6 +3200,19 @@ chai@^4.3.10, chai@^4.3.6:
   version "4.3.10"
   resolved "https://registry.yarnpkg.com/chai/-/chai-4.3.10.tgz#d784cec635e3b7e2ffb66446a63b4e33bd390384"
   integrity sha512-0UXG04VuVbruMUYbJ6JctvH0YnC/4q3/AkT18q4NaITo91CUm0liMS9VqzT9vZhVQ/1eqPanMWjBM+Juhfb/9g==
+  dependencies:
+    assertion-error "^1.1.0"
+    check-error "^1.0.3"
+    deep-eql "^4.1.3"
+    get-func-name "^2.0.2"
+    loupe "^2.3.6"
+    pathval "^1.1.1"
+    type-detect "^4.0.8"
+
+chai@^4.3.4:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/chai/-/chai-4.4.1.tgz#3603fa6eba35425b0f2ac91a009fe924106e50d1"
+  integrity sha512-13sOfMv2+DWduEU+/xbun3LScLoqN17nBeTLUsmDfKdoiC1fr0n9PU4guu4AhRcOVFk/sW8LyZWHuhWtQZiF+g==
   dependencies:
     assertion-error "^1.1.0"
     check-error "^1.0.3"
@@ -3510,6 +3643,11 @@ decimal.js-light@^2.5.0, decimal.js-light@^2.5.1:
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/decimal.js-light/-/decimal.js-light-2.5.1.tgz#134fd32508f19e208f4fb2f8dac0d2626a867934"
   integrity sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg==
+
+decimal.js@^10.4.3:
+  version "10.4.3"
+  resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.4.3.tgz#1044092884d245d1b7f65725fa4ad4c6f781cc23"
+  integrity sha512-VBBaLc1MgL5XpzgIP7ny5Z6Nx3UrRkIViUkPUdtl9aya5amy3De1gsUUSB1g3+3sExYNjCAsAznmukyxCb1GRA==
 
 decode-uri-component@^0.2.0:
   version "0.2.2"
@@ -4051,6 +4189,14 @@ etag@~1.8.1:
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==
 
+ethereum-multicall@^2.19.0:
+  version "2.21.0"
+  resolved "https://registry.yarnpkg.com/ethereum-multicall/-/ethereum-multicall-2.21.0.tgz#a0dc5d5e7bbddabd484a75037ecb9b77ad5688ba"
+  integrity sha512-J234OuvUheTKvZVhMk41SwyB66m+MU+Xe2FFWOln8xu6TXKzOzsjSFQn/f5OTDGEiRStKMnJpCvQDim+Uk+qBQ==
+  dependencies:
+    "@ethersproject/providers" "^5.0.10"
+    ethers "^5.0.15"
+
 ethers@5.6.9:
   version "5.6.9"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.6.9.tgz#4e12f8dfcb67b88ae7a78a9519b384c23c576a4d"
@@ -4087,7 +4233,7 @@ ethers@5.6.9:
     "@ethersproject/web" "5.6.1"
     "@ethersproject/wordlists" "5.6.1"
 
-ethers@^5.7.1:
+ethers@^5.0.15, ethers@^5.6.8, ethers@^5.7.1, ethers@^5.7.2:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
   integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==
@@ -4426,6 +4572,11 @@ follow-redirects@^1.14.9, follow-redirects@^1.15.0:
   version "1.15.3"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.3.tgz#fe2f3ef2690afce7e82ed0b44db08165b207123a"
   integrity sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==
+
+follow-redirects@^1.15.4:
+  version "1.15.5"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.5.tgz#54d4d6d062c0fa7d9d17feb008461550e3ba8020"
+  integrity sha512-vSFWUON1B+yAw1VN4xMfxgn5fTUiaOzAJCKBwIIgT/+7CuGy9+r+5gITvP62j3RmaD5Ph65UaERdOSRGUzZtgw==
 
 for-each@^0.3.3:
   version "0.3.3"
@@ -6579,6 +6730,13 @@ redent@^3.0.0:
   dependencies:
     indent-string "^4.0.0"
     strip-indent "^3.0.0"
+
+redstone-protocol@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/redstone-protocol/-/redstone-protocol-1.0.5.tgz#c8555e9a9e3ee49d11b6586bf7090e59404e3395"
+  integrity sha512-62qHSb9jF5875a/gc8MbDcHH1n4dZsBXxlIxpk3vx/MeykAMB6nLd1174Qukvupkr69cneeRQiVqqALkQpmRlg==
+  dependencies:
+    ethers "^5.6.8"
 
 reflect-metadata@^0.1.13:
   version "0.1.14"
