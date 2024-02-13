@@ -5,6 +5,7 @@ import {
   PathFinderV1,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
+import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
 import { ethers } from "ethers";
 import { Service } from "typedi";
@@ -47,8 +48,9 @@ export class LiquidatorServiceV2
     );
   }
 
-  protected async findClosePath(
+  protected async _findClosePath(
     ca: CreditAccountData,
+    priceUpdates: PriceOnDemandStruct[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.#pathFinder.findBestClosePath(

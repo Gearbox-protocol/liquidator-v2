@@ -1,4 +1,5 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
 import { Inject } from "typedi";
 
@@ -46,7 +47,8 @@ export default abstract class AbstractScanService {
    * @param accountsToLiquidate
    */
   protected async liquidateNormal(
-    accountsToLiquidate: Array<CreditAccountData>,
+    accountsToLiquidate: CreditAccountData[],
+    priceUpdates: PriceOnDemandStruct[] = [],
   ): Promise<void> {
     if (!accountsToLiquidate.length) {
       return;
@@ -67,7 +69,7 @@ export default abstract class AbstractScanService {
       const ca = accountsToLiquidate[i];
 
       ca.isDeleting = true;
-      await this.liquidatorService.liquidate(ca);
+      await this.liquidatorService.liquidate(ca, priceUpdates);
     }
   }
 
@@ -76,14 +78,15 @@ export default abstract class AbstractScanService {
    * @param accountsToLiquidate
    */
   protected async liquidateOptimistically(
-    accountsToLiquidate: Array<CreditAccountData>,
+    accountsToLiquidate: CreditAccountData[],
+    priceUpdates: PriceOnDemandStruct[] = [],
   ): Promise<void> {
     this.log.warn(
       `Optimistic liquidation for ${accountsToLiquidate.length} accounts`,
     );
     for (let i = 0; i < accountsToLiquidate.length; i++) {
       const ca = accountsToLiquidate[i];
-      await this.liquidatorService.liquidateOptimistic(ca);
+      await this.liquidatorService.liquidateOptimistic(ca, priceUpdates);
       this.log.info(
         `Optimistic liquidation progress: ${i + 1}/${
           accountsToLiquidate.length

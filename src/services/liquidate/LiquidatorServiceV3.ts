@@ -8,10 +8,12 @@ import {
   CreditManagerData,
   IAddressProviderV3__factory,
   ICreditFacadeV3__factory,
+  ICreditFacadeV3Multicall__factory,
   IDataCompressorV3_00__factory,
   PathFinder,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
+import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
 import { ethers } from "ethers";
 import { Service } from "typedi";
@@ -20,6 +22,8 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
+
+const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
 @Service()
 export class LiquidatorServiceV3
@@ -67,7 +71,6 @@ export class LiquidatorServiceV3
         : "0xC46613db74c8B734D8074E7D02239139cB35Ed66",
       this.provider,
       this.network,
-      PathFinder.connectors,
     );
   }
 
@@ -94,8 +97,9 @@ export class LiquidatorServiceV3
     return tx;
   }
 
-  protected async findClosePath(
+  protected async _findClosePath(
     ca: CreditAccountData,
+    priceUpdates: PriceOnDemandStruct[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.#compressor.getCreditManagerData(ca.creditManager);
@@ -114,6 +118,19 @@ export class LiquidatorServiceV3
       if (!result) {
         throw new Error("result is empty");
       }
+      this.log.debug(
+        `will prepend ${priceUpdates} price update calls to close account calls for ${ca.addr}`,
+      );
+      result.calls.unshift(
+        ...priceUpdates.map(({ token, callData }) => ({
+          target: ca.creditFacade,
+          callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
+            token,
+            false, // reserve
+            callData,
+          ]),
+        })),
+      );
       return result;
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
