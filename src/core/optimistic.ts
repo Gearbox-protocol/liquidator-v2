@@ -12,6 +12,11 @@ export interface OptimisticResult {
   borrower: string;
 
   /**
+   * Credit account address
+   */
+  account: string;
+
+  /**
    * Gas used for liquidation from tx recepit
    */
   gasUsed: number;

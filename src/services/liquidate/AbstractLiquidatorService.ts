@@ -82,7 +82,12 @@ export default abstract class AbstractLiquidatorService {
 
     try {
       const pfResult = await this.findClosePath(ca);
-      const pathHuman = TxParser.parseMultiCall(pfResult.calls);
+      let pathHuman: string[] = [];
+      try {
+        pathHuman = TxParser.parseMultiCall(pfResult.calls);
+      } catch (e) {
+        pathHuman = [`${e}`];
+      }
       this.log.debug(pathHuman);
 
       const executor = this.keyService.takeVacantExecutor();
@@ -119,6 +124,7 @@ export default abstract class AbstractLiquidatorService {
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
+      account: ca.addr,
       gasUsed: 0,
       calls: [],
       isError: false,
@@ -134,7 +140,12 @@ export default abstract class AbstractLiquidatorService {
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
-      const pathHuman = TxParser.parseMultiCall(pfResult.calls);
+      let pathHuman: string[] = [];
+      try {
+        pathHuman = TxParser.parseMultiCall(pfResult.calls);
+      } catch (e) {
+        pathHuman = [`${e}`];
+      }
       this.log.debug({ pathHuman }, "path found");
 
       const balanceBefore = await this.getExecutorBalance(ca);
@@ -175,10 +186,11 @@ export default abstract class AbstractLiquidatorService {
           this.provider as ethers.providers.JsonRpcProvider,
           tx,
         );
+        const strStatus = receipt.status === 1 ? "success" : "failure";
         this.log.debug(
-          `Liquidation tx receipt: status=${
+          `Liquidation tx receipt: status=${strStatus} (${
             receipt.status
-          }, gas=${receipt.cumulativeGasUsed.toString()}`,
+          }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
 
         let balanceAfter = await this.getExecutorBalance(ca);

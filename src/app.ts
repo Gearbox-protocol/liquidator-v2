@@ -63,9 +63,11 @@ class App {
 
     await this.keyService.launch();
     await this.swapper.launch(network);
-    await this.scanServiceV2.launch(provider);
-    if (config.supportsV3) {
+    if (config.enabledVersions.has(3)) {
       await this.scanServiceV3.launch(provider);
+    }
+    if (config.enabledVersions.has(2)) {
+      await this.scanServiceV2.launch(provider);
     }
 
     if (config.optimisticLiquidations) {

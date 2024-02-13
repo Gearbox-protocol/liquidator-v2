@@ -75,7 +75,9 @@ export class LiquidatorServiceV2
       account.creditFacade,
       executor,
     );
-
+    this.log.debug(
+      `liquidating v2 ${account.addr} in ${account.creditManager}`,
+    );
     const tx = await facade[
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](
@@ -84,8 +86,9 @@ export class LiquidatorServiceV2
       0,
       true,
       calls,
-      optimistic ? { gasLimit: 29e6 } : undefined,
+      optimistic ? { gasLimit: 29e6 } : {},
     );
+    console.log(`tx hash: ${tx.hash}`);
     return tx;
   }
 

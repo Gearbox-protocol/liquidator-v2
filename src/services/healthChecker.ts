@@ -54,14 +54,13 @@ export class HealthChecker {
     });
     app.get("/metrics", async (_, res) => {
       try {
-        const lastUpdated = config.supportsV3
-          ? Math.min(
-              this.scanServiceV2.lastUpdated,
-              this.scanServiceV3.lastUpdated,
-            )
-          : this.scanServiceV2.lastUpdated;
-
-        latestBlockGauge.set(lastUpdated);
+        const lastUpdated = Math.min(
+          ...[
+            this.scanServiceV2.lastUpdated,
+            this.scanServiceV3.lastUpdated,
+          ].filter(Boolean),
+        );
+        latestBlockGauge.set(isFinite(lastUpdated) ? lastUpdated : 0);
         res.set("Content-Type", register.contentType);
         res.end(await register.metrics());
       } catch (ex) {

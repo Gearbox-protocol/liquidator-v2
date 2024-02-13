@@ -9,6 +9,8 @@ import {
 } from "class-validator";
 import dotenv from "dotenv";
 
+const SUPPORTED_VERSIONS: number[] = [2, 3];
+
 export class Config {
   static version: string;
 
@@ -58,11 +60,6 @@ export class Config {
    */
   static underlying: string | undefined;
 
-  /**
-   * Flag to enable/disable V3 support
-   */
-  static supportsV3: boolean;
-
   @IsNotEmpty()
   @IsNumber()
   static hfThreshold: number;
@@ -84,6 +81,12 @@ export class Config {
   @IsNotEmpty()
   @Min(0)
   static balanceToNotify: number;
+
+  /**
+   * Which versions (v2/v3) to work with
+   * This mode is for parity with go-liquidator, which has 2 different binaries for v2 and v3
+   */
+  static enabledVersions: Set<number>;
 
   @IsNotEmpty()
   static optimisticLiquidations: boolean;
@@ -179,6 +182,11 @@ export class Config {
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.enabledVersions = new Set(
+      process.env.ENABLED_VERSIONS
+        ? process.env.ENABLED_VERSIONS.split(",").map(Number)
+        : SUPPORTED_VERSIONS,
+    );
 
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;
@@ -186,15 +194,23 @@ export class Config {
     Config.outSuffix = process.env.OUT_SUFFIX || "ts";
     Config.outS3Bucket = process.env.OUT_S3_BUCKET;
     Config.outS3Prefix = process.env.OUT_S3_PREFIX || "";
-    Config.supportsV3 = process.env.DISABLE_V3 !== "true";
   }
 
   static async validate(): Promise<void> {
     console.log("Loading configuration...");
     Config.init();
     const errors = await validate(Config);
-    if (errors.length > 0)
+    if (errors.length > 0) {
       throw new Error(`Configuration problems: ${errors.join("\n")}`);
+    }
+    if (Config.enabledVersions.size === 0) {
+      throw new Error("At least one version should be enabled");
+    }
+    for (const v of Config.enabledVersions) {
+      if (!SUPPORTED_VERSIONS.includes(v)) {
+        throw new Error(`Unsupported version: ${v}`);
+      }
+    }
     console.info(`Liquidator TS version: ${Config.version}`);
   }
 }
