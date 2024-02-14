@@ -1,5 +1,10 @@
-import type { PriceFeedData } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountData,
+  MultiCall,
+  PriceFeedData,
+} from "@gearbox-protocol/sdk";
 import {
+  ICreditFacadeV3Multicall__factory,
   priceFeedsByToken,
   PriceFeedType,
   tokenSymbolByAddress,
@@ -12,22 +17,24 @@ import { RedstonePayload } from "redstone-protocol";
 import type { LoggerInterface } from "../log";
 import type { PriceOnDemand } from "./liquidate";
 
+const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
+
 export type RedstonePriceFeed = Extract<
   PriceFeedData,
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
 export class RedstoneService {
-  log: LoggerInterface;
+  log?: LoggerInterface;
 
-  protected async updateRedstone(tokens: string[]): Promise<PriceOnDemand[]> {
+  public async updateRedstone(tokens: string[]): Promise<PriceOnDemand[]> {
     const redstoneFeeds: Array<RedstonePriceFeed & { token: string }> = [];
 
     for (const t of tokens) {
       const token = t.toLowerCase();
       const symbol = tokenSymbolByAddress[token];
       if (!symbol) {
-        this.log.warn(
+        this.log?.warn(
           `Failed price feed for token ${token} which is not found in SDK`,
         );
         continue;
@@ -36,26 +43,25 @@ export class RedstoneService {
       const feed = priceFeedsByToken[symbol];
       const entry = feed?.AllNetworks ?? feed?.Mainnet;
       if (!entry) {
-        this.log.warn(
+        this.log?.warn(
           `Cannot find price feed for token ${symbol} (${token}) in SDK`,
         );
         continue;
       }
-
       // it is technically possible to have both main and reserve price feeds to be redstone
       // but from practical standpoint this makes no sense: so use else-if, not if-if
       if (entry.Main?.type === PriceFeedType.REDSTONE_ORACLE) {
         redstoneFeeds.push({ token, ...entry.Main });
-        this.log.debug(
+        this.log?.debug(
           `need to update main redstone price feed ${entry.Main.dataId} in ${entry.Main.dataServiceId} for token ${symbol} (${token})`,
         );
       } else if (entry?.Reserve?.type === PriceFeedType.REDSTONE_ORACLE) {
         redstoneFeeds.push({ token, ...entry.Reserve });
-        this.log.debug(
+        this.log?.debug(
           `need to update reserve redstone price feed ${entry.Reserve.dataId} in ${entry.Reserve.dataServiceId} for token ${symbol} (${token})`,
         );
       } else {
-        this.log.warn(
+        this.log?.warn(
           `non-restone price feed failed for token ${symbol} (${token}): ${JSON.stringify(
             entry,
           )}`,
@@ -63,7 +69,7 @@ export class RedstoneService {
       }
     }
 
-    this.log.debug(`need to update ${redstoneFeeds.length} redstone feeds`);
+    this.log?.debug(`need to update ${redstoneFeeds.length} redstone feeds`);
     return Promise.all(
       redstoneFeeds.map(f =>
         this.#getRedstonePayloadForManualUsage(
@@ -74,6 +80,39 @@ export class RedstoneService {
         ),
       ),
     );
+  }
+
+  public async redstoneUpdatesForCreditAccount(
+    ca: CreditAccountData,
+    redstoneTokens: string[],
+  ): Promise<MultiCall[]> {
+    // find all tokens on CA that are enabled, have some balance and are redstone tokens
+    const accRedstoneTokens: string[] = [];
+    const accRedstoneSymbols: string[] = [];
+
+    for (const t of redstoneTokens) {
+      const token = t.toLowerCase();
+      const { balance = 1n, isEnabled } = ca.allBalances[token] ?? {};
+      if (isEnabled && balance > 1n) {
+        accRedstoneTokens.push(token);
+        accRedstoneSymbols.push(tokenSymbolByAddress[token]);
+      }
+    }
+    this.log?.debug(
+      `need to update ${accRedstoneSymbols.length} redstone tokens on acc ${
+        ca.addr
+      }: ${accRedstoneSymbols.join(", ")}`,
+    );
+
+    const priceUpdates = await this.updateRedstone(accRedstoneTokens);
+    return priceUpdates.map(({ token, callData }) => ({
+      target: ca.creditFacade,
+      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
+        token,
+        false, // reserve
+        callData,
+      ]),
+    }));
   }
 
   async #getRedstonePayloadForManualUsage(

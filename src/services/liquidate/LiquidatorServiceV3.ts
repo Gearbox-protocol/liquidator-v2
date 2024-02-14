@@ -8,10 +8,8 @@ import {
   CreditManagerData,
   IAddressProviderV3__factory,
   ICreditFacadeV3__factory,
-  ICreditFacadeV3Multicall__factory,
   IDataCompressorV3_00__factory,
   PathFinder,
-  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { ethers, providers } from "ethers";
@@ -22,8 +20,6 @@ import { Logger, LoggerInterface } from "../../log";
 import { findLatestServiceAddress } from "../utils";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
-
-const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
 @Service()
 export class LiquidatorServiceV3
@@ -122,39 +118,6 @@ export class LiquidatorServiceV3
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
     }
-  }
-
-  protected async redstoneUpdatesForCreditAccount(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<MultiCall[]> {
-    // find all tokens on CA that are enabled, have some balance and are redstone tokens
-    const accRedstoneTokens: string[] = [];
-    const accRedstoneSymbols: string[] = [];
-
-    for (const t of redstoneTokens) {
-      const token = t.toLowerCase();
-      const { balance = 1n, isEnabled } = ca.allBalances[token] ?? {};
-      if (isEnabled && balance > 1n) {
-        accRedstoneTokens.push(token);
-        accRedstoneSymbols.push(tokenSymbolByAddress[token]);
-      }
-    }
-    this.log.debug(
-      `need to update ${accRedstoneSymbols.length} redstone tokens on acc ${
-        ca.addr
-      }: ${accRedstoneSymbols.join(", ")}`,
-    );
-
-    const priceUpdates = await this.updateRedstone(accRedstoneTokens);
-    return priceUpdates.map(({ token, callData }) => ({
-      target: ca.creditFacade,
-      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-        token,
-        false, // reserve
-        callData,
-      ]),
-    }));
   }
 
   protected override async _estimate(
