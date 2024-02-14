@@ -14,12 +14,12 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { providers } from "ethers";
-import { ethers } from "ethers";
+import type { ethers, providers } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
+import { findLatestServiceAddress } from "../utils";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
 
@@ -46,14 +46,8 @@ export class LiquidatorServiceV3
       this.provider,
     );
     let [pfAddr, dcAddr] = await Promise.allSettled([
-      addressProvider.getAddressOrRevert(
-        ethers.utils.formatBytes32String("ROUTER"),
-        300,
-      ),
-      addressProvider.getAddressOrRevert(
-        ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
-        300,
-      ),
+      findLatestServiceAddress(addressProvider, "ROUTER", 300, 399),
+      findLatestServiceAddress(addressProvider, "DATA_COMPRESSOR", 300, 399),
     ]);
     if (dcAddr.status === "rejected") {
       throw new Error(`cannot get DC_300: ${dcAddr.reason}`);

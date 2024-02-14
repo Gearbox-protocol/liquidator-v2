@@ -6,13 +6,13 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { providers } from "ethers";
-import { ethers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
+import { findLatestServiceAddress } from "../utils";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -37,9 +37,11 @@ export class ScanServiceV3 extends AbstractScanService {
       provider,
     );
 
-    const dcAddr = await addressProvider.getAddressOrRevert(
-      ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
+    const dcAddr = await findLatestServiceAddress(
+      addressProvider,
+      "DATA_COMPRESSOR",
       300,
+      399,
     );
     this.dataCompressor = IDataCompressorV3_00__factory.connect(
       dcAddr,

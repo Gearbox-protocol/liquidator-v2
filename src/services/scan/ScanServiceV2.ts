@@ -13,13 +13,14 @@ import {
   safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import { ethers, type providers } from "ethers";
+import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
 import { LiquidatorServiceV2 } from "../liquidate";
+import { findLatestServiceAddress } from "../utils";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -48,9 +49,11 @@ export class ScanServiceV2 extends AbstractScanService {
       provider,
     );
 
-    this.dataCompressor = await addressProvider.getAddressOrRevert(
-      ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
-      210,
+    this.dataCompressor = await findLatestServiceAddress(
+      addressProvider,
+      "DATA_COMPRESSOR",
+      200,
+      299,
     );
 
     const startingBlock = await provider.getBlockNumber();
