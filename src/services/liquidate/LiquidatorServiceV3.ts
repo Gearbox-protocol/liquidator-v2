@@ -119,9 +119,9 @@ export class LiquidatorServiceV3
         throw new Error("result is empty");
       }
       this.log.debug(
-        `will prepend ${priceUpdates} price update calls to close account calls for ${ca.addr}`,
+        `will prepend ${priceUpdates.length} price update calls to close account calls for ${ca.addr}`,
       );
-      result.calls.unshift(
+      result.calls = [
         ...priceUpdates.map(({ token, callData }) => ({
           target: ca.creditFacade,
           callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
@@ -130,7 +130,8 @@ export class LiquidatorServiceV3
             callData,
           ]),
         })),
-      );
+        ...result.calls,
+      ];
       return result;
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
