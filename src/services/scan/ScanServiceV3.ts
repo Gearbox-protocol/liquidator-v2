@@ -78,9 +78,9 @@ export class ScanServiceV3 extends AbstractScanService {
       t => tokenSymbolByAddress[t.toLowerCase()],
     );
     this.log.debug(
-      `got ${redstoneUpdates} redstone price updates: ${redstoneSymbols.join(
-        ", ",
-      )}`,
+      `got ${
+        redstoneSymbols.length
+      } redstone price updates: ${redstoneSymbols.join(", ")}`,
     );
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
