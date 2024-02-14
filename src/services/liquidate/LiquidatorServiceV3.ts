@@ -21,7 +21,7 @@ import { Service } from "typedi";
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
-import type { ILiquidatorService, PriceOnDemand } from "./types";
+import type { ILiquidatorService } from "./types";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
@@ -99,7 +99,7 @@ export class LiquidatorServiceV3
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemand[],
+    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.#compressor.getCreditManagerData(ca.creditManager);
@@ -118,35 +118,49 @@ export class LiquidatorServiceV3
       if (!result) {
         throw new Error("result is empty");
       }
-      const priceUpdateCalls: MultiCall[] = [];
-      const priceUpdateSymbols: string[] = [];
-      for (const { token, callData } of priceUpdates) {
-        const { balance = 1n, isEnabled } =
-          ca.allBalances[token.toLowerCase()] ?? {};
-        if (isEnabled && balance > 1n) {
-          priceUpdateCalls.push({
-            target: ca.creditFacade,
-            callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-              token,
-              false, // reserve
-              callData,
-            ]),
-          });
-          priceUpdateSymbols.push(tokenSymbolByAddress[token.toLowerCase()]);
-        }
-      }
-      if (priceUpdateSymbols.length) {
-        this.log.debug(
-          `will prepend ${priceUpdateSymbols.join(
-            ", ",
-          )} price updates to close account calls for ${ca.addr}`,
-        );
-      }
+      // we want fresh redstone price in actual liquidation transactions
+      const priceUpdateCalls = await this.redstoneUpdatesForCreditAccount(
+        ca,
+        redstoneTokens,
+      );
       result.calls = [...priceUpdateCalls, ...result.calls];
       return result;
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
     }
+  }
+
+  protected async redstoneUpdatesForCreditAccount(
+    ca: CreditAccountData,
+    redstoneTokens: string[],
+  ): Promise<MultiCall[]> {
+    // find all tokens on CA that are enabled, have some balance and are redstone tokens
+    const accRedstoneTokens: string[] = [];
+    const accRedstoneSymbols: string[] = [];
+
+    for (const t of redstoneTokens) {
+      const token = t.toLowerCase();
+      const { balance = 1n, isEnabled } = ca.allBalances[token] ?? {};
+      if (isEnabled && balance > 1n) {
+        accRedstoneTokens.push(token);
+        accRedstoneSymbols.push(tokenSymbolByAddress[token]);
+      }
+    }
+    this.log.debug(
+      `need to update ${accRedstoneSymbols.length} redstone tokens on acc ${
+        ca.addr
+      }: ${accRedstoneSymbols.join(", ")}`,
+    );
+
+    const priceUpdates = await this.updateRedstone(accRedstoneTokens);
+    return priceUpdates.map(({ token, callData }) => ({
+      target: ca.creditFacade,
+      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
+        token,
+        false, // reserve
+        callData,
+      ]),
+    }));
   }
 
   protected override async _estimate(

@@ -1,5 +1,4 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
 import { Inject } from "typedi";
 
@@ -7,8 +6,9 @@ import config from "../../config";
 import type { LoggerInterface } from "../../log";
 import { KeyService } from "../keyService";
 import type { ILiquidatorService } from "../liquidate";
+import { RedstoneService } from "../redstoneService";
 
-export default abstract class AbstractScanService {
+export default abstract class AbstractScanService extends RedstoneService {
   log: LoggerInterface;
 
   @Inject()
@@ -48,7 +48,7 @@ export default abstract class AbstractScanService {
    */
   protected async liquidateNormal(
     accountsToLiquidate: CreditAccountData[],
-    priceUpdates: PriceOnDemandStruct[] = [],
+    redstoneTokens: string[] = [],
   ): Promise<void> {
     if (!accountsToLiquidate.length) {
       return;
@@ -69,7 +69,7 @@ export default abstract class AbstractScanService {
       const ca = accountsToLiquidate[i];
 
       ca.isDeleting = true;
-      await this.liquidatorService.liquidate(ca, priceUpdates);
+      await this.liquidatorService.liquidate(ca, redstoneTokens);
     }
   }
 
@@ -79,14 +79,14 @@ export default abstract class AbstractScanService {
    */
   protected async liquidateOptimistically(
     accountsToLiquidate: CreditAccountData[],
-    priceUpdates: PriceOnDemandStruct[] = [],
+    redstoneTokens: string[] = [],
   ): Promise<void> {
     this.log.warn(
       `Optimistic liquidation for ${accountsToLiquidate.length} accounts`,
     );
     for (let i = 0; i < accountsToLiquidate.length; i++) {
       const ca = accountsToLiquidate[i];
-      await this.liquidatorService.liquidateOptimistic(ca, priceUpdates);
+      await this.liquidatorService.liquidateOptimistic(ca, redstoneTokens);
       this.log.info(
         `Optimistic liquidation progress: ${i + 1}/${
           accountsToLiquidate.length

@@ -12,7 +12,7 @@ import { Service } from "typedi";
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
-import type { ILiquidatorService, PriceOnDemand } from "./types";
+import type { ILiquidatorService } from "./types";
 
 @Service()
 export class LiquidatorServiceV2
@@ -49,7 +49,7 @@ export class LiquidatorServiceV2
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemand[],
+    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.#pathFinder.findBestClosePath(

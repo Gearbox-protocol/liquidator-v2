@@ -8,12 +8,9 @@ export interface PriceOnDemand {
 
 export interface ILiquidatorService {
   launch: (provider: providers.Provider) => Promise<void>;
-  liquidate: (
-    ca: CreditAccountData,
-    priceUpdates: PriceOnDemand[],
-  ) => Promise<void>;
+  liquidate: (ca: CreditAccountData, redstoneTokens: string[]) => Promise<void>;
   liquidateOptimistic: (
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemand[],
+    redstoneTokens: string[],
   ) => Promise<void>;
 }

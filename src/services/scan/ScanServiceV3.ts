@@ -1,20 +1,12 @@
-import type {
-  IDataCompressorV3_00,
-  PriceFeedData,
-} from "@gearbox-protocol/sdk";
+import type { IDataCompressorV3_00 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
   IAddressProviderV3__factory,
   IDataCompressorV3_00__factory,
-  priceFeedsByToken,
-  PriceFeedType,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
 import type { providers } from "ethers";
-import { ethers, utils } from "ethers";
-import { arrayify } from "ethers/lib/utils";
-import { RedstonePayload } from "redstone-protocol";
+import { ethers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
@@ -22,11 +14,6 @@ import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
 import AbstractScanService from "./AbstractScanService";
-
-type RedstonePriceFeed = Extract<
-  PriceFeedData,
-  { type: PriceFeedType.REDSTONE_ORACLE }
->;
 
 @Service()
 export class ScanServiceV3 extends AbstractScanService {
@@ -76,8 +63,7 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `v3 potential accounts to liquidate in ${atBlock}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
-    const redstoneUpdates = await this.#updateRedstone(failedTokens);
-    this.log.debug(`got ${redstoneUpdates} redstone price updates`);
+    const redstoneUpdates = await this.updateRedstone(failedTokens);
     [accounts, failedTokens] = await this.#potentialLiquidations(
       atBlock,
       redstoneUpdates,
@@ -85,15 +71,26 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `v3 accounts to liquidate in ${atBlock}: ${accounts.length}`,
     );
+    const redstoneTokens = redstoneUpdates.map(({ token }) => token);
+    const redstoneSymbols = redstoneTokens.map(
+      t => tokenSymbolByAddress[t.toLowerCase()],
+    );
+    this.log.debug(
+      `got ${redstoneUpdates} redstone price updates: ${redstoneSymbols.join(
+        ", ",
+      )}`,
+    );
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
-      this.log.error(`failed tokens: ${failedTokens.join(", ")}`);
+      this.log.error(
+        `failed tokens on second iteration: ${failedTokens.join(", ")}`,
+      );
     }
 
     if (config.optimisticLiquidations) {
-      await this.liquidateOptimistically(accounts, redstoneUpdates);
+      await this.liquidateOptimistically(accounts, redstoneTokens);
     } else {
-      await this.liquidateNormal(accounts, redstoneUpdates);
+      await this.liquidateNormal(accounts, redstoneTokens);
     }
   }
 
@@ -109,9 +106,12 @@ export class ScanServiceV3 extends AbstractScanService {
     priceUpdates: PriceOnDemand[] = [],
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
     const accountsRaw =
-      await this.dataCompressor.callStatic.getLiquidatableCreditAccounts([], {
-        blockTag: atBlock,
-      });
+      await this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
+        priceUpdates,
+        {
+          blockTag: atBlock,
+        },
+      );
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
     // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
@@ -129,117 +129,4 @@ export class ScanServiceV3 extends AbstractScanService {
 
     return [accounts, Array.from(failedTokens)];
   }
-
-  async #updateRedstone(failedTokens: string[]): Promise<PriceOnDemand[]> {
-    const redstoneFeeds: Array<RedstonePriceFeed & { token: string }> = [];
-
-    for (const t of failedTokens) {
-      const token = t.toLowerCase();
-      const symbol = tokenSymbolByAddress[token];
-      if (!symbol) {
-        this.log.warn(
-          `Failed price feed for token ${token} which is not found in SDK`,
-        );
-        continue;
-      }
-
-      const feed = priceFeedsByToken[symbol];
-      const entry = feed?.AllNetworks ?? feed?.Mainnet;
-      if (!entry) {
-        this.log.warn(
-          `Cannot find price feed for token ${symbol} (${token}) in SDK`,
-        );
-        continue;
-      }
-
-      // it is technically possible to have both main and reserve price feeds to be redstone
-      // but from practical standpoint this makes no sense: so use else-if, not if-if
-      if (entry.Main?.type === PriceFeedType.REDSTONE_ORACLE) {
-        redstoneFeeds.push({ token, ...entry.Main });
-        this.log.debug(
-          `need to update main redstone price feed ${entry.Main.dataId} in ${entry.Main.dataServiceId} for token ${symbol} (${token})`,
-        );
-      } else if (entry?.Reserve?.type === PriceFeedType.REDSTONE_ORACLE) {
-        redstoneFeeds.push({ token, ...entry.Reserve });
-        this.log.debug(
-          `need to update reserve redstone price feed ${entry.Reserve.dataId} in ${entry.Reserve.dataServiceId} for token ${symbol} (${token})`,
-        );
-      } else {
-        this.log.warn(
-          `non-restone price feed failed for token ${symbol} (${token}): ${JSON.stringify(
-            entry,
-          )}`,
-        );
-      }
-    }
-
-    this.log.debug(`need to update ${redstoneFeeds.length} redstone feeds`);
-    return Promise.all(
-      redstoneFeeds.map(f =>
-        this.#getRedstonePayloadForManualUsage(
-          f.token,
-          f.dataServiceId,
-          f.dataId,
-          f.signersThreshold,
-        ),
-      ),
-    );
-  }
-
-  async #getRedstonePayloadForManualUsage(
-    token: string,
-    dataServiceId: string,
-    dataFeeds: string,
-    uniqueSignersCount: number,
-  ): Promise<PriceOnDemand> {
-    const dataPayload = await new DataServiceWrapper({
-      dataServiceId,
-      dataFeeds: [dataFeeds],
-      uniqueSignersCount,
-    }).prepareRedstonePayload(true);
-
-    const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
-      arrayify(`0x${dataPayload}`),
-    );
-
-    const dataPackagesList = splitResponse(
-      signedDataPackages,
-      uniqueSignersCount,
-    );
-
-    const result = dataPackagesList.map(list => {
-      const payload = new RedstonePayload(
-        list,
-        utils.toUtf8String(unsignedMetadata),
-      );
-
-      let ts = 0;
-      list.forEach(p => {
-        const newTimestamp = p.dataPackage.timestampMilliseconds / 1000;
-        if (ts === 0) {
-          ts = newTimestamp;
-        } else if (ts !== newTimestamp) {
-          throw new Error("Timestamps are not equal");
-        }
-      });
-
-      return ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "bytes"],
-        [ts, arrayify(`0x${payload.toBytesHexWithout0xPrefix()}`)],
-      );
-    });
-
-    return { token, callData: result[0] };
-  }
-}
-
-function splitResponse<T>(arr: T[], size: number): T[][] {
-  const chunks = [];
-
-  for (let i = 0; i < arr.length; i += size) {
-    const chunk = arr.slice(i, i + size);
-    chunks.push(chunk);
-  }
-
-  return chunks;
 }
