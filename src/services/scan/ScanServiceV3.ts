@@ -10,7 +10,6 @@ import {
   PriceFeedType,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
 import type { providers } from "ethers";
 import { ethers, utils } from "ethers";
@@ -20,7 +19,7 @@ import { Inject, Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import type { ILiquidatorService } from "../liquidate";
+import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
 import AbstractScanService from "./AbstractScanService";
 
@@ -107,7 +106,7 @@ export class ScanServiceV3 extends AbstractScanService {
    */
   async #potentialLiquidations(
     atBlock: number,
-    priceUpdates: PriceOnDemandStruct[] = [],
+    priceUpdates: PriceOnDemand[] = [],
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
     const accountsRaw =
       await this.dataCompressor.callStatic.getLiquidatableCreditAccounts([], {
@@ -131,9 +130,7 @@ export class ScanServiceV3 extends AbstractScanService {
     return [accounts, Array.from(failedTokens)];
   }
 
-  async #updateRedstone(
-    failedTokens: string[],
-  ): Promise<PriceOnDemandStruct[]> {
+  async #updateRedstone(failedTokens: string[]): Promise<PriceOnDemand[]> {
     const redstoneFeeds: Array<RedstonePriceFeed & { token: string }> = [];
 
     for (const t of failedTokens) {
@@ -155,7 +152,8 @@ export class ScanServiceV3 extends AbstractScanService {
         continue;
       }
 
-      // TODO: is it possible to have both main and reserve as redstone?
+      // it is technically possible to have both main and reserve price feeds to be redstone
+      // but from practical standpoint this makes no sense: so use else-if, not if-if
       if (entry.Main?.type === PriceFeedType.REDSTONE_ORACLE) {
         redstoneFeeds.push({ token, ...entry.Main });
         this.log.debug(
@@ -193,7 +191,7 @@ export class ScanServiceV3 extends AbstractScanService {
     dataServiceId: string,
     dataFeeds: string,
     uniqueSignersCount: number,
-  ): Promise<PriceOnDemandStruct> {
+  ): Promise<PriceOnDemand> {
     const dataPayload = await new DataServiceWrapper({
       dataServiceId,
       dataFeeds: [dataFeeds],

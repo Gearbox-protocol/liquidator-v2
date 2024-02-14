@@ -11,7 +11,6 @@ import {
   TxParser,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { BigNumber, ethers, providers } from "ethers";
 import { utils } from "ethers";
 import { Inject } from "typedi";
@@ -25,7 +24,7 @@ import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
 import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
-import type { ILiquidatorService } from "./types";
+import type { ILiquidatorService, PriceOnDemand } from "./types";
 
 export interface Balance {
   underlying: BigNumber;
@@ -79,7 +78,7 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidate(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    priceUpdates: PriceOnDemand[],
   ): Promise<void> {
     this.ampqService.info(
       `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
@@ -121,7 +120,7 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidateOptimistic(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    priceUpdates: PriceOnDemand[],
   ): Promise<void> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
@@ -253,7 +252,7 @@ export default abstract class AbstractLiquidatorService
 
   protected abstract _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    priceUpdates: PriceOnDemand[],
   ): Promise<PathFinderV1CloseResult>;
 
   protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {

@@ -11,9 +11,9 @@ import {
   ICreditFacadeV3Multicall__factory,
   IDataCompressorV3_00__factory,
   PathFinder,
+  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
 import { ethers } from "ethers";
 import { Service } from "typedi";
@@ -21,7 +21,7 @@ import { Service } from "typedi";
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
-import type { ILiquidatorService } from "./types";
+import type { ILiquidatorService, PriceOnDemand } from "./types";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
@@ -99,7 +99,7 @@ export class LiquidatorServiceV3
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    priceUpdates: PriceOnDemand[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.#compressor.getCreditManagerData(ca.creditManager);
@@ -118,20 +118,31 @@ export class LiquidatorServiceV3
       if (!result) {
         throw new Error("result is empty");
       }
-      this.log.debug(
-        `will prepend ${priceUpdates.length} price update calls to close account calls for ${ca.addr}`,
-      );
-      result.calls = [
-        ...priceUpdates.map(({ token, callData }) => ({
-          target: ca.creditFacade,
-          callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-            token,
-            false, // reserve
-            callData,
-          ]),
-        })),
-        ...result.calls,
-      ];
+      const priceUpdateCalls: MultiCall[] = [];
+      const priceUpdateSymbols: string[] = [];
+      for (const { token, callData } of priceUpdates) {
+        const { balance = 1n, isEnabled } =
+          ca.allBalances[token.toLowerCase()] ?? {};
+        if (isEnabled && balance > 1n) {
+          priceUpdateCalls.push({
+            target: ca.creditFacade,
+            callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
+              token,
+              false, // reserve
+              callData,
+            ]),
+          });
+          priceUpdateSymbols.push(tokenSymbolByAddress[token.toLowerCase()]);
+        }
+      }
+      if (priceUpdateSymbols.length) {
+        this.log.debug(
+          `will prepend ${priceUpdateSymbols.join(
+            ", ",
+          )} price updates to close account calls for ${ca.addr}`,
+        );
+      }
+      result.calls = [...priceUpdateCalls, ...result.calls];
       return result;
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
