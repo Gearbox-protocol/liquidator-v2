@@ -48,7 +48,11 @@ export class ScanServiceV3 extends AbstractScanService {
       provider,
     );
 
-    const startingBlock = await provider.getBlockNumber();
+    // we should not pin block during optimistic liquidations
+    // because during optimistic liquidations we need to call evm_mine to make redstone work
+    const startingBlock = config.optimisticLiquidations
+      ? undefined
+      : await provider.getBlockNumber();
     await this.updateAccounts(startingBlock);
   }
 
@@ -60,15 +64,23 @@ export class ScanServiceV3 extends AbstractScanService {
    * Loads new data and recompute all health factors
    * @param atBlock Fiex block for archive node which is needed to get data
    */
-  protected async updateAccounts(atBlock: number): Promise<void> {
-    let [accounts, failedTokens] = await this.#potentialLiquidations(atBlock);
+  protected async updateAccounts(atBlock?: number): Promise<void> {
+    let [accounts, failedTokens] = await this.#potentialLiquidations(
+      [],
+      atBlock,
+    );
     this.log.debug(
       `v3 potential accounts to liquidate in ${atBlock}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.updateRedstone(failedTokens);
+    if (config.optimisticLiquidations) {
+      // need to bump block timestamp to prevent redstone feeds from reverting
+      this.log.debug(`call evm_mine in optimistic mode`);
+      await (this.provider as any).send("evm_mine", []);
+    }
     [accounts, failedTokens] = await this.#potentialLiquidations(
-      atBlock,
       redstoneUpdates,
+      atBlock,
     );
     this.log.debug(
       `v3 accounts to liquidate in ${atBlock}: ${accounts.length}`,
@@ -104,15 +116,17 @@ export class ScanServiceV3 extends AbstractScanService {
    * @returns
    */
   async #potentialLiquidations(
-    atBlock: number,
-    priceUpdates: PriceOnDemand[] = [],
+    priceUpdates: PriceOnDemand[],
+    atBlock?: number | undefined,
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
     const accountsRaw =
       await this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
         priceUpdates,
-        {
-          blockTag: atBlock,
-        },
+        atBlock
+          ? {
+              blockTag: atBlock,
+            }
+          : {},
       );
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 

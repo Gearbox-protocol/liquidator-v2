@@ -55,7 +55,11 @@ class App {
       `Launching on ${network} (${chainId}) using address provider ${config.addressProvider}`,
     );
     if (config.optimisticLiquidations) {
-      this.log.warn(`Launching ${config.underlying} in OPTIMISTIC mode`);
+      this.log.warn(
+        `Launching ${config.underlying} ${Array.from(
+          config.enabledVersions,
+        )} in OPTIMISTIC mode`,
+      );
     }
 
     this.healthChecker.launch();

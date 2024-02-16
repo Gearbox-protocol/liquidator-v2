@@ -1801,10 +1801,10 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.120":
-  version "3.0.0-next.120"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.120.tgz#a8cf6d803c26f744ae1b863eca221c118187be99"
-  integrity sha512-dXGhtH1GJhGEQ0RwshKrK25mUuPm3UrMTncC8WqqHbC4AMV9FHwok7R2FM4lTgW5tY7dLqM+0jJgtlox4b9Ylw==
+"@gearbox-protocol/sdk@^3.0.0-next.121":
+  version "3.0.0-next.121"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.121.tgz#832a803f3e795575c4d7221155ff16a3d9f298e9"
+  integrity sha512-evCMIpaCASfC5FIQTkKoymeIcS/ZQsfCEEaJnyc/L42xrmZyGR2EFNe3LeCgMpCQSCBvY+g4k8+ijFIWLMSNDg==
   dependencies:
     "@gearbox-protocol/sdk-gov" "^1.31.1"
     axios "^1.2.6"
