@@ -8,22 +8,18 @@ import {
   CreditManagerData,
   IAddressProviderV3__factory,
   ICreditFacadeV3__factory,
-  ICreditFacadeV3Multicall__factory,
   IDataCompressorV3_00__factory,
   PathFinder,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
-import type { providers } from "ethers";
-import { ethers } from "ethers";
+import type { ethers, providers } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
+import { findLatestServiceAddress } from "../utils";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
-
-const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
 @Service()
 export class LiquidatorServiceV3
@@ -46,14 +42,8 @@ export class LiquidatorServiceV3
       this.provider,
     );
     let [pfAddr, dcAddr] = await Promise.allSettled([
-      addressProvider.getAddressOrRevert(
-        ethers.utils.formatBytes32String("ROUTER"),
-        300,
-      ),
-      addressProvider.getAddressOrRevert(
-        ethers.utils.formatBytes32String("DATA_COMPRESSOR"),
-        300,
-      ),
+      findLatestServiceAddress(addressProvider, "ROUTER", 300, 399),
+      findLatestServiceAddress(addressProvider, "DATA_COMPRESSOR", 300, 399),
     ]);
     if (dcAddr.status === "rejected") {
       throw new Error(`cannot get DC_300: ${dcAddr.reason}`);
@@ -99,7 +89,7 @@ export class LiquidatorServiceV3
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.#compressor.getCreditManagerData(ca.creditManager);
@@ -118,20 +108,12 @@ export class LiquidatorServiceV3
       if (!result) {
         throw new Error("result is empty");
       }
-      this.log.debug(
-        `will prepend ${priceUpdates.length} price update calls to close account calls for ${ca.addr}`,
+      // we want fresh redstone price in actual liquidation transactions
+      const priceUpdateCalls = await this.redstoneUpdatesForCreditAccount(
+        ca,
+        redstoneTokens,
       );
-      result.calls = [
-        ...priceUpdates.map(({ token, callData }) => ({
-          target: ca.creditFacade,
-          callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-            token,
-            false, // reserve
-            callData,
-          ]),
-        })),
-        ...result.calls,
-      ];
+      result.calls = [...priceUpdateCalls, ...result.calls];
       return result;
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);

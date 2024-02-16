@@ -11,7 +11,6 @@ import {
   TxParser,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { BigNumber, ethers, providers } from "ethers";
 import { utils } from "ethers";
 import { Inject } from "typedi";
@@ -22,6 +21,7 @@ import type { LoggerInterface } from "../../log";
 import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
+import { RedstoneService } from "../redstoneService";
 import { ISwapper, SWAPPER } from "../swap";
 import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
@@ -33,6 +33,7 @@ export interface Balance {
 }
 
 export default abstract class AbstractLiquidatorService
+  extends RedstoneService
   implements ILiquidatorService
 {
   log: LoggerInterface;
@@ -79,7 +80,7 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidate(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    redstoneTokens: string[],
   ): Promise<void> {
     this.ampqService.info(
       `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
@@ -88,7 +89,7 @@ export default abstract class AbstractLiquidatorService
     );
 
     try {
-      const pfResult = await this._findClosePath(ca, priceUpdates);
+      const pfResult = await this._findClosePath(ca, redstoneTokens);
       let pathHuman: Array<string | null> = [];
       try {
         pathHuman = TxParser.parseMultiCall(pfResult.calls);
@@ -121,7 +122,7 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidateOptimistic(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    redstoneTokens: string[],
   ): Promise<void> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
@@ -139,7 +140,7 @@ export default abstract class AbstractLiquidatorService
 
     try {
       this.log.debug(`Searching path for ${ca.hash()}...`);
-      const pfResult = await this._findClosePath(ca, priceUpdates);
+      const pfResult = await this._findClosePath(ca, redstoneTokens);
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
@@ -253,7 +254,7 @@ export default abstract class AbstractLiquidatorService
 
   protected abstract _findClosePath(
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult>;
 
   protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {

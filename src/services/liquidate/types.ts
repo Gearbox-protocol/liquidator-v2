@@ -1,15 +1,16 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { PriceOnDemandStruct } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3_00";
 import type { providers } from "ethers";
+
+export interface PriceOnDemand {
+  token: string;
+  callData: string;
+}
 
 export interface ILiquidatorService {
   launch: (provider: providers.Provider) => Promise<void>;
-  liquidate: (
-    ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
-  ) => Promise<void>;
+  liquidate: (ca: CreditAccountData, redstoneTokens: string[]) => Promise<void>;
   liquidateOptimistic: (
     ca: CreditAccountData,
-    priceUpdates: PriceOnDemandStruct[],
+    redstoneTokens: string[],
   ) => Promise<void>;
 }
