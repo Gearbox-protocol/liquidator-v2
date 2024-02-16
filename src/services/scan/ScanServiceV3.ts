@@ -73,7 +73,7 @@ export class ScanServiceV3 extends AbstractScanService {
       `v3 potential accounts to liquidate in ${atBlock}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.updateRedstone(failedTokens);
-    if (config.optimisticLiquidations) {
+    if (config.optimisticLiquidations && failedTokens.length > 0) {
       // need to bump block timestamp to prevent redstone feeds from reverting
       this.log.debug(`call evm_mine in optimistic mode`);
       await (this.provider as any).send("evm_mine", []);
