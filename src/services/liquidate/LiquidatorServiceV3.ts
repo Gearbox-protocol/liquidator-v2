@@ -42,8 +42,7 @@ export class LiquidatorServiceV3
       this.provider,
     );
     let [pfAddr, dcAddr] = await Promise.allSettled([
-      // findLatestServiceAddress(addressProvider, "ROUTER", 300, 399),
-      Promise.resolve("0x3B4922D29B0D10d5375ee226A09566c4BE963703"),
+      findLatestServiceAddress(addressProvider, "ROUTER", 300, 399),
       findLatestServiceAddress(addressProvider, "DATA_COMPRESSOR", 300, 399),
     ]);
     if (dcAddr.status === "rejected") {
