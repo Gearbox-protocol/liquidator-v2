@@ -152,13 +152,16 @@ export class RedstoneService {
         }
       });
 
-      return ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "bytes"],
-        [ts, arrayify(`0x${payload.toBytesHexWithout0xPrefix()}`)],
-      );
+      return [
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "bytes"],
+          [ts, arrayify(`0x${payload.toBytesHexWithout0xPrefix()}`)],
+        ),
+        ts,
+      ] as const;
     });
 
-    return { token, callData: result[0] };
+    return { token, callData: result[0][0], ts: result[0][1] };
   }
 }
 

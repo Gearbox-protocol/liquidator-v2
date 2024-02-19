@@ -4,6 +4,7 @@ import type { providers } from "ethers";
 export interface PriceOnDemand {
   token: string;
   callData: string;
+  ts: number;
 }
 
 export interface ILiquidatorService {
