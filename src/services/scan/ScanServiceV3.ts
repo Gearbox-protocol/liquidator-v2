@@ -6,7 +6,6 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { providers } from "ethers";
-import { hexlify } from "ethers/lib/utils";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
@@ -74,19 +73,6 @@ export class ScanServiceV3 extends AbstractScanService {
       `v3 potential accounts to liquidate in ${atBlock}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.updateRedstone(failedTokens);
-    if (config.optimisticLiquidations && failedTokens.length > 0) {
-      const redstoneTs = redstoneUpdates[0].ts;
-      let block = await this.provider.getBlock("latest");
-      const delta = block.timestamp - redstoneTs;
-      if (delta < 0) {
-        this.log.debug(
-          `need to mine block, because block timestamp ${block.timestamp} < ${redstoneTs} (${Math.ceil(-delta / 60)} min)`,
-        );
-        await (this.provider as any).send("evm_mine", [hexlify(redstoneTs)]);
-        block = await this.provider.getBlock("latest");
-        this.log.debug(`new block ts: ${block.timestamp}`);
-      }
-    }
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,

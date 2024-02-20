@@ -10,10 +10,12 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
+import type { providers } from "ethers";
 import { ethers, utils } from "ethers";
-import { arrayify } from "ethers/lib/utils";
+import { arrayify, hexlify } from "ethers/lib/utils";
 import { RedstonePayload } from "redstone-protocol";
 
+import config from "../config";
 import type { LoggerInterface } from "../log";
 import type { PriceOnDemand } from "./liquidate";
 
@@ -26,6 +28,7 @@ export type RedstonePriceFeed = Extract<
 
 export class RedstoneService {
   log?: LoggerInterface;
+  protected provider?: providers.Provider;
 
   public async updateRedstone(tokens: string[]): Promise<PriceOnDemand[]> {
     const redstoneFeeds: Array<RedstonePriceFeed & { token: string }> = [];
@@ -70,7 +73,7 @@ export class RedstoneService {
     }
 
     this.log?.debug(`need to update ${redstoneFeeds.length} redstone feeds`);
-    return Promise.all(
+    const result = await Promise.all(
       redstoneFeeds.map(f =>
         this.#getRedstonePayloadForManualUsage(
           f.token,
@@ -80,6 +83,25 @@ export class RedstoneService {
         ),
       ),
     );
+
+    if (config.optimisticLiquidations && result.length > 0) {
+      const redstoneTs = result[0].ts;
+      let block = await this.provider!.getBlock("latest");
+      const delta = block.timestamp - redstoneTs;
+      if (delta < 0) {
+        this.log?.debug(
+          `warp, because block ts ${block.timestamp} < ${redstoneTs} redstone ts (${Math.ceil(-delta / 60)} min)`,
+        );
+        await (this.provider as any).send("evm_mine", [hexlify(redstoneTs)]);
+        // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
+        // hexlify(redstoneTs),
+        // ]);
+        block = await this.provider!.getBlock("latest");
+        this.log?.debug(`new block ts: ${block.timestamp}`);
+      }
+    }
+
+    return result;
   }
 
   public async redstoneUpdatesForCreditAccount(

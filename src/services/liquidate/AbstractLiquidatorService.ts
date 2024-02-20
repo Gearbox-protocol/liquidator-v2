@@ -139,7 +139,9 @@ export default abstract class AbstractLiquidatorService
     const start = Date.now();
 
     try {
-      this.log.debug(`Searching path for ${ca.hash()}...`);
+      this.log.debug(
+        `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
+      );
       const pfResult = await this._findClosePath(ca, redstoneTokens);
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
@@ -272,7 +274,7 @@ export default abstract class AbstractLiquidatorService
 
   protected getAccountTitle(ca: CreditAccountData): string {
     const cmSymbol = tokenSymbolByAddress[ca.underlyingToken];
-    return `${ca.addr} of ${ca.borrower} in ${cmSymbol}`;
+    return `${ca.addr} of ${ca.borrower} in ${ca.creditManager} (${cmSymbol})`;
   }
 
   /**
