@@ -1787,10 +1787,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^1.31.1":
-  version "1.31.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.31.1.tgz#ec0ed0dbe56bd217aa752a33252785cd08562d0c"
-  integrity sha512-XQbvDHl//XSgLKLruIV9Qn9N0w4d/l2yxOlPC7/nuGxJqsRNIARttY3JedftBaXeM2xqoGt9a8+BF25532Qagw==
+"@gearbox-protocol/sdk-gov@^1.36.4":
+  version "1.36.4"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.36.4.tgz#0d07aa82c384f72950f9a64d0e91dea024f2dd26"
+  integrity sha512-TUE0X1QFy9P11A4uhNY1z9LPYVhGDz/QrLDDqMQD5oGVt+wW7HGy4S/FdrZeNXsB6MyhBDAoLrpzgVAlvAMfdA==
   dependencies:
     "@types/yaml" "^1.9.7"
     add "^2.0.6"
@@ -1801,12 +1801,12 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.122":
-  version "3.0.0-next.122"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.122.tgz#0eb00f5955ff59ada0dd18081d7e5c9ebf59d192"
-  integrity sha512-tdkEGkYqhFQwL5s6XmrBrkTg+pqhlrbNs85d+ae3bgzJ+3ONQG64pnMLpYrFmDmQAcGPENwklN5vtJw+Za5wkg==
+"@gearbox-protocol/sdk@^3.0.0-next.131":
+  version "3.0.0-next.131"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.131.tgz#aa53f9cd6d1f52b2b3823f8b6da75b8cd5bddc01"
+  integrity sha512-C7mS05l7AJUI81941a5vtNuzBQHR9BXiiKktjfiQCTQKIrdRRr4nMgkrwOZ8mppHaPYeuzexXG/x7LJpgaNFxQ==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^1.31.1"
+    "@gearbox-protocol/sdk-gov" "^1.36.4"
     axios "^1.2.6"
     decimal.js-light "^2.5.1"
     deep-eql "^4.1.0"
