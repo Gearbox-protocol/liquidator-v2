@@ -57,6 +57,11 @@ export class Config {
    */
   static underlying: string | undefined;
 
+  /**
+   * If set, only these accounts will be optimistically liquidated
+   */
+  static debugAccounts: string[] | undefined;
+
   @IsNotEmpty()
   @IsNumber()
   static hfThreshold: number;
@@ -181,6 +186,9 @@ export class Config {
         ? process.env.ENABLED_VERSIONS.split(",").map(Number)
         : SUPPORTED_VERSIONS,
     );
+    Config.debugAccounts = process.env.DEBUG_ACCOUNTS
+      ? process.env.DEBUG_ACCOUNTS.toLowerCase().split(",")
+      : undefined;
 
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;

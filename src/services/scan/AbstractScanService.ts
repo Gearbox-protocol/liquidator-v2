@@ -85,10 +85,18 @@ export default abstract class AbstractScanService extends RedstoneService {
     accountsToLiquidate: CreditAccountData[],
     redstoneTokens: string[] = [],
   ): Promise<void> {
-    const total = accountsToLiquidate.length;
-    this.log.info(`Optimistic liquidation for ${total} accounts`);
+    const accounts = config.debugAccounts
+      ? accountsToLiquidate.filter(({ addr }) =>
+          config.debugAccounts?.includes(addr),
+        )
+      : accountsToLiquidate;
+
+    const total = accounts.length;
+    const debugS = config.debugAccounts ? "selective " : " ";
+    this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
+
     for (let i = 0; i < total; i++) {
-      const acc = accountsToLiquidate[i];
+      const acc = accounts[i];
       const success = await this.liquidatorService.liquidateOptimistic(
         acc,
         redstoneTokens,
