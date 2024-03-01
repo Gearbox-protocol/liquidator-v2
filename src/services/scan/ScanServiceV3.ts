@@ -1,7 +1,6 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
-  IAddressProviderV3__factory,
   IDataCompressorV3__factory,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
@@ -12,7 +11,6 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
-import { findLatestServiceAddress } from "../utils";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -32,16 +30,9 @@ export class ScanServiceV3 extends AbstractScanService {
   protected override async _launch(
     provider: providers.Provider,
   ): Promise<void> {
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      provider,
-    );
-
-    const dcAddr = await findLatestServiceAddress(
-      addressProvider,
+    const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
-      399,
     );
     this.dataCompressor = IDataCompressorV3__factory.connect(dcAddr, provider);
 

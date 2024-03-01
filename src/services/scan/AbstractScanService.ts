@@ -4,6 +4,7 @@ import { Inject } from "typedi";
 
 import config from "../../config";
 import type { LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
 import { KeyService } from "../keyService";
 import type { ILiquidatorService } from "../liquidate";
 import { RedstoneService } from "../redstoneService";
@@ -13,6 +14,9 @@ export default abstract class AbstractScanService extends RedstoneService {
 
   @Inject()
   executorService: KeyService;
+
+  @Inject()
+  addressProvider: AddressProviderService;
 
   protected provider: providers.Provider;
 

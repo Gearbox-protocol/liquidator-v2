@@ -1,5 +1,4 @@
 import {
-  IsEthereumAddress,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -19,9 +18,7 @@ export class Config {
 
   static port: number;
 
-  @IsNotEmpty()
-  @IsEthereumAddress()
-  static addressProvider: string;
+  static addressProviderOverride?: string;
 
   @IsNotEmpty()
   static ethProviderRpcs: string[];
@@ -148,10 +145,7 @@ export class Config {
       "dev";
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProvider =
-      process.env.ADDRESS_PROVIDER ||
-      process.env.ADDRESS_PROVIDER_MAINNET ||
-      "";
+    Config.addressProviderOverride = process.env.ADDRESS_PROVIDER;
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];

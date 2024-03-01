@@ -1,12 +1,6 @@
-import type {
-  CreditAccountData,
-  MultiCall,
-  NetworkType,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import {
-  detectNetwork,
   IERC20__factory,
-  MAINNET_NETWORK,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
@@ -18,6 +12,7 @@ import { Inject } from "typedi";
 import config from "../../config";
 import type { OptimisticResult } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
@@ -44,6 +39,9 @@ export default abstract class AbstractLiquidatorService
   @Inject()
   ampqService: AMPQService;
 
+  @Inject()
+  addressProvider: AddressProviderService;
+
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
 
@@ -57,8 +55,6 @@ export default abstract class AbstractLiquidatorService
   protected slippage: number;
 
   protected etherscan = "";
-  protected chainId: number;
-  protected network: NetworkType;
 
   /**
    * Launch LiquidatorService
@@ -67,15 +63,17 @@ export default abstract class AbstractLiquidatorService
     this.provider = provider;
     this.slippage = Math.floor(config.slippage * 100);
 
-    const { chainId } = await this.provider.getNetwork();
-    this.chainId = chainId;
-    switch (chainId) {
-      case MAINNET_NETWORK:
+    switch (this.addressProvider.network) {
+      case "Mainnet":
         this.etherscan = "https://etherscan.io";
         break;
+      case "Arbitrum":
+        this.etherscan = "https://arbiscan.io";
+        break;
+      case "Optimism":
+        this.etherscan = "https://optimistic.etherscan.io";
+        break;
     }
-
-    this.network = await detectNetwork(provider);
   }
 
   public async liquidate(

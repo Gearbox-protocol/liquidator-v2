@@ -1,15 +1,9 @@
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
-import {
-  IAddressProviderV3__factory,
-  ICreditFacadeV2__factory,
-  PathFinderV1,
-} from "@gearbox-protocol/sdk";
+import { ICreditFacadeV2__factory, PathFinderV1 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { providers } from "ethers";
-import { ethers } from "ethers";
+import type { ethers, providers } from "ethers";
 import { Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
@@ -29,20 +23,13 @@ export class LiquidatorServiceV2
    */
   public async launch(provider: providers.Provider): Promise<void> {
     await super.launch(provider);
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      this.provider,
-    );
-    const pathFinder = await addressProvider.getAddressOrRevert(
-      ethers.utils.formatBytes32String("ROUTER"),
-      1,
-    );
+    const pathFinder = await this.addressProvider.findService("ROUTER", 1);
     this.log.debug(`Router: ${pathFinder}`);
 
     this.#pathFinder = new PathFinderV1(
       pathFinder,
       this.provider,
-      this.network,
+      this.addressProvider.network,
       PathFinderV1.connectors,
     );
   }

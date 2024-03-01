@@ -6,7 +6,6 @@ import type {
 } from "@gearbox-protocol/sdk";
 import {
   CreditManagerData,
-  IAddressProviderV3__factory,
   ICreditFacadeV3__factory,
   IDataCompressorV3__factory,
   PathFinder,
@@ -15,9 +14,7 @@ import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfind
 import type { ethers, providers } from "ethers";
 import { Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import { findLatestServiceAddress } from "../utils";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
 
@@ -37,30 +34,19 @@ export class LiquidatorServiceV3
    */
   public async launch(provider: providers.Provider): Promise<void> {
     await super.launch(provider);
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      this.provider,
-    );
-    let [pfAddr, dcAddr] = await Promise.allSettled([
-      findLatestServiceAddress(addressProvider, "ROUTER", 300, 399),
-      findLatestServiceAddress(addressProvider, "DATA_COMPRESSOR", 300, 399),
+    const [pfAddr, dcAddr] = await Promise.all([
+      this.addressProvider.findService("ROUTER", 300),
+      this.addressProvider.findService("DATA_COMPRESSOR", 300),
     ]);
-    if (dcAddr.status === "rejected") {
-      throw new Error(`cannot get DC_300: ${dcAddr.reason}`);
-    }
-    this.log.debug(
-      `Router: ${(pfAddr as any)?.value}, compressor: ${dcAddr.value}`,
-    );
+    this.log.debug(`Router: ${pfAddr}, compressor: ${dcAddr}`);
     this.#compressor = IDataCompressorV3__factory.connect(
-      dcAddr.value,
+      dcAddr,
       this.provider,
     );
     this.#pathFinder = new PathFinder(
-      pfAddr.status === "fulfilled"
-        ? pfAddr.value
-        : "0xC46613db74c8B734D8074E7D02239139cB35Ed66",
+      pfAddr,
       this.provider,
-      this.network,
+      this.addressProvider.network,
     );
   }
 

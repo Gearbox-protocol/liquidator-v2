@@ -8,7 +8,6 @@ import {
   CreditAccountData,
   CreditAccountWatcherV2,
   CreditManagerWatcher,
-  IAddressProviderV3__factory,
   IDataCompressorV2_1__factory,
   safeMulticall,
   tokenSymbolByAddress,
@@ -20,7 +19,6 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
 import { LiquidatorServiceV2 } from "../liquidate";
-import { findLatestServiceAddress } from "../utils";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -44,16 +42,9 @@ export class ScanServiceV2 extends AbstractScanService {
   protected override async _launch(
     provider: providers.Provider,
   ): Promise<void> {
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      provider,
-    );
-
-    this.dataCompressor = await findLatestServiceAddress(
-      addressProvider,
+    this.dataCompressor = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       200,
-      299,
     );
 
     const startingBlock = await provider.getBlockNumber();
