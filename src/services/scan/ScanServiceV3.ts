@@ -80,7 +80,7 @@ export class ScanServiceV3 extends AbstractScanService {
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
       this.log.error(
-        `failed tokens on second iteration: ${failedTokens.join(", ")}`,
+        `failed tokens on second iteration: ${printTokens(failedTokens)}`,
       );
     }
 
@@ -128,4 +128,8 @@ export class ScanServiceV3 extends AbstractScanService {
 
     return [accounts, Array.from(failedTokens)];
   }
+}
+
+function printTokens(tokens: string[]): string {
+  return tokens.map(t => tokenSymbolByAddress[t.toLowerCase()] ?? t).join(", ");
 }

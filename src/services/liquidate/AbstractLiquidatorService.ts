@@ -18,7 +18,6 @@ import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { RedstoneService } from "../redstoneService";
 import { ISwapper, SWAPPER } from "../swap";
-import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
 import type { ILiquidatorService } from "./types";
 
@@ -121,7 +120,7 @@ export default abstract class AbstractLiquidatorService
   public async liquidateOptimistic(
     ca: CreditAccountData,
     redstoneTokens: string[],
-  ): Promise<void> {
+  ): Promise<boolean> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
@@ -129,7 +128,7 @@ export default abstract class AbstractLiquidatorService
       account: ca.addr,
       gasUsed: 0,
       calls: [],
-      isError: false,
+      isError: true,
       pathAmount: "0",
       liquidatorPremium: "0",
       liquidatorProfit: "0",
@@ -186,11 +185,9 @@ export default abstract class AbstractLiquidatorService
           true,
         );
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
-        const receipt = await mine(
-          this.provider as ethers.providers.JsonRpcProvider,
-          tx,
-        );
-        const strStatus = receipt.status === 1 ? "success" : "failure";
+        const receipt = await tx.wait();
+        optimisticResult.isError = receipt.status !== 1;
+        const strStatus = optimisticResult.isError ? "failure" : "success";
         this.log.debug(
           `Liquidation tx receipt: status=${strStatus} (${
             receipt.status
@@ -218,12 +215,10 @@ export default abstract class AbstractLiquidatorService
           this.log.warn("negative liquidator profit");
         }
       } catch (e: any) {
-        optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
         await this.saveTxTrace(e.transactionHash);
       }
     } catch (e: any) {
-      optimisticResult.isError = true;
       this.log.error(
         { account: this.getAccountTitle(ca) },
         `cannot liquidate: ${e}`,
@@ -238,6 +233,8 @@ export default abstract class AbstractLiquidatorService
         snapshotId,
       ]);
     }
+
+    return !optimisticResult.isError;
   }
 
   protected abstract _estimate(
