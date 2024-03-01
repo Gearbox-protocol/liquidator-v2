@@ -36,7 +36,6 @@ export class LiquidatorServiceV2
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.#pathFinder.findBestClosePath(

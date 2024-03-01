@@ -16,7 +16,6 @@ import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
-import { RedstoneService } from "../redstoneService";
 import { ISwapper, SWAPPER } from "../swap";
 import { OptimisticResults } from "./OptimisiticResults";
 import type { ILiquidatorService } from "./types";
@@ -27,7 +26,6 @@ export interface Balance {
 }
 
 export default abstract class AbstractLiquidatorService
-  extends RedstoneService
   implements ILiquidatorService
 {
   log: LoggerInterface;
@@ -75,10 +73,7 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  public async liquidate(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<void> {
+  public async liquidate(ca: CreditAccountData): Promise<void> {
     this.ampqService.info(
       `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
         ca.healthFactor
@@ -86,7 +81,7 @@ export default abstract class AbstractLiquidatorService
     );
 
     try {
-      const pfResult = await this._findClosePath(ca, redstoneTokens);
+      const pfResult = await this._findClosePath(ca);
       let pathHuman: Array<string | null> = [];
       try {
         pathHuman = TxParser.parseMultiCall(pfResult.calls);
@@ -117,10 +112,7 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  public async liquidateOptimistic(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<boolean> {
+  public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
     let snapshotId: unknown;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
@@ -139,7 +131,7 @@ export default abstract class AbstractLiquidatorService
       this.log.debug(
         `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
       );
-      const pfResult = await this._findClosePath(ca, redstoneTokens);
+      const pfResult = await this._findClosePath(ca);
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
@@ -251,7 +243,6 @@ export default abstract class AbstractLiquidatorService
 
   protected abstract _findClosePath(
     ca: CreditAccountData,
-    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult>;
 
   protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {

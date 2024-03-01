@@ -12,9 +12,10 @@ import {
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { ethers, providers } from "ethers";
-import { Service } from "typedi";
+import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
+import { RedstoneService } from "../RedstoneService";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
 
@@ -28,6 +29,9 @@ export class LiquidatorServiceV3
 
   @Logger("LiquidatorServiceV3")
   log: LoggerInterface;
+
+  @Inject()
+  redstone: RedstoneService;
 
   /**
    * Launch LiquidatorService
@@ -75,7 +79,6 @@ export class LiquidatorServiceV3
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.#compressor.getCreditManagerData(ca.creditManager);
@@ -95,10 +98,7 @@ export class LiquidatorServiceV3
         throw new Error("result is empty");
       }
       // we want fresh redstone price in actual liquidation transactions
-      const priceUpdateCalls = await this.redstoneUpdatesForCreditAccount(
-        ca,
-        redstoneTokens,
-      );
+      const priceUpdateCalls = await this.redstone.updatesForAccount(ca);
       result.calls = [...priceUpdateCalls, ...result.calls];
       return result;
     } catch (e) {

@@ -7,9 +7,8 @@ import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { KeyService } from "../keyService";
 import type { ILiquidatorService } from "../liquidate";
-import { RedstoneService } from "../redstoneService";
 
-export default abstract class AbstractScanService extends RedstoneService {
+export default abstract class AbstractScanService {
   log: LoggerInterface;
 
   @Inject()
@@ -52,7 +51,6 @@ export default abstract class AbstractScanService extends RedstoneService {
    */
   protected async liquidateNormal(
     accountsToLiquidate: CreditAccountData[],
-    redstoneTokens: string[] = [],
   ): Promise<void> {
     if (!accountsToLiquidate.length) {
       return;
@@ -73,7 +71,7 @@ export default abstract class AbstractScanService extends RedstoneService {
       const ca = accountsToLiquidate[i];
 
       ca.isDeleting = true;
-      await this.liquidatorService.liquidate(ca, redstoneTokens);
+      await this.liquidatorService.liquidate(ca);
     }
   }
 
@@ -83,7 +81,6 @@ export default abstract class AbstractScanService extends RedstoneService {
    */
   protected async liquidateOptimistically(
     accountsToLiquidate: CreditAccountData[],
-    redstoneTokens: string[] = [],
   ): Promise<void> {
     const accounts = config.debugAccounts
       ? accountsToLiquidate.filter(({ addr }) =>
@@ -97,10 +94,7 @@ export default abstract class AbstractScanService extends RedstoneService {
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
-      const success = await this.liquidatorService.liquidateOptimistic(
-        acc,
-        redstoneTokens,
-      );
+      const success = await this.liquidatorService.liquidateOptimistic(acc);
       const status = success ? "OK" : "FAIL";
       const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
       if (success) {

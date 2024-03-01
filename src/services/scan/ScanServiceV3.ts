@@ -11,6 +11,8 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
+import OracleServiceV3 from "../OracleServiceV3";
+import { RedstoneService } from "../RedstoneService";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -20,6 +22,12 @@ export class ScanServiceV3 extends AbstractScanService {
 
   @Inject()
   liquidarorServiceV3: LiquidatorServiceV3;
+
+  @Inject()
+  oracle: OracleServiceV3;
+
+  @Inject()
+  redstone: RedstoneService;
 
   protected dataCompressor: IDataCompressorV3;
 
@@ -36,15 +44,17 @@ export class ScanServiceV3 extends AbstractScanService {
     );
     this.dataCompressor = IDataCompressorV3__factory.connect(dcAddr, provider);
 
+    const block = await provider.getBlockNumber();
+    await this.oracle.launch(provider, block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    const startingBlock = config.optimisticLiquidations
-      ? undefined
-      : await provider.getBlockNumber();
-    await this.updateAccounts(startingBlock);
+    await this.updateAccounts(
+      config.optimisticLiquidations ? undefined : block,
+    );
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
+    await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
   }
 
@@ -61,7 +71,7 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `v3 potential accounts to liquidate${blockS}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
-    const redstoneUpdates = await this.updateRedstone(failedTokens);
+    const redstoneUpdates = await this.redstone.updatesForTokens(failedTokens);
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,
@@ -84,9 +94,9 @@ export class ScanServiceV3 extends AbstractScanService {
     }
 
     if (config.optimisticLiquidations) {
-      await this.liquidateOptimistically(accounts, redstoneTokens);
+      await this.liquidateOptimistically(accounts);
     } else {
-      await this.liquidateNormal(accounts, redstoneTokens);
+      await this.liquidateNormal(accounts);
     }
   }
 

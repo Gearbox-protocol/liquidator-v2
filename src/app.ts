@@ -8,6 +8,7 @@ import { HealthChecker } from "./services/healthChecker";
 import { KeyService } from "./services/keyService";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
+import { RedstoneService } from "./services/RedstoneService";
 import { ScanServiceV2, ScanServiceV3 } from "./services/scan";
 import { ISwapper, SWAPPER } from "./services/swap";
 import { getProvider } from "./services/utils";
@@ -38,6 +39,9 @@ class App {
   @Inject()
   optimistic: OptimisticResults;
 
+  @Inject()
+  redstone: RedstoneService;
+
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
 
@@ -57,6 +61,8 @@ class App {
     }
     await this.addressProvider.launch();
     const provider = getProvider(false, this.log);
+
+    this.redstone.launch(provider);
 
     this.healthChecker.launch();
     await this.ampqService.launch(this.addressProvider.chainId);

@@ -2,22 +2,23 @@ import type {
   CreditAccountData,
   MultiCall,
   PriceFeedData,
+  PriceFeedType,
 } from "@gearbox-protocol/sdk";
 import {
   ICreditFacadeV3Multicall__factory,
-  priceFeedsByToken,
-  PriceFeedType,
-  tokenSymbolByAddress,
+  REDSTONE_SIGNERS,
 } from "@gearbox-protocol/sdk";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
 import type { providers } from "ethers";
 import { ethers, utils } from "ethers";
 import { arrayify, hexlify } from "ethers/lib/utils";
 import { RedstonePayload } from "redstone-protocol";
+import { Inject, Service } from "typedi";
 
 import config from "../config";
-import type { LoggerInterface } from "../log";
+import { Logger, LoggerInterface } from "../log";
 import type { PriceOnDemand } from "./liquidate";
+import OracleServiceV3 from "./OracleServiceV3";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
@@ -26,60 +27,40 @@ export type RedstonePriceFeed = Extract<
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
+@Service()
 export class RedstoneService {
-  log?: LoggerInterface;
+  @Logger("AddressProviderService")
+  log: LoggerInterface;
+
+  @Inject()
+  oracle: OracleServiceV3;
+
   protected provider?: providers.Provider;
 
-  public async updateRedstone(tokens: string[]): Promise<PriceOnDemand[]> {
-    const redstoneFeeds: Array<RedstonePriceFeed & { token: string }> = [];
+  public launch(provider: providers.Provider): void {
+    this.provider = provider;
+  }
 
-    for (const t of tokens) {
-      const token = t.toLowerCase();
-      const symbol = tokenSymbolByAddress[token];
-      if (!symbol) {
-        this.log?.warn(
-          `Failed price feed for token ${token} which is not found in SDK`,
-        );
-        continue;
-      }
-
-      const feed = priceFeedsByToken[symbol];
-      const entry = feed?.AllNetworks ?? feed?.Mainnet;
-      if (!entry) {
-        this.log?.warn(
-          `Cannot find price feed for token ${symbol} (${token}) in SDK`,
-        );
-        continue;
-      }
-      // it is technically possible to have both main and reserve price feeds to be redstone
-      // but from practical standpoint this makes no sense: so use else-if, not if-if
-      if (entry.Main?.type === PriceFeedType.REDSTONE_ORACLE) {
-        redstoneFeeds.push({ token, ...entry.Main });
-        this.log?.debug(
-          `need to update main redstone price feed ${entry.Main.dataId} in ${entry.Main.dataServiceId} for token ${symbol} (${token})`,
-        );
-      } else if (entry?.Reserve?.type === PriceFeedType.REDSTONE_ORACLE) {
-        redstoneFeeds.push({ token, ...entry.Reserve });
-        this.log?.debug(
-          `need to update reserve redstone price feed ${entry.Reserve.dataId} in ${entry.Reserve.dataServiceId} for token ${symbol} (${token})`,
-        );
-      } else {
-        this.log?.warn(
-          `non-restone price feed failed for token ${symbol} (${token}): ${JSON.stringify(
-            entry,
-          )}`,
-        );
+  public async updatesForTokens(tokens: string[]): Promise<PriceOnDemand[]> {
+    const redstoneFeeds = this.oracle.getRedstoneFeeds();
+    const redstoneUpdates: Array<[string, string]> = [];
+    for (const token of tokens) {
+      const dataFeedId = redstoneFeeds[token.toLowerCase()];
+      if (dataFeedId) {
+        redstoneUpdates.push([token, dataFeedId]);
       }
     }
 
-    this.log?.debug(`need to update ${redstoneFeeds.length} redstone feeds`);
+    this.log?.debug(
+      `need to update ${redstoneUpdates.length} redstone feeds: ${redstoneUpdates.map(([_, d]) => d).join(", ")}`,
+    );
     const result = await Promise.all(
-      redstoneFeeds.map(f =>
+      redstoneUpdates.map(([token, dataFeedId]) =>
         this.#getRedstonePayloadForManualUsage(
-          f.token,
-          f.dataServiceId,
-          f.dataId,
-          f.signersThreshold,
+          token,
+          "redstone-primary-prod",
+          dataFeedId,
+          REDSTONE_SIGNERS.signersThreshold,
         ),
       ),
     );
@@ -104,29 +85,16 @@ export class RedstoneService {
     return result;
   }
 
-  public async redstoneUpdatesForCreditAccount(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<MultiCall[]> {
-    // find all tokens on CA that are enabled, have some balance and are redstone tokens
-    const accRedstoneTokens: string[] = [];
-    const accRedstoneSymbols: string[] = [];
-
-    for (const t of redstoneTokens) {
-      const token = t.toLowerCase();
-      const { balance = 1n, isEnabled } = ca.allBalances[token] ?? {};
-      if (isEnabled && balance > 1n) {
-        accRedstoneTokens.push(token);
-        accRedstoneSymbols.push(tokenSymbolByAddress[token]);
+  public async updatesForAccount(ca: CreditAccountData): Promise<MultiCall[]> {
+    const accTokens: string[] = [];
+    for (const [token, { balance, isEnabled }] of Object.entries(
+      ca.allBalances,
+    )) {
+      if (isEnabled && balance > 10n) {
+        accTokens.push(token);
       }
     }
-    this.log?.debug(
-      `need to update ${accRedstoneSymbols.length} redstone tokens on acc ${
-        ca.addr
-      }: ${accRedstoneSymbols.join(", ")}`,
-    );
-
-    const priceUpdates = await this.updateRedstone(accRedstoneTokens);
+    const priceUpdates = await this.updatesForTokens(accTokens);
     return priceUpdates.map(({ token, callData }) => ({
       target: ca.creditFacade,
       callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
