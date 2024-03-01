@@ -1,7 +1,7 @@
 import type {
   CreditAccountHash,
   CreditManagerData,
-  IDataCompressorV2_10,
+  IDataCompressorV2_1,
   MCall,
 } from "@gearbox-protocol/sdk";
 import {
@@ -9,7 +9,7 @@ import {
   CreditAccountWatcherV2,
   CreditManagerWatcher,
   IAddressProviderV3__factory,
-  IDataCompressorV2_10__factory,
+  IDataCompressorV2_1__factory,
   safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
@@ -228,12 +228,12 @@ export class ScanServiceV2 extends AbstractScanService {
     blockTag: number,
     chunkSize: number,
   ): Promise<Array<{ error?: Error; value?: CreditAccountData }>> {
-    const dc = IDataCompressorV2_10__factory.connect(
+    const dc = IDataCompressorV2_1__factory.connect(
       this.dataCompressor,
       this.provider,
     );
 
-    const calls: MCall<IDataCompressorV2_10["interface"]>[][] = [];
+    const calls: MCall<IDataCompressorV2_1["interface"]>[][] = [];
 
     let i = 0;
     while (i * chunkSize < accounts.length) {

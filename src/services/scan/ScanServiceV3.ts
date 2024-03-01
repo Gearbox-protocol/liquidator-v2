@@ -1,8 +1,8 @@
-import type { IDataCompressorV3_00 } from "@gearbox-protocol/sdk";
+import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
   IAddressProviderV3__factory,
-  IDataCompressorV3_00__factory,
+  IDataCompressorV3__factory,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { providers } from "ethers";
@@ -23,7 +23,7 @@ export class ScanServiceV3 extends AbstractScanService {
   @Inject()
   liquidarorServiceV3: LiquidatorServiceV3;
 
-  protected dataCompressor: IDataCompressorV3_00;
+  protected dataCompressor: IDataCompressorV3;
 
   protected override get liquidatorService(): ILiquidatorService {
     return this.liquidarorServiceV3;
@@ -43,10 +43,7 @@ export class ScanServiceV3 extends AbstractScanService {
       300,
       399,
     );
-    this.dataCompressor = IDataCompressorV3_00__factory.connect(
-      dcAddr,
-      provider,
-    );
+    this.dataCompressor = IDataCompressorV3__factory.connect(dcAddr, provider);
 
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work

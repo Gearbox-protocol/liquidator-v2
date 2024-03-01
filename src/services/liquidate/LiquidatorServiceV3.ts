@@ -1,14 +1,14 @@
 import type {
   Asset,
   CreditAccountData,
-  IDataCompressorV3_00,
+  IDataCompressorV3,
   MultiCall,
 } from "@gearbox-protocol/sdk";
 import {
   CreditManagerData,
   IAddressProviderV3__factory,
   ICreditFacadeV3__factory,
-  IDataCompressorV3_00__factory,
+  IDataCompressorV3__factory,
   PathFinder,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
@@ -27,7 +27,7 @@ export class LiquidatorServiceV3
   implements ILiquidatorService
 {
   #pathFinder: PathFinder;
-  #compressor: IDataCompressorV3_00;
+  #compressor: IDataCompressorV3;
 
   @Logger("LiquidatorServiceV3")
   log: LoggerInterface;
@@ -51,7 +51,7 @@ export class LiquidatorServiceV3
     this.log.debug(
       `Router: ${(pfAddr as any)?.value}, compressor: ${dcAddr.value}`,
     );
-    this.#compressor = IDataCompressorV3_00__factory.connect(
+    this.#compressor = IDataCompressorV3__factory.connect(
       dcAddr.value,
       this.provider,
     );
