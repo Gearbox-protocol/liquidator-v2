@@ -12,7 +12,7 @@ import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
-import { RedstoneService } from "../RedstoneService";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -27,7 +27,7 @@ export class ScanServiceV3 extends AbstractScanService {
   oracle: OracleServiceV3;
 
   @Inject()
-  redstone: RedstoneService;
+  redstone: RedstoneServiceV3;
 
   protected dataCompressor: IDataCompressorV3;
 

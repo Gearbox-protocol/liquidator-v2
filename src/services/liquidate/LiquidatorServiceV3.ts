@@ -15,7 +15,7 @@ import type { ethers, providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
-import { RedstoneService } from "../RedstoneService";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
 
@@ -31,7 +31,7 @@ export class LiquidatorServiceV3
   log: LoggerInterface;
 
   @Inject()
-  redstone: RedstoneService;
+  redstone: RedstoneServiceV3;
 
   /**
    * Launch LiquidatorService

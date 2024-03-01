@@ -28,7 +28,7 @@ export type RedstonePriceFeed = Extract<
 >;
 
 @Service()
-export class RedstoneService {
+export class RedstoneServiceV3 {
   @Logger("AddressProviderService")
   log: LoggerInterface;
 

@@ -8,7 +8,7 @@ import { HealthChecker } from "./services/healthChecker";
 import { KeyService } from "./services/keyService";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
-import { RedstoneService } from "./services/RedstoneService";
+import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
 import { ScanServiceV2, ScanServiceV3 } from "./services/scan";
 import { ISwapper, SWAPPER } from "./services/swap";
 import { getProvider } from "./services/utils";
@@ -40,7 +40,7 @@ class App {
   optimistic: OptimisticResults;
 
   @Inject()
-  redstone: RedstoneService;
+  redstone: RedstoneServiceV3;
 
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
