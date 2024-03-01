@@ -26,6 +26,7 @@
         "dockerImage": "liquidator-v2",
         "dockerRegistry": "ghcr.io",
         "dockerProject": "gearbox-protocol",
+        "dockerBuildQuiet": false,
         "dockerLogin": false
       }
     ]
