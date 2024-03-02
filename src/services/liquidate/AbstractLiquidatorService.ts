@@ -17,6 +17,7 @@ import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
+import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
 import type { ILiquidatorService } from "./types";
 
@@ -177,7 +178,10 @@ export default abstract class AbstractLiquidatorService
           true,
         );
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
-        const receipt = await tx.wait();
+        const receipt = await mine(
+          this.provider as ethers.providers.JsonRpcProvider,
+          tx,
+        );
         optimisticResult.isError = receipt.status !== 1;
         const strStatus = optimisticResult.isError ? "failure" : "success";
         this.log.debug(
