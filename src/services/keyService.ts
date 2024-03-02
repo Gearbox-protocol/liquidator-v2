@@ -93,7 +93,7 @@ export class KeyService {
             const receipt = await this.signer.sendTransaction({
               to: address,
               value: KeyService.minExecutorBalance,
-              gasLimit: 42000,
+              // gasLimit: 42000, // TODO: configure this per-network, had to disable for arbitrum
             });
             await receipt.wait();
           } catch (e) {
