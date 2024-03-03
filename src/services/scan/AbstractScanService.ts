@@ -37,9 +37,22 @@ export default abstract class AbstractScanService {
     this.provider = provider;
     await this.liquidatorService.launch(provider);
     await this._launch(provider);
-    if (!config.optimisticLiquidations) {
-      this.provider.on("block", async num => await this.onBlock(num));
+    this.subscribeToUpdates();
+  }
+
+  protected subscribeToUpdates(): void {
+    if (config.optimisticLiquidations) {
+      return;
     }
+    if (this.addressProvider.network === "Mainnet") {
+      this.provider.on("block", async num => await this.onBlock(num));
+      return;
+    }
+    // on L2 blocks are too frequent
+    setInterval(async () => {
+      const block = await this.provider.getBlockNumber();
+      await this.onBlock(block);
+    }, 12_000);
   }
 
   protected abstract _launch(provider: providers.Provider): Promise<void>;
