@@ -115,6 +115,7 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
     let snapshotId: unknown;
+    let executor: ethers.Wallet | undefined;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
@@ -129,6 +130,7 @@ export default abstract class AbstractLiquidatorService
     const start = Date.now();
 
     try {
+      executor = this.keyService.takeVacantExecutor();
       this.log.debug(
         `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
       );
@@ -150,7 +152,7 @@ export default abstract class AbstractLiquidatorService
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        await this._estimate(ca, pfResult.calls);
+        await this._estimate(executor, ca, pfResult.calls);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -171,12 +173,7 @@ export default abstract class AbstractLiquidatorService
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await this._liquidate(
-          this.keyService.signer,
-          ca,
-          pfResult.calls,
-          true,
-        );
+        const tx = await this._liquidate(executor, ca, pfResult.calls, true);
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
           this.provider as ethers.providers.JsonRpcProvider,
@@ -198,7 +195,7 @@ export default abstract class AbstractLiquidatorService
 
         // swap underlying back to ETH
         await this.swapper.swap(
-          this.keyService.signer,
+          executor,
           ca.underlyingToken,
           balanceAfter.underlying,
         );
@@ -224,6 +221,10 @@ export default abstract class AbstractLiquidatorService
     optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
+    if (executor) {
+      await this.keyService.returnExecutor(executor.address, false);
+    }
+
     if (snapshotId) {
       await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
         snapshotId,
@@ -234,6 +235,7 @@ export default abstract class AbstractLiquidatorService
   }
 
   protected abstract _estimate(
+    executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
   ): Promise<void>;

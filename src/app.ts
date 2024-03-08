@@ -53,8 +53,8 @@ class App {
    */
   public async launch(): Promise<void> {
     if (config.optimisticLiquidations) {
-      this.log.warn(
-        `Launching ${config.underlying} ${Array.from(
+      this.log.info(
+        `Launching ${config.underlying ?? ""} ${Array.from(
           config.enabledVersions,
         )} in OPTIMISTIC mode`,
       );

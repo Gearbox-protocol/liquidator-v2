@@ -80,12 +80,13 @@ export class LiquidatorServiceV2
   }
 
   protected override async _estimate(
+    executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
   ): Promise<void> {
     const iFacade = ICreditFacadeV2__factory.connect(
       account.creditFacade,
-      this.keyService.signer,
+      executor,
     );
     // before actual transaction, try to estimate gas
     // this effectively will load state and contracts from fork origin to anvil
