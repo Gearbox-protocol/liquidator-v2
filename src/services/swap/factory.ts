@@ -31,5 +31,5 @@ export class Swapper implements ISwapper {
     tokenAddr: string,
     amount: BigNumberish,
     recipient?: string,
-  ) => Promise<string | null>;
+  ) => Promise<void>;
 }
