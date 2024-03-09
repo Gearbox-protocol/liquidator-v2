@@ -83,6 +83,7 @@ class App {
         startBlock: this.addressProvider.startBlock,
       });
       this.log.debug("saved optimistic liquidation output, exiting");
+      process.exit(0);
     }
   }
 }
