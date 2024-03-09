@@ -29,6 +29,7 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 FROM gcr.io/distroless/nodejs20-debian12
 ARG PACKAGE_VERSION
 ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
+LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 
 WORKDIR /app
 COPY --from=prod /app /app
