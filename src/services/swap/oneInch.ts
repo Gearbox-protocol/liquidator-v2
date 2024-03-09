@@ -21,19 +21,29 @@ import type { ISwapper } from "./types";
 const ROUTER_v5 = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
+class OneInchError extends Error {
+  transactionHash?: string;
+}
+
 @Service()
 export default class OneInch extends BaseSwapper implements ISwapper {
   @Logger("one_inch")
   log: LoggerInterface;
 
   private apiClient: AxiosInstance;
+  private readonly slippage: number;
+
+  constructor(slippage = 2) {
+    super();
+    this.slippage = slippage;
+  }
 
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
     if (!config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
-    const baseURL = `https://api.1inch.dev/swap/v5.2/${CHAINS[network]}`;
+    const baseURL = `https://api.1inch.dev/swap/v6.0/${CHAINS[network]}`;
     this.apiClient = axios.create({
       baseURL,
       headers: {
@@ -53,8 +63,10 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
+    recipient?: string,
   ): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
+    let transactionHash: string | undefined;
     try {
       if (tokenAddr.toLowerCase() === this.wethAddr.toLowerCase()) {
         // WETH is unwrapped during liquidation (convertWETH flag)
@@ -76,9 +88,10 @@ export default class OneInch extends BaseSwapper implements ISwapper {
           dst: ETH,
           amount: amount.toString(),
           from: executor.address,
-          slippage: 1,
+          slippage: this.slippage,
           disableEstimate: true,
           allowPartialFill: false,
+          receiver: recipient ?? executor.address,
         },
       });
 
@@ -88,6 +101,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       } = swap.data;
 
       const txR = await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
+      transactionHash = txR.hash;
       await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
       this.log.debug(
         `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
@@ -98,9 +112,12 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         info = e.response?.data?.description;
       }
       info = info || `${e}`;
-      this.log.error(
-        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH via: ${info}`,
+      const error = new OneInchError(
+        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
       );
+      error.transactionHash = transactionHash;
+      this.log.error(error);
+      throw error;
     }
   }
 }

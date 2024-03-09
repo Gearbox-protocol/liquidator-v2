@@ -54,6 +54,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
+    recipient?: string,
   ): Promise<void> {
     try {
       if (tokenAddr.toLowerCase() !== this.wethAddr.toLowerCase()) {
@@ -75,6 +76,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
+    recipient?: string,
   ): Promise<void> {
     const token = new Token(
       CHAINS[this.network],
@@ -109,7 +111,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     const options: SwapOptions = {
       slippageTolerance: new Percent(50, 10_000), // 50 bips, or 0.50%
       deadline: Math.floor(Date.now() / 1000) + 60 * 20, // 20 minutes from the current Unix time
-      recipient: executor.address,
+      recipient: recipient ?? executor.address,
     };
 
     const methodParameters = SwapRouter.swapCallParameters([trade], options);

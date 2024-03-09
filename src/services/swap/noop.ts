@@ -12,6 +12,7 @@ export default class NoopSwapper implements ISwapper {
     _executor: Wallet,
     _tokenAddr: string,
     _amount: BigNumberish,
+    recipient?: string,
   ): Promise<void> {
     // nothing to do here
   }

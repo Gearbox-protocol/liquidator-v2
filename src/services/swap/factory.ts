@@ -30,5 +30,6 @@ export class Swapper implements ISwapper {
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
-  ) => Promise<void>;
+    recipient?: string,
+  ) => Promise<string | null>;
 }

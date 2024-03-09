@@ -198,6 +198,7 @@ export default abstract class AbstractLiquidatorService
           executor,
           ca.underlyingToken,
           balanceAfter.underlying,
+          this.keyService.address,
         );
         balanceAfter = await this.getExecutorBalance(ca);
         optimisticResult.liquidatorProfit = balanceAfter.eth
