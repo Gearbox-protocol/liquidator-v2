@@ -59,6 +59,7 @@ export class LiquidatorServiceV3
     account: CreditAccountData,
     calls: MultiCall[],
     optimistic: boolean,
+    recipient?: string,
   ): Promise<ethers.ContractTransaction> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
@@ -69,7 +70,7 @@ export class LiquidatorServiceV3
     );
     const tx = await facade.liquidateCreditAccount(
       account.addr,
-      this.keyService.address,
+      recipient ?? this.keyService.address,
       calls,
       optimistic ? { gasLimit: 29e6 } : {},
     );
@@ -110,6 +111,7 @@ export class LiquidatorServiceV3
     executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
+    recipient?: string,
   ): Promise<void> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
@@ -121,7 +123,7 @@ export class LiquidatorServiceV3
     // also tx will act as retry in case of anvil external's error
     const estGas = await facade.estimateGas.liquidateCreditAccount(
       account.addr,
-      this.keyService.address,
+      recipient ?? this.keyService.address,
       calls,
     );
     this.log.debug(`estimated gas: ${estGas}`);

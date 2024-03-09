@@ -152,7 +152,7 @@ export default abstract class AbstractLiquidatorService
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        await this._estimate(executor, ca, pfResult.calls);
+        await this._estimate(executor, ca, pfResult.calls, executor.address);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -173,7 +173,14 @@ export default abstract class AbstractLiquidatorService
           "anvil_setBlockTimestampInterval",
           [12],
         );
-        const tx = await this._liquidate(executor, ca, pfResult.calls, true);
+        // send profit to executor address because we're going to use swapper later
+        const tx = await this._liquidate(
+          executor,
+          ca,
+          pfResult.calls,
+          true,
+          executor.address,
+        );
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
           this.provider as ethers.providers.JsonRpcProvider,
@@ -239,6 +246,7 @@ export default abstract class AbstractLiquidatorService
     executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
+    recipient?: string,
   ): Promise<void>;
 
   protected abstract _liquidate(
@@ -246,6 +254,7 @@ export default abstract class AbstractLiquidatorService
     account: CreditAccountData,
     calls: MultiCall[],
     optimistic: boolean,
+    recipient?: string,
   ): Promise<ethers.ContractTransaction>;
 
   protected abstract _findClosePath(
