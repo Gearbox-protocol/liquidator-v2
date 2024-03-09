@@ -123,7 +123,6 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
       );
       error.transactionHash = transactionHash;
-      this.log.error(error);
       throw error;
     }
   }
