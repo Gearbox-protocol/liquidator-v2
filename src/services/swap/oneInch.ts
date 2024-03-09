@@ -18,7 +18,6 @@ import { mine } from "../utils";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
 
-const ROUTER_v5 = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
 class OneInchError extends Error {
@@ -32,6 +31,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
   private apiClient: AxiosInstance;
   private readonly slippage: number;
+  private routerAddress = "0x111111125421cA6dc452d289314280a0f8842A65";
 
   constructor(slippage = 2) {
     super();
@@ -57,6 +57,13 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       retryDelay: axiosRetry.exponentialDelay,
     });
     this.log.debug(`API URL: ${baseURL}`);
+    try {
+      const resp = await this.apiClient.get("/approve/spender");
+      this.routerAddress = resp.data.address;
+      this.log.info(`1inch router address: ${this.routerAddress}`);
+    } catch (e) {
+      this.log.error(`failed to get router address: ${e}`);
+    }
   }
 
   public async swap(
@@ -76,7 +83,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         `Swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
       const erc20 = IERC20__factory.connect(tokenAddr, executor);
-      const approveTx = await erc20.approve(ROUTER_v5, amount);
+      const approveTx = await erc20.approve(this.routerAddress, amount);
       await mine(
         executor.provider as ethers.providers.JsonRpcProvider,
         approveTx,
