@@ -40,7 +40,7 @@ interface OracleEntry {
 const ORACLE_START_BLOCK: Record<NetworkType, number> = {
   Mainnet: 18797638,
   Optimism: 116864678, // not deployed yet, arbitrary block here
-  Arbitrum: 186137236, // not deployed yet, arbitrary block here
+  Arbitrum: 184650373,
 };
 
 @Service()

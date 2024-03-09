@@ -11,6 +11,12 @@ import config from "../config";
 import { Logger, LoggerInterface } from "../log";
 import { getProvider } from "./utils";
 
+const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
+  Mainnet: 18433056,
+  Arbitrum: 184650310,
+  Optimism: 117197176, // arbitrary block, NOT_DEPLOYED yet
+};
+
 @Service()
 export class AddressProviderService {
   @Logger("AddressProviderService")
@@ -61,11 +67,12 @@ export class AddressProviderService {
       `looking for ${service} in version range [${minVersion}, ${maxVersion}]`,
     );
 
-    const logs = await this.contract.provider.getLogs(
-      this.contract.filters.SetAddress(
+    const logs = await this.contract.provider.getLogs({
+      ...this.contract.filters.SetAddress(
         ethers.utils.formatBytes32String(service),
       ),
-    );
+      fromBlock: AP_BLOCK_BY_NETWORK[this.network],
+    });
     let version = minVersion;
     let address = "";
     for (const l of logs) {
