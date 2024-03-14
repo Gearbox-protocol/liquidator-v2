@@ -52,13 +52,18 @@ class App {
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
-    if (config.optimisticLiquidations) {
-      this.log.info(
-        `Launching ${config.underlying ?? ""} ${Array.from(
-          config.enabledVersions,
-        )} in OPTIMISTIC mode`,
-      );
-    }
+    const msg = [
+      "Launching",
+      config.underlying ?? "",
+      Array.from(config.enabledVersions)
+        .map(v => `v${v}`)
+        .join(", "),
+      config.swapToEth ? `with swapping via ${config.swapToEth}` : "",
+      config.optimisticLiquidations ? "in OPTIMISTIC mode" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    this.log.info(msg);
     await this.addressProvider.launch();
     const provider = getProvider(false, this.log);
 
