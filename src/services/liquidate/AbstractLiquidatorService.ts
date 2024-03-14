@@ -116,6 +116,10 @@ export default abstract class AbstractLiquidatorService
   public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
     let snapshotId: unknown;
     let executor: ethers.Wallet | undefined;
+    // address that will receive profit from liquidation
+    // there's a bit of confusion between "keyService" address and actual executor address
+    // so use this variable to be more explicit
+    let recipient: string | undefined;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
@@ -131,6 +135,7 @@ export default abstract class AbstractLiquidatorService
 
     try {
       executor = this.keyService.takeVacantExecutor();
+      recipient = executor.address;
       this.log.debug(
         `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
       );
@@ -146,13 +151,13 @@ export default abstract class AbstractLiquidatorService
       }
       this.log.debug({ pathHuman }, "path found");
 
-      const balanceBefore = await this.getExecutorBalance(ca);
+      const balanceBefore = await this.getBalance(recipient, ca);
       // before actual transaction, try to estimate gas
       // this effectively will load state and contracts from fork origin to anvil
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        await this._estimate(executor, ca, pfResult.calls, executor.address);
+        await this._estimate(executor, ca, pfResult.calls, recipient);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -179,7 +184,7 @@ export default abstract class AbstractLiquidatorService
           ca,
           pfResult.calls,
           true,
-          executor.address,
+          recipient,
         );
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
@@ -194,7 +199,7 @@ export default abstract class AbstractLiquidatorService
           }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
 
-        let balanceAfter = await this.getExecutorBalance(ca);
+        let balanceAfter = await this.getBalance(recipient, ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
@@ -205,9 +210,9 @@ export default abstract class AbstractLiquidatorService
           executor,
           ca.underlyingToken,
           balanceAfter.underlying,
-          this.keyService.address,
+          recipient,
         );
-        balanceAfter = await this.getExecutorBalance(ca);
+        balanceAfter = await this.getBalance(recipient, ca);
         optimisticResult.liquidatorProfit = balanceAfter.eth
           .sub(balanceBefore.eth)
           .toString();
@@ -261,16 +266,19 @@ export default abstract class AbstractLiquidatorService
     ca: CreditAccountData,
   ): Promise<PathFinderV1CloseResult>;
 
-  protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
+  protected async getBalance(
+    address: string,
+    ca: CreditAccountData,
+  ): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
     const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
-    const eth = await this.provider.getBalance(this.keyService.address);
+    const eth = await this.provider.getBalance(address);
     const underlying = isWeth
       ? eth
       : await IERC20__factory.connect(
           ca.underlyingToken,
           this.provider,
-        ).balanceOf(this.keyService.address);
+        ).balanceOf(address);
     return { eth, underlying };
   }
 
