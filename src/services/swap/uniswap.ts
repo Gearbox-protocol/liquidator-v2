@@ -20,7 +20,7 @@ import {
   Trade,
 } from "@uniswap/v3-sdk";
 import type { BigNumberish, Wallet } from "ethers";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
@@ -56,18 +56,24 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     amount: BigNumberish,
     recipient?: string,
   ): Promise<void> {
+    if (BigNumber.from(amount).lte(10)) {
+      this.log.debug(
+        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+      );
+      return;
+    }
     try {
       if (tokenAddr.toLowerCase() !== this.wethAddr.toLowerCase()) {
         this.log.debug(
-          `Swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+          `swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
         );
         await this.executeTrade(executor, tokenAddr, amount);
-        this.log.debug(`Swapped ${tokenSymbolByAddress[tokenAddr]} to WETH`);
+        this.log.debug(`swapped ${tokenSymbolByAddress[tokenAddr]} to WETH`);
       }
-      this.log.debug("Unwrapped ETH");
+      this.log.debug("unwrapped ETH");
     } catch (e) {
       this.log.error(
-        `Failed to swap ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${e}`,
+        `gailed to swap ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${e}`,
       );
     }
   }

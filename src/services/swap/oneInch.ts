@@ -9,7 +9,7 @@ import {
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import type { BigNumberish, ethers, Wallet } from "ethers";
+import { BigNumber, type BigNumberish, type ethers, type Wallet } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
@@ -74,13 +74,19 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   ): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
     let transactionHash: string | undefined;
+    if (BigNumber.from(amount).lte(10)) {
+      this.log.debug(
+        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+      );
+      return;
+    }
     try {
       if (tokenAddr.toLowerCase() === this.wethAddr.toLowerCase()) {
         // WETH is unwrapped during liquidation (convertWETH flag)
         return;
       }
       this.log.debug(
-        `Swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+        `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
       const erc20 = IERC20__factory.connect(tokenAddr, executor);
       const approveTx = await erc20.approve(this.routerAddress, amount);
@@ -111,7 +117,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       transactionHash = txR.hash;
       await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
       this.log.debug(
-        `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+        `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
     } catch (e) {
       let info: any;
@@ -120,7 +126,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       }
       info = info || `${e}`;
       const error = new OneInchError(
-        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
+        `failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
       );
       error.transactionHash = transactionHash;
       throw error;
