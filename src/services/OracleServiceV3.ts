@@ -31,6 +31,12 @@ interface PriceFeedEntry {
   dataFeedId?: string | null;
 }
 
+interface RedstoneFeed {
+  token: string;
+  dataFeedId: string;
+  reserve: boolean;
+}
+
 interface OracleEntry {
   main: PriceFeedEntry;
   reserve?: PriceFeedEntry;
@@ -75,16 +81,18 @@ export default class OracleServiceV3 {
   }
 
   /**
-   * Returns mapping of currently active redstone feeds
-   * Keys are lowercased token addresses
-   * Values are redstone dataFeedIds
+   * Returns currenly used redstone feeds
    */
-  public getRedstoneFeeds(): Record<string, string> {
-    const result: Record<string, string> = {};
-    for (const [token, entry] of Object.entries(this.#feeds)) {
-      const feed = entry[entry.active];
-      if (feed?.dataFeedId) {
-        result[token.toLowerCase()] = feed.dataFeedId;
+  public getRedstoneFeeds(activeOnly: boolean): RedstoneFeed[] {
+    const result: RedstoneFeed[] = [];
+    for (const [t, entry] of Object.entries(this.#feeds)) {
+      const token = t.toLowerCase();
+      const { active, main, reserve } = entry;
+      if (main.dataFeedId && (!activeOnly || active === "main")) {
+        result.push({ token, dataFeedId: main.dataFeedId, reserve: false });
+      }
+      if (reserve?.dataFeedId && (!activeOnly || active === "reserve")) {
+        result.push({ token, dataFeedId: reserve.dataFeedId, reserve: true });
       }
     }
     return result;

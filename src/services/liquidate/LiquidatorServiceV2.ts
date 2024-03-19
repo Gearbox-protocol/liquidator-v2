@@ -6,7 +6,7 @@ import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
-import type { ILiquidatorService } from "./types";
+import type { ILiquidatorService, PartialLiquidationPreview } from "./types";
 
 @Service()
 export class LiquidatorServiceV2
@@ -98,5 +98,21 @@ export class LiquidatorServiceV2
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](account.borrower, recipient ?? this.keyService.address, 0, true, calls);
     this.log.debug(`estimated gas: ${estGas}`);
+  }
+
+  protected async _liquidatePartially(
+    executor: ethers.Wallet,
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+    optimistic: boolean,
+    recipient?: string,
+  ): Promise<ethers.ContractTransaction> {
+    throw new Error(`partial liquidations not supported in v2`);
+  }
+
+  protected async _previewPartialLiquidation(
+    ca: CreditAccountData,
+  ): Promise<PartialLiquidationPreview> {
+    throw new Error(`partial liquidations not supported in v2`);
   }
 }

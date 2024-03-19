@@ -17,7 +17,7 @@ import { Inject, Service } from "typedi";
 
 import config from "../config";
 import { Logger, LoggerInterface } from "../log";
-import type { PriceOnDemand } from "./liquidate";
+import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
 import OracleServiceV3 from "./OracleServiceV3";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
@@ -41,23 +41,23 @@ export class RedstoneServiceV3 {
     this.provider = provider;
   }
 
-  public async updatesForTokens(tokens: string[]): Promise<PriceOnDemand[]> {
-    const redstoneFeeds = this.oracle.getRedstoneFeeds();
-    const redstoneUpdates: Array<[string, string]> = [];
-    for (const token of tokens) {
-      const dataFeedId = redstoneFeeds[token.toLowerCase()];
-      if (dataFeedId) {
-        redstoneUpdates.push([token, dataFeedId]);
-      }
-    }
+  public async updatesForTokens(
+    tokens: string[],
+    activeOnly: boolean,
+  ): Promise<PriceOnDemandExtras[]> {
+    const tokenz = tokens.map(t => t.toLowerCase());
+    const redstoneFeeds = this.oracle
+      .getRedstoneFeeds(activeOnly)
+      .filter(f => tokenz.includes(f.token));
 
     this.log?.debug(
-      `need to update ${redstoneUpdates.length} redstone feeds: ${redstoneUpdates.map(([_, d]) => d).join(", ")}`,
+      `need to update ${redstoneFeeds.length} redstone feeds: ${redstoneFeeds.map(({ dataFeedId }) => dataFeedId).join(", ")}`,
     );
     const result = await Promise.all(
-      redstoneUpdates.map(([token, dataFeedId]) =>
+      redstoneFeeds.map(({ token, dataFeedId, reserve }) =>
         this.#getRedstonePayloadForManualUsage(
           token,
+          reserve,
           "redstone-primary-prod",
           dataFeedId,
           REDSTONE_SIGNERS.signersThreshold,
@@ -85,7 +85,22 @@ export class RedstoneServiceV3 {
     return result;
   }
 
-  public async updatesForAccount(ca: CreditAccountData): Promise<MultiCall[]> {
+  public async compressorUpdates(ca: CreditAccountData): Promise<MultiCall[]> {
+    const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
+    return priceUpdates.map(({ token, data, reserve }) => ({
+      target: ca.creditFacade,
+      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
+        token,
+        reserve,
+        data,
+      ]),
+    }));
+  }
+
+  public async liquidationPreviewUpdates(
+    ca: CreditAccountData,
+    activeOnly = false,
+  ): Promise<PriceUpdate[]> {
     const accTokens: string[] = [];
     for (const [token, { balance, isEnabled }] of Object.entries(
       ca.allBalances,
@@ -94,26 +109,24 @@ export class RedstoneServiceV3 {
         accTokens.push(token);
       }
     }
-    const priceUpdates = await this.updatesForTokens(accTokens);
-    return priceUpdates.map(({ token, callData }) => ({
-      target: ca.creditFacade,
-      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-        token,
-        false, // reserve
-        callData,
-      ]),
+    const priceUpdates = await this.updatesForTokens(accTokens, activeOnly);
+    return priceUpdates.map(({ token, reserve, callData }) => ({
+      token,
+      reserve,
+      data: callData,
     }));
   }
 
   async #getRedstonePayloadForManualUsage(
     token: string,
+    reserve: boolean,
     dataServiceId: string,
-    dataFeeds: string,
+    dataFeedId: string,
     uniqueSignersCount: number,
-  ): Promise<PriceOnDemand> {
+  ): Promise<PriceOnDemandExtras> {
     const dataPayload = await new DataServiceWrapper({
       dataServiceId,
-      dataFeeds: [dataFeeds],
+      dataFeeds: [dataFeedId],
       uniqueSignersCount,
     }).prepareRedstonePayload(true);
 
@@ -151,7 +164,7 @@ export class RedstoneServiceV3 {
       ] as const;
     });
 
-    return { token, callData: result[0][0], ts: result[0][1] };
+    return { token, reserve, callData: result[0][0], ts: result[0][1] };
   }
 }
 

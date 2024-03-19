@@ -6,7 +6,11 @@ import type { MultiCallStructOutput } from "./generated/ILiquidator";
 export interface PriceOnDemand {
   token: string;
   callData: string;
+}
+
+export interface PriceOnDemandExtras extends PriceOnDemand {
   ts: number;
+  reserve: boolean;
 }
 
 export interface PriceUpdate {

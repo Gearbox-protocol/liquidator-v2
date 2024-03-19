@@ -95,7 +95,7 @@ export class LiquidatorServiceV3
   ): Promise<ethers.ContractTransaction> {
     // TODO: executor, recipient
     this.log.debug(`partial liquidation of ${this.getAccountTitle(account)}`);
-    const priceUpdates = await this.redstone.updatesForAccount(account);
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
     const tx = await this.#partialLiquidator.partialLiquidateAndConvert(
       account.creditManager,
       account.addr,
@@ -132,7 +132,7 @@ export class LiquidatorServiceV3
         throw new Error("result is empty");
       }
       // we want fresh redstone price in actual liquidation transactions
-      const priceUpdateCalls = await this.redstone.updatesForAccount(ca);
+      const priceUpdateCalls = await this.redstone.compressorUpdates(ca);
       result.calls = [...priceUpdateCalls, ...result.calls];
       return result;
     } catch (e) {
@@ -167,7 +167,7 @@ export class LiquidatorServiceV3
       for (let i = 1n; i <= 10n; i++) {
         // Always get fresh prices, because in optimistic mode this loop is quite slow
         // TODO: maybe it should be debounced
-        const priceUpdateCalls = await this.redstone.updatesForAccount(ca);
+        const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
         const amountOut = (i * balance) / 10n;
         this.log.debug(
           `trying partial liqudation of ${name}: ${i * 10n}% of ${symb} out`,
@@ -178,7 +178,7 @@ export class LiquidatorServiceV3
             ca.addr,
             assetOut,
             amountOut,
-            priceUpdateCalls,
+            priceUpdates,
             connectors,
             this.slippage,
           );

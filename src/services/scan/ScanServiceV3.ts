@@ -69,7 +69,10 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `v3 potential accounts to liquidate${blockS}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
-    const redstoneUpdates = await this.redstone.updatesForTokens(failedTokens);
+    const redstoneUpdates = await this.redstone.updatesForTokens(
+      failedTokens,
+      true,
+    );
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,
