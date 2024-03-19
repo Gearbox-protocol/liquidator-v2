@@ -5,6 +5,7 @@ on:
     branches:
       - "main"
       - "beta"
+  workflow_dispatch: 
 
 env:
   HUSKY: 0
@@ -22,12 +23,12 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v3
+        uses: cycjimmy/semantic-release-action@v4
         with:
           extra_plugins: |
             @codedependant/semantic-release-docker
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}

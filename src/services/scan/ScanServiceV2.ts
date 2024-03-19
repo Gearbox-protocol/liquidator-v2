@@ -1,15 +1,14 @@
 import type {
   CreditAccountHash,
   CreditManagerData,
-  IDataCompressorV2_10,
+  IDataCompressorV2_1,
   MCall,
 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
   CreditAccountWatcherV2,
   CreditManagerWatcher,
-  IAddressProviderV3__factory,
-  IDataCompressorV2_10__factory,
+  IDataCompressorV2_1__factory,
   safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
@@ -20,7 +19,6 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
 import { LiquidatorServiceV2 } from "../liquidate";
-import { findLatestServiceAddress } from "../utils";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -44,16 +42,9 @@ export class ScanServiceV2 extends AbstractScanService {
   protected override async _launch(
     provider: providers.Provider,
   ): Promise<void> {
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      provider,
-    );
-
-    this.dataCompressor = await findLatestServiceAddress(
-      addressProvider,
+    this.dataCompressor = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       200,
-      299,
     );
 
     const startingBlock = await provider.getBlockNumber();
@@ -228,12 +219,12 @@ export class ScanServiceV2 extends AbstractScanService {
     blockTag: number,
     chunkSize: number,
   ): Promise<Array<{ error?: Error; value?: CreditAccountData }>> {
-    const dc = IDataCompressorV2_10__factory.connect(
+    const dc = IDataCompressorV2_1__factory.connect(
       this.dataCompressor,
       this.provider,
     );
 
-    const calls: MCall<IDataCompressorV2_10["interface"]>[][] = [];
+    const calls: MCall<IDataCompressorV2_1["interface"]>[][] = [];
 
     let i = 0;
     while (i * chunkSize < accounts.length) {

@@ -47,12 +47,9 @@ export class KeyService {
     await this.checkBalance();
     await this.storage.launch();
 
-    if (!config.optimisticLiquidations) {
-      await this._recoverWallets();
-      this.log.info(`executors: ${this._executors.map(e => e.address)}`);
-      for (let ex of this._executors) {
-        await this.returnExecutor(ex.address);
-      }
+    await this._recoverWallets();
+    for (let ex of this._executors) {
+      await this.returnExecutor(ex.address);
     }
   }
 
@@ -82,26 +79,32 @@ export class KeyService {
    * Takes liquidator back, recharge it and mark as "vacant" for further use
    * @param address Executor address
    */
-  async returnExecutor(address: string) {
+  async returnExecutor(address: string, recharge = true) {
     try {
-      const balance = await this.provider.getBalance(address);
+      if (recharge) {
+        const balance = await this.provider.getBalance(address);
 
-      if (balance.lt(KeyService.minExecutorBalance)) {
-        this.log.info("recharging ", address);
-        await this._mutex.runExclusive(async () => {
-          try {
-            const receipt = await this.signer.sendTransaction({
-              to: address,
-              value: KeyService.minExecutorBalance,
-              gasLimit: 42000,
-            });
-            await receipt.wait();
-          } catch (e) {
-            this.ampqService.error(`Cant recharge account ${address}\n${e}`);
-          }
-        });
-      } else {
-        this.log.info(`account ${address} has enough balance`);
+        if (balance.lt(KeyService.minExecutorBalance)) {
+          this.log.info(
+            `executor ${address} has insufficient balance: ${formatBN(balance, 18)}, recharging`,
+          );
+          await this._mutex.runExclusive(async () => {
+            try {
+              const receipt = await this.signer.sendTransaction({
+                to: address,
+                value: KeyService.minExecutorBalance,
+              });
+              await receipt.wait();
+              this.log.debug(`recharged executor ${address}`);
+            } catch (e) {
+              this.ampqService.error(`Cant recharge account ${address}\n${e}`);
+            }
+          });
+        } else {
+          this.log.info(
+            `executor ${address} has sufficient balance: ${formatBN(balance, 18)}`,
+          );
+        }
       }
 
       this._isUsed[address] = false;
@@ -131,11 +134,11 @@ export class KeyService {
   protected async checkBalance() {
     const balance = await this.signer.getBalance();
     this.log.info(
-      `Wallet balance for ${this.signer.address} is: ${balance.toString()}`,
+      `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)}`,
     );
     if (balance.lte(this.minBalanceToNotify)) {
       this.ampqService.error(
-        `WARNING: Low wallet balance: ${formatBN(balance, 18)}`,
+        `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)}`,
       );
     }
   }

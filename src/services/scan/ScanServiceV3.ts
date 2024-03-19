@@ -1,8 +1,7 @@
-import type { IDataCompressorV3_00 } from "@gearbox-protocol/sdk";
+import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
-  IAddressProviderV3__factory,
-  IDataCompressorV3_00__factory,
+  IDataCompressorV3__factory,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { providers } from "ethers";
@@ -12,7 +11,8 @@ import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
-import { findLatestServiceAddress } from "../utils";
+import OracleServiceV3 from "../OracleServiceV3";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
 
 @Service()
@@ -23,7 +23,13 @@ export class ScanServiceV3 extends AbstractScanService {
   @Inject()
   liquidarorServiceV3: LiquidatorServiceV3;
 
-  protected dataCompressor: IDataCompressorV3_00;
+  @Inject()
+  oracle: OracleServiceV3;
+
+  @Inject()
+  redstone: RedstoneServiceV3;
+
+  protected dataCompressor: IDataCompressorV3;
 
   protected override get liquidatorService(): ILiquidatorService {
     return this.liquidarorServiceV3;
@@ -32,31 +38,23 @@ export class ScanServiceV3 extends AbstractScanService {
   protected override async _launch(
     provider: providers.Provider,
   ): Promise<void> {
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      provider,
-    );
-
-    const dcAddr = await findLatestServiceAddress(
-      addressProvider,
+    const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
-      399,
     );
-    this.dataCompressor = IDataCompressorV3_00__factory.connect(
-      dcAddr,
-      provider,
-    );
+    this.dataCompressor = IDataCompressorV3__factory.connect(dcAddr, provider);
 
+    const block = await provider.getBlockNumber();
+    await this.oracle.launch(provider, block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    const startingBlock = config.optimisticLiquidations
-      ? undefined
-      : await provider.getBlockNumber();
-    await this.updateAccounts(startingBlock);
+    await this.updateAccounts(
+      config.optimisticLiquidations ? undefined : block,
+    );
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
+    await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
   }
 
@@ -65,26 +63,20 @@ export class ScanServiceV3 extends AbstractScanService {
    * @param atBlock Fiex block for archive node which is needed to get data
    */
   protected async updateAccounts(atBlock?: number): Promise<void> {
+    const blockS = atBlock ? ` in ${atBlock}` : "";
     let [accounts, failedTokens] = await this.#potentialLiquidations(
       [],
       atBlock,
     );
     this.log.debug(
-      `v3 potential accounts to liquidate in ${atBlock}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
+      `v3 potential accounts to liquidate${blockS}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
     );
-    const redstoneUpdates = await this.updateRedstone(failedTokens);
-    if (config.optimisticLiquidations) {
-      // need to bump block timestamp to prevent redstone feeds from reverting
-      this.log.debug(`call evm_mine in optimistic mode`);
-      await (this.provider as any).send("evm_mine", []);
-    }
+    const redstoneUpdates = await this.redstone.updatesForTokens(failedTokens);
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,
     );
-    this.log.debug(
-      `v3 accounts to liquidate in ${atBlock}: ${accounts.length}`,
-    );
+    this.log.debug(`v3 accounts to liquidate${blockS}: ${accounts.length}`);
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     const redstoneSymbols = redstoneTokens.map(
       t => tokenSymbolByAddress[t.toLowerCase()],
@@ -97,14 +89,14 @@ export class ScanServiceV3 extends AbstractScanService {
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
       this.log.error(
-        `failed tokens on second iteration: ${failedTokens.join(", ")}`,
+        `failed tokens on second iteration: ${printTokens(failedTokens)}`,
       );
     }
 
     if (config.optimisticLiquidations) {
-      await this.liquidateOptimistically(accounts, redstoneTokens);
+      await this.liquidateOptimistically(accounts);
     } else {
-      await this.liquidateNormal(accounts, redstoneTokens);
+      await this.liquidateNormal(accounts);
     }
   }
 
@@ -145,4 +137,8 @@ export class ScanServiceV3 extends AbstractScanService {
 
     return [accounts, Array.from(failedTokens)];
   }
+}
+
+function printTokens(tokens: string[]): string {
+  return tokens.map(t => tokenSymbolByAddress[t.toLowerCase()] ?? t).join(", ");
 }

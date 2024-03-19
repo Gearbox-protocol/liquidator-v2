@@ -9,7 +9,7 @@ import {
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import type { BigNumberish, ethers, Wallet } from "ethers";
+import { BigNumber, type BigNumberish, type ethers, type Wallet } from "ethers";
 import { Service } from "typedi";
 
 import config from "../../config";
@@ -18,8 +18,11 @@ import { mine } from "../utils";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
 
-const ROUTER_v5 = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+class OneInchError extends Error {
+  transactionHash?: string;
+}
 
 @Service()
 export default class OneInch extends BaseSwapper implements ISwapper {
@@ -27,13 +30,20 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   log: LoggerInterface;
 
   private apiClient: AxiosInstance;
+  private readonly slippage: number;
+  private routerAddress = "0x111111125421cA6dc452d289314280a0f8842A65";
+
+  constructor(slippage = 2) {
+    super();
+    this.slippage = slippage;
+  }
 
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
     if (!config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
-    const baseURL = `https://api.1inch.dev/swap/v5.2/${CHAINS[network]}`;
+    const baseURL = `https://api.1inch.dev/swap/v6.0/${CHAINS[network]}`;
     this.apiClient = axios.create({
       baseURL,
       headers: {
@@ -47,24 +57,39 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       retryDelay: axiosRetry.exponentialDelay,
     });
     this.log.debug(`API URL: ${baseURL}`);
+    try {
+      const resp = await this.apiClient.get("/approve/spender");
+      this.routerAddress = resp.data.address;
+      this.log.info(`1inch router address: ${this.routerAddress}`);
+    } catch (e) {
+      this.log.error(`failed to get router address: ${e}`);
+    }
   }
 
   public async swap(
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
+    recipient?: string,
   ): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
+    let transactionHash: string | undefined;
+    if (BigNumber.from(amount).lte(10)) {
+      this.log.debug(
+        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+      );
+      return;
+    }
     try {
       if (tokenAddr.toLowerCase() === this.wethAddr.toLowerCase()) {
         // WETH is unwrapped during liquidation (convertWETH flag)
         return;
       }
       this.log.debug(
-        `Swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+        `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
       const erc20 = IERC20__factory.connect(tokenAddr, executor);
-      const approveTx = await erc20.approve(ROUTER_v5, amount);
+      const approveTx = await erc20.approve(this.routerAddress, amount);
       await mine(
         executor.provider as ethers.providers.JsonRpcProvider,
         approveTx,
@@ -76,9 +101,10 @@ export default class OneInch extends BaseSwapper implements ISwapper {
           dst: ETH,
           amount: amount.toString(),
           from: executor.address,
-          slippage: 1,
+          slippage: this.slippage,
           disableEstimate: true,
           allowPartialFill: false,
+          receiver: recipient ?? executor.address,
         },
       });
 
@@ -88,9 +114,10 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       } = swap.data;
 
       const txR = await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
+      transactionHash = txR.hash;
       await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
       this.log.debug(
-        `Swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
+        `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
     } catch (e) {
       let info: any;
@@ -98,9 +125,11 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         info = e.response?.data?.description;
       }
       info = info || `${e}`;
-      this.log.error(
-        `Failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH via: ${info}`,
+      const error = new OneInchError(
+        `failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
       );
+      error.transactionHash = transactionHash;
+      throw error;
     }
   }
 }

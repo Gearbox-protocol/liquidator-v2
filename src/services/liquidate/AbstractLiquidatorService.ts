@@ -1,12 +1,6 @@
-import type {
-  CreditAccountData,
-  MultiCall,
-  NetworkType,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import {
-  detectNetwork,
   IERC20__factory,
-  MAINNET_NETWORK,
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
@@ -18,10 +12,10 @@ import { Inject } from "typedi";
 import config from "../../config";
 import type { OptimisticResult } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
-import { RedstoneService } from "../redstoneService";
 import { ISwapper, SWAPPER } from "../swap";
 import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
@@ -33,7 +27,6 @@ export interface Balance {
 }
 
 export default abstract class AbstractLiquidatorService
-  extends RedstoneService
   implements ILiquidatorService
 {
   log: LoggerInterface;
@@ -43,6 +36,9 @@ export default abstract class AbstractLiquidatorService
 
   @Inject()
   ampqService: AMPQService;
+
+  @Inject()
+  addressProvider: AddressProviderService;
 
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
@@ -57,8 +53,6 @@ export default abstract class AbstractLiquidatorService
   protected slippage: number;
 
   protected etherscan = "";
-  protected chainId: number;
-  protected network: NetworkType;
 
   /**
    * Launch LiquidatorService
@@ -67,21 +61,20 @@ export default abstract class AbstractLiquidatorService
     this.provider = provider;
     this.slippage = Math.floor(config.slippage * 100);
 
-    const { chainId } = await this.provider.getNetwork();
-    this.chainId = chainId;
-    switch (chainId) {
-      case MAINNET_NETWORK:
+    switch (this.addressProvider.network) {
+      case "Mainnet":
         this.etherscan = "https://etherscan.io";
         break;
+      case "Arbitrum":
+        this.etherscan = "https://arbiscan.io";
+        break;
+      case "Optimism":
+        this.etherscan = "https://optimistic.etherscan.io";
+        break;
     }
-
-    this.network = await detectNetwork(provider);
   }
 
-  public async liquidate(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<void> {
+  public async liquidate(ca: CreditAccountData): Promise<void> {
     this.ampqService.info(
       `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
         ca.healthFactor
@@ -89,7 +82,7 @@ export default abstract class AbstractLiquidatorService
     );
 
     try {
-      const pfResult = await this._findClosePath(ca, redstoneTokens);
+      const pfResult = await this._findClosePath(ca);
       let pathHuman: Array<string | null> = [];
       try {
         pathHuman = TxParser.parseMultiCall(pfResult.calls);
@@ -120,18 +113,20 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  public async liquidateOptimistic(
-    ca: CreditAccountData,
-    redstoneTokens: string[],
-  ): Promise<void> {
+  public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
     let snapshotId: unknown;
+    let executor: ethers.Wallet | undefined;
+    // address that will receive profit from liquidation
+    // there's a bit of confusion between "keyService" address and actual executor address
+    // so use this variable to be more explicit
+    let recipient: string | undefined;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
       account: ca.addr,
       gasUsed: 0,
       calls: [],
-      isError: false,
+      isError: true,
       pathAmount: "0",
       liquidatorPremium: "0",
       liquidatorProfit: "0",
@@ -139,8 +134,12 @@ export default abstract class AbstractLiquidatorService
     const start = Date.now();
 
     try {
-      this.log.debug(`Searching path for ${ca.hash()}...`);
-      const pfResult = await this._findClosePath(ca, redstoneTokens);
+      executor = this.keyService.takeVacantExecutor();
+      recipient = executor.address;
+      this.log.debug(
+        `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
+      );
+      const pfResult = await this._findClosePath(ca);
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
 
@@ -152,13 +151,13 @@ export default abstract class AbstractLiquidatorService
       }
       this.log.debug({ pathHuman }, "path found");
 
-      const balanceBefore = await this.getExecutorBalance(ca);
+      const balanceBefore = await this.getBalance(recipient, ca);
       // before actual transaction, try to estimate gas
       // this effectively will load state and contracts from fork origin to anvil
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        await this._estimate(ca, pfResult.calls);
+        await this._estimate(executor, ca, pfResult.calls, recipient);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -179,25 +178,28 @@ export default abstract class AbstractLiquidatorService
           "anvil_setBlockTimestampInterval",
           [12],
         );
+        // send profit to executor address because we're going to use swapper later
         const tx = await this._liquidate(
-          this.keyService.signer,
+          executor,
           ca,
           pfResult.calls,
           true,
+          recipient,
         );
         this.log.debug(`Liquidation tx hash: ${tx.hash}`);
         const receipt = await mine(
           this.provider as ethers.providers.JsonRpcProvider,
           tx,
         );
-        const strStatus = receipt.status === 1 ? "success" : "failure";
+        optimisticResult.isError = receipt.status !== 1;
+        const strStatus = optimisticResult.isError ? "failure" : "success";
         this.log.debug(
           `Liquidation tx receipt: status=${strStatus} (${
             receipt.status
           }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
 
-        let balanceAfter = await this.getExecutorBalance(ca);
+        let balanceAfter = await this.getBalance(recipient, ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
@@ -205,11 +207,12 @@ export default abstract class AbstractLiquidatorService
 
         // swap underlying back to ETH
         await this.swapper.swap(
-          this.keyService.signer,
+          executor,
           ca.underlyingToken,
           balanceAfter.underlying,
+          recipient,
         );
-        balanceAfter = await this.getExecutorBalance(ca);
+        balanceAfter = await this.getBalance(recipient, ca);
         optimisticResult.liquidatorProfit = balanceAfter.eth
           .sub(balanceBefore.eth)
           .toString();
@@ -218,12 +221,10 @@ export default abstract class AbstractLiquidatorService
           this.log.warn("negative liquidator profit");
         }
       } catch (e: any) {
-        optimisticResult.isError = true;
         this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
         await this.saveTxTrace(e.transactionHash);
       }
     } catch (e: any) {
-      optimisticResult.isError = true;
       this.log.error(
         { account: this.getAccountTitle(ca) },
         `cannot liquidate: ${e}`,
@@ -233,16 +234,24 @@ export default abstract class AbstractLiquidatorService
     optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
+    if (executor) {
+      await this.keyService.returnExecutor(executor.address, false);
+    }
+
     if (snapshotId) {
       await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
         snapshotId,
       ]);
     }
+
+    return !optimisticResult.isError;
   }
 
   protected abstract _estimate(
+    executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
+    recipient?: string,
   ): Promise<void>;
 
   protected abstract _liquidate(
@@ -250,29 +259,32 @@ export default abstract class AbstractLiquidatorService
     account: CreditAccountData,
     calls: MultiCall[],
     optimistic: boolean,
+    recipient?: string,
   ): Promise<ethers.ContractTransaction>;
 
   protected abstract _findClosePath(
     ca: CreditAccountData,
-    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult>;
 
-  protected async getExecutorBalance(ca: CreditAccountData): Promise<Balance> {
+  protected async getBalance(
+    address: string,
+    ca: CreditAccountData,
+  ): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
     const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
-    const eth = await this.provider.getBalance(this.keyService.address);
+    const eth = await this.provider.getBalance(address);
     const underlying = isWeth
       ? eth
       : await IERC20__factory.connect(
           ca.underlyingToken,
           this.provider,
-        ).balanceOf(this.keyService.address);
+        ).balanceOf(address);
     return { eth, underlying };
   }
 
   protected getAccountTitle(ca: CreditAccountData): string {
     const cmSymbol = tokenSymbolByAddress[ca.underlyingToken];
-    return `${ca.addr} of ${ca.borrower} in ${cmSymbol}`;
+    return `${ca.addr} of ${ca.borrower} in ${ca.creditManager} (${cmSymbol})`;
   }
 
   /**

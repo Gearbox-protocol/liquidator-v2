@@ -4,15 +4,18 @@ import { Inject } from "typedi";
 
 import config from "../../config";
 import type { LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
 import { KeyService } from "../keyService";
 import type { ILiquidatorService } from "../liquidate";
-import { RedstoneService } from "../redstoneService";
 
-export default abstract class AbstractScanService extends RedstoneService {
+export default abstract class AbstractScanService {
   log: LoggerInterface;
 
   @Inject()
   executorService: KeyService;
+
+  @Inject()
+  addressProvider: AddressProviderService;
 
   protected provider: providers.Provider;
 
@@ -34,9 +37,22 @@ export default abstract class AbstractScanService extends RedstoneService {
     this.provider = provider;
     await this.liquidatorService.launch(provider);
     await this._launch(provider);
-    if (!config.optimisticLiquidations) {
-      this.provider.on("block", async num => await this.onBlock(num));
+    this.subscribeToUpdates();
+  }
+
+  protected subscribeToUpdates(): void {
+    if (config.optimisticLiquidations) {
+      return;
     }
+    if (this.addressProvider.network === "Mainnet") {
+      this.provider.on("block", async num => await this.onBlock(num));
+      return;
+    }
+    // on L2 blocks are too frequent
+    setInterval(async () => {
+      const block = await this.provider.getBlockNumber();
+      await this.onBlock(block);
+    }, 12_000);
   }
 
   protected abstract _launch(provider: providers.Provider): Promise<void>;
@@ -48,7 +64,6 @@ export default abstract class AbstractScanService extends RedstoneService {
    */
   protected async liquidateNormal(
     accountsToLiquidate: CreditAccountData[],
-    redstoneTokens: string[] = [],
   ): Promise<void> {
     if (!accountsToLiquidate.length) {
       return;
@@ -69,7 +84,7 @@ export default abstract class AbstractScanService extends RedstoneService {
       const ca = accountsToLiquidate[i];
 
       ca.isDeleting = true;
-      await this.liquidatorService.liquidate(ca, redstoneTokens);
+      await this.liquidatorService.liquidate(ca);
     }
   }
 
@@ -79,19 +94,27 @@ export default abstract class AbstractScanService extends RedstoneService {
    */
   protected async liquidateOptimistically(
     accountsToLiquidate: CreditAccountData[],
-    redstoneTokens: string[] = [],
   ): Promise<void> {
-    this.log.warn(
-      `Optimistic liquidation for ${accountsToLiquidate.length} accounts`,
-    );
-    for (let i = 0; i < accountsToLiquidate.length; i++) {
-      const ca = accountsToLiquidate[i];
-      await this.liquidatorService.liquidateOptimistic(ca, redstoneTokens);
-      this.log.info(
-        `Optimistic liquidation progress: ${i + 1}/${
-          accountsToLiquidate.length
-        }`,
-      );
+    const accounts = config.debugAccounts
+      ? accountsToLiquidate.filter(({ addr }) =>
+          config.debugAccounts?.includes(addr),
+        )
+      : accountsToLiquidate;
+
+    const total = accounts.length;
+    const debugS = config.debugAccounts ? "selective " : " ";
+    this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
+
+    for (let i = 0; i < total; i++) {
+      const acc = accounts[i];
+      const success = await this.liquidatorService.liquidateOptimistic(acc);
+      const status = success ? "OK" : "FAIL";
+      const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
+      if (success) {
+        this.log.info(msg);
+      } else {
+        this.log.warn(msg);
+      }
     }
   }
 }

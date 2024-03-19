@@ -1,15 +1,9 @@
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
-import {
-  IAddressProviderV3__factory,
-  ICreditFacadeV2__factory,
-  PathFinderV1,
-} from "@gearbox-protocol/sdk";
+import { ICreditFacadeV2__factory, PathFinderV1 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { providers } from "ethers";
-import { ethers } from "ethers";
+import type { ethers, providers } from "ethers";
 import { Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
 import type { ILiquidatorService } from "./types";
@@ -29,27 +23,19 @@ export class LiquidatorServiceV2
    */
   public async launch(provider: providers.Provider): Promise<void> {
     await super.launch(provider);
-    const addressProvider = IAddressProviderV3__factory.connect(
-      config.addressProvider,
-      this.provider,
-    );
-    const pathFinder = await addressProvider.getAddressOrRevert(
-      ethers.utils.formatBytes32String("ROUTER"),
-      1,
-    );
+    const pathFinder = await this.addressProvider.findService("ROUTER", 1);
     this.log.debug(`Router: ${pathFinder}`);
 
     this.#pathFinder = new PathFinderV1(
       pathFinder,
       this.provider,
-      this.network,
+      this.addressProvider.network,
       PathFinderV1.connectors,
     );
   }
 
   protected async _findClosePath(
     ca: CreditAccountData,
-    redstoneTokens: string[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.#pathFinder.findBestClosePath(
@@ -71,6 +57,7 @@ export class LiquidatorServiceV2
     account: CreditAccountData,
     calls: MultiCall[],
     optimistic: boolean,
+    recipient?: string,
   ): Promise<ethers.ContractTransaction> {
     const facade = ICreditFacadeV2__factory.connect(
       account.creditFacade,
@@ -83,7 +70,7 @@ export class LiquidatorServiceV2
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](
       account.borrower,
-      this.keyService.address,
+      recipient ?? this.keyService.address,
       0,
       true,
       calls,
@@ -94,12 +81,14 @@ export class LiquidatorServiceV2
   }
 
   protected override async _estimate(
+    executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
+    recipient?: string,
   ): Promise<void> {
     const iFacade = ICreditFacadeV2__factory.connect(
       account.creditFacade,
-      this.keyService.signer,
+      executor,
     );
     // before actual transaction, try to estimate gas
     // this effectively will load state and contracts from fork origin to anvil
@@ -107,7 +96,7 @@ export class LiquidatorServiceV2
     // also tx will act as retry in case of anvil external's error
     const estGas = await iFacade.estimateGas[
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
-    ](account.borrower, this.keyService.address, 0, true, calls);
+    ](account.borrower, recipient ?? this.keyService.address, 0, true, calls);
     this.log.debug(`estimated gas: ${estGas}`);
   }
 }

@@ -1,5 +1,4 @@
 import {
-  IsEthereumAddress,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -19,9 +18,7 @@ export class Config {
 
   static port: number;
 
-  @IsNotEmpty()
-  @IsEthereumAddress()
-  static addressProvider: string;
+  static addressProviderOverride?: string;
 
   @IsNotEmpty()
   static ethProviderRpcs: string[];
@@ -59,6 +56,11 @@ export class Config {
    * If set, will only work with credit manager(s) with this underlying token symbol (e.g. DAI)
    */
   static underlying: string | undefined;
+
+  /**
+   * If set, only these accounts will be optimistically liquidated
+   */
+  static debugAccounts: string[] | undefined;
 
   @IsNotEmpty()
   @IsNumber()
@@ -148,10 +150,7 @@ export class Config {
       "dev";
     Config.appName = process.env.APP_NAME || "Terminator2";
     Config.port = parseInt(process.env.PORT || "4000", 10);
-    Config.addressProvider =
-      process.env.ADDRESS_PROVIDER ||
-      process.env.ADDRESS_PROVIDER_MAINNET ||
-      "";
+    Config.addressProviderOverride = process.env.ADDRESS_PROVIDER;
     const providers =
       process.env.JSON_RPC_PROVIDERS ?? process.env.JSON_RPC_PROVIDER;
     Config.ethProviderRpcs = providers ? providers.split(",") : [];
@@ -187,6 +186,9 @@ export class Config {
         ? process.env.ENABLED_VERSIONS.split(",").map(Number)
         : SUPPORTED_VERSIONS,
     );
+    Config.debugAccounts = process.env.DEBUG_ACCOUNTS
+      ? process.env.DEBUG_ACCOUNTS.toLowerCase().split(",")
+      : undefined;
 
     Config.outDir = process.env.OUT_DIR;
     Config.outEndpoint = process.env.OUT_ENDPOINT;

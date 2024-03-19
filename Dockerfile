@@ -1,4 +1,4 @@
-FROM node:18.17.1 as dev
+FROM node:20.11 as dev
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 
 # Production npm modules
 
-FROM node:18.17.1 as prod
+FROM node:20.11 as prod
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -26,9 +26,10 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 
 # Final image
 
-FROM gcr.io/distroless/nodejs:18
+FROM gcr.io/distroless/nodejs20-debian12
 ARG PACKAGE_VERSION
 ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
+LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 
 WORKDIR /app
 COPY --from=prod /app /app
