@@ -41,7 +41,7 @@ export default abstract class AbstractScanService {
   }
 
   protected subscribeToUpdates(): void {
-    if (config.optimisticLiquidations) {
+    if (config.optimistic) {
       return;
     }
     if (this.addressProvider.network === "Mainnet") {

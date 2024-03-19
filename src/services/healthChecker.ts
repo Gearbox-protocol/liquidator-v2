@@ -21,7 +21,7 @@ export class HealthChecker {
    * Launches health checker - simple express server
    */
   public launch(): void {
-    if (config.optimisticLiquidations) {
+    if (config.optimistic) {
       return;
     }
     const start = new Date();

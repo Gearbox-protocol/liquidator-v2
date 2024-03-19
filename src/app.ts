@@ -59,7 +59,7 @@ class App {
         .map(v => `v${v}`)
         .join(", "),
       config.swapToEth ? `with swapping via ${config.swapToEth}` : "",
-      config.optimisticLiquidations ? "in OPTIMISTIC mode" : "",
+      config.optimistic ? "in OPTIMISTIC mode" : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -81,7 +81,7 @@ class App {
       await this.scanServiceV2.launch(provider);
     }
 
-    if (config.optimisticLiquidations) {
+    if (config.optimistic) {
       this.log.debug("optimistic liquidation finished, writing output");
       await this.outputWriter.write(this.addressProvider.startBlock, {
         result: this.optimistic.get(),

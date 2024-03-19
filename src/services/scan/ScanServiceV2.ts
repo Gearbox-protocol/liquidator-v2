@@ -197,7 +197,7 @@ export class ScanServiceV2 extends AbstractScanService {
 
       const accountsToLiquidate = Object.values(this.creditAccounts).filter(
         ca =>
-          config.optimisticLiquidations ||
+          config.optimistic ||
           (ca.healthFactor < config.hfThreshold && !ca.isDeleting),
       );
 
@@ -205,7 +205,7 @@ export class ScanServiceV2 extends AbstractScanService {
         this.log.debug(
           `v2 accounts to liquidate: ${accountsToLiquidate.length}`,
         );
-        if (config.optimisticLiquidations) {
+        if (config.optimistic) {
           await this.liquidateOptimistically(accountsToLiquidate);
         } else {
           await this.liquidateNormal(accountsToLiquidate);

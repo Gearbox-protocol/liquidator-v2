@@ -43,14 +43,14 @@ export class AMPQService {
   }
 
   info(text: string) {
-    if (!config.optimisticLiquidations) {
+    if (!config.optimistic) {
       this.send(`[INFO]:${text}`);
     }
     this.log.info(text);
   }
 
   error(text: string) {
-    if (!config.optimisticLiquidations) {
+    if (!config.optimistic) {
       this.send(`[ERROR]:${text}`, true);
     }
     this.log.error(text);

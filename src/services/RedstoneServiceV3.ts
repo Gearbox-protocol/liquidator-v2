@@ -65,7 +65,7 @@ export class RedstoneServiceV3 {
       ),
     );
 
-    if (config.optimisticLiquidations && result.length > 0) {
+    if (config.optimistic && result.length > 0) {
       const redstoneTs = result[0].ts;
       let block = await this.provider!.getBlock("latest");
       const delta = block.timestamp - redstoneTs;

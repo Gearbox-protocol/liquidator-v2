@@ -52,7 +52,7 @@ export class LiquidatorServiceV2
     }
   }
 
-  protected override async _liquidate(
+  protected override async _liquidateFully(
     executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],

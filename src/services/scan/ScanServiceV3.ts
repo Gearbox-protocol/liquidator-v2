@@ -48,9 +48,7 @@ export class ScanServiceV3 extends AbstractScanService {
     await this.oracle.launch(provider, block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    await this.updateAccounts(
-      config.optimisticLiquidations ? undefined : block,
-    );
+    await this.updateAccounts(config.optimistic ? undefined : block);
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
@@ -93,7 +91,7 @@ export class ScanServiceV3 extends AbstractScanService {
       );
     }
 
-    if (config.optimisticLiquidations) {
+    if (config.optimistic) {
       await this.liquidateOptimistically(accounts);
     } else {
       await this.liquidateNormal(accounts);

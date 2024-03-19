@@ -19,7 +19,7 @@ import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
 import { mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
-import type { ILiquidatorService } from "./types";
+import type { ILiquidatorService, PartialLiquidationPreview } from "./types";
 
 export interface Balance {
   underlying: BigNumber;
@@ -52,7 +52,7 @@ export default abstract class AbstractLiquidatorService
   protected provider: providers.Provider;
   protected slippage: number;
 
-  protected etherscan = "";
+  #etherscanUrl = "";
 
   /**
    * Launch LiquidatorService
@@ -63,54 +63,81 @@ export default abstract class AbstractLiquidatorService
 
     switch (this.addressProvider.network) {
       case "Mainnet":
-        this.etherscan = "https://etherscan.io";
+        this.#etherscanUrl = "https://etherscan.io";
         break;
       case "Arbitrum":
-        this.etherscan = "https://arbiscan.io";
+        this.#etherscanUrl = "https://arbiscan.io";
         break;
       case "Optimism":
-        this.etherscan = "https://optimistic.etherscan.io";
+        this.#etherscanUrl = "https://optimistic.etherscan.io";
         break;
     }
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
+    const name = this.getAccountTitle(ca);
+    const kind = config.partial ? "partial" : "full";
     this.ampqService.info(
-      `Start liquidation of ${this.getAccountTitle(ca)} with HF ${
-        ca.healthFactor
-      }`,
+      `start ${kind} liquidation of ${name} with HF ${ca.healthFactor}`,
     );
-
+    const executor = this.keyService.takeVacantExecutor();
     try {
-      const pfResult = await this._findClosePath(ca);
-      let pathHuman: Array<string | null> = [];
-      try {
-        pathHuman = TxParser.parseMultiCall(pfResult.calls);
-      } catch (e) {
-        pathHuman = [`${e}`];
+      if (config.partial) {
+        await this.#liquidatePartially(ca, executor);
+      } else {
+        await this.#liquidateFully(ca, executor);
       }
-      this.log.debug(pathHuman);
-
-      const executor = this.keyService.takeVacantExecutor();
-      const tx = await this._liquidate(executor, ca, pfResult.calls, false);
-      const receipt = await tx.wait(1);
-
-      this.ampqService.info(
-        `Account for borrower ${this.getAccountTitle(
-          ca,
-        )} was successfully liquidated\nTx receipt: ${this.etherscan}/tx/${
-          tx.hash
-        }\nGas used: ${receipt.gasUsed
-          .toNumber()
-          .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
-      );
-
-      await this.keyService.returnExecutor(executor.address);
     } catch (e) {
-      this.ampqService.error(
-        `Cant liquidate ${this.getAccountTitle(ca)}: ${e}`,
-      );
+      this.ampqService.error(`${kind} liquidation of ${name} failed: ${e}`);
+    } finally {
+      await this.keyService.returnExecutor(executor.address);
     }
+  }
+
+  async #liquidateFully(
+    ca: CreditAccountData,
+    executor: ethers.Wallet,
+  ): Promise<void> {
+    const pfResult = await this._findClosePath(ca);
+    let pathHuman: Array<string | null> = [];
+    try {
+      pathHuman = TxParser.parseMultiCall(pfResult.calls);
+    } catch (e) {
+      pathHuman = [`${e}`];
+    }
+    this.log.debug(pathHuman);
+
+    const tx = await this._liquidateFully(executor, ca, pfResult.calls, false);
+    const receipt = await tx.wait(1);
+
+    this.ampqService.info(
+      `account ${this.getAccountTitle(ca)} was fully liquidated\nTx receipt: ${this.etherscan(tx)}\nGas used: ${receipt.gasUsed
+        .toNumber()
+        .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
+    );
+  }
+
+  async #liquidatePartially(
+    ca: CreditAccountData,
+    executor: ethers.Wallet,
+  ): Promise<void> {
+    const preview = await this._previewPartialLiquidation(ca);
+    let pathHuman: Array<string | null> = [];
+    try {
+      pathHuman = TxParser.parseMultiCall(preview.conversionCalls);
+    } catch (e) {
+      pathHuman = [`${e}`];
+    }
+    this.log.debug(pathHuman);
+
+    const tx = await this._liquidatePartially(executor, ca, preview, false);
+    const receipt = await tx.wait(1);
+
+    this.ampqService.info(
+      `account ${this.getAccountTitle(ca)} was partially liquidated\nTx receipt: ${this.etherscan(tx)}\nGas used: ${receipt.gasUsed
+        .toNumber()
+        .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
+    );
   }
 
   public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
@@ -179,7 +206,7 @@ export default abstract class AbstractLiquidatorService
           [12],
         );
         // send profit to executor address because we're going to use swapper later
-        const tx = await this._liquidate(
+        const tx = await this._liquidateFully(
           executor,
           ca,
           pfResult.calls,
@@ -254,7 +281,7 @@ export default abstract class AbstractLiquidatorService
     recipient?: string,
   ): Promise<void>;
 
-  protected abstract _liquidate(
+  protected abstract _liquidateFully(
     executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
@@ -262,9 +289,21 @@ export default abstract class AbstractLiquidatorService
     recipient?: string,
   ): Promise<ethers.ContractTransaction>;
 
+  protected abstract _liquidatePartially(
+    executor: ethers.Wallet,
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+    optimistic: boolean,
+    recipient?: string,
+  ): Promise<ethers.ContractTransaction>;
+
   protected abstract _findClosePath(
     ca: CreditAccountData,
   ): Promise<PathFinderV1CloseResult>;
+
+  protected abstract _previewPartialLiquidation(
+    ca: CreditAccountData,
+  ): Promise<PartialLiquidationPreview>;
 
   protected async getBalance(
     address: string,
@@ -303,5 +342,9 @@ export default abstract class AbstractLiquidatorService
     } catch (e) {
       this.log.warn(`failed to save tx trace: ${e}`);
     }
+  }
+
+  protected etherscan(tx: { hash: string }): string {
+    return `${this.#etherscanUrl}/tx/${tx.hash}`;
   }
 }

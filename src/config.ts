@@ -91,7 +91,9 @@ export class Config {
   static enabledVersions: Set<number>;
 
   @IsNotEmpty()
-  static optimisticLiquidations: boolean;
+  static optimistic: boolean;
+
+  static partial: boolean;
 
   /**
    * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
@@ -178,8 +180,9 @@ export class Config {
     Config.multicallAddress =
       process.env.MULTICALL_ADDRESS ||
       "0x5ba1e12693dc8f9c48aad8770482f4739beed696";
-    Config.optimisticLiquidations =
+    Config.optimistic =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
+    Config.partial = process.env.PARTIAL?.toLowerCase() === "true";
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
     Config.enabledVersions = new Set(
       process.env.ENABLED_VERSIONS
