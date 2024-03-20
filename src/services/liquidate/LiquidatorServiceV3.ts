@@ -160,14 +160,16 @@ export class LiquidatorServiceV3
           ] as const,
       )
       .sort((a, b) => Number(a[2]) - Number(b[2]));
+    const connectors = this.#pathFinder.getAvailableConnectors(
+      Object.fromEntries(balances),
+    );
 
+    // TODO: maybe this should be refreshed every loop iteration
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
     for (const [assetOut, balance] of balances) {
       const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
       // naively try to figure out amount that works
       for (let i = 1n; i <= 10n; i++) {
-        // Always get fresh prices, because in optimistic mode this loop is quite slow
-        // TODO: maybe it should be debounced
-        const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
         const amountOut = (i * balance) / 10n;
         this.log.debug(
           `trying partial liqudation of ${name}: ${i * 10n}% of ${symb} out`,

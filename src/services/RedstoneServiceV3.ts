@@ -39,6 +39,7 @@ export class RedstoneServiceV3 {
 
   public launch(provider: providers.Provider): void {
     this.provider = provider;
+    this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
   }
 
   public async updatesForTokens(
