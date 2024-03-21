@@ -147,19 +147,17 @@ export class LiquidatorServiceV3
     const cm = new CreditManagerData(
       await this.#compressor.getCreditManagerData(ca.creditManager),
     );
-    // sort by liquidation threshold ASC and skip underlying
-    // TODO: maybe should use 'balances' instead of 'allBalances': 'balances' does not contain forbidden tokens
+    // sort by liquidation threshold ASC, place underlying with lowest priority
     const balances = Object.entries(ca.allBalances)
-      .filter(([t]) => t.toLowerCase() !== ca.underlyingToken.toLowerCase())
       .map(
-        ([t, b]) =>
-          [
-            t,
-            b.balance,
-            cm.liquidationThresholds[t.toLowerCase()] ?? 0n,
-          ] as const,
+        ([t, b]) => [t, b.balance, cm.liquidationThresholds[t] ?? 0n] as const,
       )
-      .sort((a, b) => Number(a[2]) - Number(b[2]));
+      .sort((a, b) => {
+        if (a[0] === ca.underlyingToken) return 1;
+        if (b[0] === ca.underlyingToken) return -1;
+        return Number(a[2]) - Number(b[2]);
+      });
+
     const connectors = this.#pathFinder.getAvailableConnectors(
       Object.fromEntries(balances),
     );
