@@ -41,6 +41,7 @@ const ORACLE_START_BLOCK: Record<NetworkType, number> = {
   Mainnet: 18797638,
   Optimism: 116864678, // not deployed yet, arbitrary block here
   Arbitrum: 184650373,
+  Base: 12299805, // not deployed yet, arbitrary block here
 };
 
 @Service()

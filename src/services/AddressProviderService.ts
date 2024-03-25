@@ -15,6 +15,7 @@ const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
   Mainnet: 18433056,
   Arbitrum: 184650310,
   Optimism: 117197176, // arbitrary block, NOT_DEPLOYED yet
+  Base: 12299805, // arbitrary block, NOT_DEPLOYED yet
 };
 
 @Service()
