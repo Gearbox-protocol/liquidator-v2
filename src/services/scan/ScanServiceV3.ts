@@ -69,14 +69,16 @@ export class ScanServiceV3 extends AbstractScanService {
       atBlock,
     );
     this.log.debug(
-      `v3 potential accounts to liquidate${blockS}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
+      `${accounts.length} v3 potential accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.redstone.updatesForTokens(failedTokens);
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,
     );
-    this.log.debug(`v3 accounts to liquidate${blockS}: ${accounts.length}`);
+    this.log.debug(
+      `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}`,
+    );
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     const redstoneSymbols = redstoneTokens.map(
       t => tokenSymbolByAddress[t.toLowerCase()],
