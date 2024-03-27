@@ -93,7 +93,7 @@ export class Config {
   @IsNotEmpty()
   static optimistic: boolean;
 
-  static partial: boolean;
+  static partialLiquidatorAddress?: string;
 
   /**
    * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
@@ -181,8 +181,9 @@ export class Config {
       process.env.MULTICALL_ADDRESS ||
       "0x5ba1e12693dc8f9c48aad8770482f4739beed696";
     Config.optimistic =
-      process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
-    Config.partial = process.env.PARTIAL?.toLowerCase() === "true";
+      process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true" ||
+      process.env.OPTIMISTIC?.toLowerCase() === "true";
+    Config.partialLiquidatorAddress = process.env.PARTIAL_LIQUIDATOR_ADDRESS;
     Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
     Config.enabledVersions = new Set(
       process.env.ENABLED_VERSIONS

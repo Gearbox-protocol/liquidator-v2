@@ -221,4 +221,22 @@ export class LiquidatorServiceV3
     );
     this.log.debug(`estimated gas: ${estGas}`);
   }
+
+  protected override async _estimatePartially(
+    executor: ethers.Wallet,
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+    recipient?: string,
+  ): Promise<void> {
+    // TODO: executor, recipient
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
+    await this.#partialLiquidator.estimateGas.partialLiquidateAndConvert(
+      account.creditManager,
+      account.addr,
+      preview.assetOut,
+      preview.amountOut,
+      priceUpdates,
+      preview.conversionCalls,
+    );
+  }
 }

@@ -76,13 +76,13 @@ export default abstract class AbstractLiquidatorService
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
     const name = this.getAccountTitle(ca);
-    const kind = config.partial ? "partial" : "full";
+    const kind = config.partialLiquidatorAddress ? "partial" : "full";
     this.ampqService.info(
       `start ${kind} liquidation of ${name} with HF ${ca.healthFactor}`,
     );
     const executor = this.keyService.takeVacantExecutor();
     try {
-      if (config.partial) {
+      if (config.partialLiquidatorAddress) {
         await this.#liquidatePartially(ca, executor);
       } else {
         await this.#liquidateFully(ca, executor);
@@ -141,6 +141,14 @@ export default abstract class AbstractLiquidatorService
   }
 
   public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
+    if (config.partialLiquidatorAddress) {
+      return this.#liquidatePartiallyOptimistic(ca);
+    } else {
+      return this.#liquidateFullyOptimistic(ca);
+    }
+  }
+
+  async #liquidateFullyOptimistic(ca: CreditAccountData): Promise<boolean> {
     let snapshotId: unknown;
     let executor: ethers.Wallet | undefined;
     // address that will receive profit from liquidation
@@ -163,6 +171,7 @@ export default abstract class AbstractLiquidatorService
     try {
       executor = this.keyService.takeVacantExecutor();
       recipient = executor.address;
+      const balanceBefore = await this.getBalance(recipient, ca);
       this.log.debug(
         `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
       );
@@ -178,7 +187,6 @@ export default abstract class AbstractLiquidatorService
       }
       this.log.debug({ pathHuman }, "path found");
 
-      const balanceBefore = await this.getBalance(recipient, ca);
       // before actual transaction, try to estimate gas
       // this effectively will load state and contracts from fork origin to anvil
       // so following actual tx should not be slow
@@ -274,10 +282,151 @@ export default abstract class AbstractLiquidatorService
     return !optimisticResult.isError;
   }
 
+  async #liquidatePartiallyOptimistic(ca: CreditAccountData): Promise<boolean> {
+    let snapshotId: unknown;
+    let executor: ethers.Wallet | undefined;
+    // address that will receive profit from liquidation
+    // there's a bit of confusion between "keyService" address and actual executor address
+    // so use this variable to be more explicit
+    let recipient: string | undefined;
+    const optimisticResult: OptimisticResult = {
+      creditManager: ca.creditManager,
+      borrower: ca.borrower,
+      account: ca.addr,
+      gasUsed: 0,
+      calls: [],
+      isError: true,
+      pathAmount: "0",
+      liquidatorPremium: "0",
+      liquidatorProfit: "0",
+    };
+    const start = Date.now();
+
+    try {
+      executor = this.keyService.takeVacantExecutor();
+      recipient = executor.address;
+      const balanceBefore = await this.getBalance(recipient, ca);
+      this.log.debug(
+        `previewing partial liquidation for ${this.getAccountTitle(ca)}...`,
+      );
+      const preview = await this._previewPartialLiquidation(ca);
+      optimisticResult.calls = preview.conversionCalls;
+      optimisticResult.pathAmount = "0"; // TODO: find out
+
+      let pathHuman: Array<string | null> = [];
+      try {
+        pathHuman = TxParser.parseMultiCall(preview.conversionCalls);
+      } catch (e) {
+        pathHuman = [`${e}`];
+      }
+      this.log.debug({ pathHuman }, "preview calls");
+
+      // before actual transaction, try to estimate gas
+      // this effectively will load state and contracts from fork origin to anvil
+      // so following actual tx should not be slow
+      // also tx will act as retry in case of anvil external's error
+      try {
+        await this._estimatePartially(executor, ca, preview, recipient);
+      } catch (e: any) {
+        if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
+          this.log.error(`failed to estimate gas: ${e.reason}`);
+        } else {
+          this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
+        }
+      }
+
+      // save snapshot after all read requests are done
+      snapshotId = await (this.provider as providers.JsonRpcProvider).send(
+        "evm_snapshot",
+        [],
+      );
+      // Actual liquidation (write requests start here)
+      try {
+        // this is needed because otherwise it's possible to hit deadlines in uniswap calls
+        await (this.provider as providers.JsonRpcProvider).send(
+          "anvil_setBlockTimestampInterval",
+          [12],
+        );
+        // send profit to executor address because we're going to use swapper later
+        const tx = await this._liquidatePartially(
+          executor,
+          ca,
+          preview,
+          true,
+          recipient,
+        );
+        this.log.debug(`Liquidation tx hash: ${tx.hash}`);
+        const receipt = await mine(
+          this.provider as ethers.providers.JsonRpcProvider,
+          tx,
+        );
+        optimisticResult.isError = receipt.status !== 1;
+        const strStatus = optimisticResult.isError ? "failure" : "success";
+        this.log.debug(
+          `Liquidation tx receipt: status=${strStatus} (${
+            receipt.status
+          }), gas=${receipt.cumulativeGasUsed.toString()}`,
+        );
+
+        let balanceAfter = await this.getBalance(recipient, ca);
+        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
+        optimisticResult.liquidatorPremium = balanceAfter.underlying
+          .sub(balanceBefore.underlying)
+          .toString();
+
+        // swap underlying back to ETH
+        await this.swapper.swap(
+          executor,
+          ca.underlyingToken,
+          balanceAfter.underlying,
+          recipient,
+        );
+        balanceAfter = await this.getBalance(recipient, ca);
+        optimisticResult.liquidatorProfit = balanceAfter.eth
+          .sub(balanceBefore.eth)
+          .toString();
+
+        if (balanceAfter.eth.lt(balanceBefore.eth)) {
+          this.log.warn("negative liquidator profit");
+        }
+      } catch (e: any) {
+        this.log.error(`Cant liquidate ${this.getAccountTitle(ca)}: ${e}`);
+        await this.saveTxTrace(e.transactionHash);
+      }
+    } catch (e: any) {
+      this.log.error(
+        { account: this.getAccountTitle(ca) },
+        `cannot liquidate: ${e}`,
+      );
+    }
+
+    optimisticResult.duration = Date.now() - start;
+    this.optimistic.push(optimisticResult);
+
+    if (executor) {
+      await this.keyService.returnExecutor(executor.address, false);
+    }
+
+    if (snapshotId) {
+      await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
+        snapshotId,
+      ]);
+    }
+
+    return !optimisticResult.isError;
+  }
+
   protected abstract _estimate(
     executor: ethers.Wallet,
     account: CreditAccountData,
     calls: MultiCall[],
+    recipient?: string,
+  ): Promise<void>;
+
+  protected abstract _estimatePartially(
+    executor: ethers.Wallet,
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
     recipient?: string,
   ): Promise<void>;
 
