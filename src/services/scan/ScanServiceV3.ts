@@ -129,7 +129,10 @@ export class ScanServiceV3 extends AbstractScanService {
       }
     }
 
-    if (debugAccounts.length) {
+    if (
+      (config.debugManagers || config.debugAccounts) &&
+      debugAccounts.length
+    ) {
       this.log.debug(
         `will fetch data for ${debugAccounts.length} debug credit accounts`,
       );
