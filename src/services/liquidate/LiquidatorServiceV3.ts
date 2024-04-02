@@ -99,7 +99,7 @@ export class LiquidatorServiceV3
         creditAccount: ca,
         creditManager: new CreditManagerData(cm),
         expectedBalances,
-        leftoverBalances: {},
+        leftoverBalances,
         slippage: this.slippage,
         noConcurrency: true,
       });
