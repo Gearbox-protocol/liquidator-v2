@@ -1,4 +1,4 @@
-import { formatBN, WAD } from "@gearbox-protocol/sdk";
+import { formatBN } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
 import type { providers } from "ethers";
 import { Wallet } from "ethers";
@@ -21,15 +21,11 @@ export class KeyService {
   @Inject(WALLET_STORAGE)
   storage: IWalletStorage;
 
-  static readonly minExecutorBalance = WAD / 2n;
-
   signer: Wallet;
   protected provider: providers.Provider;
   protected _executors: Array<Wallet> = [];
   protected _isUsed: Record<string, boolean> = {};
   protected _mutex: Mutex = new Mutex();
-
-  protected minBalanceToNotify: bigint;
 
   get address(): string {
     return this.signer.address;
@@ -42,7 +38,6 @@ export class KeyService {
   async launch() {
     this.provider = getProvider(true, this.log);
     this.signer = new Wallet(config.privateKey, this.provider);
-    this.minBalanceToNotify = WAD * BigInt(config.balanceToNotify);
 
     await this.checkBalance();
     await this.storage.launch();
@@ -84,7 +79,7 @@ export class KeyService {
       if (recharge) {
         const balance = await this.provider.getBalance(address);
 
-        if (balance.lt(KeyService.minExecutorBalance)) {
+        if (balance.lt(config.minExecutorBalance)) {
           this.log.info(
             `executor ${address} has insufficient balance: ${formatBN(balance, 18)}, recharging`,
           );
@@ -92,7 +87,7 @@ export class KeyService {
             try {
               const receipt = await this.signer.sendTransaction({
                 to: address,
-                value: KeyService.minExecutorBalance,
+                value: config.minExecutorBalance,
               });
               await receipt.wait();
               this.log.debug(`recharged executor ${address}`);
@@ -136,7 +131,7 @@ export class KeyService {
     this.log.info(
       `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)}`,
     );
-    if (balance.lte(this.minBalanceToNotify)) {
+    if (balance.lte(config.balanceToNotify)) {
       this.ampqService.error(
         `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)}`,
       );

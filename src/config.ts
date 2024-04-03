@@ -85,9 +85,8 @@ export class Config {
   @Min(1)
   static executorsQty: number;
 
-  @IsNotEmpty()
-  @Min(0)
-  static balanceToNotify: number;
+  static balanceToNotify: bigint;
+  static minExecutorBalance: bigint;
 
   /**
    * Which versions (v2/v3) to work with
@@ -185,7 +184,10 @@ export class Config {
       "0x5ba1e12693dc8f9c48aad8770482f4739beed696";
     Config.optimisticLiquidations =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true";
-    Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.balanceToNotify = BigInt(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.minExecutorBalance = BigInt(
+      process.env.MIN_EXECUTOR_BALANCE || "500000000000000000",
+    );
     Config.enabledVersions = new Set(
       process.env.ENABLED_VERSIONS
         ? process.env.ENABLED_VERSIONS.split(",").map(Number)
