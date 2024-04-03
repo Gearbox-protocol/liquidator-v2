@@ -1,7 +1,7 @@
 import { formatBN } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
 import type { providers } from "ethers";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -87,7 +87,7 @@ export class KeyService {
             try {
               const receipt = await this.signer.sendTransaction({
                 to: address,
-                value: config.minExecutorBalance,
+                value: BigNumber.from(config.minExecutorBalance).sub(balance),
               });
               await receipt.wait();
               this.log.debug(`recharged executor ${address}`);
