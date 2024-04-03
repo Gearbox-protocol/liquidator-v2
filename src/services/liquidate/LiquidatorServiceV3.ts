@@ -102,6 +102,7 @@ export class LiquidatorServiceV3
         leftoverBalances,
         slippage: this.slippage,
         noConcurrency: true,
+        network: this.addressProvider.network,
       });
       if (!result) {
         throw new Error("result is empty");
