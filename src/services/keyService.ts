@@ -77,11 +77,11 @@ export class KeyService {
   async returnExecutor(address: string, recharge = true) {
     try {
       if (recharge) {
-        const balance = await this.provider.getBalance(address);
+        let balance = await this.provider.getBalance(address);
 
         if (balance.lt(config.minExecutorBalance)) {
           this.log.info(
-            `executor ${address} has insufficient balance: ${formatBN(balance, 18)}, recharging`,
+            `executor ${address} has insufficient balance: ${formatBN(balance, 18)} (${balance.toString()}), recharging`,
           );
           await this._mutex.runExclusive(async () => {
             try {
@@ -90,7 +90,10 @@ export class KeyService {
                 value: BigNumber.from(config.minExecutorBalance).sub(balance),
               });
               await receipt.wait();
-              this.log.debug(`recharged executor ${address}`);
+              balance = await this.provider.getBalance(address);
+              this.log.debug(
+                `recharged executor ${address}, new balance: ${formatBN(balance, 18)} (${balance.toString()})`,
+              );
             } catch (e) {
               this.ampqService.error(`Cant recharge account ${address}\n${e}`);
             }
@@ -129,11 +132,11 @@ export class KeyService {
   protected async checkBalance() {
     const balance = await this.signer.getBalance();
     this.log.info(
-      `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)}`,
+      `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)} (${balance.toString()})`,
     );
     if (balance.lte(config.balanceToNotify)) {
       this.ampqService.error(
-        `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)}`,
+        `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)} (${balance.toString()})`,
       );
     }
   }
