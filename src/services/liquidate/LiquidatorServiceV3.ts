@@ -1,7 +1,7 @@
 import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
-import Config from "../../config";
+import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
@@ -22,9 +22,9 @@ export class LiquidatorServiceV3
 
   constructor() {
     super();
-    this.strategy = Config.partialLiquidatorAddress
-      ? (new LiquidationStrategyV3Partial() as any)
-      : (new LiquidationStrategyV3Full() as any);
+    this.strategy = config.partialLiquidatorAddress
+      ? new LiquidationStrategyV3Partial(config.partialLiquidatorAddress)
+      : new LiquidationStrategyV3Full();
   }
 
   /**

@@ -1,9 +1,5 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import {
-  ADDRESS_0X0,
-  CreditManagerData,
-  tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
+import { CreditManagerData, tokenSymbolByAddress } from "@gearbox-protocol/sdk";
 import type {
   BigNumber,
   BigNumberish,
@@ -28,13 +24,18 @@ export default class LiquidationStrategyV3Partial
   public readonly name = "partial";
   public readonly adverb = "partially";
 
+  readonly #partialLiquidatorAddress: string;
   #partialLiquidator?: ILiquidator;
+
+  constructor(partialLiquidatorAddress: string) {
+    super();
+    this.#partialLiquidatorAddress = partialLiquidatorAddress;
+  }
 
   public async launch(options: StrategyOptions): Promise<void> {
     await super.launch(options);
-    // TODO: obtain address
     this.#partialLiquidator = ILiquidator__factory.connect(
-      ADDRESS_0X0,
+      this.#partialLiquidatorAddress,
       options.provider,
     );
   }
