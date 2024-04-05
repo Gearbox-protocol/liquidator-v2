@@ -1,6 +1,14 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
+import type {
+  BigNumberish,
+  ContractTransaction,
+  providers,
+  Wallet,
+} from "ethers";
 
+import type { LoggerInterface } from "../../log";
+import type { AddressProviderService } from "../AddressProviderService";
+import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import type { MultiCallStructOutput } from "./generated/ILiquidator";
 
 export interface PriceOnDemand {
@@ -20,9 +28,10 @@ export interface PriceUpdate {
 }
 
 export interface PartialLiquidationPreview {
-  conversionCalls: MultiCallStructOutput[];
+  calls: MultiCallStructOutput[];
   assetOut: string;
   amountOut: bigint;
+  underlyingBalance: bigint;
 }
 
 export interface ILiquidatorService {
@@ -35,4 +44,36 @@ export interface ILiquidatorService {
    * @returns true is account was successfully liquidated
    */
   liquidateOptimistic: (ca: CreditAccountData) => Promise<boolean>;
+}
+
+export interface StrategyPreview {
+  calls: MultiCall[];
+  underlyingBalance: bigint;
+}
+
+export interface StrategyOptions {
+  logger: LoggerInterface;
+  provider: providers.Provider;
+  addressProvider: AddressProviderService;
+  redstone?: RedstoneServiceV3;
+}
+
+export interface ILiquidationStrategy<T extends StrategyPreview> {
+  name: string;
+  adverb: string;
+  launch: (options: StrategyOptions) => Promise<void>;
+  preview: (ca: CreditAccountData, slippage: number) => Promise<T>;
+  estimate: (
+    executor: Wallet,
+    account: CreditAccountData,
+    preview: T,
+    recipient: string,
+  ) => Promise<BigNumberish>;
+  liquidate: (
+    executor: Wallet,
+    account: CreditAccountData,
+    preview: T,
+    recipient: string,
+    gasLimit?: BigNumberish,
+  ) => Promise<ContractTransaction>;
 }

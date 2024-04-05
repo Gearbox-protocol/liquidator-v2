@@ -29,6 +29,6 @@ export function getProvider(flashbots = false, logger?: LoggerInterface) {
   }
 
   return rpcs.length > 1
-    ? new RotateProvider(rpcs, undefined, logger)
+    ? new RotateProvider(rpcs, undefined, logger as any)
     : rpcs[0];
 }
