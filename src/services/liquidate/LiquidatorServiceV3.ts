@@ -7,6 +7,7 @@ import type {
 import {
   ADDRESS_0X0,
   CreditManagerData,
+  getDecimals,
   ICreditFacadeV3__factory,
   IDataCompressorV3__factory,
   PathFinder,
@@ -117,16 +118,24 @@ export class LiquidatorServiceV3
         await this.#compressor.getCreditManagerData(ca.creditManager),
       );
       const expectedBalances: Record<string, Asset> = {};
+      const leftoverBalances: Record<string, Asset> = {};
       Object.entries(ca.balances).forEach(([token, balance]) => {
         expectedBalances[token] = { token, balance };
+        // filter out dust, we don't want to swap it
+        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
+        // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
+        if (balance < minBalance || !ca.allBalances[token].isEnabled) {
+          leftoverBalances[token] = { token, balance };
+        }
       });
       const result = await this.#pathFinder.findBestClosePath({
         creditAccount: ca,
         creditManager: cm,
         expectedBalances,
-        leftoverBalances: {},
+        leftoverBalances,
         slippage: this.slippage,
         noConcurrency: true,
+        network: this.addressProvider.network,
       });
       if (!result) {
         throw new Error("result is empty");

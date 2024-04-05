@@ -42,6 +42,7 @@ export class LiquidatorServiceV2
         ca,
         this.slippage,
         true,
+        this.addressProvider.network,
       );
       if (!result) {
         throw new Error("result is empty");

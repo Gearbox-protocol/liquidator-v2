@@ -1,7 +1,7 @@
-import { formatBN, WAD } from "@gearbox-protocol/sdk";
+import { formatBN } from "@gearbox-protocol/sdk";
 import { Mutex } from "async-mutex";
 import type { providers } from "ethers";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -21,15 +21,11 @@ export class KeyService {
   @Inject(WALLET_STORAGE)
   storage: IWalletStorage;
 
-  static readonly minExecutorBalance = WAD / 2n;
-
   signer: Wallet;
   protected provider: providers.Provider;
   protected _executors: Array<Wallet> = [];
   protected _isUsed: Record<string, boolean> = {};
   protected _mutex: Mutex = new Mutex();
-
-  protected minBalanceToNotify: bigint;
 
   get address(): string {
     return this.signer.address;
@@ -42,7 +38,6 @@ export class KeyService {
   async launch() {
     this.provider = getProvider(true, this.log);
     this.signer = new Wallet(config.privateKey, this.provider);
-    this.minBalanceToNotify = WAD * BigInt(config.balanceToNotify);
 
     await this.checkBalance();
     await this.storage.launch();
@@ -85,20 +80,23 @@ export class KeyService {
     }
     try {
       if (recharge) {
-        const balance = await this.provider.getBalance(address);
+        let balance = await this.provider.getBalance(address);
 
-        if (balance.lt(KeyService.minExecutorBalance)) {
+        if (balance.lt(config.minExecutorBalance)) {
           this.log.info(
-            `executor ${address} has insufficient balance: ${formatBN(balance, 18)}, recharging`,
+            `executor ${address} has insufficient balance: ${formatBN(balance, 18)} (${balance.toString()}), recharging`,
           );
           await this._mutex.runExclusive(async () => {
             try {
               const receipt = await this.signer.sendTransaction({
                 to: address,
-                value: KeyService.minExecutorBalance,
+                value: BigNumber.from(config.minExecutorBalance).sub(balance),
               });
               await receipt.wait();
-              this.log.debug(`recharged executor ${address}`);
+              balance = await this.provider.getBalance(address);
+              this.log.debug(
+                `recharged executor ${address}, new balance: ${formatBN(balance, 18)} (${balance.toString()})`,
+              );
             } catch (e) {
               this.ampqService.error(`Cant recharge account ${address}\n${e}`);
             }
@@ -137,11 +135,11 @@ export class KeyService {
   protected async checkBalance() {
     const balance = await this.signer.getBalance();
     this.log.info(
-      `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)}`,
+      `wallet balance for ${this.signer.address} is: ${formatBN(balance, 18)} (${balance.toString()})`,
     );
-    if (balance.lte(this.minBalanceToNotify)) {
+    if (balance.lte(config.balanceToNotify)) {
       this.ampqService.error(
-        `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)}`,
+        `WARNING: Low wallet ${this.signer.address} balance: ${formatBN(balance, 18)} (${balance.toString()})`,
       );
     }
   }

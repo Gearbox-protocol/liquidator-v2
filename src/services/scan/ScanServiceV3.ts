@@ -1,9 +1,12 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
+  ICreditManagerV3__factory,
   IDataCompressorV3__factory,
+  PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
+import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
 import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
@@ -67,7 +70,7 @@ export class ScanServiceV3 extends AbstractScanService {
       atBlock,
     );
     this.log.debug(
-      `v3 potential accounts to liquidate${blockS}: ${accounts.length}, failed tokens: ${failedTokens.length}`,
+      `${accounts.length} v3 potential accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.redstone.updatesForTokens(
       failedTokens,
@@ -77,7 +80,9 @@ export class ScanServiceV3 extends AbstractScanService {
       redstoneUpdates,
       atBlock,
     );
-    this.log.debug(`v3 accounts to liquidate${blockS}: ${accounts.length}`);
+    this.log.debug(
+      `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}`,
+    );
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     const redstoneSymbols = redstoneTokens.map(
       t => tokenSymbolByAddress[t.toLowerCase()],
@@ -112,19 +117,67 @@ export class ScanServiceV3 extends AbstractScanService {
     priceUpdates: PriceOnDemand[],
     atBlock?: number | undefined,
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
-    const accountsRaw =
-      await this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
-        priceUpdates,
-        atBlock
-          ? {
-              blockTag: atBlock,
-            }
-          : {},
+    let accountsRaw: CreditAccountDataStructOutput[] = [];
+
+    let debugAccounts = config.debugAccounts ?? [];
+    if (config.debugManagers && !debugAccounts.length) {
+      for (const m of config.debugManagers) {
+        this.log.debug(`will fetch debug credit accounts for ${m}`);
+        const cm = ICreditManagerV3__factory.connect(m, this.provider);
+        const accs = await cm["creditAccounts()"]({ blockTag: atBlock });
+        this.log.debug(`fetched ${accs.length} debug credit accounts for ${m}`);
+        debugAccounts.push(...accs);
+      }
+    }
+
+    if (
+      (config.debugManagers || config.debugAccounts) &&
+      debugAccounts.length
+    ) {
+      this.log.debug(
+        `will fetch data for ${debugAccounts.length} debug credit accounts`,
       );
+      for (const acc of debugAccounts) {
+        const accData =
+          await this.dataCompressor.callStatic.getCreditAccountData(
+            acc,
+            priceUpdates,
+            { blockTag: atBlock },
+          );
+        const cm = ICreditManagerV3__factory.connect(
+          accData.creditManager,
+          this.provider,
+        );
+        const isLiquidatable = await cm.isLiquidatable(acc, PERCENTAGE_FACTOR, {
+          blockTag: atBlock,
+        });
+        if (isLiquidatable) {
+          accountsRaw.push(accData);
+        } else {
+          this.log.warn(
+            `debug account ${acc} is not liquidatable at block ${atBlock}`,
+          );
+        }
+      }
+      this.log.debug(
+        `${accountsRaw.length}/${debugAccounts.length} debug accounts liquidatable`,
+      );
+    } else {
+      accountsRaw =
+        await this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
+          priceUpdates,
+          atBlock
+            ? {
+                blockTag: atBlock,
+              }
+            : {},
+        );
+    }
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
     // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
     if (config.underlying) {
+      this.log.debug(`filtering accounts by underlying: ${config.underlying}`);
       accounts = accounts.filter(a => {
         const underlying = tokenSymbolByAddress[a.underlyingToken];
         return config.underlying?.toLowerCase() === underlying?.toLowerCase();

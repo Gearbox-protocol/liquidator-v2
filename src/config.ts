@@ -58,9 +58,14 @@ export class Config {
   static underlying: string | undefined;
 
   /**
-   * If set, only these accounts will be optimistically liquidated
+   * If set, only these accounts will be optimistically liquidated.
+   * Takes presedence over debugManagers
    */
   static debugAccounts: string[] | undefined;
+  /**
+   * If set, only accounts in these credit managers will be optimistically liquidated
+   */
+  static debugManagers: string[] | undefined;
 
   @IsNotEmpty()
   @IsNumber()
@@ -80,9 +85,8 @@ export class Config {
   @Min(1)
   static executorsQty: number;
 
-  @IsNotEmpty()
-  @Min(0)
-  static balanceToNotify: number;
+  static balanceToNotify: bigint;
+  static minExecutorBalance: bigint;
 
   /**
    * Which versions (v2/v3) to work with
@@ -184,7 +188,10 @@ export class Config {
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true" ||
       process.env.OPTIMISTIC?.toLowerCase() === "true";
     Config.partialLiquidatorAddress = process.env.PARTIAL_LIQUIDATOR_ADDRESS;
-    Config.balanceToNotify = parseFloat(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.balanceToNotify = BigInt(process.env.BALANCE_TO_NOTIFY || "0");
+    Config.minExecutorBalance = BigInt(
+      process.env.MIN_EXECUTOR_BALANCE || "500000000000000000",
+    );
     Config.enabledVersions = new Set(
       process.env.ENABLED_VERSIONS
         ? process.env.ENABLED_VERSIONS.split(",").map(Number)
@@ -192,6 +199,9 @@ export class Config {
     );
     Config.debugAccounts = process.env.DEBUG_ACCOUNTS
       ? process.env.DEBUG_ACCOUNTS.toLowerCase().split(",")
+      : undefined;
+    Config.debugManagers = process.env.DEBUG_MANAGERS
+      ? process.env.DEBUG_MANAGERS.toLowerCase().split(",")
       : undefined;
 
     Config.outDir = process.env.OUT_DIR;
