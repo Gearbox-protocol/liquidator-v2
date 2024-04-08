@@ -98,6 +98,7 @@ export class Config {
   static optimistic: boolean;
 
   static partialLiquidatorAddress?: string;
+  static deployPartialLiquidatorContracts: boolean;
 
   /**
    * If set, will swap underlying token back to ETH after liquidation using this service (uniswap, 1inch)
@@ -188,6 +189,8 @@ export class Config {
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true" ||
       process.env.OPTIMISTIC?.toLowerCase() === "true";
     Config.partialLiquidatorAddress = process.env.PARTIAL_LIQUIDATOR_ADDRESS;
+    Config.deployPartialLiquidatorContracts =
+      process.env.DEPLOY_PARTIAL_LIQUIDATOR === "true";
     Config.balanceToNotify = BigInt(process.env.BALANCE_TO_NOTIFY || "0");
     Config.minExecutorBalance = BigInt(
       process.env.MIN_EXECUTOR_BALANCE || "500000000000000000",

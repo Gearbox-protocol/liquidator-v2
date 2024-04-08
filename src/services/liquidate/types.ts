@@ -8,6 +8,7 @@ import type {
 
 import type { LoggerInterface } from "../../log";
 import type { AddressProviderService } from "../AddressProviderService";
+import type { KeyService } from "../keyService";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import type { MultiCallStructOutput } from "./generated/ILiquidator";
 
@@ -56,6 +57,7 @@ export interface StrategyOptions {
   provider: providers.Provider;
   addressProvider: AddressProviderService;
   redstone?: RedstoneServiceV3;
+  keyService?: KeyService;
 }
 
 export interface ILiquidationStrategy<T extends StrategyPreview> {

@@ -22,9 +22,10 @@ export class LiquidatorServiceV3
 
   constructor() {
     super();
-    this.strategy = config.partialLiquidatorAddress
-      ? new LiquidationStrategyV3Partial(config.partialLiquidatorAddress)
-      : new LiquidationStrategyV3Full();
+    this.strategy =
+      config.partialLiquidatorAddress || config.deployPartialLiquidatorContracts
+        ? new LiquidationStrategyV3Partial(config.partialLiquidatorAddress)
+        : new LiquidationStrategyV3Full();
   }
 
   /**
@@ -37,6 +38,7 @@ export class LiquidatorServiceV3
       addressProvider: this.addressProvider,
       provider,
       redstone: this.redstone,
+      keyService: this.keyService,
     });
   }
 }

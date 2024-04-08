@@ -3,6 +3,7 @@ import { IDataCompressorV3__factory, PathFinder } from "@gearbox-protocol/sdk";
 
 import type { LoggerInterface } from "../../log";
 import type { AddressProviderService } from "../AddressProviderService";
+import type { KeyService } from "../keyService";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import type { StrategyOptions } from "./types";
 
@@ -12,6 +13,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
   #pathFinder?: PathFinder;
   #addressProvider?: AddressProviderService;
   #redstone?: RedstoneServiceV3;
+  #keyService?: KeyService;
 
   public async launch(options: StrategyOptions): Promise<void> {
     this.#logger = options.logger;
@@ -30,6 +32,8 @@ export default abstract class AbstractLiquidationStrategyV3 {
       options.provider,
       options.addressProvider.network,
     );
+    // TODO: remove me
+    this.#keyService = options.keyService;
   }
 
   protected get compressor(): IDataCompressorV3 {
@@ -65,5 +69,12 @@ export default abstract class AbstractLiquidationStrategyV3 {
       throw new Error("strategy not launched");
     }
     return this.#logger;
+  }
+
+  protected get keyService(): KeyService {
+    if (!this.#keyService) {
+      throw new Error("strategy not launched");
+    }
+    return this.#keyService;
   }
 }

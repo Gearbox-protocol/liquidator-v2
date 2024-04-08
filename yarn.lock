@@ -1772,15 +1772,20 @@
     eslint-plugin-simple-import-sort "^10.0.0"
     eslint-plugin-unused-imports "^3.0.0"
 
+"@gearbox-protocol/liquidator-v2-contracts@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-1.1.1.tgz#2748f7ce4b036b061b65d2eb18fca152c16f083a"
+  integrity sha512-4MJFvPY7x2cfXE/3RXimBdXAZ/u5RmifuH+H+iI4ByU3/uYg0qjQqcV+IARS/FO9lGE31WT29SOz2KC4SOi4bg==
+
 "@gearbox-protocol/prettier-config@2.0.0-next.0":
   version "2.0.0-next.0"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^1.57.1":
-  version "1.57.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.57.1.tgz#127b74afa4465e2f2346b50d5e2f7b061593a904"
-  integrity sha512-djiyudHZjGvb5pnH0QoMoBwUBvIG8zrrKwc/l7Kb39FxvDAjyiN6oVoZwVoFJ5VvZnhzoVZPNE/I6SQod1eHrQ==
+"@gearbox-protocol/sdk-gov@^1.59.0":
+  version "1.60.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.60.1.tgz#ee95a9aa501211e5f1da48953ff5ad3d6b8876c8"
+  integrity sha512-wz4LsrvJterKv72s744E0w1rWN5U3UFW7KtFU4nXMEYXF6zAEhTl3+INir3VWpwvl6ziUp+j1BOGgC0pCtWXig==
   dependencies:
     "@types/yaml" "^1.9.7"
     add "^2.0.6"
@@ -1791,12 +1796,12 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.160":
-  version "3.0.0-next.160"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.160.tgz#2fdc616f7a1b274fba8a89b8ed023e00018768fa"
-  integrity sha512-xGZWpwfd/ydYE3vd3KOSBukfflCS3msy8MPMp9QEGcZk4dFdeSdCoF/CV66yDwg+sJnFm6/dWkE7xsyfbDMPvw==
+"@gearbox-protocol/sdk@^3.0.0-next.163":
+  version "3.0.0-next.163"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.163.tgz#cb7938f54a3671c0f0ca9fbec933a08063819a48"
+  integrity sha512-eE71HTrndaPKRcceLs2yWd1ZslLMR5aFUMrNXnqYGq3yNmyKBjDuWV7J9NvMYm8btHfCQHYtFKtz2ZO21Y9EIQ==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^1.57.1"
+    "@gearbox-protocol/sdk-gov" "^1.59.0"
     axios "^1.2.6"
     decimal.js-light "^2.5.1"
     deep-eql "^4.1.0"
