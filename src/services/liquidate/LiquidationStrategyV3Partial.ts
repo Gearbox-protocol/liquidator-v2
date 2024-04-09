@@ -7,6 +7,7 @@ import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts/dist
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import {
   CreditManagerData,
+  formatBN,
   getDecimals,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
@@ -15,17 +16,27 @@ import type {
   BigNumber,
   BigNumberish,
   ContractTransaction,
+  providers,
   Wallet,
 } from "ethers";
+import { Inject, Service } from "typedi";
 
+import config from "../../config";
+import { Logger, LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
+import { KeyService } from "../keyService";
+import OracleServiceV3 from "../OracleServiceV3";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import { accountName, managerName } from "../utils";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
-import type {
-  ILiquidationStrategy,
-  PartialLiquidationPreview,
-  StrategyOptions,
-} from "./types";
+import type { ILiquidationStrategy, PartialLiquidationPreview } from "./types";
 
+interface TokenBalance {
+  balance: bigint;
+  balanceInUnderlying: bigint;
+}
+
+@Service()
 export default class LiquidationStrategyV3Partial
   extends AbstractLiquidationStrategyV3
   implements ILiquidationStrategy<PartialLiquidationPreview>
@@ -33,17 +44,28 @@ export default class LiquidationStrategyV3Partial
   public readonly name = "partial";
   public readonly adverb = "partially";
 
+  @Logger("LiquidationStrategyV3Partial")
+  protected logger: LoggerInterface;
+  @Inject()
+  protected addressProvider: AddressProviderService;
+  @Inject()
+  protected redstone: RedstoneServiceV3;
+  @Inject()
+  protected keyService: KeyService;
+  @Inject()
+  protected oracle: OracleServiceV3;
+
   #partialLiquidatorAddress?: string;
   #partialLiquidator?: ILiquidator;
 
-  constructor(partialLiquidatorAddress?: string) {
+  constructor() {
     super();
-    this.#partialLiquidatorAddress = partialLiquidatorAddress;
+    this.#partialLiquidatorAddress = config.partialLiquidatorAddress;
   }
 
-  public async launch(options: StrategyOptions): Promise<void> {
-    await super.launch(options);
-    // TODO: this while executor/keyService thing should be removed
+  public async launch(provider: providers.Provider): Promise<void> {
+    await super.launch(provider);
+    // TODO: this executor/keyService thing should be removed
     const executor = this.keyService.takeVacantExecutor();
 
     const router = await this.addressProvider.findService("ROUTER", 300);
@@ -83,8 +105,74 @@ export default class LiquidationStrategyV3Partial
     const cm = new CreditManagerData(
       await this.compressor.getCreditManagerData(ca.creditManager),
     );
+    const balances = await this.#prepareAccountTokens(ca, cm);
+
+    // this should do it, we are only interested in keys of a record
+    const connectors = this.pathFinder.getAvailableConnectors(balances as any);
+
+    // TODO: maybe this should be refreshed every loop iteration
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+    for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
+      balances,
+    )) {
+      const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
+      logger.debug(
+        `trying ${formatBN(balance, getDecimals(assetOut))} ${symb} == ${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))} ${tokenSymbolByAddress[cm.underlyingToken]}`,
+      );
+
+      // naively try to figure out amount that works
+      for (let i = 1n; i <= 10n; i++) {
+        const amountOut = (i * balance) / 10n;
+        const flashLoanAmount = (i * balanceInUnderlying) / 10n;
+        logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
+        try {
+          const result =
+            await this.partialLiquidator.callStatic.previewPartialLiquidation(
+              cm.address,
+              ca.addr,
+              assetOut,
+              amountOut,
+              flashLoanAmount,
+              priceUpdates,
+              connectors,
+              slippage,
+            );
+          if (result.calls.length) {
+            logger.info(
+              `preview of partial liquidation: ${i * 10n}% of ${symb} succeeded with profit ${result.profit.toString()}`,
+            );
+            return {
+              amountOut,
+              assetOut,
+              flashLoanAmount,
+              calls: result.calls,
+              underlyingBalance: 0n, // TODO: calculate
+            };
+          }
+        } catch (e) {
+          // console.log(e);
+        }
+      }
+    }
+
+    throw new Error(
+      `cannot find token and amount for successfull partial liquidation of ${accountName(ca)}`,
+    );
+  }
+
+  async #prepareAccountTokens(
+    ca: CreditAccountData,
+    cm: CreditManagerData,
+  ): Promise<Record<string, TokenBalance>> {
     // sort by liquidation threshold ASC, place underlying with lowest priority
     const balances = Object.entries(ca.allBalances)
+      .filter(([t, { isEnabled, balance }]) => {
+        // filter out dust, we don't want to swap it
+        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(t)) - 8);
+        // gearbox liquidator only cares about enabled tokens.
+        // third-party liquidators might want to handle disabled tokens too
+        return isEnabled && balance > minBalance;
+      })
       .map(
         ([t, b]) => [t, b.balance, cm.liquidationThresholds[t] ?? 0n] as const,
       )
@@ -93,52 +181,16 @@ export default class LiquidationStrategyV3Partial
         if (b[0] === ca.underlyingToken) return -1;
         return Number(a[2]) - Number(b[2]);
       });
-
-    const connectors = this.pathFinder.getAvailableConnectors(
+    // get balance in underlying
+    const converted = await this.oracle.convertMany(
       Object.fromEntries(balances),
+      cm.underlyingToken,
     );
-
-    // TODO: maybe this should be refreshed every loop iteration
-    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
-    for (const [assetOut, balance] of balances) {
-      const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
-      // filter out dust, we don't want to swap it
-      const minBalance = 10n ** BigInt(Math.max(8, getDecimals(assetOut)) - 8);
-      if (balance < minBalance) {
-        // logger.debug(`skipping ${symb} due to low balance`);
-        continue;
-      }
-      // naively try to figure out amount that works
-      for (let i = 1n; i <= 10n; i++) {
-        const amountOut = (i * balance) / 10n;
-        logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
-        const result =
-          await this.partialLiquidator.callStatic.previewPartialLiquidation(
-            cm.address,
-            ca.addr,
-            assetOut,
-            amountOut,
-            0n,
-            priceUpdates,
-            connectors,
-            slippage,
-          );
-        if (result.calls.length) {
-          logger.info(
-            `preview of partial liquidation: ${i * 10n}% of ${symb} succeeded with profit ${result.profit.toString()}`,
-          );
-          return {
-            amountOut,
-            assetOut,
-            calls: result.calls,
-            underlyingBalance: 0n, // TODO: calculate
-          };
-        }
-      }
-    }
-
-    throw new Error(
-      `cannot find token and amount for successfull partial liquidation of ${accountName(ca)}`,
+    return Object.fromEntries(
+      Object.entries(converted).map(([t, balanceInUnderlying]) => [
+        t,
+        { balance: ca.allBalances[t].balance, balanceInUnderlying },
+      ]),
     );
   }
 
@@ -156,7 +208,7 @@ export default class LiquidationStrategyV3Partial
       account.addr,
       preview.assetOut,
       preview.amountOut,
-      0n,
+      preview.flashLoanAmount,
       priceUpdates,
       preview.calls,
     );
@@ -177,7 +229,7 @@ export default class LiquidationStrategyV3Partial
       account.addr,
       preview.assetOut,
       preview.amountOut,
-      0n,
+      preview.flashLoanAmount,
       priceUpdates,
       preview.calls,
       gasLimit ? { gasLimit } : {},

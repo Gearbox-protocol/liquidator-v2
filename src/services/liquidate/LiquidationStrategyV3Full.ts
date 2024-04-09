@@ -6,16 +6,28 @@ import {
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { BigNumberish, ContractTransaction, Wallet } from "ethers";
+import { Inject, Service } from "typedi";
 
+import { Logger, LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type { ILiquidationStrategy } from "./types";
 
+@Service()
 export default class LiquidationStrategyV3Full
   extends AbstractLiquidationStrategyV3
   implements ILiquidationStrategy<PathFinderV1CloseResult>
 {
   public readonly name = "full";
   public readonly adverb = "fully";
+
+  @Logger("LiquidationStrategyV3Full")
+  protected logger: LoggerInterface;
+  @Inject()
+  protected addressProvider: AddressProviderService;
+  @Inject()
+  protected redstone: RedstoneServiceV3;
 
   public async preview(
     ca: CreditAccountData,

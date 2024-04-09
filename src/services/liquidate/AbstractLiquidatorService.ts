@@ -147,6 +147,7 @@ export default abstract class AbstractLiquidatorService
       const balanceBefore = await this.getBalance(recipient, ca);
       logger.debug("previewing...");
       const preview = await this.strategy.preview(ca, this.slippage);
+      logger.debug({ preview });
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
 

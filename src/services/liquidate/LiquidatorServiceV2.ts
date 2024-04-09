@@ -1,9 +1,9 @@
 import type { providers } from "ethers";
-import { Service } from "typedi";
+import Container, { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidatorService from "./AbstractLiquidatorService";
-import LiquidationStrategyV2Full from "./LiquidationStrategyV2Full";
+import LiquidationStrategyV2 from "./LiquidationStrategyV2";
 import type { ILiquidatorService } from "./types";
 
 @Service()
@@ -16,7 +16,7 @@ export class LiquidatorServiceV2
 
   constructor() {
     super();
-    this.strategy = new LiquidationStrategyV2Full() as any;
+    this.strategy = Container.get(LiquidationStrategyV2);
   }
 
   /**
@@ -24,10 +24,6 @@ export class LiquidatorServiceV2
    */
   public async launch(provider: providers.Provider): Promise<void> {
     await super.launch(provider);
-    await this.strategy.launch({
-      logger: this.log,
-      addressProvider: this.addressProvider,
-      provider,
-    });
+    await this.strategy.launch(provider);
   }
 }

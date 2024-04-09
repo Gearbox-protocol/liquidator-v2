@@ -1,3 +1,4 @@
+import type { IPriceOracleV3Interface } from "@gearbox-protocol/liquidator-v2-contracts/dist/IPriceOracleV3.sol/IPriceOracleV3";
 import type {
   IPriceOracleV3,
   MCall,
@@ -14,7 +15,7 @@ import type {
   SetReservePriceFeedEvent,
   SetReservePriceFeedStatusEvent,
 } from "@gearbox-protocol/sdk/lib/types/IPriceOracleV3.sol/IPriceOracleV3";
-import type { providers } from "ethers";
+import type { BigNumber, providers } from "ethers";
 import { utils } from "ethers";
 import { Inject, Service } from "typedi";
 
@@ -82,12 +83,42 @@ export default class OracleServiceV3 {
   }
 
   /**
+   * Used to convert balances of account to underlying
+   * @param tokensFrom
+   * @param tokenTo
+   * @returns
+   */
+  public async convertMany(
+    tokensFrom: Record<string, bigint>,
+    tokenTo: string,
+  ): Promise<Record<string, bigint>> {
+    const calls: MCall<IPriceOracleV3Interface>[] = [];
+    for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
+      calls.push({
+        address: this.oracle.address,
+        interface: this.oracle.interface,
+        method: "convert(uint256,address,address)",
+        params: [amount, tokenFrom, tokenTo],
+      });
+    }
+    this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
+    const resp = await safeMulticall<BigNumber>(calls, this.provider);
+    return Object.fromEntries(
+      resp
+        .map(({ value, error }, i) => [
+          calls[i].params[1],
+          error ? -1n : value?.toBigInt() ?? -1n,
+        ])
+        .filter(([_, a]) => a > 0n),
+    );
+  }
+
+  /**
    * Returns currenly used redstone feeds
    */
   public getRedstoneFeeds(activeOnly: boolean): RedstoneFeed[] {
     const result: RedstoneFeed[] = [];
-    for (const [t, entry] of Object.entries(this.#feeds)) {
-      const token = t.toLowerCase();
+    for (const [token, entry] of Object.entries(this.#feeds)) {
       const { active, main, reserve } = entry;
       if (main.dataFeedId && (!activeOnly || active === "main")) {
         result.push({ token, dataFeedId: main.dataFeedId, reserve: false });
@@ -131,7 +162,8 @@ export default class OracleServiceV3 {
     e: SetPriceFeedEvent | SetReservePriceFeedEvent,
   ): Promise<void> {
     const kind = e.event === "SetPriceFeed" ? "main" : "reserve";
-    const { token, priceFeed } = e.args;
+    const token = e.args.token.toLowerCase();
+    const priceFeed = e.args.priceFeed.toLowerCase();
     let entry = this.#feeds[token];
     if (!entry) {
       if (kind === "reserve") {
@@ -186,7 +218,8 @@ export default class OracleServiceV3 {
   }
 
   #setFeedStatus(e: SetReservePriceFeedStatusEvent): void {
-    const { token, active } = e.args;
+    const token = e.args.token.toLowerCase();
+    const active = e.args.active;
     const entry = this.#feeds[token];
     if (!entry) {
       throw new Error(

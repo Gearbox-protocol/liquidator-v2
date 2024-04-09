@@ -1,3 +1,4 @@
+import type { MultiCallStructOutput } from "@gearbox-protocol/liquidator-v2-contracts/dist/IRouterV3";
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type {
   BigNumberish,
@@ -5,12 +6,6 @@ import type {
   providers,
   Wallet,
 } from "ethers";
-
-import type { LoggerInterface } from "../../log";
-import type { AddressProviderService } from "../AddressProviderService";
-import type { KeyService } from "../keyService";
-import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
-import type { MultiCallStructOutput } from "./generated/ILiquidator";
 
 export interface PriceOnDemand {
   token: string;
@@ -32,6 +27,7 @@ export interface PartialLiquidationPreview {
   calls: MultiCallStructOutput[];
   assetOut: string;
   amountOut: bigint;
+  flashLoanAmount: bigint;
   underlyingBalance: bigint;
 }
 
@@ -52,18 +48,10 @@ export interface StrategyPreview {
   underlyingBalance: bigint;
 }
 
-export interface StrategyOptions {
-  logger: LoggerInterface;
-  provider: providers.Provider;
-  addressProvider: AddressProviderService;
-  redstone?: RedstoneServiceV3;
-  keyService?: KeyService;
-}
-
 export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
-  launch: (options: StrategyOptions) => Promise<void>;
+  launch: (provider: providers.Provider) => Promise<void>;
   preview: (ca: CreditAccountData, slippage: number) => Promise<T>;
   estimate: (
     executor: Wallet,

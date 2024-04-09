@@ -1,39 +1,34 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import { IDataCompressorV3__factory, PathFinder } from "@gearbox-protocol/sdk";
+import type { providers } from "ethers";
 
 import type { LoggerInterface } from "../../log";
 import type { AddressProviderService } from "../AddressProviderService";
 import type { KeyService } from "../keyService";
+import type OracleServiceV3 from "../OracleServiceV3";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
-import type { StrategyOptions } from "./types";
 
 export default abstract class AbstractLiquidationStrategyV3 {
-  #logger?: LoggerInterface;
+  protected logger: LoggerInterface;
+  protected addressProvider: AddressProviderService;
+  protected redstone: RedstoneServiceV3;
+  protected keyService: KeyService;
+  protected oracle: OracleServiceV3;
+
   #compressor?: IDataCompressorV3;
   #pathFinder?: PathFinder;
-  #addressProvider?: AddressProviderService;
-  #redstone?: RedstoneServiceV3;
-  #keyService?: KeyService;
 
-  public async launch(options: StrategyOptions): Promise<void> {
-    this.#logger = options.logger;
-    this.#addressProvider = options.addressProvider;
-    this.#redstone = options.redstone;
+  public async launch(provider: providers.Provider): Promise<void> {
     const [pfAddr, dcAddr] = await Promise.all([
-      this.#addressProvider.findService("ROUTER", 300),
-      this.#addressProvider.findService("DATA_COMPRESSOR", 300),
+      this.addressProvider.findService("ROUTER", 300),
+      this.addressProvider.findService("DATA_COMPRESSOR", 300),
     ]);
-    this.#compressor = IDataCompressorV3__factory.connect(
-      dcAddr,
-      options.provider,
-    );
+    this.#compressor = IDataCompressorV3__factory.connect(dcAddr, provider);
     this.#pathFinder = new PathFinder(
       pfAddr,
-      options.provider,
-      options.addressProvider.network,
+      provider,
+      this.addressProvider.network,
     );
-    // TODO: remove me
-    this.#keyService = options.keyService;
   }
 
   protected get compressor(): IDataCompressorV3 {
@@ -48,33 +43,5 @@ export default abstract class AbstractLiquidationStrategyV3 {
       throw new Error("strategy not launched");
     }
     return this.#pathFinder;
-  }
-
-  protected get addressProvider(): AddressProviderService {
-    if (!this.#addressProvider) {
-      throw new Error("strategy not launched");
-    }
-    return this.#addressProvider;
-  }
-
-  protected get redstone(): RedstoneServiceV3 {
-    if (!this.#redstone) {
-      throw new Error("strategy not launched");
-    }
-    return this.#redstone;
-  }
-
-  protected get logger(): LoggerInterface {
-    if (!this.#logger) {
-      throw new Error("strategy not launched");
-    }
-    return this.#logger;
-  }
-
-  protected get keyService(): KeyService {
-    if (!this.#keyService) {
-      throw new Error("strategy not launched");
-    }
-    return this.#keyService;
   }
 }

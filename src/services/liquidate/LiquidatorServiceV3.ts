@@ -1,5 +1,5 @@
 import type { providers } from "ethers";
-import { Inject, Service } from "typedi";
+import Container, { Inject, Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
@@ -24,8 +24,8 @@ export class LiquidatorServiceV3
     super();
     this.strategy =
       config.partialLiquidatorAddress || config.deployPartialLiquidatorContracts
-        ? new LiquidationStrategyV3Partial(config.partialLiquidatorAddress)
-        : new LiquidationStrategyV3Full();
+        ? Container.get(LiquidationStrategyV3Partial)
+        : Container.get(LiquidationStrategyV3Full);
   }
 
   /**
@@ -33,12 +33,6 @@ export class LiquidatorServiceV3
    */
   public async launch(provider: providers.Provider): Promise<void> {
     await super.launch(provider);
-    await this.strategy.launch({
-      logger: this.log,
-      addressProvider: this.addressProvider,
-      provider,
-      redstone: this.redstone,
-      keyService: this.keyService,
-    });
+    await this.strategy.launch(provider);
   }
 }

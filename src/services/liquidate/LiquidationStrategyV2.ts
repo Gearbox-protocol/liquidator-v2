@@ -1,30 +1,43 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { ICreditFacadeV2__factory, PathFinderV1 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { BigNumberish, ContractTransaction, Wallet } from "ethers";
+import type {
+  BigNumberish,
+  ContractTransaction,
+  providers,
+  Wallet,
+} from "ethers";
+import { Inject, Service } from "typedi";
 
-import type { LoggerInterface } from "../../log";
-import type { AddressProviderService } from "../AddressProviderService";
-import type { ILiquidationStrategy, StrategyOptions } from "./types";
+import { Logger, LoggerInterface } from "../../log";
+import { AddressProviderService } from "../AddressProviderService";
+import { AMPQService } from "../ampqService";
+import type { ILiquidationStrategy } from "./types";
 
-export default class LiquidationStrategyV2Full
+@Service()
+export default class LiquidationStrategyV2
   implements ILiquidationStrategy<PathFinderV1CloseResult>
 {
   public readonly name = "full";
   public readonly adverb = "fully";
 
-  #logger?: LoggerInterface;
-  #pathFinder?: PathFinderV1;
-  #addressProvider?: AddressProviderService;
+  @Logger("LiquidationStrategyV2")
+  logger: LoggerInterface;
 
-  public async launch(options: StrategyOptions): Promise<void> {
-    this.#logger = options.logger;
-    this.#addressProvider = options.addressProvider;
-    const pathFinder = await this.#addressProvider.findService("ROUTER", 1);
+  @Inject()
+  ampqService: AMPQService;
+
+  @Inject()
+  addressProvider: AddressProviderService;
+
+  #pathFinder?: PathFinderV1;
+
+  public async launch(provider: providers.Provider): Promise<void> {
+    const pathFinder = await this.addressProvider.findService("ROUTER", 1);
     this.#pathFinder = new PathFinderV1(
       pathFinder,
-      options.provider,
-      this.#addressProvider.network,
+      provider,
+      this.addressProvider.network,
       PathFinderV1.connectors,
     );
   }
@@ -92,19 +105,5 @@ export default class LiquidationStrategyV2Full
       throw new Error(`not launched`);
     }
     return this.#pathFinder;
-  }
-
-  private get addressProvider(): AddressProviderService {
-    if (!this.#addressProvider) {
-      throw new Error(`not launched`);
-    }
-    return this.#addressProvider;
-  }
-
-  protected get logger(): LoggerInterface {
-    if (!this.#logger) {
-      throw new Error("strategy not launched");
-    }
-    return this.#logger;
   }
 }
