@@ -103,7 +103,19 @@ export default class LiquidationStrategyV3Partial
       for (let i = 1n; i <= 10n; i++) {
         const amountOut = (i * balance) / 10n;
         const flashLoanAmount = (i * balanceInUnderlying) / 10n;
-        logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
+        logger.debug(
+          {
+            creditManager: `${cm.address} (${cm.name})`,
+            creditAccount: ca.addr,
+            assetOut: `${assetOut} (${symb})`,
+            amountOut: `${amountOut} (${formatBN(amountOut, getDecimals(assetOut))})`,
+            flashLoanAmount: `${flashLoanAmount} (${formatBN(flashLoanAmount, getDecimals(cm.underlyingToken))})`,
+            priceUpdates,
+            connectors,
+            slippage,
+          },
+          `trying partial liqudation: ${i * 10n}% of ${symb} out`,
+        );
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
