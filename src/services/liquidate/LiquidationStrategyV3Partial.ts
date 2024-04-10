@@ -109,7 +109,7 @@ export default class LiquidationStrategyV3Partial
             creditAccount: ca.addr,
             assetOut: `${assetOut} (${symb})`,
             amountOut: `${amountOut} (${formatBN(amountOut, getDecimals(assetOut))})`,
-            flashLoanAmount: `${flashLoanAmount} (${formatBN(flashLoanAmount, getDecimals(cm.underlyingToken))})`,
+            flashLoanAmount: `${flashLoanAmount} (${formatBN(flashLoanAmount, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
             priceUpdates,
             connectors,
             slippage,
