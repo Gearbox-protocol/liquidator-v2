@@ -47,7 +47,7 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
   launch: () => Promise<void>;
-  preview: (ca: CreditAccountData, slippage: number) => Promise<T>;
+  preview: (ca: CreditAccountData) => Promise<T>;
   estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
   liquidate: (
     account: CreditAccountData,

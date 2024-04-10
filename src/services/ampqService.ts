@@ -1,15 +1,18 @@
 import { GOERLI_NETWORK, MAINNET_NETWORK } from "@gearbox-protocol/sdk";
 import type { Channel } from "amqplib";
 import { connect } from "amqplib";
-import { Service } from "typedi";
+import { Inject, Service } from "typedi";
 
-import config from "../config";
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
 
 @Service()
 export class AMPQService {
   @Logger("AMPQService")
   log: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   static delay = 600;
 
@@ -29,9 +32,9 @@ export class AMPQService {
         this.routingKey = "GOERLI";
     }
 
-    if (config.ampqUrl && config.ampqExchange && this.routingKey) {
+    if (this.config.ampqUrl && this.config.ampqExchange && this.routingKey) {
       try {
-        const conn = await connect(config.ampqUrl);
+        const conn = await connect(this.config.ampqUrl);
         this.channel = await conn.createChannel();
       } catch (e) {
         console.log("Cant connect AMPQ");
@@ -43,14 +46,14 @@ export class AMPQService {
   }
 
   info(text: string) {
-    if (!config.optimistic) {
+    if (!this.config.optimistic) {
       this.send(`[INFO]:${text}`);
     }
     this.log.info(text);
   }
 
   error(text: string) {
-    if (!config.optimistic) {
+    if (!this.config.optimistic) {
       this.send(`[ERROR]:${text}`, true);
     }
     this.log.error(text);
@@ -65,11 +68,11 @@ export class AMPQService {
       this.sentMessages[text] = Date.now() / 1000;
 
       this.channel.publish(
-        config.ampqExchange!,
+        this.config.ampqExchange!,
         this.routingKey,
         Buffer.from(text),
         {
-          appId: config.appName,
+          appId: this.config.appName,
           headers: {
             important,
           },

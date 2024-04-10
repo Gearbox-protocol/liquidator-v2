@@ -10,9 +10,9 @@ import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { BigNumber, type BigNumberish, type ethers, type Wallet } from "ethers";
-import { Service } from "typedi";
+import { Inject, Service } from "typedi";
 
-import config from "../../config";
+import { CONFIG, ConfigSchema } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { mine } from "../utils";
 import BaseSwapper from "./base";
@@ -29,6 +29,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   @Logger("one_inch")
   log: LoggerInterface;
 
+  @Inject(CONFIG)
+  config: ConfigSchema;
+
   private apiClient: AxiosInstance;
   private readonly slippage: number;
   private routerAddress = "0x111111125421cA6dc452d289314280a0f8842A65";
@@ -40,14 +43,14 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
-    if (!config.oneInchApiKey) {
+    if (!this.config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
     const baseURL = `https://api.1inch.dev/swap/v6.0/${CHAINS[network]}`;
     this.apiClient = axios.create({
       baseURL,
       headers: {
-        Authorization: `Bearer ${config.oneInchApiKey}`,
+        Authorization: `Bearer ${this.config.oneInchApiKey}`,
         accept: "application/json",
       },
     });

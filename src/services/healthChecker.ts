@@ -3,14 +3,18 @@ import express from "express";
 import { Gauge, register } from "prom-client";
 import { Inject, Service } from "typedi";
 
-import config from "../config";
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
+import version from "../version";
 import { ScanServiceV2, ScanServiceV3 } from "./scan";
 
 @Service()
 export class HealthChecker {
   @Logger("HealthChecker")
   log: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   scanServiceV2: ScanServiceV2;
@@ -21,7 +25,7 @@ export class HealthChecker {
    * Launches health checker - simple express server
    */
   public launch(): void {
-    if (config.optimistic) {
+    if (this.config.optimistic) {
       return;
     }
     const start = new Date();
@@ -42,7 +46,7 @@ export class HealthChecker {
       help: "Build info",
       labelNames: ["version"],
     });
-    buildInfo.set({ version: config.version }, 1);
+    buildInfo.set({ version }, 1);
 
     app.get("/", (_, res) => {
       res.send({
@@ -67,8 +71,8 @@ export class HealthChecker {
       }
     });
 
-    app.listen(config.port, () => {
-      this.log.info(`started on port ${config.port}`);
+    app.listen(this.config.port, () => {
+      this.log.info(`started on port ${this.config.port}`);
     });
   }
 }

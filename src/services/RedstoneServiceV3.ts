@@ -14,7 +14,7 @@ import { arrayify, hexlify } from "ethers/lib/utils";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
 
-import config from "../config";
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
 import OracleServiceV3 from "./OracleServiceV3";
@@ -30,6 +30,9 @@ export type RedstonePriceFeed = Extract<
 export class RedstoneServiceV3 {
   @Logger("AddressProviderService")
   log: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   oracle: OracleServiceV3;
@@ -65,7 +68,7 @@ export class RedstoneServiceV3 {
       ),
     );
 
-    if (config.optimistic && result.length > 0) {
+    if (this.config.optimistic && result.length > 0) {
       const redstoneTs = result[0].ts;
       let block = await this.provider!.getBlock("latest");
       const delta = block.timestamp - redstoneTs;

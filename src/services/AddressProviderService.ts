@@ -7,7 +7,7 @@ import {
 import { ethers, providers } from "ethers";
 import { Inject, Service } from "typedi";
 
-import config from "../config";
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
 
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
@@ -25,6 +25,9 @@ export class AddressProviderService {
   @Inject()
   provider: providers.Provider;
 
+  @Inject(CONFIG)
+  config: ConfigSchema;
+
   #startBlock?: number;
   #chainId?: number;
   #network?: NetworkType;
@@ -40,8 +43,8 @@ export class AddressProviderService {
     this.#chainId = chainId;
     this.#startBlock = startBlock;
     this.#address =
-      config.addressProviderOverride ?? ADDRESS_PROVIDER[this.#network];
-    const overrideS = config.addressProviderOverride
+      this.config.addressProviderOverride ?? ADDRESS_PROVIDER[this.#network];
+    const overrideS = this.config.addressProviderOverride
       ? ` (overrides default ${ADDRESS_PROVIDER[this.#network]})`
       : "";
 

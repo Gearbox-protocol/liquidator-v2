@@ -1,7 +1,7 @@
 import { providers, Wallet } from "ethers";
 import { Container, Inject, Service } from "typedi";
 
-import config from "./config";
+import { CONFIG, ConfigSchema, loadConfig } from "./config";
 import { Logger, LoggerInterface } from "./log";
 import { AddressProviderService } from "./services/AddressProviderService";
 import { AMPQService } from "./services/ampqService";
@@ -12,11 +12,15 @@ import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
 import { ScanServiceV2, ScanServiceV3 } from "./services/scan";
 import { ISwapper, SWAPPER } from "./services/swap";
 import { getProvider } from "./services/utils";
+import version from "./version";
 
 @Service()
 class App {
   @Logger("App")
   log: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   addressProvider: AddressProviderService;
@@ -45,18 +49,15 @@ class App {
   @Inject(SWAPPER)
   swapper: ISwapper;
 
-  /**
-   * Launch LiquidatorService
-   */
   public async launch(): Promise<void> {
     const msg = [
-      "Launching",
-      config.underlying ?? "",
-      Array.from(config.enabledVersions)
+      `Launching liquidator v${version}`,
+      this.config.underlying ?? "",
+      Array.from(this.config.enabledVersions)
         .map(v => `v${v}`)
         .join(", "),
-      config.swapToEth ? `with swapping via ${config.swapToEth}` : "",
-      config.optimistic ? "in OPTIMISTIC mode" : "",
+      this.config.swapToEth ? `with swapping via ${this.config.swapToEth}` : "",
+      this.config.optimistic ? "in OPTIMISTIC mode" : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -70,14 +71,14 @@ class App {
     await this.ampqService.launch(this.addressProvider.chainId);
 
     await this.swapper.launch(this.addressProvider.network);
-    if (config.enabledVersions.has(3)) {
+    if (this.config.enabledVersions.has(3)) {
       await this.scanServiceV3.launch();
     }
-    if (config.enabledVersions.has(2)) {
+    if (this.config.enabledVersions.has(2)) {
       await this.scanServiceV2.launch();
     }
 
-    if (config.optimistic) {
+    if (this.config.optimistic) {
       this.log.debug("optimistic liquidation finished, writing output");
       await this.outputWriter.write(this.addressProvider.startBlock, {
         result: this.optimistic.get(),
@@ -90,6 +91,9 @@ class App {
 }
 
 export async function launchApp(): Promise<void> {
+  const config = loadConfig();
+  Container.set(CONFIG, config);
+
   const provider = getProvider();
   Container.set(providers.Provider, provider);
 

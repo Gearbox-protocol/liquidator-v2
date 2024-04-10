@@ -1,6 +1,7 @@
-import { Service } from "typedi";
+import Container, { Service } from "typedi";
 
-import config from "../../config";
+import type { ConfigSchema } from "../../config";
+import { CONFIG } from "../../config";
 import ConsoleWriter from "./consoleWriter";
 import { OUTPUT_WRITER } from "./constants";
 import FileWriter from "./fileWriter";
@@ -9,6 +10,7 @@ import S3Writer from "./s3Writer";
 import type { IOptimisticOutputWriter } from "./types";
 
 function createOutputWriter(): IOptimisticOutputWriter {
+  const config = Container.get(CONFIG) as ConfigSchema;
   if (config.outS3Bucket) {
     return new S3Writer();
   } else if (config.outEndpoint) {

@@ -25,7 +25,6 @@ export default class LiquidationStrategyV3Full
 
   public async preview(
     ca: CreditAccountData,
-    slippage: number,
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = new CreditManagerData(
@@ -47,7 +46,7 @@ export default class LiquidationStrategyV3Full
         creditManager: cm,
         expectedBalances,
         leftoverBalances,
-        slippage,
+        slippage: this.config.slippage,
         noConcurrency: true,
         network: this.addressProvider.network,
       });

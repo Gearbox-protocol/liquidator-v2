@@ -15,7 +15,6 @@ import { ADDRESS_0X0, contractsByNetwork } from "@gearbox-protocol/sdk-gov";
 import type { BigNumber, BigNumberish, ContractReceipt, Wallet } from "ethers";
 import { Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { accountName, managerName } from "../utils";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
@@ -37,13 +36,7 @@ export default class LiquidationStrategyV3Partial
   @Logger("LiquidationStrategyV3Partial")
   logger: LoggerInterface;
 
-  #partialLiquidatorAddress?: string;
   #partialLiquidator?: ILiquidator;
-
-  constructor() {
-    super();
-    this.#partialLiquidatorAddress = config.partialLiquidatorAddress;
-  }
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -57,8 +50,9 @@ export default class LiquidationStrategyV3Partial
       contractsByNetwork[this.addressProvider.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
-    if (!this.#partialLiquidatorAddress) {
-      this.#partialLiquidatorAddress = await this.#deployPartialLiquidator(
+    let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
+    if (!partialLiquidatorAddress) {
+      partialLiquidatorAddress = await this.#deployPartialLiquidator(
         this.executor.wallet,
         router,
         bot,
@@ -66,7 +60,7 @@ export default class LiquidationStrategyV3Partial
       );
     }
     this.#partialLiquidator = ILiquidator__factory.connect(
-      this.#partialLiquidatorAddress,
+      partialLiquidatorAddress,
       this.executor.wallet,
     );
     await this.#configurePartialLiquidator(router, bot);
@@ -74,7 +68,6 @@ export default class LiquidationStrategyV3Partial
 
   public async preview(
     ca: CreditAccountData,
-    slippage: number,
   ): Promise<PartialLiquidationPreview> {
     const logger = this.logger.child({
       account: ca.addr,
@@ -112,7 +105,7 @@ export default class LiquidationStrategyV3Partial
             flashLoanAmount: `${flashLoanAmount} (${formatBN(flashLoanAmount, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
             priceUpdates,
             connectors,
-            slippage,
+            slippage: this.config.slippage,
           },
           `trying partial liqudation: ${i * 10n}% of ${symb} out`,
         );
@@ -126,7 +119,7 @@ export default class LiquidationStrategyV3Partial
               flashLoanAmount,
               priceUpdates,
               connectors,
-              slippage,
+              this.config.slippage,
             );
           if (result.calls.length) {
             logger.info(

@@ -3,11 +3,14 @@ import {
   RotateProvider,
 } from "@gearbox-protocol/devops/lib/providers";
 import type { providers } from "ethers";
+import Container from "typedi";
 
-import config from "../../config";
+import type { ConfigSchema } from "../../config";
+import { CONFIG } from "../../config";
 import type { LoggerInterface } from "../../log";
 
 export function getProvider(logger?: LoggerInterface): providers.Provider {
+  const config = Container.get(CONFIG) as ConfigSchema;
   const rpcs = config.ethProviderRpcs.map(
     url =>
       new RetryProvider(
@@ -16,7 +19,7 @@ export function getProvider(logger?: LoggerInterface): providers.Provider {
           timeout: config.ethProviderTimeout,
           allowGzip: true,
         },
-        { deployBlock: config.deployBlock, filterLogRange: 50_000 },
+        { filterLogRange: 50_000 },
       ),
   );
 

@@ -14,7 +14,6 @@ import {
 } from "@gearbox-protocol/sdk";
 import { Inject, Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService } from "../liquidate";
 import { LiquidatorServiceV2 } from "../liquidate";
@@ -61,8 +60,8 @@ export class ScanServiceV2 extends AbstractScanService {
         // If single CreditManager mode is on, use only this manager
         const symb = tokenSymbolByAddress[cm.underlyingToken];
         return (
-          !config.underlying ||
-          config.underlying.toLowerCase() === symb.toLowerCase()
+          !this.config.underlying ||
+          this.config.underlying.toLowerCase() === symb.toLowerCase()
         );
       }),
     );
@@ -86,7 +85,10 @@ export class ScanServiceV2 extends AbstractScanService {
 
   protected override async onBlock(blockNumber: number): Promise<void> {
     let blockNum = blockNumber;
-    if (!this._isUpdating && blockNum > this._lastUpdated + config.skipBlocks) {
+    if (
+      !this._isUpdating &&
+      blockNum > this._lastUpdated + this.config.skipBlocks
+    ) {
       this._isUpdating = true;
 
       let range = "";
@@ -136,7 +138,7 @@ export class ScanServiceV2 extends AbstractScanService {
           const blockNow = await this.provider.getBlockNumber();
 
           // Checks if update needed right now. If so, it would set isUpdating and pass while at the beginning
-          this._isUpdating = blockNow > blockNum + config.skipBlocks;
+          this._isUpdating = blockNow > blockNum + this.config.skipBlocks;
 
           if (this._isUpdating) {
             blockNum = blockNow;
@@ -194,15 +196,15 @@ export class ScanServiceV2 extends AbstractScanService {
 
       const accountsToLiquidate = Object.values(this.creditAccounts).filter(
         ca =>
-          config.optimistic ||
-          (ca.healthFactor < config.hfThreshold && !ca.isDeleting),
+          this.config.optimistic ||
+          (ca.healthFactor < this.config.hfThreshold && !ca.isDeleting),
       );
 
       if (accountsToLiquidate.length) {
         this.log.debug(
           `v2 accounts to liquidate: ${accountsToLiquidate.length}`,
         );
-        if (config.optimistic) {
+        if (this.config.optimistic) {
           await this.liquidateOptimistically(accountsToLiquidate);
         } else {
           await this.liquidateNormal(accountsToLiquidate);

@@ -8,7 +8,7 @@ import type { BigNumber, BigNumberish, ContractReceipt } from "ethers";
 import { providers, utils, Wallet } from "ethers";
 import { Inject } from "typedi";
 
-import config from "../../config";
+import { CONFIG, ConfigSchema } from "../../config";
 import type { OptimisticResult } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
@@ -36,6 +36,9 @@ export default abstract class AbstractLiquidatorService
   @Inject()
   ampqService: AMPQService;
 
+  @Inject(CONFIG)
+  config: ConfigSchema;
+
   @Inject()
   addressProvider: AddressProviderService;
 
@@ -54,7 +57,6 @@ export default abstract class AbstractLiquidatorService
   @Inject()
   wallet: Wallet;
 
-  protected slippage: number;
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
   #etherscanUrl = "";
@@ -63,8 +65,6 @@ export default abstract class AbstractLiquidatorService
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
-    this.slippage = Math.floor(config.slippage * 100);
-
     switch (this.addressProvider.network) {
       case "Mainnet":
         this.#etherscanUrl = "https://etherscan.io";
@@ -84,7 +84,7 @@ export default abstract class AbstractLiquidatorService
       `start ${this.strategy.name} liquidation of ${name} with HF ${ca.healthFactor}`,
     );
     try {
-      const preview = await this.strategy.preview(ca, this.slippage);
+      const preview = await this.strategy.preview(ca);
       let pathHuman: Array<string | null> = [];
       try {
         pathHuman = TxParser.parseMultiCall(preview.calls);
@@ -130,7 +130,7 @@ export default abstract class AbstractLiquidatorService
     try {
       const balanceBefore = await this.getBalance(ca);
       logger.debug("previewing...");
-      const preview = await this.strategy.preview(ca, this.slippage);
+      const preview = await this.strategy.preview(ca);
       logger.debug({ preview });
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();

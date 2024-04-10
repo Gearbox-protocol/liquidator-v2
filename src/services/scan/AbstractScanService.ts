@@ -2,13 +2,16 @@ import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { providers } from "ethers";
 import { Inject } from "typedi";
 
-import config from "../../config";
+import { CONFIG, ConfigSchema } from "../../config";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import type { ILiquidatorService } from "../liquidate";
 
 export default abstract class AbstractScanService {
   log: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   addressProvider: AddressProviderService;
@@ -36,7 +39,7 @@ export default abstract class AbstractScanService {
   }
 
   protected subscribeToUpdates(): void {
-    if (config.optimistic) {
+    if (this.config.optimistic) {
       return;
     }
     if (this.addressProvider.network === "Mainnet") {
@@ -77,14 +80,14 @@ export default abstract class AbstractScanService {
   protected async liquidateOptimistically(
     accountsToLiquidate: CreditAccountData[],
   ): Promise<void> {
-    const accounts = config.debugAccounts
+    const accounts = this.config.debugAccounts
       ? accountsToLiquidate.filter(({ addr }) =>
-          config.debugAccounts?.includes(addr),
+          this.config.debugAccounts?.includes(addr),
         )
       : accountsToLiquidate;
 
     const total = accounts.length;
-    const debugS = config.debugAccounts ? "selective " : " ";
+    const debugS = this.config.debugAccounts ? "selective " : " ";
     this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
 
     for (let i = 0; i < total; i++) {

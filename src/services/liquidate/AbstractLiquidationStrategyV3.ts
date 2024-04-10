@@ -2,6 +2,7 @@ import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import { IDataCompressorV3__factory, PathFinder } from "@gearbox-protocol/sdk";
 import { Inject } from "typedi";
 
+import { CONFIG, ConfigSchema } from "../../config";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import ExecutorService from "../ExecutorService";
@@ -13,6 +14,9 @@ export default abstract class AbstractLiquidationStrategyV3 {
 
   @Inject()
   addressProvider: AddressProviderService;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   redstone: RedstoneServiceV3;

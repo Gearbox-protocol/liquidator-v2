@@ -9,7 +9,6 @@ import {
 import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
 import { Inject, Service } from "typedi";
 
-import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
 import { LiquidatorServiceV3 } from "../liquidate";
@@ -51,7 +50,7 @@ export class ScanServiceV3 extends AbstractScanService {
     await this.oracle.launch(block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    await this.updateAccounts(config.optimistic ? undefined : block);
+    await this.updateAccounts(this.config.optimistic ? undefined : block);
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
@@ -99,7 +98,7 @@ export class ScanServiceV3 extends AbstractScanService {
       );
     }
 
-    if (config.optimistic) {
+    if (this.config.optimistic) {
       await this.liquidateOptimistically(accounts);
     } else {
       await this.liquidateNormal(accounts);
@@ -119,9 +118,9 @@ export class ScanServiceV3 extends AbstractScanService {
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
     let accountsRaw: CreditAccountDataStructOutput[] = [];
 
-    let debugAccounts = config.debugAccounts ?? [];
-    if (config.debugManagers && !debugAccounts.length) {
-      for (const m of config.debugManagers) {
+    let debugAccounts = this.config.debugAccounts ?? [];
+    if (this.config.debugManagers && !debugAccounts.length) {
+      for (const m of this.config.debugManagers) {
         this.log.debug(`will fetch debug credit accounts for ${m}`);
         const cm = ICreditManagerV3__factory.connect(m, this.provider);
         const accs = await cm["creditAccounts()"]({ blockTag: atBlock });
@@ -131,7 +130,7 @@ export class ScanServiceV3 extends AbstractScanService {
     }
 
     if (
-      (config.debugManagers || config.debugAccounts) &&
+      (this.config.debugManagers || this.config.debugAccounts) &&
       debugAccounts.length
     ) {
       this.log.debug(
@@ -176,11 +175,15 @@ export class ScanServiceV3 extends AbstractScanService {
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
     // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
-    if (config.underlying) {
-      this.log.debug(`filtering accounts by underlying: ${config.underlying}`);
+    if (this.config.underlying) {
+      this.log.debug(
+        `filtering accounts by underlying: ${this.config.underlying}`,
+      );
       accounts = accounts.filter(a => {
         const underlying = tokenSymbolByAddress[a.underlyingToken];
-        return config.underlying?.toLowerCase() === underlying?.toLowerCase();
+        return (
+          this.config.underlying?.toLowerCase() === underlying?.toLowerCase()
+        );
       });
     }
 

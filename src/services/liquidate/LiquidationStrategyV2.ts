@@ -4,6 +4,7 @@ import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfind
 import type { BigNumberish, ContractReceipt } from "ethers";
 import { Inject, Service } from "typedi";
 
+import { CONFIG, ConfigSchema } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
@@ -19,6 +20,9 @@ export default class LiquidationStrategyV2
 
   @Logger("LiquidationStrategyV2")
   logger: LoggerInterface;
+
+  @Inject(CONFIG)
+  config: ConfigSchema;
 
   @Inject()
   ampqService: AMPQService;
@@ -43,12 +47,11 @@ export default class LiquidationStrategyV2
 
   public async preview(
     ca: CreditAccountData,
-    slippage: number,
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.pathFinder.findBestClosePath(
         ca,
-        slippage,
+        this.config.slippage,
         true,
         this.addressProvider.network,
       );
