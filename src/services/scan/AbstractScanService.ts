@@ -1,23 +1,20 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
+import { providers } from "ethers";
 import { Inject } from "typedi";
 
 import config from "../../config";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
-import { KeyService } from "../keyService";
 import type { ILiquidatorService } from "../liquidate";
 
 export default abstract class AbstractScanService {
   log: LoggerInterface;
 
   @Inject()
-  executorService: KeyService;
-
-  @Inject()
   addressProvider: AddressProviderService;
 
-  protected provider: providers.Provider;
+  @Inject()
+  provider: providers.Provider;
 
   protected _lastUpdated = 0;
 
@@ -30,13 +27,11 @@ export default abstract class AbstractScanService {
   /**
    * Launches ScanService
    * @param dataCompressor Address of DataCompressor
-   * @param provider Ethers provider or signer
    * @param liquidatorService Liquidation service
    */
-  public async launch(provider: providers.Provider): Promise<void> {
-    this.provider = provider;
-    await this.liquidatorService.launch(provider);
-    await this._launch(provider);
+  public async launch(): Promise<void> {
+    await this.liquidatorService.launch();
+    await this._launch();
     this.subscribeToUpdates();
   }
 
@@ -55,7 +50,7 @@ export default abstract class AbstractScanService {
     }, 12_000);
   }
 
-  protected abstract _launch(provider: providers.Provider): Promise<void>;
+  protected abstract _launch(): Promise<void>;
   protected abstract onBlock(block: number): Promise<void>;
 
   /**
@@ -69,20 +64,7 @@ export default abstract class AbstractScanService {
       return;
     }
     this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts`);
-    const vacantExecutors = this.executorService.vacantQty();
-
-    if (vacantExecutors === 0) {
-      this.log.warn("No vacant executors at the moment!");
-    }
-
-    const itemsToProceed =
-      accountsToLiquidate.length < vacantExecutors
-        ? accountsToLiquidate.length
-        : vacantExecutors;
-
-    for (let i = 0; i < itemsToProceed; i++) {
-      const ca = accountsToLiquidate[i];
-
+    for (const ca of accountsToLiquidate) {
       ca.isDeleting = true;
       await this.liquidatorService.liquidate(ca);
     }

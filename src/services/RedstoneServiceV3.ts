@@ -9,8 +9,7 @@ import {
   REDSTONE_SIGNERS,
 } from "@gearbox-protocol/sdk";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
-import type { providers } from "ethers";
-import { ethers, utils } from "ethers";
+import { ethers, providers, utils } from "ethers";
 import { arrayify, hexlify } from "ethers/lib/utils";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
@@ -35,10 +34,10 @@ export class RedstoneServiceV3 {
   @Inject()
   oracle: OracleServiceV3;
 
-  protected provider?: providers.Provider;
+  @Inject()
+  provider: providers.Provider;
 
-  public launch(provider: providers.Provider): void {
-    this.provider = provider;
+  public launch(): void {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
   }
 

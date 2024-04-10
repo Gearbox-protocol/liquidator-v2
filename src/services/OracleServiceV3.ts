@@ -15,8 +15,8 @@ import type {
   SetReservePriceFeedEvent,
   SetReservePriceFeedStatusEvent,
 } from "@gearbox-protocol/sdk/lib/types/IPriceOracleV3.sol/IPriceOracleV3";
-import type { BigNumber, providers } from "ethers";
-import { utils } from "ethers";
+import type { BigNumber } from "ethers";
+import { providers, utils } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
@@ -59,20 +59,18 @@ export default class OracleServiceV3 {
   @Inject()
   addressProvider: AddressProviderService;
 
+  @Inject()
+  providerr: providers.Provider;
+
   #oracle?: IPriceOracleV3;
-  #provider?: providers.Provider;
   #lastBlock = 0;
 
   #feeds: Record<string, OracleEntry> = {};
 
-  public async launch(
-    provider: providers.Provider,
-    block: number,
-  ): Promise<void> {
+  public async launch(block: number): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.addressProvider.network];
-    this.#provider = provider;
     const oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
-    this.#oracle = IPriceOracleV3__factory.connect(oracle, provider);
+    this.#oracle = IPriceOracleV3__factory.connect(oracle, this.providerr);
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
@@ -102,7 +100,7 @@ export default class OracleServiceV3 {
       });
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await safeMulticall<BigNumber>(calls, this.provider);
+    const resp = await safeMulticall<BigNumber>(calls, this.providerr);
     return Object.fromEntries(
       resp
         .map(({ value, error }, i) => [
@@ -196,7 +194,7 @@ export default class OracleServiceV3 {
       }
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await safeMulticall(calls, this.provider);
+    const resp = await safeMulticall(calls, this.providerr);
     for (let i = 0; i < resp.length; i++) {
       let dataFeedId = resp[i].value || null;
       let feedAddress = calls[i].address;
@@ -239,12 +237,5 @@ export default class OracleServiceV3 {
       throw new Error(`oracle serive is not launched`);
     }
     return this.#oracle;
-  }
-
-  private get provider(): providers.Provider {
-    if (!this.#provider) {
-      throw new Error(`oracle serive is not launched`);
-    }
-    return this.#provider;
   }
 }

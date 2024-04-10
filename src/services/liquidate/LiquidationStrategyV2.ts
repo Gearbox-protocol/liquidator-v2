@@ -1,17 +1,13 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { ICreditFacadeV2__factory, PathFinderV1 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type {
-  BigNumberish,
-  ContractTransaction,
-  providers,
-  Wallet,
-} from "ethers";
+import type { BigNumberish, ContractReceipt } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
+import ExecutorService from "../ExecutorService";
 import type { ILiquidationStrategy } from "./types";
 
 @Service()
@@ -30,13 +26,16 @@ export default class LiquidationStrategyV2
   @Inject()
   addressProvider: AddressProviderService;
 
+  @Inject()
+  executor: ExecutorService;
+
   #pathFinder?: PathFinderV1;
 
-  public async launch(provider: providers.Provider): Promise<void> {
+  public async launch(): Promise<void> {
     const pathFinder = await this.addressProvider.findService("ROUTER", 1);
     this.#pathFinder = new PathFinderV1(
       pathFinder,
-      provider,
+      this.executor.provider,
       this.addressProvider.network,
       PathFinderV1.connectors,
     );
@@ -63,41 +62,40 @@ export default class LiquidationStrategyV2
   }
 
   public async estimate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PathFinderV1CloseResult,
-    recipient: string,
   ): Promise<BigNumberish> {
     const iFacade = ICreditFacadeV2__factory.connect(
       account.creditFacade,
-      executor,
+      this.executor.wallet,
     );
     return iFacade.estimateGas[
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
-    ](account.borrower, recipient, 0, true, preview.calls);
+    ](account.borrower, this.executor.address, 0, true, preview.calls);
   }
 
   public async liquidate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PathFinderV1CloseResult,
-    recipient: string,
     gasLimit?: BigNumberish,
-  ): Promise<ContractTransaction> {
+  ): Promise<ContractReceipt> {
     const facade = ICreditFacadeV2__factory.connect(
       account.creditFacade,
-      executor,
+      this.executor.wallet,
     );
-    return facade[
+
+    const txData = await facade.populateTransaction[
       "liquidateCreditAccount(address,address,uint256,bool,(address,bytes)[])"
     ](
       account.borrower,
-      recipient,
+      this.executor.address,
       0,
       true,
       preview.calls,
       gasLimit ? { gasLimit } : {},
     );
+
+    return this.executor.sendPrivate(txData);
   }
 
   private get pathFinder(): PathFinderV1 {

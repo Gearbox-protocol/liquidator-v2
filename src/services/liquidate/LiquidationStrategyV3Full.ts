@@ -5,12 +5,10 @@ import {
   ICreditFacadeV3__factory,
 } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { BigNumberish, ContractTransaction, Wallet } from "ethers";
-import { Inject, Service } from "typedi";
+import type { BigNumberish, ContractReceipt } from "ethers";
+import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
-import { AddressProviderService } from "../AddressProviderService";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type { ILiquidationStrategy } from "./types";
 
@@ -23,11 +21,7 @@ export default class LiquidationStrategyV3Full
   public readonly adverb = "fully";
 
   @Logger("LiquidationStrategyV3Full")
-  protected logger: LoggerInterface;
-  @Inject()
-  protected addressProvider: AddressProviderService;
-  @Inject()
-  protected redstone: RedstoneServiceV3;
+  logger: LoggerInterface;
 
   public async preview(
     ca: CreditAccountData,
@@ -70,38 +64,36 @@ export default class LiquidationStrategyV3Full
   }
 
   public async estimate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PathFinderV1CloseResult,
-    recipient: string,
   ): Promise<BigNumberish> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
-      executor,
+      this.executor.wallet,
     );
     return facade.estimateGas.liquidateCreditAccount(
       account.addr,
-      recipient,
+      this.executor.address,
       preview.calls,
     );
   }
 
   public async liquidate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PathFinderV1CloseResult,
     recipient: string,
     gasLimit?: BigNumberish,
-  ): Promise<ContractTransaction> {
+  ): Promise<ContractReceipt> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
-      executor,
+      this.executor.wallet,
     );
-    return facade.liquidateCreditAccount(
+    const txData = await facade.populateTransaction.liquidateCreditAccount(
       account.addr,
       recipient,
       preview.calls,
       gasLimit ? { gasLimit } : {},
     );
+    return this.executor.sendPrivate(txData);
   }
 }

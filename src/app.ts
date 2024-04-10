@@ -1,3 +1,4 @@
+import { providers, Wallet } from "ethers";
 import { Container, Inject, Service } from "typedi";
 
 import config from "./config";
@@ -5,7 +6,6 @@ import { Logger, LoggerInterface } from "./log";
 import { AddressProviderService } from "./services/AddressProviderService";
 import { AMPQService } from "./services/ampqService";
 import { HealthChecker } from "./services/healthChecker";
-import { KeyService } from "./services/keyService";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
@@ -26,9 +26,6 @@ class App {
 
   @Inject()
   scanServiceV3: ScanServiceV3;
-
-  @Inject()
-  keyService: KeyService;
 
   @Inject()
   ampqService: AMPQService;
@@ -64,21 +61,20 @@ class App {
       .filter(Boolean)
       .join(" ");
     this.log.info(msg);
-    await this.addressProvider.launch();
-    const provider = getProvider(false, this.log);
 
-    this.redstone.launch(provider);
+    await this.addressProvider.launch();
+
+    this.redstone.launch();
 
     this.healthChecker.launch();
     await this.ampqService.launch(this.addressProvider.chainId);
 
-    await this.keyService.launch();
     await this.swapper.launch(this.addressProvider.network);
     if (config.enabledVersions.has(3)) {
-      await this.scanServiceV3.launch(provider);
+      await this.scanServiceV3.launch();
     }
     if (config.enabledVersions.has(2)) {
-      await this.scanServiceV2.launch(provider);
+      await this.scanServiceV2.launch();
     }
 
     if (config.optimistic) {
@@ -94,5 +90,11 @@ class App {
 }
 
 export async function launchApp(): Promise<void> {
+  const provider = getProvider();
+  Container.set(providers.Provider, provider);
+
+  const wallet = new Wallet(config.privateKey, provider);
+  Container.set(Wallet, wallet);
+
   await Container.get(App).launch();
 }

@@ -1,4 +1,3 @@
-import type { providers } from "ethers";
 import Container, { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
@@ -22,8 +21,8 @@ export class LiquidatorServiceV2
   /**
    * Launch LiquidatorService
    */
-  public async launch(provider: providers.Provider): Promise<void> {
-    await super.launch(provider);
-    await this.strategy.launch(provider);
+  public async launch(): Promise<void> {
+    await super.launch();
+    await this.strategy.launch();
   }
 }

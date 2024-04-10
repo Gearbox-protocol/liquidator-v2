@@ -12,7 +12,6 @@ import {
   safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
@@ -39,19 +38,17 @@ export class ScanServiceV2 extends AbstractScanService {
     return this.liquidarorServiceV2;
   }
 
-  protected override async _launch(
-    provider: providers.Provider,
-  ): Promise<void> {
+  protected override async _launch(): Promise<void> {
     this.dataCompressor = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       200,
     );
 
-    const startingBlock = await provider.getBlockNumber();
+    const startingBlock = await this.provider.getBlockNumber();
 
     this.creditManagers = await CreditManagerWatcher.getV2CreditManagers(
       this.dataCompressor,
-      provider,
+      this.provider,
       startingBlock,
     );
     this.log.debug(
@@ -71,7 +68,7 @@ export class ScanServiceV2 extends AbstractScanService {
     );
 
     const reqs = Object.values(this.creditManagers).map(async cm =>
-      CreditAccountWatcherV2.getOpenAccounts(cm, provider, startingBlock),
+      CreditAccountWatcherV2.getOpenAccounts(cm, this.provider, startingBlock),
     );
 
     this.log.debug(

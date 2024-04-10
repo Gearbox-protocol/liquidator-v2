@@ -1,4 +1,3 @@
-import type { providers } from "ethers";
 import Container, { Inject, Service } from "typedi";
 
 import config from "../../config";
@@ -31,8 +30,8 @@ export class LiquidatorServiceV3
   /**
    * Launch LiquidatorService
    */
-  public async launch(provider: providers.Provider): Promise<void> {
-    await super.launch(provider);
-    await this.strategy.launch(provider);
+  public async launch(): Promise<void> {
+    await super.launch();
+    await this.strategy.launch();
   }
 }

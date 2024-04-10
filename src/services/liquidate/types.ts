@@ -1,11 +1,6 @@
 import type { MultiCallStructOutput } from "@gearbox-protocol/liquidator-v2-contracts/dist/IRouterV3";
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
-import type {
-  BigNumberish,
-  ContractTransaction,
-  providers,
-  Wallet,
-} from "ethers";
+import type { BigNumberish, ContractReceipt } from "ethers";
 
 export interface PriceOnDemand {
   token: string;
@@ -32,7 +27,7 @@ export interface PartialLiquidationPreview {
 }
 
 export interface ILiquidatorService {
-  launch: (provider: providers.Provider) => Promise<void>;
+  launch: () => Promise<void>;
   liquidate: (ca: CreditAccountData) => Promise<void>;
   /**
    *
@@ -51,19 +46,12 @@ export interface StrategyPreview {
 export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
-  launch: (provider: providers.Provider) => Promise<void>;
+  launch: () => Promise<void>;
   preview: (ca: CreditAccountData, slippage: number) => Promise<T>;
-  estimate: (
-    executor: Wallet,
-    account: CreditAccountData,
-    preview: T,
-    recipient: string,
-  ) => Promise<BigNumberish>;
+  estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
   liquidate: (
-    executor: Wallet,
     account: CreditAccountData,
     preview: T,
-    recipient: string,
     gasLimit?: BigNumberish,
-  ) => Promise<ContractTransaction>;
+  ) => Promise<ContractReceipt>;
 }

@@ -12,21 +12,11 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, contractsByNetwork } from "@gearbox-protocol/sdk-gov";
-import type {
-  BigNumber,
-  BigNumberish,
-  ContractTransaction,
-  providers,
-  Wallet,
-} from "ethers";
-import { Inject, Service } from "typedi";
+import type { BigNumber, BigNumberish, ContractReceipt, Wallet } from "ethers";
+import { Service } from "typedi";
 
 import config from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import { AddressProviderService } from "../AddressProviderService";
-import { KeyService } from "../keyService";
-import OracleServiceV3 from "../OracleServiceV3";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import { accountName, managerName } from "../utils";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type { ILiquidationStrategy, PartialLiquidationPreview } from "./types";
@@ -45,15 +35,7 @@ export default class LiquidationStrategyV3Partial
   public readonly adverb = "partially";
 
   @Logger("LiquidationStrategyV3Partial")
-  protected logger: LoggerInterface;
-  @Inject()
-  protected addressProvider: AddressProviderService;
-  @Inject()
-  protected redstone: RedstoneServiceV3;
-  @Inject()
-  protected keyService: KeyService;
-  @Inject()
-  protected oracle: OracleServiceV3;
+  logger: LoggerInterface;
 
   #partialLiquidatorAddress?: string;
   #partialLiquidator?: ILiquidator;
@@ -63,10 +45,8 @@ export default class LiquidationStrategyV3Partial
     this.#partialLiquidatorAddress = config.partialLiquidatorAddress;
   }
 
-  public async launch(provider: providers.Provider): Promise<void> {
-    await super.launch(provider);
-    // TODO: this executor/keyService thing should be removed
-    const executor = this.keyService.takeVacantExecutor();
+  public async launch(): Promise<void> {
+    await super.launch();
 
     const router = await this.addressProvider.findService("ROUTER", 300);
     const bot = await this.addressProvider.findService(
@@ -79,7 +59,7 @@ export default class LiquidationStrategyV3Partial
 
     if (!this.#partialLiquidatorAddress) {
       this.#partialLiquidatorAddress = await this.#deployPartialLiquidator(
-        executor,
+        this.executor.wallet,
         router,
         bot,
         aavePool,
@@ -87,10 +67,9 @@ export default class LiquidationStrategyV3Partial
     }
     this.#partialLiquidator = ILiquidator__factory.connect(
       this.#partialLiquidatorAddress,
-      executor,
+      this.executor.wallet,
     );
-    await this.#configurePartialLiquidator(executor, router, bot);
-    await this.keyService.returnExecutor(executor.address, true);
+    await this.#configurePartialLiquidator(router, bot);
   }
 
   public async preview(
@@ -150,7 +129,7 @@ export default class LiquidationStrategyV3Partial
             };
           }
         } catch (e) {
-          // console.log(e);
+          console.log(e);
         }
       }
     }
@@ -195,15 +174,12 @@ export default class LiquidationStrategyV3Partial
   }
 
   public async estimate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-    recipient: string,
   ): Promise<BigNumber> {
     // TODO: recipient?
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
-    const partialLiquidator = this.partialLiquidator.connect(executor);
-    return partialLiquidator.estimateGas.partialLiquidateAndConvert(
+    return this.partialLiquidator.estimateGas.partialLiquidateAndConvert(
       account.creditManager,
       account.addr,
       preview.assetOut,
@@ -215,25 +191,23 @@ export default class LiquidationStrategyV3Partial
   }
 
   public async liquidate(
-    executor: Wallet,
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-    recipient: string,
     gasLimit?: BigNumberish,
-  ): Promise<ContractTransaction> {
-    // TODO: recipient
+  ): Promise<ContractReceipt> {
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
-    const partialLiquidator = this.partialLiquidator.connect(executor);
-    return partialLiquidator.partialLiquidateAndConvert(
-      account.creditManager,
-      account.addr,
-      preview.assetOut,
-      preview.amountOut,
-      preview.flashLoanAmount,
-      priceUpdates,
-      preview.calls,
-      gasLimit ? { gasLimit } : {},
-    );
+    const txData =
+      await this.partialLiquidator.populateTransaction.partialLiquidateAndConvert(
+        account.creditManager,
+        account.addr,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
+        priceUpdates,
+        preview.calls,
+        gasLimit ? { gasLimit } : {},
+      );
+    return this.executor.sendPrivate(txData);
   }
 
   async #deployPartialLiquidator(
@@ -273,7 +247,6 @@ export default class LiquidationStrategyV3Partial
   }
 
   async #configurePartialLiquidator(
-    executor: Wallet,
     router: string,
     bot: string,
   ): Promise<void> {
@@ -318,7 +291,7 @@ export default class LiquidationStrategyV3Partial
         }
       } else {
         this.logger.debug(
-          `credit manager ${name} (${addr}) already registered`,
+          `credit manager ${name} (${addr}) already registered with account ${ca}`,
         );
       }
     }

@@ -1,32 +1,43 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import { IDataCompressorV3__factory, PathFinder } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
+import { Inject } from "typedi";
 
 import type { LoggerInterface } from "../../log";
-import type { AddressProviderService } from "../AddressProviderService";
-import type { KeyService } from "../keyService";
-import type OracleServiceV3 from "../OracleServiceV3";
-import type { RedstoneServiceV3 } from "../RedstoneServiceV3";
+import { AddressProviderService } from "../AddressProviderService";
+import ExecutorService from "../ExecutorService";
+import OracleServiceV3 from "../OracleServiceV3";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 
 export default abstract class AbstractLiquidationStrategyV3 {
-  protected logger: LoggerInterface;
-  protected addressProvider: AddressProviderService;
-  protected redstone: RedstoneServiceV3;
-  protected keyService: KeyService;
-  protected oracle: OracleServiceV3;
+  logger: LoggerInterface;
+
+  @Inject()
+  addressProvider: AddressProviderService;
+
+  @Inject()
+  redstone: RedstoneServiceV3;
+
+  @Inject()
+  oracle: OracleServiceV3;
+
+  @Inject()
+  executor: ExecutorService;
 
   #compressor?: IDataCompressorV3;
   #pathFinder?: PathFinder;
 
-  public async launch(provider: providers.Provider): Promise<void> {
+  public async launch(): Promise<void> {
     const [pfAddr, dcAddr] = await Promise.all([
       this.addressProvider.findService("ROUTER", 300),
       this.addressProvider.findService("DATA_COMPRESSOR", 300),
     ]);
-    this.#compressor = IDataCompressorV3__factory.connect(dcAddr, provider);
+    this.#compressor = IDataCompressorV3__factory.connect(
+      dcAddr,
+      this.executor.provider,
+    );
     this.#pathFinder = new PathFinder(
       pfAddr,
-      provider,
+      this.executor.provider,
       this.addressProvider.network,
     );
   }

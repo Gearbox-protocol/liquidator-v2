@@ -17,6 +17,5 @@ export interface ISwapper {
     executor: Wallet,
     tokenAddr: string,
     amount: BigNumberish,
-    recipient?: string,
   ) => Promise<void>;
 }

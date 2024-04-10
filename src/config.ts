@@ -38,18 +38,6 @@ export class Config {
   @Min(0.05)
   static slippage: number;
 
-  @IsNotEmpty()
-  static walletPassword: string;
-
-  /**
-   * Directory with wallet keys
-   */
-  static keyPath: string | undefined;
-  /**
-   * AWS Secrets Manager secret id for wallet keys
-   */
-  static keySecret: string | undefined;
-
   static ampqUrl: string | undefined;
   static ampqExchange: string | undefined;
   /**
@@ -75,9 +63,6 @@ export class Config {
   static multicallChunkSize: number;
 
   @IsNotEmpty()
-  static multicallAddress: string;
-
-  @IsNotEmpty()
   @Min(0)
   static skipBlocks: number;
 
@@ -86,7 +71,6 @@ export class Config {
   static executorsQty: number;
 
   static balanceToNotify: bigint;
-  static minExecutorBalance: bigint;
 
   /**
    * Which versions (v2/v3) to work with
@@ -167,13 +151,10 @@ export class Config {
       : undefined;
     Config.privateKey = process.env.PRIVATE_KEY || "";
     Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
-    Config.walletPassword = process.env.WALLET_PASSWORD || "";
     Config.hfThreshold = parseInt(process.env.HF_TRESHOLD || "9950", 10);
     Config.ampqUrl = process.env.CLOUDAMQP_URL;
     Config.ampqExchange = process.env.AMPQ_EXCHANGE;
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
-    Config.keyPath = process.env.KEY_PATH;
-    Config.keySecret = process.env.KEY_SECRET;
     Config.underlying = process.env.UNDERLYING;
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.swapToEth = process.env.SWAP_TO_ETH;
@@ -182,9 +163,6 @@ export class Config {
       process.env.MULTICALL_CHUNK || "30",
       10,
     );
-    Config.multicallAddress =
-      process.env.MULTICALL_ADDRESS ||
-      "0x5ba1e12693dc8f9c48aad8770482f4739beed696";
     Config.optimistic =
       process.env.OPTIMISTIC_LIQUIDATIONS?.toLowerCase() === "true" ||
       process.env.OPTIMISTIC?.toLowerCase() === "true";
@@ -192,9 +170,6 @@ export class Config {
     Config.deployPartialLiquidatorContracts =
       process.env.DEPLOY_PARTIAL_LIQUIDATOR === "true";
     Config.balanceToNotify = BigInt(process.env.BALANCE_TO_NOTIFY || "0");
-    Config.minExecutorBalance = BigInt(
-      process.env.MIN_EXECUTOR_BALANCE || "500000000000000000",
-    );
     Config.enabledVersions = new Set(
       process.env.ENABLED_VERSIONS
         ? process.env.ENABLED_VERSIONS.split(",").map(Number)

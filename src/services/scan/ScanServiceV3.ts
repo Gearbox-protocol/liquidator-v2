@@ -7,7 +7,6 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
-import type { providers } from "ethers";
 import { Inject, Service } from "typedi";
 
 import config from "../../config";
@@ -38,17 +37,18 @@ export class ScanServiceV3 extends AbstractScanService {
     return this.liquidarorServiceV3;
   }
 
-  protected override async _launch(
-    provider: providers.Provider,
-  ): Promise<void> {
+  protected override async _launch(): Promise<void> {
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
     );
-    this.dataCompressor = IDataCompressorV3__factory.connect(dcAddr, provider);
+    this.dataCompressor = IDataCompressorV3__factory.connect(
+      dcAddr,
+      this.provider,
+    );
 
-    const block = await provider.getBlockNumber();
-    await this.oracle.launch(provider, block);
+    const block = await this.provider.getBlockNumber();
+    await this.oracle.launch(block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.updateAccounts(config.optimistic ? undefined : block);

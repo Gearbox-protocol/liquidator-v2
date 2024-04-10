@@ -4,8 +4,8 @@ import {
   tokenSymbolByAddress,
   TxParser,
 } from "@gearbox-protocol/sdk";
-import type { BigNumber, BigNumberish, ethers, providers } from "ethers";
-import { utils } from "ethers";
+import type { BigNumber, BigNumberish, ContractReceipt } from "ethers";
+import { providers, utils, Wallet } from "ethers";
 import { Inject } from "typedi";
 
 import config from "../../config";
@@ -13,10 +13,9 @@ import type { OptimisticResult } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
-import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
-import { accountName, managerName, mine } from "../utils";
+import { accountName, managerName } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
 import type {
   ILiquidationStrategy,
@@ -35,9 +34,6 @@ export default abstract class AbstractLiquidatorService
   log: LoggerInterface;
 
   @Inject()
-  keyService: KeyService;
-
-  @Inject()
   ampqService: AMPQService;
 
   @Inject()
@@ -52,7 +48,12 @@ export default abstract class AbstractLiquidatorService
   @Inject()
   optimistic: OptimisticResults;
 
-  protected provider: providers.Provider;
+  @Inject()
+  provider: providers.Provider;
+
+  @Inject()
+  wallet: Wallet;
+
   protected slippage: number;
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
@@ -61,8 +62,7 @@ export default abstract class AbstractLiquidatorService
   /**
    * Launch LiquidatorService
    */
-  public async launch(provider: providers.Provider): Promise<void> {
-    this.provider = provider;
+  public async launch(): Promise<void> {
     this.slippage = Math.floor(config.slippage * 100);
 
     switch (this.addressProvider.network) {
@@ -83,7 +83,6 @@ export default abstract class AbstractLiquidatorService
     this.ampqService.info(
       `start ${this.strategy.name} liquidation of ${name} with HF ${ca.healthFactor}`,
     );
-    const executor = this.keyService.takeVacantExecutor();
     try {
       const preview = await this.strategy.preview(ca, this.slippage);
       let pathHuman: Array<string | null> = [];
@@ -94,16 +93,10 @@ export default abstract class AbstractLiquidatorService
       }
       this.log.debug(pathHuman);
 
-      const tx = await this.strategy.liquidate(
-        executor,
-        ca,
-        preview,
-        this.keyService.address,
-      );
-      const receipt = await tx.wait(1);
+      const receipt = await this.strategy.liquidate(ca, preview);
 
       this.ampqService.info(
-        `account ${name} was ${this.strategy.adverb} liquidated\nTx receipt: ${this.etherscan(tx)}\nGas used: ${receipt.gasUsed
+        `account ${name} was ${this.strategy.adverb} liquidated\nTx receipt: ${this.etherscan(receipt)}\nGas used: ${receipt.gasUsed
           .toNumber()
           .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
       );
@@ -111,8 +104,6 @@ export default abstract class AbstractLiquidatorService
       this.ampqService.error(
         `${this.strategy.name} liquidation of ${name} failed: ${e}`,
       );
-    } finally {
-      await this.keyService.returnExecutor(executor.address);
     }
   }
 
@@ -123,11 +114,6 @@ export default abstract class AbstractLiquidatorService
       manager: managerName(ca),
     });
     let snapshotId: unknown;
-    let executor: ethers.Wallet | undefined;
-    // address that will receive profit from liquidation
-    // there's a bit of confusion between "keyService" address and actual executor address
-    // so use this variable to be more explicit
-    let recipient: string | undefined;
     const optimisticResult: OptimisticResult = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
@@ -142,9 +128,7 @@ export default abstract class AbstractLiquidatorService
     const start = Date.now();
 
     try {
-      executor = this.keyService.takeVacantExecutor();
-      recipient = executor.address;
-      const balanceBefore = await this.getBalance(recipient, ca);
+      const balanceBefore = await this.getBalance(ca);
       logger.debug("previewing...");
       const preview = await this.strategy.preview(ca, this.slippage);
       logger.debug({ preview });
@@ -165,12 +149,7 @@ export default abstract class AbstractLiquidatorService
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        gasLimit = await this.strategy.estimate(
-          executor,
-          ca,
-          preview,
-          recipient,
-        );
+        gasLimit = await this.strategy.estimate(ca, preview);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -192,18 +171,8 @@ export default abstract class AbstractLiquidatorService
           [12],
         );
         // send profit to executor address because we're going to use swapper later
-        const tx = await this.strategy.liquidate(
-          executor,
-          ca,
-          preview,
-          recipient,
-          gasLimit,
-        );
-        logger.debug(`Liquidation tx hash: ${tx.hash}`);
-        const receipt = await mine(
-          this.provider as ethers.providers.JsonRpcProvider,
-          tx,
-        );
+        const receipt = await this.strategy.liquidate(ca, preview, gasLimit);
+        logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
         optimisticResult.isError = receipt.status !== 1;
         const strStatus = optimisticResult.isError ? "failure" : "success";
         logger.debug(
@@ -212,7 +181,7 @@ export default abstract class AbstractLiquidatorService
           }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
 
-        let balanceAfter = await this.getBalance(recipient, ca);
+        let balanceAfter = await this.getBalance(ca);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
@@ -220,12 +189,11 @@ export default abstract class AbstractLiquidatorService
 
         // swap underlying back to ETH
         await this.swapper.swap(
-          executor,
+          this.wallet,
           ca.underlyingToken,
           balanceAfter.underlying,
-          recipient,
         );
-        balanceAfter = await this.getBalance(recipient, ca);
+        balanceAfter = await this.getBalance(ca);
         optimisticResult.liquidatorProfit = balanceAfter.eth
           .sub(balanceBefore.eth)
           .toString();
@@ -244,10 +212,6 @@ export default abstract class AbstractLiquidatorService
     optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
-    if (executor) {
-      await this.keyService.returnExecutor(executor.address, false);
-    }
-
     if (snapshotId) {
       await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
         snapshotId,
@@ -257,19 +221,16 @@ export default abstract class AbstractLiquidatorService
     return !optimisticResult.isError;
   }
 
-  protected async getBalance(
-    address: string,
-    ca: CreditAccountData,
-  ): Promise<Balance> {
+  protected async getBalance(ca: CreditAccountData): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
     const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
-    const eth = await this.provider.getBalance(address);
+    const eth = await this.provider.getBalance(this.wallet.address);
     const underlying = isWeth
       ? eth
       : await IERC20__factory.connect(
           ca.underlyingToken,
           this.provider,
-        ).balanceOf(address);
+        ).balanceOf(this.wallet.address);
     return { eth, underlying };
   }
 
@@ -291,7 +252,7 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  protected etherscan(tx: { hash: string }): string {
-    return `${this.#etherscanUrl}/tx/${tx.hash}`;
+  protected etherscan(receipt: ContractReceipt): string {
+    return `${this.#etherscanUrl}/tx/${receipt.transactionHash}`;
   }
 }

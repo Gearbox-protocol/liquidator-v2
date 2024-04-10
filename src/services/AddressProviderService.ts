@@ -4,12 +4,11 @@ import {
   detectNetwork,
   IAddressProviderV3__factory,
 } from "@gearbox-protocol/sdk";
-import { ethers } from "ethers";
-import { Service } from "typedi";
+import { ethers, providers } from "ethers";
+import { Inject, Service } from "typedi";
 
 import config from "../config";
 import { Logger, LoggerInterface } from "../log";
-import { getProvider } from "./utils";
 
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
   Mainnet: 18433056,
@@ -23,6 +22,9 @@ export class AddressProviderService {
   @Logger("AddressProviderService")
   log: LoggerInterface;
 
+  @Inject()
+  provider: providers.Provider;
+
   #startBlock?: number;
   #chainId?: number;
   #network?: NetworkType;
@@ -30,12 +32,11 @@ export class AddressProviderService {
   #contract?: IAddressProviderV3;
 
   public async launch(): Promise<void> {
-    const provider = getProvider(false, this.log);
     const [startBlock, { chainId }] = await Promise.all([
-      provider.getBlockNumber(),
-      provider.getNetwork(),
+      this.provider.getBlockNumber(),
+      this.provider.getNetwork(),
     ]);
-    this.#network = await detectNetwork(provider);
+    this.#network = await detectNetwork(this.provider);
     this.#chainId = chainId;
     this.#startBlock = startBlock;
     this.#address =
@@ -46,7 +47,7 @@ export class AddressProviderService {
 
     this.#contract = IAddressProviderV3__factory.connect(
       this.#address,
-      provider,
+      this.provider,
     );
 
     this.log.info(
