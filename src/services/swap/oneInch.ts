@@ -55,6 +55,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       retries: 5,
       retryCondition: e => e.response?.status === 429,
       retryDelay: axiosRetry.exponentialDelay,
+      onRetry: (_, e) => {
+        this.log.debug({ statusCode: e.status, data: e.response?.data });
+      },
     });
     this.log.debug(`API URL: ${baseURL}`);
     try {
