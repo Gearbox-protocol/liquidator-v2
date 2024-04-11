@@ -47,6 +47,14 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
   launch: () => Promise<void>;
+  /**
+   * For optimistic liquidations only: create conditions that make this account liquidatable
+   * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result
+   * Id strategy does not support this, return undefined
+   * @param ca
+   * @returns evm snapshotId or underfined
+   */
+  makeLiquidatable: (ca: CreditAccountData) => Promise<number | undefined>;
   preview: (ca: CreditAccountData) => Promise<T>;
   estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
   liquidate: (

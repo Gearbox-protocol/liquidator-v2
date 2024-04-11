@@ -129,7 +129,8 @@ export default abstract class AbstractLiquidatorService
 
     try {
       const balanceBefore = await this.getBalance(ca);
-      logger.debug("previewing...");
+      snapshotId = await this.strategy.makeLiquidatable(ca);
+      logger.debug({ snapshotId }, "previewing...");
       const preview = await this.strategy.preview(ca);
       logger.debug({ preview });
       optimisticResult.calls = preview.calls;
@@ -158,11 +159,14 @@ export default abstract class AbstractLiquidatorService
         }
       }
 
-      // save snapshot after all read requests are done
-      snapshotId = await (this.provider as providers.JsonRpcProvider).send(
-        "evm_snapshot",
-        [],
-      );
+      // snapshotId might be present if we had to setup liquidation conditions for single account
+      // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
+      if (!snapshotId) {
+        snapshotId = await (this.provider as providers.JsonRpcProvider).send(
+          "evm_snapshot",
+          [],
+        );
+      }
       // Actual liquidation (write requests start here)
       try {
         // this is needed because otherwise it's possible to hit deadlines in uniswap calls

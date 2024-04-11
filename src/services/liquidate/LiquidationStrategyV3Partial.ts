@@ -23,6 +23,7 @@ import type { ILiquidationStrategy, PartialLiquidationPreview } from "./types";
 interface TokenBalance {
   balance: bigint;
   balanceInUnderlying: bigint;
+  lt: bigint;
 }
 
 @Service()
@@ -37,6 +38,47 @@ export default class LiquidationStrategyV3Partial
   logger: LoggerInterface;
 
   #partialLiquidator?: ILiquidator;
+
+  public async makeLiquidatable(
+    ca: CreditAccountData,
+  ): Promise<number | undefined> {
+    if (!this.config.optimistic) {
+      throw new Error("makeLiquidatable only works in optimistic mode");
+    }
+    const logger = this.logger.child({
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: managerName(ca),
+    });
+
+    const cm = new CreditManagerData(
+      await this.compressor.getCreditManagerData(ca.creditManager),
+    );
+    const balances = await this.#prepareAccountTokens(ca, cm);
+    // const snapshotId = await (
+    // this.executor.provider as providers.JsonRpcProvider
+    // ).send("evm_snapshot", []);
+
+    // LTnew = LT * k, where
+    //
+    //               totalDebt - Bunderlying * LTunderlying
+    // k = ----------------------------------------------
+    //         sum(p * b* LT)
+    let divisor = 0n;
+    let dividend = ca.borrowedAmountPlusInterestAndFees; // TODO: USDT fee
+    for (const [t, { balance, balanceInUnderlying, lt }] of Object.entries(
+      balances,
+    )) {
+      if (t === cm.underlyingToken) {
+        dividend -= balance * lt;
+      } else {
+        divisor += balanceInUnderlying * lt;
+      }
+    }
+    const k = Number((dividend * 10000n) / divisor) / 10000;
+    logger.debug({ k }, "calculated LT lowering multiplier");
+    return undefined;
+  }
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -147,6 +189,7 @@ export default class LiquidationStrategyV3Partial
   async #prepareAccountTokens(
     ca: CreditAccountData,
     cm: CreditManagerData,
+    skipDust = true,
   ): Promise<Record<string, TokenBalance>> {
     // sort by liquidation threshold ASC, place underlying with lowest priority
     const balances = Object.entries(ca.allBalances)
@@ -155,7 +198,7 @@ export default class LiquidationStrategyV3Partial
         const minBalance = 10n ** BigInt(Math.max(8, getDecimals(t)) - 8);
         // gearbox liquidator only cares about enabled tokens.
         // third-party liquidators might want to handle disabled tokens too
-        return isEnabled && balance > minBalance;
+        return isEnabled && (balance > minBalance || !skipDust);
       })
       .map(
         ([t, b]) => [t, b.balance, cm.liquidationThresholds[t] ?? 0n] as const,
@@ -173,7 +216,11 @@ export default class LiquidationStrategyV3Partial
     return Object.fromEntries(
       Object.entries(converted).map(([t, balanceInUnderlying]) => [
         t,
-        { balance: ca.allBalances[t].balance, balanceInUnderlying },
+        {
+          balance: ca.allBalances[t].balance,
+          balanceInUnderlying,
+          lt: cm.liquidationThresholds[t],
+        },
       ]),
     );
   }

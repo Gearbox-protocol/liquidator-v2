@@ -23,6 +23,13 @@ export default class LiquidationStrategyV3Full
   @Logger("LiquidationStrategyV3Full")
   logger: LoggerInterface;
 
+  public async makeLiquidatable(
+    ca: CreditAccountData,
+  ): Promise<number | undefined> {
+    // not supported
+    return Promise.resolve(undefined);
+  }
+
   public async preview(
     ca: CreditAccountData,
   ): Promise<PathFinderV1CloseResult> {
