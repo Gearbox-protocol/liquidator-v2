@@ -1787,10 +1787,10 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.164":
-  version "3.0.0-next.164"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.164.tgz#3d8b47dbc074ccba75c90f5fabf0881b7456fbf9"
-  integrity sha512-2dGPY2CGziUwgqAc/JaiBMWgU24vZTzS8tu7YmGSIuhvGwKm5kDJMXxA9vkjDuDMY+du7zwxykR14MlRroaazw==
+"@gearbox-protocol/sdk@^3.0.0-next.165":
+  version "3.0.0-next.165"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.165.tgz#4ef8072287b6e722be5bcecbe21c8434301402eb"
+  integrity sha512-xD8m27VhUq9U6IfwwkBYW6zjhOt8ipCQ1Utl+SIm0UPGJ0ZbeyJn41htF5GCtD6mPfx1MOfj7OI7HQPI7JjUpg==
   dependencies:
     "@gearbox-protocol/sdk-gov" "^1.59.0"
     axios "^1.2.6"
