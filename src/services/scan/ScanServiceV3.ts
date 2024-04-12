@@ -1,12 +1,15 @@
-import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
+import type { IDataCompressorV3, MCall } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
   ICreditManagerV3__factory,
   IDataCompressorV3__factory,
   PERCENTAGE_FACTOR,
+  safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
+import type { ICreditManagerV3Interface } from "@gearbox-protocol/sdk/lib/types/ICreditManagerV3.sol/ICreditManagerV3";
 import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
+import type { CallOverrides } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
@@ -15,6 +18,14 @@ import { LiquidatorServiceV3 } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
+
+const iCreditManagerV3 = ICreditManagerV3__factory.createInterface();
+
+interface AccountSelection {
+  liquidatableOnly: boolean;
+  priceUpdates: PriceOnDemand[];
+  overrides?: CallOverrides;
+}
 
 @Service()
 export class ScanServiceV3 extends AbstractScanService {
@@ -116,74 +127,46 @@ export class ScanServiceV3 extends AbstractScanService {
     priceUpdates: PriceOnDemand[],
     atBlock?: number | undefined,
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
+    const {
+      optimistic,
+      debugAccounts,
+      debugManagers,
+      deployPartialLiquidatorContracts,
+      partialLiquidatorAddress,
+      underlying,
+    } = this.config;
+    // during partial + optimistic liquidation, liquidation condition is not created externally.
+    // it's created by liquidator itself before the liquidation.
+    const liquidatableOnly =
+      !optimistic ||
+      (!deployPartialLiquidatorContracts && !partialLiquidatorAddress);
+
+    const selection: AccountSelection = {
+      liquidatableOnly,
+      priceUpdates,
+      overrides: atBlock ? { blockTag: atBlock } : {},
+    };
+
     let accountsRaw: CreditAccountDataStructOutput[] = [];
 
-    let debugAccounts = this.config.debugAccounts ?? [];
-    if (this.config.debugManagers && !debugAccounts.length) {
-      for (const m of this.config.debugManagers) {
-        this.log.debug(`will fetch debug credit accounts for ${m}`);
-        const cm = ICreditManagerV3__factory.connect(m, this.provider);
-        const accs = await cm["creditAccounts()"]({ blockTag: atBlock });
-        this.log.debug(`fetched ${accs.length} debug credit accounts for ${m}`);
-        debugAccounts.push(...accs);
-      }
-    }
-
-    if (
-      (this.config.debugManagers || this.config.debugAccounts) &&
-      debugAccounts.length
-    ) {
-      this.log.debug(
-        `will fetch data for ${debugAccounts.length} debug credit accounts`,
-      );
-      for (const acc of debugAccounts) {
-        const accData =
-          await this.dataCompressor.callStatic.getCreditAccountData(
-            acc,
-            priceUpdates,
-            { blockTag: atBlock },
-          );
-        const cm = ICreditManagerV3__factory.connect(
-          accData.creditManager,
-          this.provider,
-        );
-        const isLiquidatable = await cm.isLiquidatable(acc, PERCENTAGE_FACTOR, {
-          blockTag: atBlock,
-        });
-        if (isLiquidatable) {
-          accountsRaw.push(accData);
-        } else {
-          this.log.warn(
-            `debug account ${acc} is not liquidatable at block ${atBlock}`,
-          );
-        }
-      }
-      this.log.debug(
-        `${accountsRaw.length}/${debugAccounts.length} debug accounts liquidatable`,
+    if (debugAccounts?.length) {
+      accountsRaw = await this.#getParticularAccounts(debugAccounts, selection);
+    } else if (debugManagers?.length) {
+      accountsRaw = await this.#getAccountsFromManagers(
+        debugManagers,
+        selection,
       );
     } else {
-      accountsRaw =
-        await this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
-          priceUpdates,
-          atBlock
-            ? {
-                blockTag: atBlock,
-              }
-            : {},
-        );
+      accountsRaw = await this.#getAllAccounts(selection);
     }
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
     // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
-    if (this.config.underlying) {
-      this.log.debug(
-        `filtering accounts by underlying: ${this.config.underlying}`,
-      );
+    if (underlying) {
+      this.log.debug(`filtering accounts by underlying: ${underlying}`);
       accounts = accounts.filter(a => {
-        const underlying = tokenSymbolByAddress[a.underlyingToken];
-        return (
-          this.config.underlying?.toLowerCase() === underlying?.toLowerCase()
-        );
+        const u = tokenSymbolByAddress[a.underlyingToken];
+        return underlying.toLowerCase() === u?.toLowerCase();
       });
     }
 
@@ -193,6 +176,88 @@ export class ScanServiceV3 extends AbstractScanService {
     }
 
     return [accounts, Array.from(failedTokens)];
+  }
+
+  async #getParticularAccounts(
+    accs: string[],
+    { liquidatableOnly, priceUpdates, overrides = {} }: AccountSelection,
+  ): Promise<CreditAccountDataStructOutput[]> {
+    const result: CreditAccountDataStructOutput[] = [];
+    for (const acc of accs) {
+      const accData = await this.dataCompressor.callStatic.getCreditAccountData(
+        acc,
+        priceUpdates,
+        overrides,
+      );
+      result.push(accData);
+    }
+    return liquidatableOnly
+      ? this.#filterLiquidatable(result, overrides)
+      : result;
+  }
+
+  // TODO: this can be nicely solved by exposing _queryCreditAccounts in DataCompressor
+  async #getAllAccounts(
+    selection: AccountSelection,
+  ): Promise<CreditAccountDataStructOutput[]> {
+    const { liquidatableOnly, priceUpdates, overrides = {} } = selection;
+    if (liquidatableOnly) {
+      this.log.debug(
+        `getting liquidatable credit accounts with ${priceUpdates.length} price updates...`,
+      );
+      return this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
+        priceUpdates,
+        overrides,
+      );
+    }
+    const cms = await this.dataCompressor.getCreditManagersV3List(overrides);
+    this.log.debug(`found ${cms.length} credit managers`);
+    return this.#getAccountsFromManagers(
+      cms.map(m => m.addr),
+      selection,
+    );
+  }
+
+  async #getAccountsFromManagers(
+    cms: string[],
+    { liquidatableOnly, priceUpdates, overrides = {} }: AccountSelection,
+  ): Promise<CreditAccountDataStructOutput[]> {
+    const all = await Promise.all(
+      cms.map(cm =>
+        this.dataCompressor.callStatic.getCreditAccountsByCreditManager(
+          cm,
+          priceUpdates,
+          overrides,
+        ),
+      ),
+    );
+    const accs = all.flat();
+    this.log.debug(
+      `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
+    );
+    return liquidatableOnly ? this.#filterLiquidatable(accs, overrides) : accs;
+  }
+
+  async #filterLiquidatable(
+    accs: CreditAccountDataStructOutput[],
+    overrides: CallOverrides,
+  ): Promise<CreditAccountDataStructOutput[]> {
+    this.log.debug(
+      `filtering liquidatable credit accounts from selection of ${accs.length}...`,
+    );
+    const calls: MCall<ICreditManagerV3Interface>[] = [];
+    for (const { addr, creditManager } of accs) {
+      calls.push({
+        address: creditManager,
+        interface: iCreditManagerV3,
+        method: "isLiquidatable(address,uint16)",
+        params: [addr, PERCENTAGE_FACTOR],
+      });
+    }
+    const resp = await safeMulticall<boolean>(calls, this.provider, overrides);
+    const result = accs.filter((_, i) => resp[i].value);
+    this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
+    return result;
   }
 }
 
