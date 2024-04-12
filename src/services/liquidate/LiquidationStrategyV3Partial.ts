@@ -1,5 +1,7 @@
 import {
   AaveFLTaker__factory,
+  ICreditConfiguratorV3__factory,
+  ICreditManagerV3__factory,
   Liquidator__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts";
 import { ILiquidator__factory } from "@gearbox-protocol/liquidator-v2-contracts/dist/factories";
@@ -9,14 +11,23 @@ import {
   CreditManagerData,
   formatBN,
   getDecimals,
+  PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, contractsByNetwork } from "@gearbox-protocol/sdk-gov";
-import type { BigNumber, BigNumberish, ContractReceipt, Wallet } from "ethers";
+import type {
+  BigNumber,
+  BigNumberish,
+  ContractReceipt,
+  providers,
+  Wallet,
+} from "ethers";
 import { Service } from "typedi";
 
+import { IACL__factory } from "../../generated/IACL__factory";
 import { Logger, LoggerInterface } from "../../log";
 import { accountName, managerName } from "../utils";
+import { impersonate, stopImpersonate } from "../utils/impersonate";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type { ILiquidationStrategy, PartialLiquidationPreview } from "./types";
 
@@ -38,47 +49,7 @@ export default class LiquidationStrategyV3Partial
   logger: LoggerInterface;
 
   #partialLiquidator?: ILiquidator;
-
-  public async makeLiquidatable(
-    ca: CreditAccountData,
-  ): Promise<number | undefined> {
-    if (!this.config.optimistic) {
-      throw new Error("makeLiquidatable only works in optimistic mode");
-    }
-    const logger = this.logger.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: managerName(ca),
-    });
-
-    const cm = new CreditManagerData(
-      await this.compressor.getCreditManagerData(ca.creditManager),
-    );
-    const balances = await this.#prepareAccountTokens(ca, cm);
-    // const snapshotId = await (
-    // this.executor.provider as providers.JsonRpcProvider
-    // ).send("evm_snapshot", []);
-
-    // LTnew = LT * k, where
-    //
-    //               totalDebt - Bunderlying * LTunderlying
-    // k = ----------------------------------------------
-    //         sum(p * b* LT)
-    let divisor = 0n;
-    let dividend = ca.borrowedAmountPlusInterestAndFees; // TODO: USDT fee
-    for (const [t, { balance, balanceInUnderlying, lt }] of Object.entries(
-      balances,
-    )) {
-      if (t === cm.underlyingToken) {
-        dividend -= balance * lt;
-      } else {
-        divisor += balanceInUnderlying * lt;
-      }
-    }
-    const k = Number((dividend * 10000n) / divisor) / 10000;
-    logger.debug({ k }, "calculated LT lowering multiplier");
-    return undefined;
-  }
+  #configuratorAddr?: string;
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -108,21 +79,44 @@ export default class LiquidationStrategyV3Partial
     await this.#configurePartialLiquidator(router, bot);
   }
 
+  public async makeLiquidatable(
+    ca: CreditAccountData,
+  ): Promise<number | undefined> {
+    if (!this.config.optimistic) {
+      throw new Error("makeLiquidatable only works in optimistic mode");
+    }
+    const logger = this.#caLogger(ca);
+    const cm = new CreditManagerData(
+      await this.compressor.getCreditManagerData(ca.creditManager),
+    );
+
+    const newLTs = await this.#calcNewLTs(ca, cm);
+    const snapshotId = await (
+      this.executor.provider as providers.JsonRpcProvider
+    ).send("evm_snapshot", []);
+
+    await this.#setNewLTs(ca, cm, newLTs);
+    const updCa = await this.compressor.callStatic.getCreditAccountData(
+      ca.addr,
+      [],
+    );
+    logger.debug({
+      hfNew: updCa.healthFactor.toString(),
+      hfOld: ca.healthFactor.toString(),
+      isSuccessful: updCa.isSuccessful,
+    });
+    return snapshotId;
+  }
+
   public async preview(
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreview> {
-    const logger = this.logger.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: managerName(ca),
-    });
+    const logger = this.#caLogger(ca);
     const cm = new CreditManagerData(
       await this.compressor.getCreditManagerData(ca.creditManager),
     );
     const balances = await this.#prepareAccountTokens(ca, cm);
-
-    // this should do it, we are only interested in keys of a record
-    const connectors = this.pathFinder.getAvailableConnectors(balances as any);
+    const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
 
     // TODO: maybe this should be refreshed every loop iteration
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
@@ -130,27 +124,20 @@ export default class LiquidationStrategyV3Partial
       balances,
     )) {
       const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
-      logger.debug(
-        `trying ${formatBN(balance, getDecimals(assetOut))} ${symb} == ${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))} ${tokenSymbolByAddress[cm.underlyingToken]}`,
-      );
+      logger.debug({
+        assetOut: `${assetOut} (${symb})`,
+        amountOut: `${balance} (${formatBN(balance, getDecimals(assetOut))})`,
+        flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
+        priceUpdates,
+        connectors,
+        slippage: this.config.slippage,
+      });
 
       // naively try to figure out amount that works
       for (let i = 1n; i <= 10n; i++) {
         const amountOut = (i * balance) / 10n;
         const flashLoanAmount = (i * balanceInUnderlying) / 10n;
-        logger.debug(
-          {
-            creditManager: `${cm.address} (${cm.name})`,
-            creditAccount: ca.addr,
-            assetOut: `${assetOut} (${symb})`,
-            amountOut: `${amountOut} (${formatBN(amountOut, getDecimals(assetOut))})`,
-            flashLoanAmount: `${flashLoanAmount} (${formatBN(flashLoanAmount, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
-            priceUpdates,
-            connectors,
-            slippage: this.config.slippage,
-          },
-          `trying partial liqudation: ${i * 10n}% of ${symb} out`,
-        );
+        logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
@@ -176,6 +163,7 @@ export default class LiquidationStrategyV3Partial
             };
           }
         } catch (e) {
+          // console.log(">>>> failed");
           console.log(e);
         }
       }
@@ -223,6 +211,81 @@ export default class LiquidationStrategyV3Partial
         },
       ]),
     );
+  }
+
+  /**
+   * Given credit accounts, calculates new liquidation thresholds that needs to be set to drop account health factor a bit to make it eligible for partial liquidation
+   * @param ca
+   */
+  async #calcNewLTs(
+    ca: CreditAccountData,
+    cm: CreditManagerData,
+    factor = 9000n,
+  ): Promise<Record<string, bigint>> {
+    const logger = this.#caLogger(ca);
+    const balances = await this.#prepareAccountTokens(ca, cm);
+    // const snapshotId = await (
+    // this.executor.provider as providers.JsonRpcProvider
+    // ).send("evm_snapshot", []);
+
+    // LTnew = LT * k, where
+    //
+    //        PERCENTAGE_FACTOR * totalDebt - B_underlying * LT_underlying
+    // k = -------------------------------------------------------------
+    //                    sum(p * b* LT)
+    let divisor = 0n;
+    let dividend = PERCENTAGE_FACTOR * ca.borrowedAmountPlusInterestAndFees; // TODO: USDT fee
+    for (const [t, { balance, balanceInUnderlying, lt }] of Object.entries(
+      balances,
+    )) {
+      if (t === cm.underlyingToken) {
+        dividend -= balance * lt;
+      } else {
+        divisor += balanceInUnderlying * lt;
+      }
+    }
+    const k = (factor * dividend) / divisor;
+
+    const result: Record<string, bigint> = {};
+    const ltChangesHuman: Record<string, string> = {};
+    for (const [t, { lt }] of Object.entries(balances)) {
+      if (t !== cm.underlyingToken) {
+        result[t] = (lt * k) / PERCENTAGE_FACTOR;
+        ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t]}`;
+      }
+    }
+    logger.debug(
+      ltChangesHuman,
+      "need to change LTs to enable partial liquidation",
+    );
+    return result;
+  }
+
+  async #setNewLTs(
+    ca: CreditAccountData,
+    cm: CreditManagerData,
+    lts: Record<string, bigint>,
+  ): Promise<void> {
+    const logger = this.#caLogger(ca);
+    const configuratorAddr = await this.getConfiguratorAddr();
+    const impConfiurator = await impersonate(
+      this.executor.provider,
+      configuratorAddr,
+    );
+    const cc = ICreditConfiguratorV3__factory.connect(
+      cm.creditConfigurator,
+      impConfiurator,
+    );
+    const mgr = ICreditManagerV3__factory.connect(
+      cm.address,
+      this.executor.provider,
+    );
+    for (const [t, lt] of Object.entries(lts)) {
+      await cc.setLiquidationThreshold(t, lt);
+      const newLT = await mgr.liquidationThresholds(t);
+      logger.debug(`set LT of ${tokenSymbolByAddress[t]} to ${lt}: ${newLT}`);
+    }
+    await stopImpersonate(this.executor.provider, configuratorAddr);
   }
 
   public async estimate(
@@ -349,10 +412,28 @@ export default class LiquidationStrategyV3Partial
     }
   }
 
+  #caLogger(ca: CreditAccountData): LoggerInterface {
+    return this.logger.child({
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: managerName(ca),
+    });
+  }
+
   private get partialLiquidator(): ILiquidator {
     if (!this.#partialLiquidator) {
       throw new Error("strategy not launched");
     }
     return this.#partialLiquidator;
+  }
+
+  private async getConfiguratorAddr(): Promise<string> {
+    if (!this.#configuratorAddr) {
+      const aclAddr = await this.addressProvider.findService("ACL", 0);
+      const acl = IACL__factory.connect(aclAddr, this.executor.provider);
+      this.#configuratorAddr = await acl.owner();
+      this.logger.debug(`configurator address: ${this.#configuratorAddr}`);
+    }
+    return this.#configuratorAddr;
   }
 }
