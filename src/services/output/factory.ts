@@ -12,11 +12,11 @@ import type { IOptimisticOutputWriter } from "./types";
 function createOutputWriter(): IOptimisticOutputWriter {
   const config = Container.get(CONFIG) as ConfigSchema;
   if (config.outS3Bucket) {
-    return new S3Writer();
+    return new S3Writer(config);
   } else if (config.outEndpoint) {
-    return new RestWriter();
+    return new RestWriter(config);
   } else if (config.outDir) {
-    return new FileWriter();
+    return new FileWriter(config);
   }
   return new ConsoleWriter();
 }

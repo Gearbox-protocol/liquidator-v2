@@ -1,11 +1,11 @@
-import { Inject, Service } from "typedi";
+import type { ConfigSchema } from "../../config";
 
-import { CONFIG, ConfigSchema } from "../../config";
-
-@Service()
 export default class BaseWriter {
-  @Inject(CONFIG)
-  config: ConfigSchema;
+  protected readonly config: ConfigSchema;
+
+  constructor(config: ConfigSchema) {
+    this.config = config;
+  }
 
   protected getFilename(prefix: number | string): string {
     return (
