@@ -81,6 +81,7 @@ export default abstract class AbstractLiquidatorService
       }`,
     );
 
+    let executorAddress: string | undefined;
     try {
       const pfResult = await this._findClosePath(ca);
       let pathHuman: Array<string | null> = [];
@@ -92,6 +93,7 @@ export default abstract class AbstractLiquidatorService
       this.log.debug(pathHuman);
 
       const executor = this.keyService.takeVacantExecutor();
+      executorAddress = executor.address;
       const tx = await this._liquidate(executor, ca, pfResult.calls, false);
       const receipt = await tx.wait(1);
 
@@ -104,12 +106,14 @@ export default abstract class AbstractLiquidatorService
           .toNumber()
           .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
       );
-
-      await this.keyService.returnExecutor(executor.address);
     } catch (e) {
       this.ampqService.error(
         `Cant liquidate ${this.getAccountTitle(ca)}: ${e}`,
       );
+    } finally {
+      if (executorAddress) {
+        await this.keyService.returnExecutor(executorAddress);
+      }
     }
   }
 
