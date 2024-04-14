@@ -81,6 +81,13 @@ export class Config {
   @Min(0)
   static skipBlocks: number;
 
+  /**
+   * If 0, every block will be scanned
+   */
+  @IsNotEmpty()
+  @Min(0)
+  static scanInterval: number;
+
   @IsNotEmpty()
   @Min(1)
   static executorsQty: number;
@@ -163,11 +170,12 @@ export class Config {
       ? parseInt(process.env.JSON_RPC_TIMEOUT, 10)
       : undefined;
     Config.privateKey = process.env.PRIVATE_KEY || "";
-    Config.slippage = parseFloat(process.env.SLIPPAGE || "0");
+    Config.slippage = parseFloat(process.env.SLIPPAGE || "0.5");
     Config.walletPassword = process.env.WALLET_PASSWORD || "";
     Config.hfThreshold = parseInt(process.env.HF_TRESHOLD || "9950", 10);
     Config.ampqUrl = process.env.CLOUDAMQP_URL;
     Config.ampqExchange = process.env.AMPQ_EXCHANGE;
+    Config.scanInterval = parseInt(process.env.SCAN_INTERVAL || "0", 10);
     Config.skipBlocks = parseInt(process.env.SKIP_BLOCKS || "0", 10);
     Config.keyPath = process.env.KEY_PATH;
     Config.keySecret = process.env.KEY_SECRET;

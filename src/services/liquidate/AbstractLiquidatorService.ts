@@ -60,6 +60,7 @@ export default abstract class AbstractLiquidatorService
   public async launch(provider: providers.Provider): Promise<void> {
     this.provider = provider;
     this.slippage = Math.floor(config.slippage * 100);
+    this.log.debug(`slippage: ${this.slippage}`);
 
     switch (this.addressProvider.network) {
       case "Mainnet":

@@ -44,15 +44,16 @@ export default abstract class AbstractScanService {
     if (config.optimisticLiquidations) {
       return;
     }
-    if (this.addressProvider.network === "Mainnet") {
+    this.log.debug(`scan interval is ${config.scanInterval}`);
+    if (config.scanInterval === 0) {
       this.provider.on("block", async num => await this.onBlock(num));
-      return;
+    } else {
+      // on L2 blocks are too frequent
+      setInterval(async () => {
+        const block = await this.provider.getBlockNumber();
+        await this.onBlock(block);
+      }, config.scanInterval);
     }
-    // on L2 blocks are too frequent
-    setInterval(async () => {
-      const block = await this.provider.getBlockNumber();
-      await this.onBlock(block);
-    }, 12_000);
   }
 
   protected abstract _launch(provider: providers.Provider): Promise<void>;
