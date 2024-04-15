@@ -1,5 +1,6 @@
 import type { IPriceOracleV3Interface } from "@gearbox-protocol/liquidator-v2-contracts/dist/IPriceOracleV3.sol/IPriceOracleV3";
 import type {
+  CreditAccountData,
   IPriceOracleV3,
   MCall,
   NetworkType,
@@ -113,9 +114,12 @@ export default class OracleServiceV3 {
     );
   }
 
-  public checkReserveFeeds(tokens: string[], underlying: string): boolean {
-    for (const t of tokens) {
-      if (t.toLowerCase() === underlying.toLowerCase()) {
+  public checkReserveFeeds(ca: CreditAccountData): boolean {
+    for (const [t, b] of Object.entries(ca.balances)) {
+      if (t.toLowerCase() === ca.underlyingToken.toLowerCase()) {
+        continue;
+      }
+      if (b < 10n) {
         continue;
       }
       const entry = this.#feeds[t.toLowerCase()];
