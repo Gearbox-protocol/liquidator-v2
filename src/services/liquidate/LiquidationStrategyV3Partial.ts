@@ -147,7 +147,7 @@ export default class LiquidationStrategyV3Partial
               assetOut,
               amountOut,
               flashLoanAmount,
-              priceUpdates,
+              [], // priceUpdates,
               connectors,
               this.config.slippage,
             );
