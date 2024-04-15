@@ -120,7 +120,7 @@ export default class LiquidationStrategyV3Partial
     const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
 
     // TODO: maybe this should be refreshed every loop iteration
-    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+    // const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
     for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
       balances,
     )) {
@@ -129,7 +129,7 @@ export default class LiquidationStrategyV3Partial
         assetOut: `${assetOut} (${symb})`,
         amountOut: `${balance} (${formatBN(balance, getDecimals(assetOut))})`,
         flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
-        priceUpdates,
+        priceUpdates: [],
         connectors,
         slippage: this.config.slippage,
       });
@@ -306,14 +306,14 @@ export default class LiquidationStrategyV3Partial
     preview: PartialLiquidationPreview,
   ): Promise<BigNumber> {
     // TODO: recipient?
-    const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
+    // const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
     return this.partialLiquidator.estimateGas.partialLiquidateAndConvert(
       account.creditManager,
       account.addr,
       preview.assetOut,
       preview.amountOut,
       preview.flashLoanAmount,
-      priceUpdates,
+      [], // priceUpdates,
       preview.calls,
     );
   }
@@ -323,7 +323,7 @@ export default class LiquidationStrategyV3Partial
     preview: PartialLiquidationPreview,
     gasLimit?: BigNumberish,
   ): Promise<ContractReceipt> {
-    const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
+    // const priceUpdates = await this.redstone.liquidationPreviewUpdates(account);
     const txData =
       await this.partialLiquidator.populateTransaction.partialLiquidateAndConvert(
         account.creditManager,
@@ -331,7 +331,7 @@ export default class LiquidationStrategyV3Partial
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount,
-        priceUpdates,
+        [], // priceUpdates,
         preview.calls,
         gasLimit ? { gasLimit } : {},
       );
