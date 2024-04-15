@@ -225,6 +225,9 @@ export default class LiquidationStrategyV3Partial
   ): Promise<Record<string, bigint>> {
     const logger = this.#caLogger(ca);
     const balances = await this.#prepareAccountTokens(ca, cm);
+    if (ca.borrowedAmount === 0n) {
+      throw new Error("zero-debt account");
+    }
     // const snapshotId = await (
     // this.executor.provider as providers.JsonRpcProvider
     // ).send("evm_snapshot", []);
@@ -245,6 +248,9 @@ export default class LiquidationStrategyV3Partial
       } else {
         divisor += (balanceInUnderlying * lt) / PERCENTAGE_FACTOR;
       }
+    }
+    if (divisor === 0n) {
+      throw new Error("account has no tokens with non-dust balance");
     }
     const k = (WAD * dividend) / divisor;
 
