@@ -94,17 +94,24 @@ export default class OracleServiceV3 {
     tokenTo: string,
   ): Promise<Record<string, bigint>> {
     const calls: MCall<IPriceOracleV3Interface>[] = [];
+    let hasTokenTo = false;
+    let identityAmount = 0n;
     for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
-      calls.push({
-        address: this.oracle.address,
-        interface: this.oracle.interface,
-        method: "convert(uint256,address,address)",
-        params: [amount, tokenFrom, tokenTo],
-      });
+      if (tokenFrom.toLowerCase() === tokenTo.toLowerCase()) {
+        hasTokenTo = true;
+        identityAmount = amount;
+      } else {
+        calls.push({
+          address: this.oracle.address,
+          interface: this.oracle.interface,
+          method: "convert(uint256,address,address)",
+          params: [amount, tokenFrom, tokenTo],
+        });
+      }
     }
-    this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
+    this.log.debug(`need to peform convert on ${calls.length} feeds`);
     const resp = await safeMulticall<BigNumber>(calls, this.providerr);
-    return Object.fromEntries(
+    const result = Object.fromEntries(
       resp
         .map(({ value, error }, i) => [
           calls[i].params[1],
@@ -112,6 +119,10 @@ export default class OracleServiceV3 {
         ])
         .filter(([_, a]) => a > 0n),
     );
+    if (hasTokenTo) {
+      result[tokenTo.toLowerCase()] = identityAmount;
+    }
+    return result;
   }
 
   public checkReserveFeeds(ca: CreditAccountData): boolean {
