@@ -49,7 +49,7 @@ export default class ExecutorService {
     //   }
     // }
 
-    this.logger.debug(`sending tx via normal rpc`);
+    this.logger.debug({ nonce: txData.nonce }, `sending tx via normal rpc`);
     const signedTx = await this.wallet.signTransaction(txData);
     const tx = await this.provider.sendTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
