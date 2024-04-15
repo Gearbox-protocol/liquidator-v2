@@ -6,6 +6,7 @@ import { CONFIG, ConfigSchema } from "../../config";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import type { ILiquidatorService } from "../liquidate";
+import { OptimisticResults } from "../liquidate/OptimisiticResults";
 
 export default abstract class AbstractScanService {
   log: LoggerInterface;
@@ -15,6 +16,9 @@ export default abstract class AbstractScanService {
 
   @Inject()
   addressProvider: AddressProviderService;
+
+  @Inject()
+  optimistic: OptimisticResults;
 
   @Inject()
   provider: providers.Provider;
@@ -101,5 +105,9 @@ export default abstract class AbstractScanService {
         this.log.warn(msg);
       }
     }
+    const success = this.optimistic.get().filter(r => !r.isError).length;
+    this.log.info(
+      `optimistic liquidation finished: ${success}/${total} accounts liquidated`,
+    );
   }
 }

@@ -13,6 +13,7 @@ import {
   getDecimals,
   PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
+  WAD,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, contractsByNetwork } from "@gearbox-protocol/sdk-gov";
 import type {
@@ -134,7 +135,7 @@ export default class LiquidationStrategyV3Partial
       });
 
       // naively try to figure out amount that works
-      for (let i = 1n; i <= 10n; i++) {
+      for (let i = 1n; i <= 5n; i++) {
         const amountOut = (i * balance) / 10n;
         const flashLoanAmount = (i * balanceInUnderlying) / 10n;
         logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
@@ -164,7 +165,7 @@ export default class LiquidationStrategyV3Partial
           }
         } catch (e) {
           // console.log(">>>> failed");
-          console.log(e);
+          // console.log(e);
         }
       }
     }
@@ -220,7 +221,7 @@ export default class LiquidationStrategyV3Partial
   async #calcNewLTs(
     ca: CreditAccountData,
     cm: CreditManagerData,
-    factor = 9000n,
+    factor = 9990n,
   ): Promise<Record<string, bigint>> {
     const logger = this.#caLogger(ca);
     const balances = await this.#prepareAccountTokens(ca, cm);
@@ -230,27 +231,28 @@ export default class LiquidationStrategyV3Partial
 
     // LTnew = LT * k, where
     //
-    //        PERCENTAGE_FACTOR * totalDebt - B_underlying * LT_underlying
+    //        totalDebt - B_underlying * LT_underlying
     // k = -------------------------------------------------------------
     //                    sum(p * b* LT)
     let divisor = 0n;
-    let dividend = PERCENTAGE_FACTOR * ca.borrowedAmountPlusInterestAndFees; // TODO: USDT fee
+    let dividend =
+      (factor * ca.borrowedAmountPlusInterestAndFees) / PERCENTAGE_FACTOR; // TODO: USDT fee
     for (const [t, { balance, balanceInUnderlying, lt }] of Object.entries(
       balances,
     )) {
       if (t === cm.underlyingToken) {
-        dividend -= balance * lt;
+        dividend -= (balance * lt) / PERCENTAGE_FACTOR;
       } else {
-        divisor += balanceInUnderlying * lt;
+        divisor += (balanceInUnderlying * lt) / PERCENTAGE_FACTOR;
       }
     }
-    const k = (factor * dividend) / divisor;
+    const k = (WAD * dividend) / divisor;
 
     const result: Record<string, bigint> = {};
     const ltChangesHuman: Record<string, string> = {};
     for (const [t, { lt }] of Object.entries(balances)) {
       if (t !== cm.underlyingToken) {
-        result[t] = (lt * k) / PERCENTAGE_FACTOR;
+        result[t] = (lt * k) / WAD;
         ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t]}`;
       }
     }
