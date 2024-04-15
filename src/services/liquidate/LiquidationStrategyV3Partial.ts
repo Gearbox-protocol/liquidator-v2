@@ -228,6 +228,11 @@ export default class LiquidationStrategyV3Partial
     if (ca.borrowedAmount === 0n) {
       throw new Error("zero-debt account");
     }
+    if (
+      !this.oracle.checkReserveFeeds(Object.keys(balances), ca.underlyingToken)
+    ) {
+      throw new Error("account has tokens without reserve price feeds");
+    }
     // const snapshotId = await (
     // this.executor.provider as providers.JsonRpcProvider
     // ).send("evm_snapshot", []);

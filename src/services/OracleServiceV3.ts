@@ -6,6 +6,7 @@ import type {
   RedstonePriceFeed,
 } from "@gearbox-protocol/sdk";
 import {
+  ADDRESS_0X0,
   IPriceOracleV3__factory,
   RedstonePriceFeed__factory,
   safeMulticall,
@@ -30,6 +31,7 @@ interface PriceFeedEntry {
    * Is set for redstone feeds, null for non-redstone feeds, undefined if unknown
    */
   dataFeedId?: string | null;
+  trusted?: boolean;
 }
 
 interface RedstoneFeed {
@@ -111,6 +113,25 @@ export default class OracleServiceV3 {
     );
   }
 
+  public checkReserveFeeds(tokens: string[], underlying: string): boolean {
+    for (const t of tokens) {
+      if (t.toLowerCase() === underlying.toLowerCase()) {
+        continue;
+      }
+      const entry = this.#feeds[t.toLowerCase()];
+      if (!entry) {
+        return false;
+      }
+      if (
+        !entry.main.trusted &&
+        (!entry.reserve || entry.reserve.address === ADDRESS_0X0)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Returns currenly used redstone feeds
    */
@@ -169,7 +190,13 @@ export default class OracleServiceV3 {
           `cannot add reserve price feed ${priceFeed} for token ${token} because main price feed is not added yet`,
         );
       }
-      entry = { active: "main", main: { address: priceFeed } };
+      entry = {
+        active: "main",
+        main: {
+          address: priceFeed,
+          trusted: (e as SetPriceFeedEvent).args.trusted,
+        },
+      };
     }
     entry[kind] = { address: priceFeed };
     this.#feeds[token] = entry;
