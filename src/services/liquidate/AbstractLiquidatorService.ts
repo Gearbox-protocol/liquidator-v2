@@ -14,7 +14,7 @@ import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
-import { accountName, managerName } from "../utils";
+import { accountName, filterDust, managerName } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
 import type {
   ILiquidationStrategy,
@@ -120,7 +120,7 @@ export default abstract class AbstractLiquidatorService
       creditManager: ca.creditManager,
       borrower: ca.borrower,
       account: ca.addr,
-      balances: ca.balances,
+      balances: filterDust(ca.balances),
       gasUsed: 0,
       calls: [],
       isError: true,
