@@ -20,6 +20,8 @@ export default class ExecutorService {
   @Logger("ExecutorService")
   public logger: LoggerInterface;
 
+  #isAnvil = false;
+
   // #flashbots?: FlashbotsBundleProvider;
 
   public async launch(): Promise<void> {
@@ -28,8 +30,11 @@ export default class ExecutorService {
         "anvil_nodeInfo",
         [],
       );
-      this.logger.debug(resp, "anvil node info");
-    } catch {
+      this.#isAnvil = "forkConfig" in resp;
+    } catch {}
+    if (this.#isAnvil) {
+      this.logger.debug("running on anvil");
+    } else {
       this.logger.debug("running on real rpc");
     }
   }
@@ -67,7 +72,9 @@ export default class ExecutorService {
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.sendTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
-    return mine(this.provider as providers.JsonRpcProvider, tx);
+    return this.#isAnvil
+      ? mine(this.provider as providers.JsonRpcProvider, tx)
+      : tx.wait();
   }
 
   // private async getFlashbots(): Promise<FlashbotsBundleProvider> {
