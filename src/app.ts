@@ -5,6 +5,7 @@ import { CONFIG, ConfigSchema, loadConfig } from "./config";
 import { Logger, LoggerInterface } from "./log";
 import { AddressProviderService } from "./services/AddressProviderService";
 import { AMPQService } from "./services/ampqService";
+import ExecutorService from "./services/ExecutorService";
 import { HealthChecker } from "./services/healthChecker";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
@@ -43,6 +44,9 @@ class App {
   @Inject()
   redstone: RedstoneServiceV3;
 
+  @Inject()
+  executor: ExecutorService;
+
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
 
@@ -63,6 +67,7 @@ class App {
       .join(" ");
     this.log.info(msg);
 
+    await this.executor.launch();
     await this.addressProvider.launch();
 
     this.redstone.launch();

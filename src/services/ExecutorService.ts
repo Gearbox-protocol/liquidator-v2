@@ -7,6 +7,7 @@ import { providers, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
+import { mine } from "./utils";
 
 @Service()
 export default class ExecutorService {
@@ -20,6 +21,18 @@ export default class ExecutorService {
   public logger: LoggerInterface;
 
   // #flashbots?: FlashbotsBundleProvider;
+
+  public async launch(): Promise<void> {
+    try {
+      const resp = await (this.provider as providers.JsonRpcProvider).send(
+        "anvil_nodeInfo",
+        [],
+      );
+      this.logger.debug(resp, "anvil node info");
+    } catch {
+      this.logger.debug("running on real rpc");
+    }
+  }
 
   public async sendPrivate(
     txData: PopulatedTransaction,
@@ -54,7 +67,7 @@ export default class ExecutorService {
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.sendTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
-    return tx.wait(1);
+    return mine(this.provider as providers.JsonRpcProvider, tx);
   }
 
   // private async getFlashbots(): Promise<FlashbotsBundleProvider> {
