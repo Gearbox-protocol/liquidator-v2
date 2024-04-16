@@ -9,7 +9,6 @@ import { providers, utils, Wallet } from "ethers";
 import { Inject } from "typedi";
 
 import { CONFIG, ConfigSchema } from "../../config";
-import type { OptimisticResult } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
@@ -20,6 +19,7 @@ import { OptimisticResults } from "./OptimisiticResults";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
+  OptimisticResult,
   StrategyPreview,
 } from "./types";
 
