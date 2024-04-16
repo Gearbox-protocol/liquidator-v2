@@ -2,12 +2,15 @@
 //   FlashbotsBundleProvider,
 //   FlashbotsTransactionResolution,
 // } from "@flashbots/ethers-provider-bundle";
+import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type { PopulatedTransaction } from "ethers";
-import { providers, Wallet } from "ethers";
+import { BigNumber, providers, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
 import { mine } from "./utils";
+
+const GAS_TIP_MULTIPLIER = BigNumber.from(15000);
 
 @Service()
 export default class ExecutorService {
@@ -67,8 +70,13 @@ export default class ExecutorService {
     //   }
     // }
 
+    this.logger.debug(`sending tx via normal rpc`);
     const req = await this.wallet.populateTransaction(txData);
-    this.logger.debug({ req }, `sending tx via normal rpc`);
+    if (req.maxPriorityFeePerGas) {
+      req.maxPriorityFeePerGas = BigNumber.from(req.maxPriorityFeePerGas)
+        .mul(GAS_TIP_MULTIPLIER)
+        .div(PERCENTAGE_FACTOR);
+    }
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.sendTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
