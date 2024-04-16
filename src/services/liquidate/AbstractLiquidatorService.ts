@@ -6,6 +6,7 @@ import {
 } from "@gearbox-protocol/sdk";
 import type { BigNumber, BigNumberish, ContractReceipt } from "ethers";
 import { providers, utils, Wallet } from "ethers";
+import { decodeError } from "ethers-decode-error";
 import { Inject } from "typedi";
 
 import { CONFIG, ConfigSchema } from "../../config";
@@ -216,11 +217,11 @@ export default abstract class AbstractLiquidatorService
       } catch (e: any) {
         logger.error(`cant liquidate: ${e}`);
         await this.saveTxTrace(e.transactionHash);
-        optimisticResult.error = `cant liquidate: ${e}`;
+        optimisticResult.error = decodeError(e).error;
       }
     } catch (e: any) {
       this.log.error(`cannot liquidate: ${e}`);
-      optimisticResult.error = `cannot liquidate: ${e}`;
+      optimisticResult.error = decodeError(e).error;
     }
 
     optimisticResult.duration = Date.now() - start;
