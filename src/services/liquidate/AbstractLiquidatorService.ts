@@ -19,7 +19,7 @@ import { OptimisticResults } from "./OptimisiticResults";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
-  OptimisticResult,
+  OptimisticResultV2,
   StrategyPreview,
 } from "./types";
 
@@ -107,17 +107,20 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
+  public async liquidateOptimistic(
+    ca: CreditAccountData,
+  ): Promise<OptimisticResultV2> {
     const logger = this.log.child({
       account: ca.addr,
       borrower: ca.borrower,
       manager: managerName(ca),
     });
-    let snapshotId: unknown;
-    const optimisticResult: OptimisticResult = {
+    let snapshotId: number | undefined;
+    const optimisticResult: OptimisticResultV2 = {
       creditManager: ca.creditManager,
       borrower: ca.borrower,
       account: ca.addr,
+      balances: ca.balances,
       gasUsed: 0,
       calls: [],
       isError: true,
@@ -129,10 +132,15 @@ export default abstract class AbstractLiquidatorService
 
     try {
       const balanceBefore = await this.getBalance(ca);
-      snapshotId = await this.strategy.makeLiquidatable(ca);
+      const mlRes = await this.strategy.makeLiquidatable(ca);
+      snapshotId = mlRes.snapshotId;
+      optimisticResult.partialLiquidationCondition =
+        mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
       const preview = await this.strategy.preview(ca);
-      logger.debug({ preview });
+      optimisticResult.assetOut = preview.assetOut;
+      optimisticResult.amountOut = preview.amountOut;
+      optimisticResult.flashLoanAmount = preview.flashLoanAmount;
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
 
@@ -208,9 +216,11 @@ export default abstract class AbstractLiquidatorService
       } catch (e: any) {
         logger.error(`cant liquidate: ${e}`);
         await this.saveTxTrace(e.transactionHash);
+        optimisticResult.error = `cant liquidate: ${e}`;
       }
     } catch (e: any) {
       this.log.error(`cannot liquidate: ${e}`);
+      optimisticResult.error = `cannot liquidate: ${e}`;
     }
 
     optimisticResult.duration = Date.now() - start;
@@ -222,7 +232,7 @@ export default abstract class AbstractLiquidatorService
       ]);
     }
 
-    return !optimisticResult.isError;
+    return optimisticResult;
   }
 
   protected async getBalance(ca: CreditAccountData): Promise<Balance> {

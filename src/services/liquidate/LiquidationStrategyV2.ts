@@ -9,7 +9,7 @@ import { Logger, LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import ExecutorService from "../ExecutorService";
-import type { ILiquidationStrategy } from "./types";
+import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
 
 @Service()
 export default class LiquidationStrategyV2
@@ -47,9 +47,9 @@ export default class LiquidationStrategyV2
 
   public async makeLiquidatable(
     ca: CreditAccountData,
-  ): Promise<number | undefined> {
+  ): Promise<MakeLiquidatableResult> {
     // not supported
-    return Promise.resolve(undefined);
+    return Promise.resolve({});
   }
 
   public async preview(

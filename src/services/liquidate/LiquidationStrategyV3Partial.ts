@@ -30,7 +30,11 @@ import { Logger, LoggerInterface } from "../../log";
 import { accountName, managerName } from "../utils";
 import { impersonate, stopImpersonate } from "../utils/impersonate";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
-import type { ILiquidationStrategy, PartialLiquidationPreview } from "./types";
+import type {
+  ILiquidationStrategy,
+  MakeLiquidatableResult,
+  PartialLiquidationPreview,
+} from "./types";
 
 interface TokenBalance {
   balance: bigint;
@@ -82,7 +86,7 @@ export default class LiquidationStrategyV3Partial
 
   public async makeLiquidatable(
     ca: CreditAccountData,
-  ): Promise<number | undefined> {
+  ): Promise<MakeLiquidatableResult> {
     if (!this.config.optimistic) {
       throw new Error("makeLiquidatable only works in optimistic mode");
     }
@@ -97,12 +101,12 @@ export default class LiquidationStrategyV3Partial
       await this.compressor.getCreditManagerData(ca.creditManager),
     );
 
-    const newLTs = await this.#calcNewLTs(ca, cm);
+    const ltChanges = await this.#calcNewLTs(ca, cm);
     const snapshotId = await (
       this.executor.provider as providers.JsonRpcProvider
     ).send("evm_snapshot", []);
 
-    await this.#setNewLTs(ca, cm, newLTs);
+    await this.#setNewLTs(ca, cm, ltChanges);
     const updCa = await this.compressor.callStatic.getCreditAccountData(
       ca.addr,
       [],
@@ -112,7 +116,14 @@ export default class LiquidationStrategyV3Partial
       hfOld: ca.healthFactor.toString(),
       isSuccessful: updCa.isSuccessful,
     });
-    return snapshotId;
+    return {
+      snapshotId,
+      partialLiquidationCondition: {
+        hfOld: ca.healthFactor,
+        hfNew: updCa.healthFactor.toNumber(),
+        ltChanges,
+      },
+    };
   }
 
   public async preview(
@@ -228,7 +239,7 @@ export default class LiquidationStrategyV3Partial
     ca: CreditAccountData,
     cm: CreditManagerData,
     factor = 9990n,
-  ): Promise<Record<string, bigint>> {
+  ): Promise<Record<string, [ltOld: bigint, ltNew: bigint]>> {
     const logger = this.#caLogger(ca);
     const balances = await this.#prepareAccountTokens(ca, cm);
     // const snapshotId = await (
@@ -260,11 +271,11 @@ export default class LiquidationStrategyV3Partial
     }
     const k = (WAD * dividend) / divisor;
 
-    const result: Record<string, bigint> = {};
+    const result: Record<string, [bigint, bigint]> = {};
     const ltChangesHuman: Record<string, string> = {};
     for (const [t, { lt }] of Object.entries(balances)) {
       if (t !== cm.underlyingToken) {
-        result[t] = (lt * k) / WAD;
+        result[t] = [lt, (lt * k) / WAD];
         ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t]}`;
       }
     }
@@ -278,7 +289,7 @@ export default class LiquidationStrategyV3Partial
   async #setNewLTs(
     ca: CreditAccountData,
     cm: CreditManagerData,
-    lts: Record<string, bigint>,
+    ltChanges: Record<string, [bigint, bigint]>,
   ): Promise<void> {
     const logger = this.#caLogger(ca);
     const configuratorAddr = await this.getConfiguratorAddr();
@@ -294,7 +305,7 @@ export default class LiquidationStrategyV3Partial
       cm.address,
       this.executor.provider,
     );
-    for (const [t, lt] of Object.entries(lts)) {
+    for (const [t, [_, lt]] of Object.entries(ltChanges)) {
       const tx = await cc.setLiquidationThreshold(t, lt);
       await this.executor.mine(tx);
       const newLT = await mgr.liquidationThresholds(t);

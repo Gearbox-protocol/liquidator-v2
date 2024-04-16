@@ -35,12 +35,24 @@ export interface ILiquidatorService {
    * @param redstoneTokens
    * @returns true is account was successfully liquidated
    */
-  liquidateOptimistic: (ca: CreditAccountData) => Promise<boolean>;
+  liquidateOptimistic: (ca: CreditAccountData) => Promise<OptimisticResultV2>;
 }
 
 export interface StrategyPreview {
   calls: MultiCall[];
   underlyingBalance: bigint;
+  /**
+   * Asset in case of partial liquidation
+   */
+  assetOut?: string;
+  /**
+   * Asset amount in case of partial liquidation
+   */
+  amountOut?: bigint;
+  /**
+   * Falsh loan amount in case of partial liquidation
+   */
+  flashLoanAmount?: bigint;
 }
 
 export interface ILiquidationStrategy<T extends StrategyPreview> {
@@ -54,7 +66,7 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
    * @param ca
    * @returns evm snapshotId or underfined
    */
-  makeLiquidatable: (ca: CreditAccountData) => Promise<number | undefined>;
+  makeLiquidatable: (ca: CreditAccountData) => Promise<MakeLiquidatableResult>;
   preview: (ca: CreditAccountData) => Promise<T>;
   estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
   liquidate: (
@@ -64,6 +76,9 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
   ) => Promise<ContractReceipt>;
 }
 
+/**
+ * Original result format, shared by both liquidators (TS and GO)
+ */
 export interface OptimisticResult {
   /**
    * Credit Manager address
@@ -114,4 +129,45 @@ export interface OptimisticResult {
    * How much time it took to liquidate this account (ms)
    */
   duration?: number;
+}
+
+export interface MakeLiquidatableResult {
+  snapshotId?: number;
+  partialLiquidationCondition?: PartialLiquidationCondition;
+}
+
+export interface OptimisticResultV2 extends OptimisticResult {
+  /**
+   * Token balances before liquidation
+   */
+  balances: Record<string, bigint>;
+
+  /**
+   * Error occured during liquidation
+   */
+  error?: string;
+
+  /**
+   * Changes made to enable partial liquidation of account
+   */
+  partialLiquidationCondition?: PartialLiquidationCondition;
+
+  /**
+   * Asset in case of partial liquidation
+   */
+  assetOut?: string;
+  /**
+   * Asset amount in case of partial liquidation
+   */
+  amountOut?: bigint;
+  /**
+   * Falsh loan amount in case of partial liquidation
+   */
+  flashLoanAmount?: bigint;
+}
+
+export interface PartialLiquidationCondition {
+  ltChanges: Record<string, [bigint, bigint]>;
+  hfOld: number;
+  hfNew: number;
 }

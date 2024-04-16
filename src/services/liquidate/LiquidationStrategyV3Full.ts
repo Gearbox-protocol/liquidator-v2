@@ -10,7 +10,7 @@ import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
-import type { ILiquidationStrategy } from "./types";
+import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
 
 @Service()
 export default class LiquidationStrategyV3Full
@@ -25,9 +25,9 @@ export default class LiquidationStrategyV3Full
 
   public async makeLiquidatable(
     ca: CreditAccountData,
-  ): Promise<number | undefined> {
+  ): Promise<MakeLiquidatableResult> {
     // not supported
-    return Promise.resolve(undefined);
+    return Promise.resolve({});
   }
 
   public async preview(

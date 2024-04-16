@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { json_stringify } from "../utils/bigint-serializer";
 import BaseWriter from "./BaseWriter";
 import type { IOptimisticOutputWriter } from "./types";
 
@@ -11,7 +12,7 @@ export default class FileWriter
   public async write(prefix: number | string, result: unknown): Promise<void> {
     const filename = join(this.config.outDir, this.getFilename(prefix));
     try {
-      await writeFile(filename, JSON.stringify(result), "utf-8");
+      await writeFile(filename, json_stringify(result), "utf-8");
     } catch (e) {
       console.error(e);
     }
