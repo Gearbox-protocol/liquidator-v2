@@ -86,6 +86,12 @@ export default class LiquidationStrategyV3Partial
     if (!this.config.optimistic) {
       throw new Error("makeLiquidatable only works in optimistic mode");
     }
+    if (ca.borrowedAmount === 0n) {
+      throw new Error("zero-debt account");
+    }
+    if (!this.oracle.checkReserveFeeds(ca)) {
+      throw new Error("account has tokens without reserve price feeds");
+    }
     const logger = this.#caLogger(ca);
     const cm = new CreditManagerData(
       await this.compressor.getCreditManagerData(ca.creditManager),
@@ -224,13 +230,7 @@ export default class LiquidationStrategyV3Partial
     factor = 9990n,
   ): Promise<Record<string, bigint>> {
     const logger = this.#caLogger(ca);
-    if (!this.oracle.checkReserveFeeds(ca)) {
-      throw new Error("account has tokens without reserve price feeds");
-    }
     const balances = await this.#prepareAccountTokens(ca, cm);
-    if (ca.borrowedAmount === 0n) {
-      throw new Error("zero-debt account");
-    }
     // const snapshotId = await (
     // this.executor.provider as providers.JsonRpcProvider
     // ).send("evm_snapshot", []);
