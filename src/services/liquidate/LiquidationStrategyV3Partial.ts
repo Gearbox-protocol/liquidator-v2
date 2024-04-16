@@ -292,7 +292,8 @@ export default class LiquidationStrategyV3Partial
       this.executor.provider,
     );
     for (const [t, lt] of Object.entries(lts)) {
-      await cc.setLiquidationThreshold(t, lt);
+      const tx = await cc.setLiquidationThreshold(t, lt);
+      await this.executor.mine(tx);
       const newLT = await mgr.liquidationThresholds(t);
       logger.debug(`set LT of ${tokenSymbolByAddress[t]} to ${lt}: ${newLT}`);
     }

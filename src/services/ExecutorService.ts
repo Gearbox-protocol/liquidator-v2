@@ -3,12 +3,16 @@
 //   FlashbotsTransactionResolution,
 // } from "@flashbots/ethers-provider-bundle";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
-import type { PopulatedTransaction } from "ethers";
+import type {
+  ContractReceipt,
+  ContractTransaction,
+  PopulatedTransaction,
+} from "ethers";
 import { BigNumber, providers, Wallet } from "ethers";
+import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
-import { mine } from "./utils";
 
 const GAS_TIP_MULTIPLIER = BigNumber.from(15000);
 
@@ -40,6 +44,38 @@ export default class ExecutorService {
     } else {
       this.logger.debug("running on real rpc");
     }
+  }
+
+  /**
+   * Mines transaction on anvil. Because sometimes it gets stuck for unknown reasons,
+   * add retries and timeout
+   * @param tx
+   * @returns
+   */
+  public async mine(
+    tx: ContractTransaction,
+    interval = 12_000,
+    retries = 5,
+  ): Promise<ContractReceipt> {
+    if (this.#isAnvil) {
+      await (this.provider as providers.JsonRpcProvider)
+        .send("evm_mine", [])
+        .catch(() => {});
+    }
+
+    const run = async () => {
+      const receipt: ContractReceipt = await Promise.race([
+        tx.wait(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("mine timeout"));
+          }, interval);
+        }),
+      ]);
+      return receipt;
+    };
+
+    return pRetry(run, { retries });
   }
 
   public async sendPrivate(
@@ -80,9 +116,7 @@ export default class ExecutorService {
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.sendTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
-    return this.#isAnvil
-      ? mine(this.provider as providers.JsonRpcProvider, tx)
-      : tx.wait();
+    return this.mine(tx);
   }
 
   // private async getFlashbots(): Promise<FlashbotsBundleProvider> {

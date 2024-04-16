@@ -9,12 +9,12 @@ import {
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { BigNumber, type BigNumberish, type ethers, type Wallet } from "ethers";
+import { BigNumber, type BigNumberish, type Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { CONFIG, ConfigSchema } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import { mine } from "../utils";
+import ExecutorService from "../ExecutorService";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
 
@@ -31,6 +31,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
   @Inject(CONFIG)
   config: ConfigSchema;
+
+  @Inject()
+  executor: ExecutorService;
 
   private apiClient: AxiosInstance;
   private readonly slippage: number;
@@ -96,10 +99,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       );
       const erc20 = IERC20__factory.connect(tokenAddr, executor);
       const approveTx = await erc20.approve(this.routerAddress, amount);
-      await mine(
-        executor.provider as ethers.providers.JsonRpcProvider,
-        approveTx,
-      );
+      await this.executor.mine(approveTx);
 
       const swap = await this.apiClient.get("/swap", {
         params: {
@@ -119,9 +119,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         // ...rest
       } = swap.data;
 
-      const txR = await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
+      const txR = await executor.sendTransaction(tx);
       transactionHash = txR.hash;
-      await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
+      await this.executor.mine(txR);
       this.log.debug(
         `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
