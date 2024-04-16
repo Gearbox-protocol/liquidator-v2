@@ -193,7 +193,7 @@ export class ScanServiceV3 extends AbstractScanService {
     }
     return liquidatableOnly
       ? this.#filterLiquidatable(result, overrides)
-      : result;
+      : this.#filterZeroDebt(result);
   }
 
   // TODO: this can be nicely solved by exposing _queryCreditAccounts in DataCompressor
@@ -235,7 +235,15 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
     );
-    return liquidatableOnly ? this.#filterLiquidatable(accs, overrides) : accs;
+    return liquidatableOnly
+      ? this.#filterLiquidatable(accs, overrides)
+      : this.#filterZeroDebt(accs);
+  }
+
+  #filterZeroDebt(
+    accs: CreditAccountDataStructOutput[],
+  ): CreditAccountDataStructOutput[] {
+    return accs.filter(acc => acc.debt.gt(0));
   }
 
   async #filterLiquidatable(
