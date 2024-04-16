@@ -11,6 +11,7 @@ import {
   IPriceOracleV3__factory,
   RedstonePriceFeed__factory,
   safeMulticall,
+  WAD,
 } from "@gearbox-protocol/sdk";
 import type {
   SetPriceFeedEvent,
@@ -21,6 +22,7 @@ import type { BigNumber } from "ethers";
 import { providers, utils } from "ethers";
 import { Inject, Service } from "typedi";
 
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
 import { AddressProviderService } from "./AddressProviderService";
 
@@ -65,10 +67,15 @@ export default class OracleServiceV3 {
   @Inject()
   providerr: providers.Provider;
 
+  @Inject(CONFIG)
+  config: ConfigSchema;
+
   #oracle?: IPriceOracleV3;
   #lastBlock = 0;
 
   #feeds: Record<string, OracleEntry> = {};
+  // underlying (=tokenTo) -> token -> token price in underlying
+  #priceCache: Record<string, Record<string, bigint>> = {};
 
   public async launch(block: number): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.addressProvider.network];
@@ -97,8 +104,11 @@ export default class OracleServiceV3 {
     const result: Record<string, bigint> = {};
 
     for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
+      const fromCache = this.#convertCached(tokenFrom, tokenTo, amount);
       if (tokenFrom.toLowerCase() === tokenTo.toLowerCase()) {
         result[tokenTo.toLowerCase()] = amount;
+      } else if (this.config.optimistic && !!fromCache) {
+        result[tokenFrom.toLowerCase()] = fromCache;
       } else {
         calls.push({
           address: this.oracle.address,
@@ -113,9 +123,13 @@ export default class OracleServiceV3 {
 
     for (let i = 0; i < resp.length; i++) {
       const { value, error } = resp[i];
+      const amountFrom = calls[i].params[0] as bigint;
       const tokenFrom = calls[i].params[1] as string;
       if (!error && !!value) {
         result[tokenFrom.toLowerCase()] = value.toBigInt();
+        if (this.config.optimistic) {
+          this.#saveCached(tokenFrom, tokenTo, amountFrom, value.toBigInt());
+        }
       }
     }
 
@@ -269,6 +283,31 @@ export default class OracleServiceV3 {
         `cannot set status for token ${token}: ${entry.active} price feed address not set`,
       );
     }
+  }
+
+  #convertCached(
+    tokenFrom: string,
+    tokenTo: string,
+    amountFrom: bigint,
+  ): bigint | undefined {
+    const price =
+      this.#priceCache[tokenTo.toLowerCase()]?.[tokenFrom.toLowerCase()];
+    if (!price) {
+      return undefined;
+    }
+    return (amountFrom * price) / WAD;
+  }
+
+  #saveCached(
+    tokenFrom: string,
+    tokenTo: string,
+    amountFrom: bigint,
+    amountTo: bigint,
+  ): void {
+    const price = (WAD * amountTo) / amountFrom;
+    const froms = this.#priceCache[tokenTo.toLowerCase()] ?? {};
+    froms[tokenFrom.toLowerCase()] = price;
+    this.#priceCache[tokenTo.toLowerCase()] = froms;
   }
 
   private get oracle(): IPriceOracleV3 {
