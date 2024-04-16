@@ -14,7 +14,7 @@ import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
 
-const GAS_TIP_MULTIPLIER = BigNumber.from(15000);
+const GAS_TIP_MULTIPLIER = BigNumber.from(5000);
 
 @Service()
 export default class ExecutorService {
@@ -108,10 +108,12 @@ export default class ExecutorService {
 
     this.logger.debug(`sending tx via normal rpc`);
     const req = await this.wallet.populateTransaction(txData);
-    if (req.maxPriorityFeePerGas) {
-      req.maxPriorityFeePerGas = BigNumber.from(req.maxPriorityFeePerGas)
+    if (req.maxPriorityFeePerGas && req.maxFeePerGas) {
+      const extraTip = BigNumber.from(req.maxPriorityFeePerGas)
         .mul(GAS_TIP_MULTIPLIER)
         .div(PERCENTAGE_FACTOR);
+      req.maxPriorityFeePerGas = extraTip.add(req.maxPriorityFeePerGas);
+      req.maxFeePerGas = extraTip.add(req.maxFeePerGas);
     }
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.sendTransaction(signedTx);
