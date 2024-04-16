@@ -255,6 +255,9 @@ export default class LiquidationStrategyV3Partial
     if (divisor === 0n) {
       throw new Error("account has no tokens with non-dust balance");
     }
+    if (dividend <= 0n) {
+      throw new Error(`account balance in underlying covers debt`);
+    }
     const k = (WAD * dividend) / divisor;
 
     const result: Record<string, bigint> = {};
