@@ -148,7 +148,7 @@ export default class LiquidationStrategyV3Partial
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
-              cm.address,
+              ca.creditManager,
               ca.addr,
               assetOut,
               amountOut,

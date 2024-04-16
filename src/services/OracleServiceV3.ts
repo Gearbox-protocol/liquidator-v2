@@ -94,12 +94,11 @@ export default class OracleServiceV3 {
     tokenTo: string,
   ): Promise<Record<string, bigint>> {
     const calls: MCall<IPriceOracleV3Interface>[] = [];
-    let hasTokenTo = false;
-    let identityAmount = 0n;
+    const result: Record<string, bigint> = {};
+
     for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
       if (tokenFrom.toLowerCase() === tokenTo.toLowerCase()) {
-        hasTokenTo = true;
-        identityAmount = amount;
+        result[tokenTo.toLowerCase()] = amount;
       } else {
         calls.push({
           address: this.oracle.address,
@@ -111,17 +110,15 @@ export default class OracleServiceV3 {
     }
     this.log.debug(`need to peform convert on ${calls.length} feeds`);
     const resp = await safeMulticall<BigNumber>(calls, this.providerr);
-    const result = Object.fromEntries(
-      resp
-        .map(({ value, error }, i) => [
-          calls[i].params[1],
-          error ? -1n : value?.toBigInt() ?? -1n,
-        ])
-        .filter(([_, a]) => a > 0n),
-    );
-    if (hasTokenTo) {
-      result[tokenTo.toLowerCase()] = identityAmount;
+
+    for (let i = 0; i < resp.length; i++) {
+      const { value, error } = resp[i];
+      const tokenFrom = calls[i].params[1] as string;
+      if (!error && !!value) {
+        result[tokenFrom.toLowerCase()] = value.toBigInt();
+      }
     }
+
     return result;
   }
 
