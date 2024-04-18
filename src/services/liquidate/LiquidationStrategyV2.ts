@@ -1,5 +1,10 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { ICreditFacadeV2__factory, PathFinderV1 } from "@gearbox-protocol/sdk";
+import type { IDataCompressorV2_1 } from "@gearbox-protocol/sdk";
+import {
+  CreditAccountData,
+  ICreditFacadeV2__factory,
+  IDataCompressorV2_1__factory,
+  PathFinderV1,
+} from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { BigNumberish, ContractReceipt } from "ethers";
 import { Inject, Service } from "typedi";
@@ -34,15 +39,33 @@ export default class LiquidationStrategyV2
   executor: ExecutorService;
 
   #pathFinder?: PathFinderV1;
+  #compressor?: IDataCompressorV2_1;
 
   public async launch(): Promise<void> {
-    const pathFinder = await this.addressProvider.findService("ROUTER", 1);
+    const [pfAddr, dcAddr] = await Promise.all([
+      this.addressProvider.findService("ROUTER", 1),
+      this.addressProvider.findService("DATA_COMPRESSOR", 210),
+    ]);
+    this.#compressor = IDataCompressorV2_1__factory.connect(
+      dcAddr,
+      this.executor.provider,
+    );
     this.#pathFinder = new PathFinderV1(
-      pathFinder,
+      pfAddr,
       this.executor.provider,
       this.addressProvider.network,
       PathFinderV1.connectors,
     );
+  }
+
+  public async updateCreditAccountData(
+    ca: CreditAccountData,
+  ): Promise<CreditAccountData> {
+    const newCa = await this.compressor.getCreditAccountData(
+      ca.creditManager,
+      ca.borrower,
+    );
+    return new CreditAccountData(newCa);
   }
 
   public async makeLiquidatable(
@@ -106,6 +129,13 @@ export default class LiquidationStrategyV2
     );
 
     return this.executor.sendPrivate(txData);
+  }
+
+  private get compressor(): IDataCompressorV2_1 {
+    if (!this.#compressor) {
+      throw new Error(`not launched`);
+    }
+    return this.#compressor;
   }
 
   private get pathFinder(): PathFinderV1 {

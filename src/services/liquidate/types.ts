@@ -59,6 +59,9 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
   launch: () => Promise<void>;
+  updateCreditAccountData: (
+    ca: CreditAccountData,
+  ) => Promise<CreditAccountData>;
   /**
    * For optimistic liquidations only: create conditions that make this account liquidatable
    * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result
@@ -138,9 +141,25 @@ export interface MakeLiquidatableResult {
 
 export interface OptimisticResultV2 extends OptimisticResult {
   /**
+   * Flag to distinguish v2 format
+   */
+  version: "2";
+  /**
    * Token balances before liquidation
    */
-  balances: Record<string, bigint>;
+  balancesBefore: Record<string, bigint>;
+  /**
+   * Token after (partial) liquidation
+   */
+  balancesAfter: Record<string, bigint>;
+  /**
+   * Health factor before liquidation
+   */
+  hfBefore: number;
+  /**
+   * Health factor after (partial) liquidation
+   */
+  hfAfter: number;
 
   /**
    * Error occured during liquidation
@@ -168,6 +187,5 @@ export interface OptimisticResultV2 extends OptimisticResult {
 
 export interface PartialLiquidationCondition {
   ltChanges: Record<string, [bigint, bigint]>;
-  hfOld: number;
   hfNew: number;
 }

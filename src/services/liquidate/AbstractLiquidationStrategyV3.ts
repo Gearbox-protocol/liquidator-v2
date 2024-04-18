@@ -1,5 +1,9 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
-import { IDataCompressorV3__factory, PathFinder } from "@gearbox-protocol/sdk";
+import {
+  CreditAccountData,
+  IDataCompressorV3__factory,
+  PathFinder,
+} from "@gearbox-protocol/sdk";
 import { Inject } from "typedi";
 
 import { CONFIG, ConfigSchema } from "../../config";
@@ -44,6 +48,16 @@ export default abstract class AbstractLiquidationStrategyV3 {
       this.executor.provider,
       this.addressProvider.network,
     );
+  }
+
+  public async updateCreditAccountData(
+    ca: CreditAccountData,
+  ): Promise<CreditAccountData> {
+    const newCa = await this.compressor.callStatic.getCreditAccountData(
+      ca.addr,
+      [],
+    );
+    return new CreditAccountData(newCa);
   }
 
   protected get compressor(): IDataCompressorV3 {

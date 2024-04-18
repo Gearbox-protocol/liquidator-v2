@@ -119,7 +119,6 @@ export default class LiquidationStrategyV3Partial
     return {
       snapshotId,
       partialLiquidationCondition: {
-        hfOld: ca.healthFactor,
         hfNew: updCa.healthFactor.toNumber(),
         ltChanges,
       },

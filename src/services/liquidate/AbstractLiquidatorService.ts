@@ -111,17 +111,22 @@ export default abstract class AbstractLiquidatorService
   public async liquidateOptimistic(
     ca: CreditAccountData,
   ): Promise<OptimisticResultV2> {
+    let acc = ca;
     const logger = this.log.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: managerName(ca),
+      account: acc.addr,
+      borrower: acc.borrower,
+      manager: managerName(acc),
     });
     let snapshotId: number | undefined;
     const optimisticResult: OptimisticResultV2 = {
-      creditManager: ca.creditManager,
-      borrower: ca.borrower,
-      account: ca.addr,
-      balances: filterDust(ca.balances),
+      version: "2",
+      creditManager: acc.creditManager,
+      borrower: acc.borrower,
+      account: acc.addr,
+      balancesBefore: filterDust(acc.balances),
+      hfBefore: acc.healthFactor,
+      balancesAfter: {},
+      hfAfter: 0,
       gasUsed: 0,
       calls: [],
       isError: true,
@@ -132,13 +137,13 @@ export default abstract class AbstractLiquidatorService
     const start = Date.now();
 
     try {
-      const balanceBefore = await this.getBalance(ca);
-      const mlRes = await this.strategy.makeLiquidatable(ca);
+      const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
+      const mlRes = await this.strategy.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       optimisticResult.partialLiquidationCondition =
         mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
-      const preview = await this.strategy.preview(ca);
+      const preview = await this.strategy.preview(acc);
       optimisticResult.assetOut = preview.assetOut;
       optimisticResult.amountOut = preview.amountOut;
       optimisticResult.flashLoanAmount = preview.flashLoanAmount;
@@ -159,7 +164,7 @@ export default abstract class AbstractLiquidatorService
       // so following actual tx should not be slow
       // also tx will act as retry in case of anvil external's error
       try {
-        gasLimit = await this.strategy.estimate(ca, preview);
+        gasLimit = await this.strategy.estimate(acc, preview);
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
@@ -184,7 +189,7 @@ export default abstract class AbstractLiquidatorService
           [12],
         );
         // send profit to executor address because we're going to use swapper later
-        const receipt = await this.strategy.liquidate(ca, preview, gasLimit);
+        const receipt = await this.strategy.liquidate(acc, preview, gasLimit);
         logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
         optimisticResult.isError = receipt.status !== 1;
         const strStatus = optimisticResult.isError ? "failure" : "success";
@@ -193,8 +198,11 @@ export default abstract class AbstractLiquidatorService
             receipt.status
           }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
+        acc = await this.strategy.updateCreditAccountData(acc);
+        optimisticResult.balancesAfter = filterDust(acc.balances);
+        optimisticResult.hfAfter = acc.healthFactor;
 
-        let balanceAfter = await this.getBalance(ca);
+        let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
         optimisticResult.gasUsed = receipt.gasUsed.toNumber();
         optimisticResult.liquidatorPremium = balanceAfter.underlying
           .sub(balanceBefore.underlying)
@@ -203,10 +211,10 @@ export default abstract class AbstractLiquidatorService
         // swap underlying back to ETH
         await this.swapper.swap(
           this.wallet,
-          ca.underlyingToken,
+          acc.underlyingToken,
           balanceAfter.underlying,
         );
-        balanceAfter = await this.getBalance(ca);
+        balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
         optimisticResult.liquidatorProfit = balanceAfter.eth
           .sub(balanceBefore.eth)
           .toString();
@@ -236,16 +244,17 @@ export default abstract class AbstractLiquidatorService
     return optimisticResult;
   }
 
-  protected async getBalance(ca: CreditAccountData): Promise<Balance> {
+  protected async getExecutorBalance(
+    underlyingToken: string,
+  ): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
-    const isWeth = tokenSymbolByAddress[ca.underlyingToken] === "WETH";
+    const isWeth = tokenSymbolByAddress[underlyingToken] === "WETH";
     const eth = await this.provider.getBalance(this.wallet.address);
     const underlying = isWeth
       ? eth
-      : await IERC20__factory.connect(
-          ca.underlyingToken,
-          this.provider,
-        ).balanceOf(this.wallet.address);
+      : await IERC20__factory.connect(underlyingToken, this.provider).balanceOf(
+          this.wallet.address,
+        );
     return { eth, underlying };
   }
 
