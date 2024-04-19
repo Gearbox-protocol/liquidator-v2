@@ -24,6 +24,7 @@ export interface PartialLiquidationPreview {
   amountOut: bigint;
   flashLoanAmount: bigint;
   underlyingBalance: bigint;
+  priceUpdates: PriceUpdate[];
 }
 
 export interface ILiquidatorService {
@@ -53,6 +54,7 @@ export interface StrategyPreview {
    * Falsh loan amount in case of partial liquidation
    */
   flashLoanAmount?: bigint;
+  priceUpdates?: PriceUpdate[];
 }
 
 export interface ILiquidationStrategy<T extends StrategyPreview> {
@@ -188,6 +190,11 @@ export interface OptimisticResultV2 extends OptimisticResult {
    * Falsh loan amount in case of partial liquidation
    */
   flashLoanAmount?: bigint;
+
+  /**
+   * On-demand (redstone) price updates in liquidation call
+   */
+  priceUpdates?: PriceUpdate[];
 }
 
 export interface PartialLiquidationCondition {

@@ -136,7 +136,7 @@ export default class LiquidationStrategyV3Partial
     const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
 
     // TODO: maybe this should be refreshed every loop iteration
-    // const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
     for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
       balances,
     )) {
@@ -145,7 +145,7 @@ export default class LiquidationStrategyV3Partial
         assetOut: `${assetOut} (${symb})`,
         amountOut: `${balance} (${formatBN(balance, getDecimals(assetOut))})`,
         flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
-        priceUpdates: [],
+        priceUpdates,
         connectors,
         slippage: this.config.slippage,
       });
@@ -163,7 +163,7 @@ export default class LiquidationStrategyV3Partial
               assetOut,
               amountOut,
               flashLoanAmount,
-              [], // priceUpdates,
+              priceUpdates,
               connectors,
               this.config.slippage,
             );
@@ -176,6 +176,7 @@ export default class LiquidationStrategyV3Partial
               assetOut,
               flashLoanAmount,
               calls: result.calls,
+              priceUpdates,
               underlyingBalance: 0n, // TODO: calculate
             };
           }
@@ -325,7 +326,7 @@ export default class LiquidationStrategyV3Partial
       preview.assetOut,
       preview.amountOut,
       preview.flashLoanAmount,
-      [], // priceUpdates,
+      preview.priceUpdates,
       preview.calls,
     );
   }
@@ -343,7 +344,7 @@ export default class LiquidationStrategyV3Partial
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount,
-        [], // priceUpdates,
+        preview.priceUpdates,
         preview.calls,
         gasLimit ? { gasLimit } : {},
       );

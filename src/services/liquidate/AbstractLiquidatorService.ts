@@ -150,6 +150,7 @@ export default abstract class AbstractLiquidatorService
       optimisticResult.flashLoanAmount = preview.flashLoanAmount;
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
+      optimisticResult.priceUpdates = preview.priceUpdates;
 
       try {
         optimisticResult.callsHuman = TxParser.parseMultiCall(
