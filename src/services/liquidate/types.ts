@@ -106,7 +106,7 @@ export interface OptimisticResult {
   /**
    * Multicalls used as parameter in liquidateCreditAccount function
    */
-  calls: Array<MultiCall>;
+  calls: MultiCall[];
 
   /**
    * Estimated amount which was computed in pathfinder
@@ -144,6 +144,11 @@ export interface OptimisticResultV2 extends OptimisticResult {
    * Flag to distinguish v2 format
    */
   version: "2";
+  /**
+   * Parsed version of calls
+   * Reasone why we do it here is that parser is available in gearbox SDK only, which uses ethers-5 and cannot be imported in other places
+   */
+  callsHuman: string[];
   /**
    * Token balances before liquidation
    */

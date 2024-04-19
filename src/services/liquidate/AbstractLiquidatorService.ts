@@ -129,6 +129,7 @@ export default abstract class AbstractLiquidatorService
       hfAfter: 0,
       gasUsed: 0,
       calls: [],
+      callsHuman: [],
       isError: true,
       pathAmount: "0",
       liquidatorPremium: "0",
@@ -150,13 +151,14 @@ export default abstract class AbstractLiquidatorService
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
 
-      let pathHuman: Array<string | null> = [];
       try {
-        pathHuman = TxParser.parseMultiCall(preview.calls);
+        optimisticResult.callsHuman = TxParser.parseMultiCall(
+          preview.calls,
+        ).filter((s): s is string => !!s);
       } catch (e) {
-        pathHuman = [`${e}`];
+        optimisticResult.callsHuman = [`${e}`];
       }
-      logger.debug({ pathHuman }, "path found");
+      logger.debug({ pathHuman: optimisticResult.callsHuman }, "path found");
 
       let gasLimit: BigNumberish = 29e6;
       // before actual transaction, try to estimate gas
