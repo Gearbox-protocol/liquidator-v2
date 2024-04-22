@@ -149,11 +149,12 @@ export default class LiquidationStrategyV3Partial
       });
 
       // naively try to figure out amount that works
-      for (let i = 0n; i <= 5n; i++) {
+      const steps = [5n, 10n, 20n, 30n, 40n, 50n];
+      for (const i of steps) {
         // 5% then 10-20-30-40-50
-        const amountOut = i ? (i * balance) / 10n : balance / 20n;
-        const flashLoanAmount = (i * balanceInUnderlying) / 10n;
-        logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
+        const amountOut = (i * balance) / 100n;
+        const flashLoanAmount = (i * balanceInUnderlying) / 100n;
+        logger.debug(`trying partial liqudation: ${i * 100n}% of ${symb} out`);
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
@@ -168,7 +169,7 @@ export default class LiquidationStrategyV3Partial
             );
           if (result.calls.length) {
             logger.info(
-              `preview of partial liquidation: ${i * 10n}% of ${symb} succeeded with profit ${result.profit.toString()}`,
+              `preview of partial liquidation: ${i * 100n}% of ${symb} succeeded with profit ${result.profit.toString()}`,
             );
             return {
               amountOut,
@@ -180,8 +181,11 @@ export default class LiquidationStrategyV3Partial
             };
           }
         } catch (e) {
-          // console.log(">>>> failed");
-          // console.log(e);
+          // TODO: it's possible to save cast call --trace here
+          // if (i === 5n) {
+          //   // console.log(">>>> failed");
+          //   console.log(e);
+          // }
         }
       }
     }
