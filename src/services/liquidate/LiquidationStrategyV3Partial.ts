@@ -404,7 +404,7 @@ export default class LiquidationStrategyV3Partial
     const [currentRouter, currentBot, cms] = await Promise.all([
       this.partialLiquidator.router(),
       this.partialLiquidator.partialLiquidationBot(),
-      this.compressor.getCreditManagersV3List(),
+      this.getCreditManagersV3List(),
     ]);
 
     if (router.toLowerCase() !== currentRouter.toLowerCase()) {
@@ -423,26 +423,26 @@ export default class LiquidationStrategyV3Partial
       this.logger.info(`set bit to ${bot} in tx ${tx.hash}`);
     }
 
-    for (const { addr, name } of cms) {
-      const ca = await this.partialLiquidator.cmToCA(addr);
+    for (const { address, name } of cms) {
+      const ca = await this.partialLiquidator.cmToCA(address);
       if (ca === ADDRESS_0X0) {
         try {
           this.logger.debug(
-            `need to register credit manager ${name} (${addr})`,
+            `need to register credit manager ${name} (${address})`,
           );
-          const tx = await this.partialLiquidator.registerCM(addr);
+          const tx = await this.partialLiquidator.registerCM(address);
           await tx.wait();
           this.logger.info(
-            `registered credit manager ${name} (${addr}) in tx ${tx.hash}`,
+            `registered credit manager ${name} (${address}) in tx ${tx.hash}`,
           );
         } catch (e) {
           this.logger.error(
-            `failed to register credit manager ${name} (${addr}): ${e}`,
+            `failed to register credit manager ${name} (${address}): ${e}`,
           );
         }
       } else {
         this.logger.debug(
-          `credit manager ${name} (${addr}) already registered with account ${ca}`,
+          `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
       }
     }

@@ -80,6 +80,19 @@ export default abstract class AbstractLiquidationStrategyV3 {
     return cm;
   }
 
+  protected async getCreditManagersV3List(): Promise<CreditManagerData[]> {
+    const raw = await this.compressor.getCreditManagersV3List();
+    const result = raw.map(d => new CreditManagerData(d));
+
+    if (this.config.optimistic) {
+      for (const cm of result) {
+        this.#cmCache[cm.address.toLowerCase()] = cm;
+      }
+    }
+
+    return result;
+  }
+
   protected get compressor(): IDataCompressorV3 {
     if (!this.#compressor) {
       throw new Error("strategy not launched");
