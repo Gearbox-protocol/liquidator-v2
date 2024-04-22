@@ -149,8 +149,9 @@ export default class LiquidationStrategyV3Partial
       });
 
       // naively try to figure out amount that works
-      for (let i = 1n; i <= 5n; i++) {
-        const amountOut = (i * balance) / 10n;
+      for (let i = 0n; i <= 5n; i++) {
+        // 5% then 10-20-30-40-50
+        const amountOut = i ? (i * balance) / 10n : balance / 20n;
         const flashLoanAmount = (i * balanceInUnderlying) / 10n;
         logger.debug(`trying partial liqudation: ${i * 10n}% of ${symb} out`);
         try {
