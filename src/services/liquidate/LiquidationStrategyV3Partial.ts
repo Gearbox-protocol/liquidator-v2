@@ -282,7 +282,7 @@ export default class LiquidationStrategyV3Partial
     for (const [t, { lt }] of Object.entries(balances)) {
       if (t !== cm.underlyingToken) {
         result[t] = [lt, (lt * k) / WAD];
-        ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t]}`;
+        ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t][1]}`;
       }
     }
     logger.debug(
