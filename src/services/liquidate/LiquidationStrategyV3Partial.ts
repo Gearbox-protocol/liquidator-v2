@@ -144,6 +144,9 @@ export default class LiquidationStrategyV3Partial
     for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
       balances,
     )) {
+      if (assetOut.toLowerCase() === ca.underlyingToken.toLowerCase()) {
+        continue;
+      }
       const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
       logger.debug({
         assetOut: `${assetOut} (${symb})`,
