@@ -160,7 +160,7 @@ export default class LiquidationStrategyV3Partial
         // 5% then 10-20-30-40-50
         const amountOut = (i * balance) / 100n;
         const flashLoanAmount = (i * balanceInUnderlying) / 100n;
-        logger.debug(`trying partial liqudation: ${i}% of ${symb} out`);
+        logger.debug(`trying partial liquidation: ${i}% of ${symb} out`);
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
