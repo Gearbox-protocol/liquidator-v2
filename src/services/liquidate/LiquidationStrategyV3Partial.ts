@@ -208,26 +208,33 @@ export default class LiquidationStrategyV3Partial
       })
       .map(
         ([t, b]) => [t, b.balance, cm.liquidationThresholds[t] ?? 0n] as const,
-      )
-      .sort((a, b) => {
-        if (a[0] === ca.underlyingToken) return 1;
-        if (b[0] === ca.underlyingToken) return -1;
-        return Number(a[2]) - Number(b[2]);
-      });
+      );
     // get balance in underlying
     const converted = await this.oracle.convertMany(
       Object.fromEntries(balances),
       cm.underlyingToken,
     );
     return Object.fromEntries(
-      Object.entries(converted).map(([t, balanceInUnderlying]) => [
-        t,
-        {
-          balance: ca.allBalances[t].balance,
-          balanceInUnderlying,
-          lt: cm.liquidationThresholds[t],
-        },
-      ]),
+      Object.entries(converted)
+        .map(
+          ([t, balanceInUnderlying]) =>
+            [
+              t,
+              {
+                balance: ca.allBalances[t].balance,
+                balanceInUnderlying,
+                lt: cm.liquidationThresholds[t],
+              },
+            ] as const,
+        )
+        // Sort by weighted value descending, but underlying token comes last
+        .sort((a, b) => {
+          if (a[0] === ca.underlyingToken) return 1;
+          if (b[0] === ca.underlyingToken) return -1;
+          const aWV = a[1].balanceInUnderlying * a[1].lt;
+          const bWV = b[1].balanceInUnderlying * b[1].lt;
+          return bWV > aWV ? 1 : -1;
+        }),
     );
   }
 
@@ -264,7 +271,7 @@ export default class LiquidationStrategyV3Partial
       }
     }
     if (divisor === 0n) {
-      throw new Error("account has no tokens with non-dust balance");
+      throw new Error("assets have zero weighted value in underlying");
     }
     if (dividend <= 0n) {
       throw new Error(`account balance in underlying covers debt`);
