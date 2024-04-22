@@ -450,6 +450,7 @@ export default class LiquidationStrategyV3Partial
       account: ca.addr,
       borrower: ca.borrower,
       manager: managerName(ca),
+      hf: ca.healthFactor,
     });
   }
 
