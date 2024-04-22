@@ -1,9 +1,5 @@
 import type { Asset, CreditAccountData } from "@gearbox-protocol/sdk";
-import {
-  CreditManagerData,
-  getDecimals,
-  ICreditFacadeV3__factory,
-} from "@gearbox-protocol/sdk";
+import { getDecimals, ICreditFacadeV3__factory } from "@gearbox-protocol/sdk";
 import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
 import type { BigNumberish, ContractReceipt } from "ethers";
 import { Service } from "typedi";
@@ -34,9 +30,7 @@ export default class LiquidationStrategyV3Full
     ca: CreditAccountData,
   ): Promise<PathFinderV1CloseResult> {
     try {
-      const cm = new CreditManagerData(
-        await this.compressor.getCreditManagerData(ca.creditManager),
-      );
+      const cm = await this.getCreditManagerData(ca.creditManager);
       const expectedBalances: Record<string, Asset> = {};
       const leftoverBalances: Record<string, Asset> = {};
       Object.entries(ca.balances).forEach(([token, balance]) => {

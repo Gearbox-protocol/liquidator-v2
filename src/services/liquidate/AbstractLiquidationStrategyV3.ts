@@ -1,6 +1,7 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
+  CreditManagerData,
   IDataCompressorV3__factory,
   PathFinder,
 } from "@gearbox-protocol/sdk";
@@ -33,6 +34,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
 
   #compressor?: IDataCompressorV3;
   #pathFinder?: PathFinder;
+  #cmCache: Record<string, CreditManagerData> = {};
 
   public async launch(): Promise<void> {
     const [pfAddr, dcAddr] = await Promise.all([
@@ -58,6 +60,24 @@ export default abstract class AbstractLiquidationStrategyV3 {
       [],
     );
     return new CreditAccountData(newCa);
+  }
+
+  protected async getCreditManagerData(
+    addr: string,
+  ): Promise<CreditManagerData> {
+    let cm: CreditManagerData | undefined;
+    if (this.config.optimistic) {
+      cm = this.#cmCache[addr.toLowerCase()];
+    }
+    if (!cm) {
+      cm = new CreditManagerData(
+        await this.compressor.getCreditManagerData(addr),
+      );
+      if (this.config.optimistic) {
+        this.#cmCache[addr.toLowerCase()] = cm;
+      }
+    }
+    return cm;
   }
 
   protected get compressor(): IDataCompressorV3 {

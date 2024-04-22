@@ -6,9 +6,11 @@ import {
 } from "@gearbox-protocol/liquidator-v2-contracts";
 import { ILiquidator__factory } from "@gearbox-protocol/liquidator-v2-contracts/dist/factories";
 import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts/dist/ILiquidator";
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import {
+import type {
+  CreditAccountData,
   CreditManagerData,
+} from "@gearbox-protocol/sdk";
+import {
   formatBN,
   getDecimals,
   PERCENTAGE_FACTOR,
@@ -97,9 +99,7 @@ export default class LiquidationStrategyV3Partial
       throw new Error("account has tokens without reserve price feeds");
     }
     const logger = this.#caLogger(ca);
-    const cm = new CreditManagerData(
-      await this.compressor.getCreditManagerData(ca.creditManager),
-    );
+    const cm = await this.getCreditManagerData(ca.creditManager);
 
     const ltChanges = await this.#calcNewLTs(ca, cm);
     const snapshotId = await (
@@ -129,9 +129,7 @@ export default class LiquidationStrategyV3Partial
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreview> {
     const logger = this.#caLogger(ca);
-    const cm = new CreditManagerData(
-      await this.compressor.getCreditManagerData(ca.creditManager),
-    );
+    const cm = await this.getCreditManagerData(ca.creditManager);
     const balances = await this.#prepareAccountTokens(ca, cm);
     const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
 
