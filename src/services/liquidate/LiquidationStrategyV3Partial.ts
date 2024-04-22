@@ -57,6 +57,7 @@ export default class LiquidationStrategyV3Partial
 
   #partialLiquidator?: ILiquidator;
   #configuratorAddr?: string;
+  #registeredCMs: Record<string, boolean> = {};
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -97,6 +98,11 @@ export default class LiquidationStrategyV3Partial
     }
     if (!this.oracle.checkReserveFeeds(ca)) {
       throw new Error("account has tokens without reserve price feeds");
+    }
+    if (!this.#registeredCMs[ca.creditManager.toLowerCase()]) {
+      throw new Error(
+        "account's credit manager is not registered in partial liquidator",
+      );
     }
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
@@ -435,15 +441,18 @@ export default class LiquidationStrategyV3Partial
           this.logger.info(
             `registered credit manager ${name} (${address}) in tx ${tx.hash}`,
           );
+          this.#registeredCMs[address.toLowerCase()] = true;
         } catch (e) {
           this.logger.error(
             `failed to register credit manager ${name} (${address}): ${e}`,
           );
+          this.#registeredCMs[address.toLowerCase()] = false;
         }
       } else {
         this.logger.debug(
           `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
+        this.#registeredCMs[address.toLowerCase()] = true;
       }
     }
   }
