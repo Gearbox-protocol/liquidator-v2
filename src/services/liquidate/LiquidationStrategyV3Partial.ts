@@ -191,7 +191,7 @@ export default class LiquidationStrategyV3Partial
           }
         } catch (e) {
           // TODO: it's possible to save cast call --trace here
-          // if (i === 5n) {
+          // if (i === steps[steps.length - 1]) {
           //   // console.log(">>>> failed");
           //   console.log(e);
           // }
