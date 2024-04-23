@@ -161,7 +161,7 @@ export default class LiquidationStrategyV3Partial
       });
 
       // naively try to figure out amount that works
-      const steps = [5n, 10n, 20n, 30n, 40n, 50n];
+      const steps = [5n, 10n, 20n, 30n, 40n, 50n, 60n, 70n, 80n, 90n];
       for (const i of steps) {
         // 5% then 10-20-30-40-50
         const amountOut = (i * balance) / 100n;
