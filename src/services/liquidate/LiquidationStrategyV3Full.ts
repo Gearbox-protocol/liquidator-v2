@@ -6,11 +6,7 @@ import { Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../../log";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
-import type {
-  ILiquidationStrategy,
-  MakeLiquidatableResult,
-  PriceUpdate,
-} from "./types";
+import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
 
 @Service()
 export default class LiquidationStrategyV3Full
@@ -32,7 +28,6 @@ export default class LiquidationStrategyV3Full
 
   public async preview(
     ca: CreditAccountData,
-    priceUpdatez?: PriceUpdate[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);

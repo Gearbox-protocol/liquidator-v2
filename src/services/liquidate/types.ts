@@ -72,7 +72,7 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
    * @returns evm snapshotId or underfined
    */
   makeLiquidatable: (ca: CreditAccountData) => Promise<MakeLiquidatableResult>;
-  preview: (ca: CreditAccountData, priceUpdates?: PriceUpdate[]) => Promise<T>;
+  preview: (ca: CreditAccountData) => Promise<T>;
   estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
   liquidate: (
     account: CreditAccountData,
@@ -200,5 +200,4 @@ export interface OptimisticResultV2 extends OptimisticResult {
 export interface PartialLiquidationCondition {
   ltChanges: Record<string, [bigint, bigint]>;
   hfNew: number;
-  priceUpdates?: PriceUpdate[];
 }

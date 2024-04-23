@@ -14,11 +14,7 @@ import { Logger, LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
 import ExecutorService from "../ExecutorService";
-import type {
-  ILiquidationStrategy,
-  MakeLiquidatableResult,
-  PriceUpdate,
-} from "./types";
+import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
 
 @Service()
 export default class LiquidationStrategyV2
@@ -81,7 +77,6 @@ export default class LiquidationStrategyV2
 
   public async preview(
     ca: CreditAccountData,
-    priceUpdatez?: PriceUpdate[],
   ): Promise<PathFinderV1CloseResult> {
     try {
       const result = await this.pathFinder.findBestClosePath(

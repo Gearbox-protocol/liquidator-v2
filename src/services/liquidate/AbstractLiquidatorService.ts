@@ -152,10 +152,7 @@ export default abstract class AbstractLiquidatorService
       optimisticResult.partialLiquidationCondition =
         mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
-      const preview = await this.strategy.preview(
-        acc,
-        mlRes.partialLiquidationCondition?.priceUpdates,
-      );
+      const preview = await this.strategy.preview(acc);
       optimisticResult.assetOut = preview.assetOut;
       optimisticResult.amountOut = preview.amountOut;
       optimisticResult.flashLoanAmount = preview.flashLoanAmount;
