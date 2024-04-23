@@ -66,6 +66,14 @@ export default abstract class AbstractLiquidatorService
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
+    if (this.config.optimistic) {
+      // this is needed because otherwise it's possible to hit deadlines in uniswap calls
+      await (this.provider as providers.JsonRpcProvider).send(
+        "anvil_setBlockTimestampInterval",
+        [1],
+      );
+      this.log.info("set block timestamp interval to 1");
+    }
     switch (this.addressProvider.network) {
       case "Mainnet":
         this.#etherscanUrl = "https://etherscan.io";
@@ -186,11 +194,6 @@ export default abstract class AbstractLiquidatorService
       }
       // Actual liquidation (write requests start here)
       try {
-        // this is needed because otherwise it's possible to hit deadlines in uniswap calls
-        await (this.provider as providers.JsonRpcProvider).send(
-          "anvil_setBlockTimestampInterval",
-          [12],
-        );
         // send profit to executor address because we're going to use swapper later
         const receipt = await this.strategy.liquidate(acc, preview, gasLimit);
         logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
