@@ -138,6 +138,8 @@ export default class LiquidationStrategyV3Partial
     const cm = await this.getCreditManagerData(ca.creditManager);
     const balances = await this.#prepareAccountTokens(ca, cm);
     const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
+    const uSymb = tokenSymbolByAddress[cm.underlyingToken];
+    const uDec = getDecimals(cm.underlyingToken);
 
     // TODO: maybe this should be refreshed every loop iteration
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
@@ -148,10 +150,11 @@ export default class LiquidationStrategyV3Partial
         continue;
       }
       const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
+      const decimals = getDecimals(assetOut);
       logger.debug({
         assetOut: `${assetOut} (${symb})`,
-        amountOut: `${balance} (${formatBN(balance, getDecimals(assetOut))})`,
-        flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, getDecimals(cm.underlyingToken))}) ${tokenSymbolByAddress[cm.underlyingToken]}`,
+        amountOut: `${balance} (${formatBN(balance, decimals)})`,
+        flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, uDec)}) ${uSymb}`,
         priceUpdates,
         connectors,
         slippage: this.config.slippage,
@@ -163,7 +166,11 @@ export default class LiquidationStrategyV3Partial
         // 5% then 10-20-30-40-50
         const amountOut = (i * balance) / 100n;
         const flashLoanAmount = (i * balanceInUnderlying) / 100n;
-        logger.debug(`trying partial liquidation: ${i}% of ${symb} out`);
+        const flHuman = formatBN(flashLoanAmount, uDec);
+        const amountHuman = formatBN(amountOut, decimals);
+        logger.debug(
+          `trying ${i}% out: ${amountHuman} ${symb}/${flHuman} ${uSymb}`,
+        );
         try {
           const result =
             await this.partialLiquidator.callStatic.previewPartialLiquidation(
