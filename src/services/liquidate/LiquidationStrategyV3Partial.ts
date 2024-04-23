@@ -36,6 +36,7 @@ import type {
   ILiquidationStrategy,
   MakeLiquidatableResult,
   PartialLiquidationPreview,
+  PriceUpdate,
 } from "./types";
 
 interface TokenBalance {
@@ -112,6 +113,9 @@ export default class LiquidationStrategyV3Partial
       this.executor.provider as providers.JsonRpcProvider
     ).send("evm_snapshot", []);
 
+    // this will possibly warp time forward -> do this before setting LTs for consistency
+    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+
     await this.#setNewLTs(ca, cm, ltChanges);
     const updCa = await this.compressor.callStatic.getCreditAccountData(
       ca.addr,
@@ -127,12 +131,14 @@ export default class LiquidationStrategyV3Partial
       partialLiquidationCondition: {
         hfNew: updCa.healthFactor.toNumber(),
         ltChanges,
+        priceUpdates,
       },
     };
   }
 
   public async preview(
     ca: CreditAccountData,
+    priceUpdatez?: PriceUpdate[],
   ): Promise<PartialLiquidationPreview> {
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
@@ -141,8 +147,9 @@ export default class LiquidationStrategyV3Partial
     const uSymb = tokenSymbolByAddress[cm.underlyingToken];
     const uDec = getDecimals(cm.underlyingToken);
 
-    // TODO: maybe this should be refreshed every loop iteration
-    const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+    // in optimistic mode, price updates are fetched beforehand, so timewarp happens before LT setting
+    const priceUpdates =
+      priceUpdatez || (await this.redstone.liquidationPreviewUpdates(ca));
     for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
       balances,
     )) {
