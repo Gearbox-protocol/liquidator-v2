@@ -79,8 +79,9 @@ export class ScanServiceV3 extends AbstractScanService {
       redstoneUpdates,
       atBlock,
     );
+    accounts = accounts.sort((a, b) => a.healthFactor - b.healthFactor);
     this.log.debug(
-      `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}`,
+      `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => `${a.addr} [${a.healthFactor}]`).join(",")}`,
     );
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     const redstoneSymbols = redstoneTokens.map(
