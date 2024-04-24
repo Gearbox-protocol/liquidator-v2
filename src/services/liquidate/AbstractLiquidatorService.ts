@@ -154,6 +154,7 @@ export default abstract class AbstractLiquidatorService
       } catch (e) {
         pathHuman = [`${e}`];
       }
+      optimisticResult.callsHuman = pathHuman?.filter(Boolean) as any;
       this.log.debug({ pathHuman }, "path found");
 
       const balanceBefore = await this.getBalance(recipient, ca);

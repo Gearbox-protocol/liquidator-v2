@@ -50,4 +50,6 @@ export interface OptimisticResult {
    * How much time it took to liquidate this account (ms)
    */
   duration?: number;
+
+  callsHuman?: string[];
 }
