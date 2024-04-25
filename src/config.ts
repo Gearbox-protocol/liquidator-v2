@@ -57,6 +57,8 @@ export class Config {
    */
   static underlying: string | undefined;
 
+  static restakingWorkaround: boolean;
+
   /**
    * If set, only these accounts will be optimistically liquidated.
    * Takes presedence over debugManagers
@@ -183,6 +185,7 @@ export class Config {
     Config.executorsQty = parseInt(process.env.EXECUTORS_QTY || "3", 10);
     Config.swapToEth = process.env.SWAP_TO_ETH;
     Config.oneInchApiKey = process.env.ONE_INCH_API_KEY;
+    Config.restakingWorkaround = process.env.RESTAKING_WORKAROUND === "true";
     Config.multicallChunkSize = parseInt(
       process.env.MULTICALL_CHUNK || "30",
       10,

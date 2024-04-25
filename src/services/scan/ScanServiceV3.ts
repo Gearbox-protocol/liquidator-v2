@@ -1,9 +1,11 @@
 import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
 import {
   CreditAccountData,
+  creditManagerByNetwork,
   ICreditManagerV3__factory,
   IDataCompressorV3__factory,
   PERCENTAGE_FACTOR,
+  tokenDataByNetwork,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
@@ -34,6 +36,9 @@ export class ScanServiceV3 extends AbstractScanService {
 
   protected dataCompressor: IDataCompressorV3;
 
+  #restakingCMAddr?: string;
+  #restakingMinHF?: number;
+
   protected override get liquidatorService(): ILiquidatorService {
     return this.liquidarorServiceV3;
   }
@@ -41,6 +46,9 @@ export class ScanServiceV3 extends AbstractScanService {
   protected override async _launch(
     provider: providers.Provider,
   ): Promise<void> {
+    if (config.restakingWorkaround) {
+      await this.#setupRestakingWorkaround();
+    }
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
@@ -80,6 +88,9 @@ export class ScanServiceV3 extends AbstractScanService {
       atBlock,
     );
     accounts = accounts.sort((a, b) => a.healthFactor - b.healthFactor);
+    if (config.restakingWorkaround) {
+      accounts = this.#filterRestakingAccounts(accounts);
+    }
     this.log.debug(
       `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => `${a.addr} [${a.healthFactor}]`).join(",")}`,
     );
@@ -190,6 +201,88 @@ export class ScanServiceV3 extends AbstractScanService {
     }
 
     return [accounts, Array.from(failedTokens)];
+  }
+
+  async #setupRestakingWorkaround(): Promise<void> {
+    if (this.addressProvider.network === "Mainnet") {
+      this.#restakingCMAddr =
+        creditManagerByNetwork.Mainnet.WETH_V3_RESTAKING.toLowerCase();
+    } else if (this.addressProvider.network === "Arbitrum") {
+      this.#restakingCMAddr =
+        creditManagerByNetwork.Arbitrum.WETH_V3_TRADE_TIER_1.toLowerCase();
+    }
+
+    if (this.#restakingCMAddr) {
+      const cm = ICreditManagerV3__factory.connect(
+        this.#restakingCMAddr,
+        this.provider,
+      );
+      const [{ liquidationDiscount }, ezETHLT] = await Promise.all([
+        cm.fees(),
+        cm.liquidationThresholds(
+          tokenDataByNetwork[this.addressProvider.network].ezETH,
+        ),
+      ]);
+
+      // For restaking accounts, say for simplicity account with only ezETH:
+      //
+      //        price(ezETH) * balance(ezETH) * LT(ezETH)
+      // HF = ----------------------------------------------
+      //                     debt(WETH)
+      //
+      // Assuming that price(ezETH) at some point becomes 1 (when you can withdraw ezETH):
+      //
+      //               balance(ezETH) * LT(ezETH)
+      // debt(WETH) = ----------------------------
+      //                        HF
+      //
+      // Amount that goes to gearbox + to account owner (if any) when account is liquidated:
+      // liquidationDiscount == 100% - liquidatorPremium
+      //
+      // discounted = balance(ezETH) * LiquidationDiscount
+      //
+      // To avoid bad debt (discounted >= debt):
+      //
+      //                                           balance(ezETH) * LT(ezETH)
+      // balance(ezETH) * LiquidationDiscount >=  ---------------------------
+      //                                                        HF
+      //          LT(ezETH)
+      // HF >= --------------------
+      //       LiquidationDiscount
+      //
+      // So it's safe to liquidate accounts with such HF, otherwise we get into bad debt zone
+      // For current settings of  Restaking WETH credit manager on mainnet it translates to HF >= 91.50% / 0.97 == 94.33%
+      this.#restakingMinHF = Math.ceil(
+        (100_00 * ezETHLT) / liquidationDiscount,
+      );
+      this.log.warn(
+        {
+          restakingCMAddr: this.#restakingCMAddr,
+          liquidationDiscount,
+          ezETHLT,
+          restakingMinHF: this.#restakingMinHF,
+        },
+        "restaking workaround enabled",
+      );
+    }
+  }
+
+  #filterRestakingAccounts(accounts: CreditAccountData[]): CreditAccountData[] {
+    return accounts.filter(ca => {
+      if (
+        this.#restakingCMAddr === ca.creditManager.toLowerCase() &&
+        !!this.#restakingMinHF
+      ) {
+        const ok = ca.healthFactor >= this.#restakingMinHF;
+        if (!ok) {
+          this.log.debug(
+            `filtered out ${ca.addr} due to restaking workaround (HF ${ca.healthFactor} < ${this.#restakingMinHF})`,
+          );
+        }
+        return ok;
+      }
+      return true;
+    });
   }
 }
 
