@@ -1748,6 +1748,11 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@gearbox-protocol/bots-v3@^1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/bots-v3/-/bots-v3-1.5.1.tgz#984635e3bb6c6610154a16522d27bd2093557070"
+  integrity sha512-XCDBvmhj40m8SgIXT70kI8EfoPnagj1O2YIgy6hf9J8bdO7kIfoQ7xiFFuTy2h0xdD4MgTs8gt3coXkIkFYOhQ==
+
 "@gearbox-protocol/devops@^1.6.3":
   version "1.6.3"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/devops/-/devops-1.6.3.tgz#48ab2643e29ca1b869f076e2062e7bed20b0c278"
@@ -1777,10 +1782,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^1.59.0":
-  version "1.62.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.62.1.tgz#b90e88082268670cda64461b74b801088f428949"
-  integrity sha512-ho39fqyNoeH535PI+Y9z5eW/eJ+4lRq1pYiplXWDbBM3vOuWRzBKl4eV2a+ZP2f/fr/dmmmQhn2XAhg06VQJTw==
+"@gearbox-protocol/sdk-gov@^1.64.6":
+  version "1.64.6"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.64.6.tgz#4d649b05a86fdabfdd5c307e4842db61dd048783"
+  integrity sha512-qi77ZR6aIFS5OjBfB8TU3+NSWUSZP1Nb1j4UBJ7t2FY14WSXDwLud1AOY6NxchDy9fJcRurRIkoID28lYl8HgA==
   dependencies:
     "@types/yaml" "^1.9.7"
     add "^2.0.6"
@@ -1791,12 +1796,13 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.165":
-  version "3.0.0-next.165"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.165.tgz#4ef8072287b6e722be5bcecbe21c8434301402eb"
-  integrity sha512-xD8m27VhUq9U6IfwwkBYW6zjhOt8ipCQ1Utl+SIm0UPGJ0ZbeyJn41htF5GCtD6mPfx1MOfj7OI7HQPI7JjUpg==
+"@gearbox-protocol/sdk@^3.0.0-next.171":
+  version "3.0.0-next.171"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.171.tgz#5dd90d6325e21d9b054c36f9acf40c259737285b"
+  integrity sha512-ZZ3IwP1xa3QIoC4BFN24SzjmTyfSL4hU8q6yHEmATbLrHqrUawohZ2nUnJVM21rABygWlxir/strp+mwi4zZgg==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^1.59.0"
+    "@gearbox-protocol/bots-v3" "^1.5.1"
+    "@gearbox-protocol/sdk-gov" "^1.64.6"
     axios "^1.2.6"
     decimal.js-light "^2.5.1"
     deep-eql "^4.1.0"
