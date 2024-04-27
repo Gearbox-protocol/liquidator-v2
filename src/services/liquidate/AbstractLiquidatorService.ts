@@ -119,6 +119,9 @@ export default abstract class AbstractLiquidatorService
   }
 
   public async liquidateOptimistic(ca: CreditAccountData): Promise<boolean> {
+    this.log.debug(
+      `optimistic liquidation of ${ca.addr} with HF ${ca.healthFactor} in ${ca.creditManager}...`,
+    );
     let snapshotId: unknown;
     let executor: ethers.Wallet | undefined;
     // address that will receive profit from liquidation
@@ -142,9 +145,6 @@ export default abstract class AbstractLiquidatorService
     try {
       executor = this.keyService.takeVacantExecutor();
       recipient = executor.address;
-      this.log.debug(
-        `Searching path for acc ${ca.addr} in ${ca.creditManager}...`,
-      );
       const pfResult = await this._findClosePath(ca);
       optimisticResult.calls = pfResult.calls;
       optimisticResult.pathAmount = pfResult.underlyingBalance.toString();
