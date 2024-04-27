@@ -1,6 +1,6 @@
 // Wrapper around JSON stringify/parse methods to support bigint serialization
 
-import { toBigInt } from "ethers";
+import { BigNumber } from "ethers";
 
 // @ts-ignore
 function replacer(key, value) {
@@ -20,7 +20,7 @@ function reviver(key, value) {
     return BigInt(value.__value);
   }
   if (value && value.type === "BigNumber" && "hex" in value) {
-    return toBigInt(value.hex);
+    return BigNumber.from(value.hex);
   }
   return value;
 }
