@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import config from "../../config";
+import { json_stringify } from "../utils";
 import getFilename from "./filename";
 import type { IOptimisticOutputWriter } from "./types";
 
@@ -16,7 +17,7 @@ export default class S3Writer implements IOptimisticOutputWriter {
           Bucket: config.outS3Bucket,
           Key: key,
           ContentType: "application/json",
-          Body: JSON.stringify(result),
+          Body: json_stringify(result),
         }),
       );
     } catch (e) {

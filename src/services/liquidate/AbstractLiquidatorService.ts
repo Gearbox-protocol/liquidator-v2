@@ -17,8 +17,7 @@ import { AMPQService } from "../ampqService";
 import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
-import { mine } from "../utils";
-import { filterDust } from "../utils/filterDust";
+import { filterDust, mine } from "../utils";
 import { OptimisticResults } from "./OptimisiticResults";
 import type { ILiquidatorService } from "./types";
 
