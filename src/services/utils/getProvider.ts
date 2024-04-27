@@ -11,7 +11,7 @@ export function getProvider(flashbots = false, logger?: LoggerInterface) {
   if (config.optimisticLiquidations) {
     return new providers.StaticJsonRpcProvider({
       url: config.ethProviderRpcs[0],
-      timeout: 120_000,
+      timeout: config.ethProviderTimeout,
       allowGzip: true,
     });
   }
