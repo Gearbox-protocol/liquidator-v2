@@ -63,15 +63,15 @@ export interface OptimisticResultV2 extends OptimisticResult {
    * - TxParser lives in @gearbox-protocol/sdk which uses ethers-v5
    * - TxParser is static and cannot be used on forks, because fork state will be mixed
    */
-  callsHuman?: string[];
+  callsHuman: string[];
   /**
    * Token balances before liquidation
    */
-  balancesBefore?: Record<string, bigint>;
+  balancesBefore: Record<string, bigint>;
   /**
    * Health factor before liquidation
    */
-  hfBefore?: number;
+  hfBefore: number;
 
   /**
    * Error occured during liquidation

@@ -138,6 +138,7 @@ export default abstract class AbstractLiquidatorService
       balancesBefore: filterDust(ca.balances),
       gasUsed: 0,
       calls: [],
+      callsHuman: [],
       isError: true,
       pathAmount: "0",
       liquidatorPremium: "0",
