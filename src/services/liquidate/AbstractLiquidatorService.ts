@@ -10,7 +10,7 @@ import { utils } from "ethers";
 import { Inject } from "typedi";
 
 import config from "../../config";
-import type { OptimisticResult } from "../../core/optimistic";
+import type { OptimisticResultV2 } from "../../core/optimistic";
 import type { LoggerInterface } from "../../log";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
@@ -18,6 +18,7 @@ import { KeyService } from "../keyService";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { ISwapper, SWAPPER } from "../swap";
 import { mine } from "../utils";
+import { filterDust } from "../utils/filterDust";
 import { OptimisticResults } from "./OptimisiticResults";
 import type { ILiquidatorService } from "./types";
 
@@ -128,11 +129,13 @@ export default abstract class AbstractLiquidatorService
     // there's a bit of confusion between "keyService" address and actual executor address
     // so use this variable to be more explicit
     let recipient: string | undefined;
-    const optimisticResult: OptimisticResult = {
+    const optimisticResult: OptimisticResultV2 = {
+      version: "2",
       creditManager: ca.creditManager,
       borrower: ca.borrower,
       account: ca.addr,
       hfBefore: ca.healthFactor,
+      balancesBefore: filterDust(ca.balances),
       gasUsed: 0,
       calls: [],
       isError: true,

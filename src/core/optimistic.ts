@@ -1,5 +1,7 @@
 import type { MultiCall } from "@gearbox-protocol/sdk";
 
+import type { PriceUpdate } from "../../../deploy-tools/packages/types/src/types/optimist";
+
 export interface OptimisticResult {
   /**
    * Credit Manager address
@@ -50,8 +52,36 @@ export interface OptimisticResult {
    * How much time it took to liquidate this account (ms)
    */
   duration?: number;
+}
 
+export interface OptimisticResultV2 extends OptimisticResult {
+  /**
+   * Flag to distinguish v2 format
+   */
+  version: "2";
+  /**
+   * Parsed version of calls
+   * It's done on liquidator side for following reasons:
+   * - TxParser lives in @gearbox-protocol/sdk which uses ethers-v5
+   * - TxParser is static and cannot be used on forks, because fork state will be mixed
+   */
   callsHuman?: string[];
+  /**
+   * Token balances before liquidation
+   */
+  balancesBefore: Record<string, bigint>;
+  /**
+   * Health factor before liquidation
+   */
+  hfBefore: number;
+
+  /**
+   * Error occured during liquidation
+   */
   error?: string;
-  hfBefore?: number;
+
+  /**
+   * On-demand (redstone) price updates in liquidation call
+   */
+  priceUpdates?: PriceUpdate[];
 }

@@ -1,16 +1,16 @@
 import { Service } from "typedi";
 
-import type { OptimisticResult } from "../../core/optimistic";
+import type { OptimisticResultV2 } from "../../core/optimistic";
 
 @Service()
 export class OptimisticResults {
-  #results: OptimisticResult[] = [];
+  #results: OptimisticResultV2[] = [];
 
-  public push(result: OptimisticResult): void {
+  public push(result: OptimisticResultV2): void {
     this.#results.push(result);
   }
 
-  public get(): OptimisticResult[] {
+  public get(): OptimisticResultV2[] {
     return this.#results;
   }
 }
