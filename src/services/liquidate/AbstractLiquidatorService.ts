@@ -129,6 +129,7 @@ export default abstract class AbstractLiquidatorService
       creditManager: ca.creditManager,
       borrower: ca.borrower,
       account: ca.addr,
+      hfBefore: ca.healthFactor,
       gasUsed: 0,
       calls: [],
       isError: true,
@@ -167,6 +168,7 @@ export default abstract class AbstractLiquidatorService
       } catch (e: any) {
         if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
           this.log.error(`failed to estimate gas: ${e.reason}`);
+          optimisticResult.error = e.reason;
         } else {
           this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
         }

@@ -52,4 +52,6 @@ export interface OptimisticResult {
   duration?: number;
 
   callsHuman?: string[];
+  error?: string;
+  hfBefore?: number;
 }

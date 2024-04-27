@@ -89,7 +89,11 @@ export class ScanServiceV3 extends AbstractScanService {
     );
     accounts = accounts.sort((a, b) => a.healthFactor - b.healthFactor);
     if (config.restakingWorkaround) {
+      const before = accounts.length;
       accounts = this.#filterRestakingAccounts(accounts);
+      this.log.debug(
+        `filtered out ${before - accounts.length} restaking accounts`,
+      );
     }
     this.log.debug(
       `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => `${a.addr} [${a.healthFactor}]`).join(",")}`,
