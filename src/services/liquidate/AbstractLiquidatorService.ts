@@ -134,7 +134,11 @@ export default abstract class AbstractLiquidatorService
       borrower: ca.borrower,
       account: ca.addr,
       hfBefore: ca.healthFactor,
-      balancesBefore: filterDust(ca.balances),
+      balancesBefore: filterDust(
+        Object.fromEntries(
+          Object.entries(ca.allBalances).map(([t, b]) => [t, b.balance]),
+        ),
+      ),
       gasUsed: 0,
       calls: [],
       callsHuman: [],
