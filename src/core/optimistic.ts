@@ -1,7 +1,5 @@
 import type { MultiCall } from "@gearbox-protocol/sdk";
 
-import type { PriceUpdate } from "../../../deploy-tools/packages/types/src/types/optimist";
-
 export interface OptimisticResult {
   /**
    * Credit Manager address
@@ -69,19 +67,14 @@ export interface OptimisticResultV2 extends OptimisticResult {
   /**
    * Token balances before liquidation
    */
-  balancesBefore: Record<string, bigint>;
+  balancesBefore?: Record<string, bigint>;
   /**
    * Health factor before liquidation
    */
-  hfBefore: number;
+  hfBefore?: number;
 
   /**
    * Error occured during liquidation
    */
   error?: string;
-
-  /**
-   * On-demand (redstone) price updates in liquidation call
-   */
-  priceUpdates?: PriceUpdate[];
 }
