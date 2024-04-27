@@ -1796,10 +1796,10 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.171":
-  version "3.0.0-next.171"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.171.tgz#5dd90d6325e21d9b054c36f9acf40c259737285b"
-  integrity sha512-ZZ3IwP1xa3QIoC4BFN24SzjmTyfSL4hU8q6yHEmATbLrHqrUawohZ2nUnJVM21rABygWlxir/strp+mwi4zZgg==
+"@gearbox-protocol/sdk@^3.0.0-next.172":
+  version "3.0.0-next.172"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.172.tgz#2a64ce39fd02bc320dadff88bd869970062bdb99"
+  integrity sha512-RK6vDabTApVKsCiblrOGX4m455jSdnOmFpqafBW5IGtHrncdT23wogstjjlr2evkYX+387aDlD55lcYD02wWrQ==
   dependencies:
     "@gearbox-protocol/bots-v3" "^1.5.1"
     "@gearbox-protocol/sdk-gov" "^1.64.6"
