@@ -1,4 +1,3 @@
-import type { IPriceOracleV3Interface } from "@gearbox-protocol/liquidator-v2-contracts/dist/IPriceOracleV3.sol/IPriceOracleV3";
 import type {
   CreditAccountData,
   IPriceOracleV3,
@@ -14,6 +13,7 @@ import {
   WAD,
 } from "@gearbox-protocol/sdk";
 import type {
+  IPriceOracleV3Interface,
   SetPriceFeedEvent,
   SetReservePriceFeedEvent,
   SetReservePriceFeedStatusEvent,

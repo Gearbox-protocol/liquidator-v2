@@ -1,4 +1,3 @@
-import type { MultiCallStructOutput } from "@gearbox-protocol/liquidator-v2-contracts/dist/IRouterV3";
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type { BigNumberish, ContractReceipt } from "ethers";
 
@@ -19,7 +18,7 @@ export interface PriceUpdate {
 }
 
 export interface PartialLiquidationPreview {
-  calls: MultiCallStructOutput[];
+  calls: MultiCall[];
   assetOut: string;
   amountOut: bigint;
   flashLoanAmount: bigint;

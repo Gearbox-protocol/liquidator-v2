@@ -1,11 +1,11 @@
+import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts";
 import {
   AaveFLTaker__factory,
   ICreditConfiguratorV3__factory,
   ICreditManagerV3__factory,
+  ILiquidator__factory,
   Liquidator__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts";
-import { ILiquidator__factory } from "@gearbox-protocol/liquidator-v2-contracts/dist/factories";
-import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts/dist/ILiquidator";
 import type {
   CreditAccountData,
   CreditManagerData,
