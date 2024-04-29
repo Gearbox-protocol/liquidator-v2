@@ -8,8 +8,6 @@ import {
 } from "class-validator";
 import dotenv from "dotenv";
 
-const SUPPORTED_VERSIONS: number[] = [2, 3];
-
 export class Config {
   static version: string;
 
@@ -96,12 +94,6 @@ export class Config {
 
   static balanceToNotify: bigint;
   static minExecutorBalance: bigint;
-
-  /**
-   * Which versions (v2/v3) to work with
-   * This mode is for parity with go-liquidator, which has 2 different binaries for v2 and v3
-   */
-  static enabledVersions: Set<number>;
 
   @IsNotEmpty()
   static optimisticLiquidations: boolean;
@@ -199,11 +191,6 @@ export class Config {
     Config.minExecutorBalance = BigInt(
       process.env.MIN_EXECUTOR_BALANCE || "500000000000000000",
     );
-    Config.enabledVersions = new Set(
-      process.env.ENABLED_VERSIONS
-        ? process.env.ENABLED_VERSIONS.split(",").map(Number)
-        : SUPPORTED_VERSIONS,
-    );
     Config.debugAccounts = process.env.DEBUG_ACCOUNTS
       ? process.env.DEBUG_ACCOUNTS.toLowerCase().split(",")
       : undefined;
@@ -225,14 +212,6 @@ export class Config {
     const errors = await validate(Config);
     if (errors.length > 0) {
       throw new Error(`Configuration problems: ${errors.join("\n")}`);
-    }
-    if (Config.enabledVersions.size === 0) {
-      throw new Error("At least one version should be enabled");
-    }
-    for (const v of Config.enabledVersions) {
-      if (!SUPPORTED_VERSIONS.includes(v)) {
-        throw new Error(`Unsupported version: ${v}`);
-      }
     }
     console.info(`Liquidator TS version: ${Config.version}`);
   }

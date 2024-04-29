@@ -9,7 +9,7 @@ import { KeyService } from "./services/keyService";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
-import { ScanServiceV2, ScanServiceV3 } from "./services/scan";
+import { ScanServiceV3 } from "./services/scan";
 import { ISwapper, SWAPPER } from "./services/swap";
 import { getProvider } from "./services/utils";
 
@@ -20,9 +20,6 @@ class App {
 
   @Inject()
   addressProvider: AddressProviderService;
-
-  @Inject()
-  scanServiceV2: ScanServiceV2;
 
   @Inject()
   scanServiceV3: ScanServiceV3;
@@ -55,9 +52,6 @@ class App {
     const msg = [
       "Launching",
       config.underlying ?? "",
-      Array.from(config.enabledVersions)
-        .map(v => `v${v}`)
-        .join(", "),
       config.swapToEth ? `with swapping via ${config.swapToEth}` : "",
       config.optimisticLiquidations ? "in OPTIMISTIC mode" : "",
     ]
@@ -74,12 +68,7 @@ class App {
 
     await this.keyService.launch();
     await this.swapper.launch(this.addressProvider.network);
-    if (config.enabledVersions.has(3)) {
-      await this.scanServiceV3.launch(provider);
-    }
-    if (config.enabledVersions.has(2)) {
-      await this.scanServiceV2.launch(provider);
-    }
+    await this.scanServiceV3.launch(provider);
 
     if (config.optimisticLiquidations) {
       this.log.debug("optimistic liquidation finished, writing output");
