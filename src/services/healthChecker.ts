@@ -6,7 +6,7 @@ import { Inject, Service } from "typedi";
 import { CONFIG, ConfigSchema } from "../config";
 import { Logger, LoggerInterface } from "../log";
 import version from "../version";
-import { ScanServiceV2, ScanServiceV3 } from "./scan";
+import { ScanServiceV3 } from "./scan";
 
 @Service()
 export class HealthChecker {
@@ -16,8 +16,6 @@ export class HealthChecker {
   @Inject(CONFIG)
   config: ConfigSchema;
 
-  @Inject()
-  scanServiceV2: ScanServiceV2;
   @Inject()
   scanServiceV3: ScanServiceV3;
 
@@ -50,19 +48,13 @@ export class HealthChecker {
 
     app.get("/", (_, res) => {
       res.send({
-        latestBlockV2: this.scanServiceV2.lastUpdated,
-        latestBlockV3: this.scanServiceV3.lastUpdated,
+        latestBlock: this.scanServiceV3.lastUpdated,
         uptime: formatDuration(intervalToDuration({ start, end: new Date() })),
       });
     });
     app.get("/metrics", async (_, res) => {
       try {
-        const lastUpdated = Math.min(
-          ...[
-            this.scanServiceV2.lastUpdated,
-            this.scanServiceV3.lastUpdated,
-          ].filter(Boolean),
-        );
+        const lastUpdated = this.scanServiceV3.lastUpdated;
         latestBlockGauge.set(isFinite(lastUpdated) ? lastUpdated : 0);
         res.set("Content-Type", register.contentType);
         res.end(await register.metrics());

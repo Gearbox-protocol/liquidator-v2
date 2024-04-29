@@ -2,20 +2,6 @@ import { z } from "zod";
 
 const AddressRegExp = /^0x[a-fA-F0-9]{40}$/;
 
-const numArrayLike = z
-  .union([z.string(), z.number(), z.array(z.union([z.string(), z.number()]))])
-  .transform((v): number[] => {
-    let arr: Array<number | string>;
-    if (typeof v === "string") {
-      arr = v.split(",");
-    } else if (typeof v === "number") {
-      arr = [v];
-    } else {
-      arr = v;
-    }
-    return arr.map(Number);
-  });
-
 const stringArrayLike = z
   .union([z.string(), z.array(z.string())])
   .transform(v => (typeof v === "string" ? [v] : v));
@@ -32,13 +18,6 @@ export const ConfigSchema = z.object({
   appName: z.string().default("liquidator-ts"),
   balanceToNotify: z.coerce.number().int().positive().optional(),
   port: z.coerce.number().default(4000),
-
-  enabledVersions: numArrayLike.optional().pipe(
-    z
-      .array(z.number().int().min(2).max(3))
-      .default([2, 3])
-      .transform(a => new Set(a)),
-  ),
 
   debugAccounts: stringArrayLike
     .optional()

@@ -9,7 +9,6 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   debugManagers: "DEBUG_MANAGERS",
   balanceToNotify: "BALANCE_TO_NOTIFY",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
-  enabledVersions: "ENABLED_VERSIONS",
   ethProviderRpcs: ["JSON_RPC_PROVIDERS", "JSON_RPC_PROVIDER"],
   ethProviderTimeout: "JSON_RPC_TIMEOUT",
   hfThreshold: "HF_TRESHOLD",

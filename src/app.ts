@@ -10,7 +10,7 @@ import { HealthChecker } from "./services/healthChecker";
 import { OptimisticResults } from "./services/liquidate";
 import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
-import { ScanServiceV2, ScanServiceV3 } from "./services/scan";
+import { ScanServiceV3 } from "./services/scan";
 import { ISwapper, SWAPPER } from "./services/swap";
 import { getProvider } from "./services/utils";
 import version from "./version";
@@ -25,9 +25,6 @@ class App {
 
   @Inject()
   addressProvider: AddressProviderService;
-
-  @Inject()
-  scanServiceV2: ScanServiceV2;
 
   @Inject()
   scanServiceV3: ScanServiceV3;
@@ -57,9 +54,6 @@ class App {
     const msg = [
       `Launching liquidator v${version}`,
       this.config.underlying ?? "",
-      Array.from(this.config.enabledVersions)
-        .map(v => `v${v}`)
-        .join(", "),
       this.config.swapToEth ? `with swapping via ${this.config.swapToEth}` : "",
       this.config.optimistic ? "in OPTIMISTIC mode" : "",
     ]
@@ -76,12 +70,7 @@ class App {
     await this.ampqService.launch(this.addressProvider.chainId);
 
     await this.swapper.launch(this.addressProvider.network);
-    if (this.config.enabledVersions.has(3)) {
-      await this.scanServiceV3.launch();
-    }
-    if (this.config.enabledVersions.has(2)) {
-      await this.scanServiceV2.launch();
-    }
+    await this.scanServiceV3.launch();
 
     if (this.config.optimistic) {
       this.log.debug("optimistic liquidation finished, writing output");
