@@ -7,6 +7,8 @@ import type {
 import {
   ICreditFacadeV3Multicall__factory,
   REDSTONE_SIGNERS,
+  tickerInfoTokensByNetwork,
+  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
 import type { providers } from "ethers";
@@ -17,6 +19,7 @@ import { Inject, Service } from "typedi";
 
 import config from "../config";
 import { Logger, LoggerInterface } from "../log";
+import { AddressProviderService } from "./AddressProviderService";
 import type { PriceOnDemand } from "./liquidate";
 import OracleServiceV3 from "./OracleServiceV3";
 
@@ -29,11 +32,14 @@ export type RedstonePriceFeed = Extract<
 
 @Service()
 export class RedstoneServiceV3 {
-  @Logger("AddressProviderService")
+  @Logger("RedstoneServiceV3")
   log: LoggerInterface;
 
   @Inject()
   oracle: OracleServiceV3;
+
+  @Inject()
+  addressProvider: AddressProviderService;
 
   protected provider?: providers.Provider;
 
@@ -43,11 +49,19 @@ export class RedstoneServiceV3 {
 
   public async updatesForTokens(tokens: string[]): Promise<PriceOnDemand[]> {
     const redstoneFeeds = this.oracle.getRedstoneFeeds();
-    const redstoneUpdates: Array<[string, string]> = [];
+    const redstoneUpdates: Array<[token: string, dataFeedId: string]> = [];
+    const tickers = tickerInfoTokensByNetwork[this.addressProvider.network];
     for (const token of tokens) {
       const dataFeedId = redstoneFeeds[token.toLowerCase()];
       if (dataFeedId) {
         redstoneUpdates.push([token, dataFeedId]);
+        continue;
+      }
+      const symb = tokenSymbolByAddress[token.toLowerCase()];
+      const ticker = tickers[symb];
+      if (ticker) {
+        this.log.debug(`found ticker ${ticker.symbol} for ${symb}`);
+        redstoneUpdates.push([ticker.address, ticker.dataId]);
       }
     }
 
