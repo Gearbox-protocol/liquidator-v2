@@ -1702,10 +1702,10 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@^3.0.0-next.176":
-  version "3.0.0-next.176"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.176.tgz#ce0db23c67b1910b9cc94237cba190d7df3e5955"
-  integrity sha512-2jkXxrU8qon3HFlRioxwW2bO6SKWooIcNgXEusja4SEjqF2rFvux+oG5ZWi5wTKQnvrfWPu4kWvDrAI4IDGPoQ==
+"@gearbox-protocol/sdk@^3.0.0-next.177":
+  version "3.0.0-next.177"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-next.177.tgz#eb58a99a0efc157771d6c32589602e1980e46671"
+  integrity sha512-5vwEpwsz1oAZrZyW2PexSPmvYQlwIRSSGFEvnHUWyViEEAICug8+1OewcFVC6HV5sLgdaPuNRovX9R3WhPZgVg==
   dependencies:
     "@gearbox-protocol/bots-v3" "^1.5.1"
     "@gearbox-protocol/sdk-gov" "^1.66.2"
