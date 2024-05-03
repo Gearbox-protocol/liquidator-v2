@@ -1,6 +1,5 @@
-import { formatDuration, intervalToDuration } from "date-fns";
-import express from "express";
-import { Gauge, register } from "prom-client";
+import { createServer } from "node:http";
+
 import { Inject, Service } from "typedi";
 
 import config from "../config";
@@ -15,6 +14,8 @@ export class HealthChecker {
   @Inject()
   scanServiceV3: ScanServiceV3;
 
+  #start = Math.round(new Date().valueOf() / 1000);
+
   /**
    * Launches health checker - simple express server
    */
@@ -22,48 +23,61 @@ export class HealthChecker {
     if (config.optimisticLiquidations) {
       return;
     }
-    const start = new Date();
-    const app = express();
 
-    const latestBlockGauge = new Gauge({
-      name: "eth_block_number",
-      help: "Latest processed block",
-    });
-    const startTimeGauge = new Gauge({
-      name: "start_time",
-      help: "Start time, in unixtime",
-    });
-    startTimeGauge.set(Math.round(start.valueOf() / 1000));
-    // pseudo-metric that provides metadata about the running binary
-    const buildInfo = new Gauge({
-      name: "liquidator_ts_build_info",
-      help: "Build info",
-      labelNames: ["version"],
-    });
-    buildInfo.set({ version: config.version }, 1);
-
-    app.get("/", (_, res) => {
-      res.send({
-        latestBlock: this.scanServiceV3.lastUpdated,
-        uptime: formatDuration(intervalToDuration({ start, end: new Date() })),
-      });
-    });
-    app.get("/metrics", async (_, res) => {
-      try {
-        latestBlockGauge.set(
-          isFinite(this.scanServiceV3.lastUpdated)
-            ? this.scanServiceV3.lastUpdated
-            : 0,
+    const server = createServer(async (req, res) => {
+      // Routing
+      if (req.url === "/") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            start_time: this.#start,
+            block_number: this.scanServiceV3.lastUpdated,
+            version: config.version,
+          }),
         );
-        res.set("Content-Type", register.contentType);
-        res.end(await register.metrics());
-      } catch (ex) {
-        res.status(500).end(ex);
+      } else if (req.url === "/metrics") {
+        try {
+          res.writeHead(200, { "Content-Type": "text/plain" });
+          res.end(this.#metrics());
+        } catch (ex) {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end("error");
+        }
+      } else {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("not found");
       }
     });
 
-    app.listen(config.port, () => {
-      this.log.info(`started on port ${config.port}`);
+    server.listen(config.port, () => {
+      this.log.debug("listening");
     });
+
+    process.on("SIGTERM", () => {
+      this.log.info("terminating");
+      server.close();
+    });
+
+    this.log.info("launched");
+  }
+
+  /**
+   * Returns metrics in prometheus format
+   * https://prometheus.io/docs/concepts/data_model/
+   */
+  #metrics(): string {
+    return `# HELP start_time Start time, in unixtime
+# TYPE start_time gauge
+start_time ${this.#start}
+
+# HELP build_info Build info
+# TYPE build_info gauge
+build_info{version="${config.version}"} 1
+
+# HELP block_number Latest processed block
+# TYPE block_number gauge
+block_number ${this.scanServiceV3.lastUpdated}
+
+`;
   }
 }
