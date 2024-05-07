@@ -1,5 +1,10 @@
 import type { MCall, NetworkType } from "@gearbox-protocol/sdk-gov";
-import { ADDRESS_0X0, safeMulticall, WAD } from "@gearbox-protocol/sdk-gov";
+import {
+  ADDRESS_0X0,
+  safeMulticall,
+  tokenSymbolByAddress,
+  WAD,
+} from "@gearbox-protocol/sdk-gov";
 import type {
   IPriceOracleV3,
   IRedstonePriceFeed,
@@ -97,17 +102,19 @@ export default class OracleServiceV3 {
    */
   public async convertMany(
     tokensFrom: Record<string, bigint>,
-    tokenTo: string,
+    destToken: string,
   ): Promise<Record<string, bigint>> {
     const calls: MCall<IPriceOracleV3["interface"]>[] = [];
     const result: Record<string, bigint> = {};
+    const tokenTo = destToken.toLowerCase();
 
-    for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
+    for (const [t, amount] of Object.entries(tokensFrom)) {
+      const tokenFrom = t.toLowerCase();
       const fromCache = this.#convertCached(tokenFrom, tokenTo, amount);
-      if (tokenFrom.toLowerCase() === tokenTo.toLowerCase()) {
-        result[tokenTo.toLowerCase()] = amount;
+      if (tokenFrom === tokenTo) {
+        result[tokenTo] = amount;
       } else if (this.config.optimistic && !!fromCache) {
-        result[tokenFrom.toLowerCase()] = fromCache;
+        result[tokenFrom] = fromCache;
       } else {
         calls.push({
           address: this.oracle.target as string,
@@ -125,9 +132,22 @@ export default class OracleServiceV3 {
       const amountFrom = calls[i].params[0] as bigint;
       const tokenFrom = calls[i].params[1] as string;
       if (!error && !!value) {
-        result[tokenFrom.toLowerCase()] = value;
+        result[tokenFrom] = value;
         if (this.config.optimistic) {
           this.#saveCached(tokenFrom, tokenTo, amountFrom, value);
+        }
+      }
+      if (error) {
+        this.log.warn(
+          `conversion ${tokenSymbolByAddress[tokenFrom]} -> ${tokenSymbolByAddress[tokenTo]} failed in multicall`,
+        );
+        result[tokenFrom] = await this.oracle.convert(
+          amountFrom,
+          tokenFrom,
+          tokenTo,
+        );
+        if (this.config.optimistic) {
+          this.#saveCached(tokenFrom, tokenTo, amountFrom, result[tokenFrom]);
         }
       }
     }

@@ -1,5 +1,13 @@
+import { ILiquidator__factory } from "@gearbox-protocol/liquidator-v2-contracts";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
-import { IERC20__factory } from "@gearbox-protocol/types/v3";
+import {
+  ICreditFacadeV3__factory,
+  ICreditManagerV3__factory,
+  IERC20__factory,
+  IExceptions__factory,
+  IPriceOracleV3__factory,
+  IRouterV3__factory,
+} from "@gearbox-protocol/types/v3";
 import type { JsonRpcProvider, TransactionReceipt } from "ethers";
 import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
@@ -25,7 +33,6 @@ import type {
   StrategyPreview,
 } from "./types";
 
-const errorDecoder = ErrorDecoder.create();
 export interface Balance {
   underlying: bigint;
   eth: bigint;
@@ -65,6 +72,8 @@ export class LiquidatorService implements ILiquidatorService {
 
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
+  #errorDecoder = ErrorDecoder.create();
+
   #etherscanUrl = "";
 
   /**
@@ -72,6 +81,14 @@ export class LiquidatorService implements ILiquidatorService {
    */
   public async launch(): Promise<void> {
     if (this.config.optimistic) {
+      this.#errorDecoder = ErrorDecoder.create([
+        IPriceOracleV3__factory.createInterface(),
+        ICreditFacadeV3__factory.createInterface(),
+        ICreditManagerV3__factory.createInterface(),
+        ILiquidator__factory.createInterface(),
+        IRouterV3__factory.createInterface(),
+        IExceptions__factory.createInterface(),
+      ]);
       // this is needed because otherwise it's possible to hit deadlines in uniswap calls
       await (this.provider as JsonRpcProvider).send(
         "anvil_setBlockTimestampInterval",
@@ -188,7 +205,7 @@ export class LiquidatorService implements ILiquidatorService {
       try {
         gasLimit = await this.strategy.estimate(acc, preview);
       } catch (e: any) {
-        const decoded = await errorDecoder.decode(e);
+        const decoded = await this.#errorDecoder.decode(e);
         logger.error(
           `failed to estimate gas: ${decoded.type}: ${decoded.reason}`,
         );
@@ -239,13 +256,13 @@ export class LiquidatorService implements ILiquidatorService {
         }
       } catch (e: any) {
         console.log(e);
-        const decoded = await errorDecoder.decode(e);
+        const decoded = await this.#errorDecoder.decode(e);
         await this.saveTxTrace(e);
         optimisticResult.error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
         logger.error(optimisticResult.error);
       }
     } catch (e: any) {
-      const decoded = await errorDecoder.decode(e);
+      const decoded = await this.#errorDecoder.decode(e);
       optimisticResult.error = `cannot liquidate: ${decoded.type}: ${decoded.reason}`;
       logger.error(optimisticResult.error);
     }
