@@ -39,26 +39,20 @@ export class ScanServiceV3 extends AbstractScanService {
   log: LoggerInterface;
 
   @Inject()
-  liquidarorService: LiquidatorService;
-
-  @Inject()
   oracle: OracleServiceV3;
 
   @Inject()
   redstone: RedstoneServiceV3;
 
-  protected dataCompressor: IDataCompressorV3;
-
-  protected override get liquidatorService(): ILiquidatorService {
-    return this.liquidarorService;
-  }
+  #liquidarorService = new LiquidatorService();
+  #dataCompressor?: IDataCompressorV3;
 
   protected override async _launch(): Promise<void> {
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
     );
-    this.dataCompressor = IDataCompressorV3__factory.connect(
+    this.#dataCompressor = IDataCompressorV3__factory.connect(
       dcAddr,
       this.provider,
     );
@@ -272,6 +266,17 @@ export class ScanServiceV3 extends AbstractScanService {
     const result = accs.filter((_, i) => resp[i].value);
     this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
     return result;
+  }
+
+  protected override get liquidatorService(): ILiquidatorService {
+    return this.#liquidarorService;
+  }
+
+  private get dataCompressor(): IDataCompressorV3 {
+    if (!this.#dataCompressor) {
+      throw new Error("data compressor not initialized");
+    }
+    return this.dataCompressor;
   }
 }
 
