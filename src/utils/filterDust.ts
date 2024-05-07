@@ -1,7 +1,11 @@
+import type { TokenBalance } from "@gearbox-protocol/types/v3";
+
 export function filterDust(
-  balances: Record<string, bigint>,
+  balances: Record<string, TokenBalance>,
 ): Record<string, bigint> {
   return Object.fromEntries(
-    Object.entries(balances).filter(([t, b]) => b > 10n),
+    Object.entries(balances)
+      .map(([t, { balance }]) => [t, balance] as const)
+      .filter(([t, b]) => b > 10n),
   );
 }

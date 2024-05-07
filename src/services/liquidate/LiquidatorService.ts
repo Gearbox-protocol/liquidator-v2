@@ -142,7 +142,7 @@ export class LiquidatorService implements ILiquidatorService {
       creditManager: acc.creditManager,
       borrower: acc.borrower,
       account: acc.addr,
-      balancesBefore: filterDust(acc.balances),
+      balancesBefore: filterDust(acc.allBalances),
       hfBefore: acc.healthFactor,
       balancesAfter: {},
       hfAfter: 0,
@@ -215,7 +215,7 @@ export class LiquidatorService implements ILiquidatorService {
           }), gas=${receipt.cumulativeGasUsed.toString()}`,
         );
         acc = await this.strategy.updateCreditAccountData(acc);
-        optimisticResult.balancesAfter = filterDust(acc.balances);
+        optimisticResult.balancesAfter = filterDust(acc.allBalances);
         optimisticResult.hfAfter = acc.healthFactor;
 
         let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
@@ -238,6 +238,7 @@ export class LiquidatorService implements ILiquidatorService {
           logger.warn("negative liquidator profit");
         }
       } catch (e: any) {
+        console.log(e);
         const decoded = await errorDecoder.decode(e);
         await this.saveTxTrace(e);
         optimisticResult.error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
@@ -245,7 +246,7 @@ export class LiquidatorService implements ILiquidatorService {
       }
     } catch (e: any) {
       const decoded = await errorDecoder.decode(e);
-      optimisticResult.error = `cannot liquidate:  ${decoded.type}: ${decoded.reason}`;
+      optimisticResult.error = `cannot liquidate: ${decoded.type}: ${decoded.reason}`;
       logger.error(optimisticResult.error);
     }
 

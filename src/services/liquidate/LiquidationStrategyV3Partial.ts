@@ -134,7 +134,7 @@ export default class LiquidationStrategyV3Partial
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
     const balances = await this.#prepareAccountTokens(ca, cm);
-    const connectors = this.pathFinder.getAvailableConnectors(ca.balances);
+    const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
     const uSymb = tokenSymbolByAddress[cm.underlyingToken];
     const uDec = getDecimals(cm.underlyingToken);
 

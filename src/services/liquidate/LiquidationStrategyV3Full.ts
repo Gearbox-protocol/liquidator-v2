@@ -33,15 +33,17 @@ export default class LiquidationStrategyV3Full
       const cm = await this.getCreditManagerData(ca.creditManager);
       const expectedBalances: Record<string, Balance> = {};
       const leftoverBalances: Record<string, Balance> = {};
-      Object.entries(ca.balances).forEach(([token, balance]) => {
-        expectedBalances[token] = { token, balance };
-        // filter out dust, we don't want to swap it
-        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
-        // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
-        if (balance < minBalance || !ca.allBalances[token].isEnabled) {
-          leftoverBalances[token] = { token, balance };
-        }
-      });
+      Object.entries(ca.allBalances).forEach(
+        ([token, { balance, isEnabled }]) => {
+          expectedBalances[token] = { token, balance };
+          // filter out dust, we don't want to swap it
+          const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
+          // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
+          if (balance < minBalance || !isEnabled) {
+            leftoverBalances[token] = { token, balance };
+          }
+        },
+      );
       const result = await this.pathFinder.findBestClosePath({
         creditAccount: ca,
         creditManager: cm,

@@ -136,11 +136,11 @@ export default class OracleServiceV3 {
   }
 
   public checkReserveFeeds(ca: CreditAccountData): boolean {
-    for (const [t, b] of Object.entries(ca.balances)) {
+    for (const [t, b] of Object.entries(ca.allBalances)) {
       if (t.toLowerCase() === ca.underlyingToken.toLowerCase()) {
         continue;
       }
-      if (b < 10n) {
+      if (b.balance < 10n) {
         continue;
       }
       const entry = this.#feeds[t.toLowerCase()];

@@ -84,8 +84,7 @@ export class PathFinder {
       balance: leftoverBalances[token]?.balance || 1n,
     }));
 
-    const connectors = this.getAvailableConnectors(creditAccount.balances);
-
+    const connectors = this.getAvailableConnectors(creditAccount.allBalances);
     let results: RouterResult[] = [];
     if (noConcurrency) {
       for (const po of pathOptions) {
@@ -151,9 +150,7 @@ export class PathFinder {
     return r1.amount > r2.amount ? r1 : r2;
   }
 
-  getAvailableConnectors(
-    availableList: Record<string, bigint> | Record<string, true>,
-  ) {
+  getAvailableConnectors(availableList: Record<string, any>) {
     const connectors = PathFinder.getAvailableConnectors(
       availableList,
       this._connectors,
@@ -162,7 +159,7 @@ export class PathFinder {
   }
 
   static getAvailableConnectors(
-    availableList: Record<string, bigint> | Record<string, true>,
+    availableList: Record<string, any>,
     connectors: string[],
   ) {
     return connectors.filter(t => availableList[t] !== undefined);
