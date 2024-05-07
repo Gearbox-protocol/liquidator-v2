@@ -270,7 +270,7 @@ export class ScanServiceV3 extends AbstractScanService {
   }
 
   protected override get liquidatorService(): ILiquidatorService {
-    return this._liquidarorService;
+    return this._liquidatorService;
   }
 
   private get dataCompressor(): IDataCompressorV3 {
