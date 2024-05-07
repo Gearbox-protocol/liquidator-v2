@@ -1,4 +1,5 @@
-import { ADDRESS_0X0, type NetworkType, WAD } from "@gearbox-protocol/sdk-gov";
+import type { MCall, NetworkType } from "@gearbox-protocol/sdk-gov";
+import { ADDRESS_0X0, safeMulticall, WAD } from "@gearbox-protocol/sdk-gov";
 import type {
   IPriceOracleV3,
   IRedstonePriceFeed,
@@ -14,8 +15,7 @@ import { Inject, Service } from "typedi";
 import { CONFIG, type ConfigSchema } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
-import type { CreditAccountData, MCall } from "../utils/ethers-6-temp";
-import { safeMulticall } from "../utils/ethers-6-temp";
+import type { CreditAccountData } from "../utils/ethers-6-temp";
 import { TxParser } from "../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "./AddressProviderService";
 
@@ -259,7 +259,7 @@ export default class OracleServiceV3 {
           f.main.dataFeedId = dataFeedId;
         }
         if (f.reserve?.address === feedAddress) {
-          f.reserve.dataFeedId = dataFeedId;
+          f.reserve!.dataFeedId = dataFeedId;
         }
       }
     }

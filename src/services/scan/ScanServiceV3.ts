@@ -1,5 +1,7 @@
+import type { MCall } from "@gearbox-protocol/sdk-gov";
 import {
   PERCENTAGE_FACTOR,
+  safeMulticall,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import type {
@@ -16,8 +18,7 @@ import type { Overrides } from "ethers";
 import { Inject, Service } from "typedi";
 
 import { Logger, type LoggerInterface } from "../../log";
-import type { MCall } from "../../utils/ethers-6-temp";
-import { CreditAccountData, safeMulticall } from "../../utils/ethers-6-temp";
+import { CreditAccountData } from "../../utils/ethers-6-temp";
 import type { ILiquidatorService } from "../liquidate";
 import { LiquidatorService } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
