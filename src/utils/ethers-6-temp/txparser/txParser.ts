@@ -14,8 +14,12 @@ import {
 } from "@gearbox-protocol/sdk-gov";
 import type { MultiCall } from "@gearbox-protocol/types/v3";
 
+import { AaveV2LendingPoolAdapterParser } from "./aaveV2LendingPoolAdapterParser";
+import { AaveV2WrappedATokenAdapterParser } from "./aaveV2WrappedATokenAdapterParser";
 import type { AbstractParser } from "./abstractParser";
 import { AddressProviderParser } from "./addressProviderParser";
+import { BalancerV2VaultParser } from "./balancerV2VaultParser";
+import { CompoundV2CTokenAdapterParser } from "./compoundV2CTokenAdapterParser";
 import { ConvexBaseRewardPoolAdapterParser } from "./convexBaseRewardPoolAdapterParser";
 import { ConvexBoosterAdapterParser } from "./convexBoosterAdapterParser";
 import { ConvexRewardPoolParser } from "./convextRewardPoolParser";
@@ -23,6 +27,7 @@ import { CreditFacadeParser } from "./creditFacadeParser";
 import { CreditManagerParser } from "./creditManagerParser";
 import { CurveAdapterParser } from "./curveAdapterParser";
 import { ERC20Parser } from "./ERC20Parser";
+import { ERC4626AdapterParser } from "./erc626AdapterParser";
 import type { IParser } from "./iParser";
 import { LidoAdapterParser } from "./lidoAdapterParser";
 import { LidoSTETHParser } from "./lidoSTETHParser";
@@ -193,6 +198,7 @@ export class TxParser {
           new UniswapV3AdapterParser(contract, isContract),
         );
         break;
+
       case "CURVE_V1_EXCHANGE_ONLY":
       case "CURVE_V1_2ASSETS":
       case "CURVE_V1_3ASSETS":
@@ -204,6 +210,7 @@ export class TxParser {
           new CurveAdapterParser(contract, isContract),
         );
         break;
+
       case "YEARN_V2":
         TxParser._addParser(
           addressLC,
@@ -224,18 +231,57 @@ export class TxParser {
           new ConvexBoosterAdapterParser(contract, isContract),
         );
         break;
+
       case "CONVEX_V1_CLAIM_ZAP":
         break;
+
       case "LIDO_V1":
         TxParser._addParser(
           addressLC,
           new LidoAdapterParser(contract, isContract),
         );
         break;
+
       case "LIDO_WSTETH_V1":
         TxParser._addParser(
           addressLC,
           new WstETHAdapterParser(contract, isContract),
+        );
+        break;
+
+      case "AAVE_V2_LENDING_POOL":
+        TxParser._addParser(
+          addressLC,
+          new AaveV2LendingPoolAdapterParser(contract, isContract),
+        );
+        break;
+
+      case "AAVE_V2_WRAPPED_ATOKEN":
+        TxParser._addParser(
+          addressLC,
+          new AaveV2WrappedATokenAdapterParser(contract, isContract),
+        );
+        break;
+
+      case "BALANCER_VAULT":
+        TxParser._addParser(
+          addressLC,
+          new BalancerV2VaultParser(contract, isContract),
+        );
+        break;
+
+      case "COMPOUND_V2_CERC20":
+      case "COMPOUND_V2_CETHER":
+        TxParser._addParser(
+          addressLC,
+          new CompoundV2CTokenAdapterParser(contract, isContract),
+        );
+        break;
+
+      case "ERC4626_VAULT":
+        TxParser._addParser(
+          addressLC,
+          new ERC4626AdapterParser(contract, isContract),
         );
         break;
     }

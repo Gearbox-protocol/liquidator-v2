@@ -1384,10 +1384,10 @@
     yarn "^1.22.19"
     zod "^3.22.2"
 
-"@gearbox-protocol/types@^1.6.1":
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/types/-/types-1.6.1.tgz#3dcf5129778688bdcf51d6db23874d609e52e1da"
-  integrity sha512-NDoQUI55yQ1yjRUFmQBkSvevg+CH0rZuNRChHzO4Bx+tQCW7gewOuEdp9PvRjCGetsykNryEXW14d/ZyH2wGIQ==
+"@gearbox-protocol/types@^1.6.3":
+  version "1.6.3"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/types/-/types-1.6.3.tgz#69686a1d1d888f1f70881e18e778660ac78c4f9b"
+  integrity sha512-eSoVKzlNAp6dJ2xiwrQ/zfsFj7CdPfHTUvjzNEFT0lmqGCvOhp/6X8yMlRVw9qz2vEqCyRZBAR/GqzaeldHv/A==
 
 "@humanwhocodes/config-array@^0.11.14":
   version "0.11.14"
