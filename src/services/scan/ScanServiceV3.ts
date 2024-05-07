@@ -19,8 +19,7 @@ import { Inject, Service } from "typedi";
 
 import { Logger, type LoggerInterface } from "../../log";
 import { CreditAccountData } from "../../utils/ethers-6-temp";
-import type { ILiquidatorService } from "../liquidate";
-import { LiquidatorService } from "../liquidate";
+import { ILiquidatorService } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
@@ -44,7 +43,9 @@ export class ScanServiceV3 extends AbstractScanService {
   @Inject()
   redstone: RedstoneServiceV3;
 
-  #liquidarorService = new LiquidatorService();
+  @Inject()
+  _liquidatorService: ILiquidatorService;
+
   #dataCompressor?: IDataCompressorV3;
 
   protected override async _launch(): Promise<void> {
@@ -269,7 +270,7 @@ export class ScanServiceV3 extends AbstractScanService {
   }
 
   protected override get liquidatorService(): ILiquidatorService {
-    return this.#liquidarorService;
+    return this._liquidarorService;
   }
 
   private get dataCompressor(): IDataCompressorV3 {
