@@ -1,7 +1,7 @@
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import { IERC20__factory } from "@gearbox-protocol/types/v3";
 import type { JsonRpcProvider, TransactionReceipt } from "ethers";
-import { Provider, Wallet } from "ethers";
+import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
 import Container, { Inject, Service } from "typedi";
 
@@ -188,14 +188,10 @@ export class LiquidatorService implements ILiquidatorService {
       try {
         gasLimit = await this.strategy.estimate(acc, preview);
       } catch (e: any) {
-        // if (e.code === utils.this.log.errors.UNPREDICTABLE_GAS_LIMIT) {
-        //   this.log.error(`failed to estimate gas: ${e.reason}`);
-        // } else {
-        //   this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
-        // }
-        logger.error(`failed to estimate gas: ${e}`);
         const decoded = await errorDecoder.decode(e);
-        logger.error({ decoded }, "decoded error");
+        logger.error(
+          `failed to estimate gas: ${decoded.type}: ${decoded.reason}`,
+        );
       }
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
@@ -242,29 +238,15 @@ export class LiquidatorService implements ILiquidatorService {
           logger.warn("negative liquidator profit");
         }
       } catch (e: any) {
-        logger.error(`cant liquidate: ${e}`);
-        logger.error(
-          {
-            code: e.code,
-            action: e.action,
-            reason: e.reason,
-            data: e.data,
-            receipt: e.receipt,
-            transaction: e.transaction,
-            revert: e.revert,
-          },
-          `error keys`,
-        );
-        // code,action,data,reason,invocation,revert,transaction,receipt,shortMessage,attemptNumber,retriesLeft
         const decoded = await errorDecoder.decode(e);
-        logger.error({ decoded }, "decoded error");
-        await this.saveTxTrace(e.transactionHash);
-        optimisticResult.error ||= decoded.reason || undefined;
+        await this.saveTxTrace(e);
+        optimisticResult.error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
+        logger.error(optimisticResult.error);
       }
     } catch (e: any) {
-      logger.error(`cannot liquidate: ${e}`);
-      optimisticResult.error =
-        (await errorDecoder.decode(e)).reason || undefined;
+      const decoded = await errorDecoder.decode(e);
+      optimisticResult.error = `cannot liquidate:  ${decoded.type}: ${decoded.reason}`;
+      logger.error(optimisticResult.error);
     }
 
     optimisticResult.duration = Date.now() - start;
@@ -296,16 +278,18 @@ export class LiquidatorService implements ILiquidatorService {
    * @param txHash
    * @returns
    */
-  protected async saveTxTrace(txHash: string): Promise<void> {
-    try {
-      const txTrace = await (this.provider as JsonRpcProvider).send(
-        "trace_transaction",
-        [txHash],
-      );
-      await this.outputWriter.write(txHash, txTrace);
-      this.log.debug(`saved trace_transaction result for ${txHash}`);
-    } catch (e) {
-      this.log.warn(`failed to save tx trace: ${e}`);
+  protected async saveTxTrace(e: any): Promise<void> {
+    if (isError(e, "CALL_EXCEPTION") && e.receipt) {
+      try {
+        const txTrace = await (this.provider as JsonRpcProvider).send(
+          "trace_transaction",
+          [e.receipt.hash],
+        );
+        await this.outputWriter.write(e.receipt.hash, txTrace);
+        this.log.debug(`saved trace_transaction result for ${e.receipt.hash}`);
+      } catch (e) {
+        this.log.warn(`failed to save tx trace: ${e}`);
+      }
     }
   }
 
