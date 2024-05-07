@@ -33,4 +33,4 @@ LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 
 WORKDIR /app
 COPY --from=prod /app /app
-CMD ["/app/build/index.js"]
+CMD ["--enable-source-maps", "/app/build/index.js"]
