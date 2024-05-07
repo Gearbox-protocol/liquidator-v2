@@ -19,7 +19,8 @@ import { Inject, Service } from "typedi";
 
 import { Logger, type LoggerInterface } from "../../log";
 import { CreditAccountData } from "../../utils/ethers-6-temp";
-import { ILiquidatorService } from "../liquidate";
+import type { ILiquidatorService } from "../liquidate";
+import { LiquidatorService } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
@@ -44,7 +45,7 @@ export class ScanServiceV3 extends AbstractScanService {
   redstone: RedstoneServiceV3;
 
   @Inject()
-  _liquidatorService: ILiquidatorService;
+  _liquidatorService: LiquidatorService;
 
   #dataCompressor?: IDataCompressorV3;
 
