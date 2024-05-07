@@ -168,13 +168,13 @@ export default class OracleServiceV3 {
       const { active, main, reserve } = entry;
       if (main.dataFeedId && (!activeOnly || active === "main")) {
         result[token] = [
-          ...result[token],
+          ...(result[token] ?? []),
           { token, dataFeedId: main.dataFeedId, reserve: false },
         ];
       }
       if (reserve?.dataFeedId && (!activeOnly || active === "reserve")) {
         result[token] = [
-          ...result[token],
+          ...(result[token] ?? []),
           { token, dataFeedId: reserve.dataFeedId, reserve: true },
         ];
       }
