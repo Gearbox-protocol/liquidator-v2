@@ -1,7 +1,12 @@
-import type { SupportedToken } from "@gearbox-protocol/sdk-gov";
+import type {
+  Address,
+  SupportedToken,
+  TickerToken,
+} from "@gearbox-protocol/sdk-gov";
 import {
   decimals,
   formatBN,
+  getTokenSymbolOrTicker,
   toBigInt,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
@@ -55,6 +60,14 @@ export class AbstractParser {
   tokenSymbol(address: string): SupportedToken {
     const symbol = tokenSymbolByAddress[address.toLowerCase()];
     if (!symbol) throw new Error(`Unknown token: ${address}`);
+    return symbol;
+  }
+
+  tokenOrTickerSymbol(address: string): SupportedToken | TickerToken {
+    const symbol = getTokenSymbolOrTicker(address as Address);
+    if (!symbol) {
+      throw new Error(`Unknown token or ticker: ${address}`);
+    }
     return symbol;
   }
 
