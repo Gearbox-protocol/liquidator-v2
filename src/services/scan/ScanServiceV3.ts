@@ -278,7 +278,7 @@ export class ScanServiceV3 extends AbstractScanService {
     if (!this.#dataCompressor) {
       throw new Error("data compressor not initialized");
     }
-    return this.dataCompressor;
+    return this.#dataCompressor;
   }
 }
 
