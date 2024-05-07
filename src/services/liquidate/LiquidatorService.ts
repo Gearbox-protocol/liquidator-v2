@@ -194,6 +194,8 @@ export class LiquidatorService implements ILiquidatorService {
         //   this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
         // }
         this.log.error(`failed to estimate gas: ${e}`);
+        const decoded = await errorDecoder.decode(e);
+        logger.error(`decoded error: ${decoded}`);
       }
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
@@ -241,9 +243,11 @@ export class LiquidatorService implements ILiquidatorService {
         }
       } catch (e: any) {
         logger.error(`cant liquidate: ${e}`);
+        logger.error(`error keys: ${Object.keys(e)}`);
+        const decoded = await errorDecoder.decode(e);
+        logger.error(`decoded error: ${decoded}`);
         await this.saveTxTrace(e.transactionHash);
-        optimisticResult.error =
-          (await errorDecoder.decode(e)).reason || undefined;
+        optimisticResult.error ||= decoded.reason || undefined;
       }
     } catch (e: any) {
       this.log.error(`cannot liquidate: ${e}`);
