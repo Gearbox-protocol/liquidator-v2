@@ -32,7 +32,7 @@ interface PriceFeedEntry {
   trusted?: boolean;
 }
 
-interface RedstoneFeed {
+export interface RedstoneFeed {
   token: string;
   dataFeedId: string;
   reserve: boolean;
@@ -60,7 +60,7 @@ export default class OracleServiceV3 {
   addressProvider: AddressProviderService;
 
   @Inject(PROVIDER)
-  providerr: Provider;
+  provider: Provider;
 
   @Inject(CONFIG)
   config: ConfigSchema;
@@ -75,7 +75,7 @@ export default class OracleServiceV3 {
   public async launch(block: number): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.addressProvider.network];
     const oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
-    this.#oracle = IPriceOracleV3__factory.connect(oracle, this.providerr);
+    this.#oracle = IPriceOracleV3__factory.connect(oracle, this.provider);
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
@@ -118,7 +118,7 @@ export default class OracleServiceV3 {
       }
     }
     this.log.debug(`need to peform convert on ${calls.length} feeds`);
-    const resp = await safeMulticall<bigint>(calls, this.providerr);
+    const resp = await safeMulticall<bigint>(calls, this.provider);
 
     for (let i = 0; i < resp.length; i++) {
       const { value, error } = resp[i];
@@ -159,16 +159,24 @@ export default class OracleServiceV3 {
 
   /**
    * Returns currenly used redstone feeds
+   * For single token, it can include multiple feeds (main and/or reserve)
    */
-  public getRedstoneFeeds(activeOnly: boolean): RedstoneFeed[] {
-    const result: RedstoneFeed[] = [];
-    for (const [token, entry] of Object.entries(this.#feeds)) {
+  public getRedstoneFeeds(activeOnly: boolean): Record<string, RedstoneFeed[]> {
+    const result: Record<string, RedstoneFeed[]> = {};
+    for (const [t, entry] of Object.entries(this.#feeds)) {
+      const token = t.toLowerCase();
       const { active, main, reserve } = entry;
       if (main.dataFeedId && (!activeOnly || active === "main")) {
-        result.push({ token, dataFeedId: main.dataFeedId, reserve: false });
+        result[token] = [
+          ...result[token],
+          { token, dataFeedId: main.dataFeedId, reserve: false },
+        ];
       }
       if (reserve?.dataFeedId && (!activeOnly || active === "reserve")) {
-        result.push({ token, dataFeedId: reserve.dataFeedId, reserve: true });
+        result[token] = [
+          ...result[token],
+          { token, dataFeedId: reserve.dataFeedId, reserve: true },
+        ];
       }
     }
     return result;
@@ -179,7 +187,7 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    const logs = await this.providerr.getLogs({
+    const logs = await this.provider.getLogs({
       address: this.oracle.getAddress(),
       fromBlock: this.#lastBlock,
       toBlock,
@@ -245,7 +253,7 @@ export default class OracleServiceV3 {
       }
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await safeMulticall(calls, this.providerr);
+    const resp = await safeMulticall(calls, this.provider);
     for (let i = 0; i < resp.length; i++) {
       let dataFeedId = resp[i].value || null;
       let feedAddress = calls[i].address;

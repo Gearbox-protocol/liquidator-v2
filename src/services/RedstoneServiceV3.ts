@@ -2,6 +2,8 @@ import {
   type PriceFeedData,
   type PriceFeedType,
   REDSTONE_SIGNERS,
+  tickerInfoTokensByNetwork,
+  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import type { MultiCall } from "@gearbox-protocol/types/v3";
 import { ICreditFacadeV3Multicall__factory } from "@gearbox-protocol/types/v3";
@@ -14,7 +16,9 @@ import { CONFIG, type ConfigSchema } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
 import type { CreditAccountData } from "../utils/ethers-6-temp";
+import { AddressProviderService } from "./AddressProviderService";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
+import type { RedstoneFeed } from "./OracleServiceV3";
 import OracleServiceV3 from "./OracleServiceV3";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
@@ -35,6 +39,9 @@ export class RedstoneServiceV3 {
   @Inject()
   oracle: OracleServiceV3;
 
+  @Inject()
+  addressProvider: AddressProviderService;
+
   @Inject(PROVIDER)
   provider: Provider;
 
@@ -46,16 +53,34 @@ export class RedstoneServiceV3 {
     tokens: string[],
     activeOnly: boolean,
   ): Promise<PriceOnDemandExtras[]> {
-    const tokenz = tokens.map(t => t.toLowerCase());
-    const redstoneFeeds = this.oracle
-      .getRedstoneFeeds(activeOnly)
-      .filter(f => tokenz.includes(f.token));
+    const redstoneFeeds = this.oracle.getRedstoneFeeds(activeOnly);
+    const tickers = tickerInfoTokensByNetwork[this.addressProvider.network];
+
+    const redstoneUpdates: RedstoneFeed[] = [];
+    for (const t of tokens) {
+      const token = t.toLowerCase();
+      const feeds = redstoneFeeds[token];
+      if (feeds?.length) {
+        redstoneUpdates.push(...feeds);
+        continue;
+      }
+      const symb = tokenSymbolByAddress[token];
+      const ticker = tickers[symb];
+      if (ticker) {
+        this.log.debug(`found ticker ${ticker.symbol} for ${symb}`);
+        redstoneUpdates.push({
+          dataFeedId: ticker.dataId,
+          token: ticker.address,
+          reserve: false, // TODO: check this
+        });
+      }
+    }
 
     this.log?.debug(
-      `need to update ${redstoneFeeds.length} redstone feeds: ${redstoneFeeds.map(({ dataFeedId }) => dataFeedId).join(", ")}`,
+      `need to update ${redstoneUpdates.length} redstone feeds: ${redstoneUpdates.map(({ dataFeedId }) => dataFeedId).join(", ")}`,
     );
     const result = await Promise.all(
-      redstoneFeeds.map(({ token, dataFeedId, reserve }) =>
+      redstoneUpdates.map(({ token, dataFeedId, reserve }) =>
         this.#getRedstonePayloadForManualUsage(
           token,
           reserve,
