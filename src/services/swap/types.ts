@@ -1,5 +1,5 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
-import type { BigNumberish, Wallet } from "ethers";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import type { Wallet } from "ethers";
 /**
  * Service that used to swap underlying back to ETH after liquidation
  */
@@ -13,9 +13,5 @@ export interface ISwapper {
    * @param recipient
    * @returns txHash or null
    */
-  swap: (
-    executor: Wallet,
-    tokenAddr: string,
-    amount: BigNumberish,
-  ) => Promise<void>;
+  swap: (executor: Wallet, tokenAddr: string, amount: bigint) => Promise<void>;
 }

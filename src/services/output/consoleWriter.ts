@@ -1,4 +1,4 @@
-import { json_stringify } from "../utils/bigint-serializer";
+import { json_stringify } from "../../utils/bigint-serializer";
 import type { IOptimisticOutputWriter } from "./types";
 
 export default class ConsoleWriter implements IOptimisticOutputWriter {

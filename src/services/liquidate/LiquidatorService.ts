@@ -1,21 +1,22 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import {
-  IERC20__factory,
-  tokenSymbolByAddress,
-  TxParser,
-} from "@gearbox-protocol/sdk";
-import type { BigNumber, BigNumberish, ContractReceipt } from "ethers";
-import { providers, utils, Wallet } from "ethers";
-import { decodeError } from "ethers-decode-error";
-import { Inject } from "typedi";
+import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
+import { IERC20__factory } from "@gearbox-protocol/types/v3";
+import type { JsonRpcProvider, TransactionReceipt } from "ethers";
+import { Provider, Wallet } from "ethers";
+import { ErrorDecoder } from "ethers-decode-error";
+import Container, { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../../config";
-import type { LoggerInterface } from "../../log";
+import { CONFIG, type ConfigSchema } from "../../config";
+import { Logger, LoggerInterface } from "../../log";
+import { filterDust, PROVIDER } from "../../utils";
+import type { CreditAccountData } from "../../utils/ethers-6-temp";
+import { TxParser } from "../../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "../AddressProviderService";
 import { AMPQService } from "../ampqService";
-import { IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
-import { ISwapper, SWAPPER } from "../swap";
-import { accountName, filterDust, managerName } from "../utils";
+import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3";
+import { type ISwapper, SWAPPER } from "../swap";
+import LiquidationStrategyV3Full from "./LiquidationStrategyV3Full";
+import LiquidationStrategyV3Partial from "./LiquidationStrategyV3Partial";
 import { OptimisticResults } from "./OptimisiticResults";
 import type {
   ILiquidationStrategy,
@@ -24,15 +25,19 @@ import type {
   StrategyPreview,
 } from "./types";
 
+const errorDecoder = ErrorDecoder.create();
 export interface Balance {
-  underlying: BigNumber;
-  eth: BigNumber;
+  underlying: bigint;
+  eth: bigint;
 }
 
-export default abstract class AbstractLiquidatorService
-  implements ILiquidatorService
-{
+@Service()
+export class LiquidatorService implements ILiquidatorService {
+  @Logger("LiquidatorService")
   log: LoggerInterface;
+
+  @Inject()
+  redstone: RedstoneServiceV3;
 
   @Inject()
   ampqService: AMPQService;
@@ -52,8 +57,8 @@ export default abstract class AbstractLiquidatorService
   @Inject()
   optimistic: OptimisticResults;
 
-  @Inject()
-  provider: providers.Provider;
+  @Inject(PROVIDER)
+  provider: Provider;
 
   @Inject()
   wallet: Wallet;
@@ -68,7 +73,7 @@ export default abstract class AbstractLiquidatorService
   public async launch(): Promise<void> {
     if (this.config.optimistic) {
       // this is needed because otherwise it's possible to hit deadlines in uniswap calls
-      await (this.provider as providers.JsonRpcProvider).send(
+      await (this.provider as JsonRpcProvider).send(
         "anvil_setBlockTimestampInterval",
         [1],
       );
@@ -85,12 +90,18 @@ export default abstract class AbstractLiquidatorService
         this.#etherscanUrl = "https://optimistic.etherscan.io";
         break;
     }
+    const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
+      this.config;
+    this.strategy =
+      partialLiquidatorAddress || deployPartialLiquidatorContracts
+        ? Container.get(LiquidationStrategyV3Partial)
+        : Container.get(LiquidationStrategyV3Full);
+    await this.strategy.launch();
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
-    const name = accountName(ca);
     this.ampqService.info(
-      `start ${this.strategy.name} liquidation of ${name} with HF ${ca.healthFactor}`,
+      `start ${this.strategy.name} liquidation of ${ca.name} with HF ${ca.healthFactor}`,
     );
     try {
       const preview = await this.strategy.preview(ca);
@@ -105,13 +116,13 @@ export default abstract class AbstractLiquidatorService
       const receipt = await this.strategy.liquidate(ca, preview);
 
       this.ampqService.info(
-        `account ${name} was ${this.strategy.adverb} liquidated\nTx receipt: ${this.etherscan(receipt)}\nGas used: ${receipt.gasUsed
-          .toNumber()
-          .toLocaleString("en")}\nPath used:\n${pathHuman.join("\n")}`,
+        `account ${ca.name} was ${this.strategy.adverb} liquidated\nTx receipt: ${this.etherscan(receipt)}\nGas used: ${receipt.gasUsed.toLocaleString(
+          "en",
+        )}\nPath used:\n${pathHuman.join("\n")}`,
       );
     } catch (e) {
       this.ampqService.error(
-        `${this.strategy.name} liquidation of ${name} failed: ${e}`,
+        `${this.strategy.name} liquidation of ${ca.name} failed: ${e}`,
       );
     }
   }
@@ -123,7 +134,7 @@ export default abstract class AbstractLiquidatorService
     const logger = this.log.child({
       account: acc.addr,
       borrower: acc.borrower,
-      manager: managerName(acc),
+      manager: acc.managerName,
     });
     let snapshotId: number | undefined;
     const optimisticResult: OptimisticResultV2 = {
@@ -169,7 +180,7 @@ export default abstract class AbstractLiquidatorService
       }
       logger.debug({ pathHuman: optimisticResult.callsHuman }, "path found");
 
-      let gasLimit: BigNumberish = 29e6;
+      let gasLimit = 29_000_000n;
       // before actual transaction, try to estimate gas
       // this effectively will load state and contracts from fork origin to anvil
       // so following actual tx should not be slow
@@ -177,17 +188,18 @@ export default abstract class AbstractLiquidatorService
       try {
         gasLimit = await this.strategy.estimate(acc, preview);
       } catch (e: any) {
-        if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
-          this.log.error(`failed to estimate gas: ${e.reason}`);
-        } else {
-          this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
-        }
+        // if (e.code === utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT) {
+        //   this.log.error(`failed to estimate gas: ${e.reason}`);
+        // } else {
+        //   this.log.debug(`failed to esitmate gas: ${e.code} ${Object.keys(e)}`);
+        // }
+        this.log.error(`failed to estimate gas: ${e}`);
       }
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
       // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
       if (!snapshotId) {
-        snapshotId = await (this.provider as providers.JsonRpcProvider).send(
+        snapshotId = await (this.provider as JsonRpcProvider).send(
           "evm_snapshot",
           [],
         );
@@ -196,7 +208,7 @@ export default abstract class AbstractLiquidatorService
       try {
         // send profit to executor address because we're going to use swapper later
         const receipt = await this.strategy.liquidate(acc, preview, gasLimit);
-        logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
+        logger.debug(`Liquidation tx hash: ${receipt.hash}`);
         optimisticResult.isError = receipt.status !== 1;
         const strStatus = optimisticResult.isError ? "failure" : "success";
         logger.debug(
@@ -209,11 +221,10 @@ export default abstract class AbstractLiquidatorService
         optimisticResult.hfAfter = acc.healthFactor;
 
         let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
-        optimisticResult.gasUsed = receipt.gasUsed.toNumber();
-        optimisticResult.liquidatorPremium = balanceAfter.underlying
-          .sub(balanceBefore.underlying)
-          .toString();
-
+        optimisticResult.gasUsed = Number(receipt.gasUsed);
+        optimisticResult.liquidatorPremium = (
+          balanceAfter.underlying - balanceBefore.underlying
+        ).toString(10);
         // swap underlying back to ETH
         await this.swapper.swap(
           this.wallet,
@@ -221,30 +232,30 @@ export default abstract class AbstractLiquidatorService
           balanceAfter.underlying,
         );
         balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
-        optimisticResult.liquidatorProfit = balanceAfter.eth
-          .sub(balanceBefore.eth)
-          .toString();
+        optimisticResult.liquidatorProfit = (
+          balanceAfter.eth - balanceBefore.eth
+        ).toString(10);
 
-        if (balanceAfter.eth.lt(balanceBefore.eth)) {
+        if (balanceAfter.eth < balanceBefore.eth) {
           logger.warn("negative liquidator profit");
         }
       } catch (e: any) {
         logger.error(`cant liquidate: ${e}`);
         await this.saveTxTrace(e.transactionHash);
-        optimisticResult.error = decodeError(e).error;
+        optimisticResult.error =
+          (await errorDecoder.decode(e)).reason || undefined;
       }
     } catch (e: any) {
       this.log.error(`cannot liquidate: ${e}`);
-      optimisticResult.error = decodeError(e).error;
+      optimisticResult.error =
+        (await errorDecoder.decode(e)).reason || undefined;
     }
 
     optimisticResult.duration = Date.now() - start;
     this.optimistic.push(optimisticResult);
 
     if (snapshotId) {
-      await (this.provider as providers.JsonRpcProvider).send("evm_revert", [
-        snapshotId,
-      ]);
+      await (this.provider as JsonRpcProvider).send("evm_revert", [snapshotId]);
     }
 
     return optimisticResult;
@@ -271,7 +282,7 @@ export default abstract class AbstractLiquidatorService
    */
   protected async saveTxTrace(txHash: string): Promise<void> {
     try {
-      const txTrace = await (this.provider as providers.JsonRpcProvider).send(
+      const txTrace = await (this.provider as JsonRpcProvider).send(
         "trace_transaction",
         [txHash],
       );
@@ -282,7 +293,7 @@ export default abstract class AbstractLiquidatorService
     }
   }
 
-  protected etherscan(receipt: ContractReceipt): string {
-    return `${this.#etherscanUrl}/tx/${receipt.transactionHash}`;
+  protected etherscan({ hash }: TransactionReceipt): string {
+    return `${this.#etherscanUrl}/tx/${hash}`;
   }
 }

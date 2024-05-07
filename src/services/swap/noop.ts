@@ -1,4 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import type { BigNumberish, Wallet } from "ethers";
 
 import type { ISwapper } from "./types";

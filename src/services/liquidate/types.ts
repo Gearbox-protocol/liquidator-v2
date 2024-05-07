@@ -1,10 +1,7 @@
-import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
-import type { BigNumberish, ContractReceipt } from "ethers";
+import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
+import type { TransactionReceipt } from "ethers";
 
-export interface PriceOnDemand {
-  token: string;
-  callData: string;
-}
+import type { CreditAccountData } from "../../utils/ethers-6-temp";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
   ts: number;
@@ -72,12 +69,12 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
    */
   makeLiquidatable: (ca: CreditAccountData) => Promise<MakeLiquidatableResult>;
   preview: (ca: CreditAccountData) => Promise<T>;
-  estimate: (account: CreditAccountData, preview: T) => Promise<BigNumberish>;
+  estimate: (account: CreditAccountData, preview: T) => Promise<bigint>;
   liquidate: (
     account: CreditAccountData,
     preview: T,
-    gasLimit?: BigNumberish,
-  ) => Promise<ContractReceipt>;
+    gasLimit?: bigint,
+  ) => Promise<TransactionReceipt>;
 }
 
 /**

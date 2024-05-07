@@ -1,17 +1,19 @@
-import type { Asset, CreditAccountData } from "@gearbox-protocol/sdk";
-import { getDecimals, ICreditFacadeV3__factory } from "@gearbox-protocol/sdk";
-import type { PathFinderV1CloseResult } from "@gearbox-protocol/sdk/lib/pathfinder/v1/core";
-import type { BigNumberish, ContractReceipt } from "ethers";
+import { getDecimals } from "@gearbox-protocol/sdk-gov";
+import type { Balance } from "@gearbox-protocol/types/v3";
+import { ICreditFacadeV3__factory } from "@gearbox-protocol/types/v3";
+import type { TransactionReceipt } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../../log";
+import { Logger, type LoggerInterface } from "../../log";
+import type { CreditAccountData } from "../../utils/ethers-6-temp";
+import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
 
 @Service()
 export default class LiquidationStrategyV3Full
   extends AbstractLiquidationStrategyV3
-  implements ILiquidationStrategy<PathFinderV1CloseResult>
+  implements ILiquidationStrategy<PathFinderCloseResult>
 {
   public readonly name = "full";
   public readonly adverb = "fully";
@@ -26,13 +28,11 @@ export default class LiquidationStrategyV3Full
     return Promise.resolve({});
   }
 
-  public async preview(
-    ca: CreditAccountData,
-  ): Promise<PathFinderV1CloseResult> {
+  public async preview(ca: CreditAccountData): Promise<PathFinderCloseResult> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);
-      const expectedBalances: Record<string, Asset> = {};
-      const leftoverBalances: Record<string, Asset> = {};
+      const expectedBalances: Record<string, Balance> = {};
+      const leftoverBalances: Record<string, Balance> = {};
       Object.entries(ca.balances).forEach(([token, balance]) => {
         expectedBalances[token] = { token, balance };
         // filter out dust, we don't want to swap it
@@ -56,8 +56,12 @@ export default class LiquidationStrategyV3Full
       }
       // we want fresh redstone price in actual liquidation transactions
       const priceUpdateCalls = await this.redstone.compressorUpdates(ca);
-      result.calls = [...priceUpdateCalls, ...result.calls];
-      return result;
+      return {
+        amount: result.amount,
+        minAmount: result.minAmount,
+        underlyingBalance: result.underlyingBalance,
+        calls: [...priceUpdateCalls, ...result.calls],
+      };
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
     }
@@ -65,13 +69,13 @@ export default class LiquidationStrategyV3Full
 
   public async estimate(
     account: CreditAccountData,
-    preview: PathFinderV1CloseResult,
-  ): Promise<BigNumberish> {
+    preview: PathFinderCloseResult,
+  ): Promise<bigint> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
       this.executor.wallet,
     );
-    return facade.estimateGas.liquidateCreditAccount(
+    return facade.liquidateCreditAccount.estimateGas(
       account.addr,
       this.executor.address,
       preview.calls,
@@ -80,17 +84,16 @@ export default class LiquidationStrategyV3Full
 
   public async liquidate(
     account: CreditAccountData,
-    preview: PathFinderV1CloseResult,
-    recipient: string,
-    gasLimit?: BigNumberish,
-  ): Promise<ContractReceipt> {
+    preview: PathFinderCloseResult,
+    gasLimit?: bigint,
+  ): Promise<TransactionReceipt> {
     const facade = ICreditFacadeV3__factory.connect(
       account.creditFacade,
       this.executor.wallet,
     );
-    const txData = await facade.populateTransaction.liquidateCreditAccount(
+    const txData = await facade.liquidateCreditAccount.populateTransaction(
       account.addr,
-      recipient,
+      this.executor.address,
       preview.calls,
       gasLimit ? { gasLimit } : {},
     );

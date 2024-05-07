@@ -1,19 +1,19 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
   CHAINS,
   formatBN,
   getDecimals,
-  IERC20__factory,
   tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk-gov";
+import { IERC20__factory } from "@gearbox-protocol/types/v3";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { BigNumber, type BigNumberish, type Wallet } from "ethers";
+import type { Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../../config";
-import { Logger, LoggerInterface } from "../../log";
+import { CONFIG, type ConfigSchema } from "../../config";
+import { Logger, type LoggerInterface } from "../../log";
 import ExecutorService from "../ExecutorService";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
@@ -78,14 +78,14 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   public async swap(
     executor: Wallet,
     tokenAddr: string,
-    amount: BigNumberish,
+    amount: bigint,
     recipient?: string,
   ): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
     let transactionHash: string | undefined;
-    if (BigNumber.from(amount).lte(10)) {
+    if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
       );
       return;
     }

@@ -2,27 +2,29 @@
 //   FlashbotsBundleProvider,
 //   FlashbotsTransactionResolution,
 // } from "@flashbots/ethers-provider-bundle";
-import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type {
-  ContractReceipt,
   ContractTransaction,
-  PopulatedTransaction,
+  JsonRpcProvider,
+  TransactionReceipt,
+  TransactionResponse,
 } from "ethers";
-import { BigNumber, providers, Wallet } from "ethers";
+import { Provider, Wallet } from "ethers";
 import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../log";
+import { Logger, type LoggerInterface } from "../log";
+import { PROVIDER } from "../utils";
 
-const GAS_TIP_MULTIPLIER = BigNumber.from(5000);
+const GAS_TIP_MULTIPLIER = 5000n;
 
 @Service()
 export default class ExecutorService {
   @Inject()
   public wallet: Wallet;
 
-  @Inject()
-  public provider: providers.Provider;
+  @Inject(PROVIDER)
+  public provider: Provider;
 
   @Logger("ExecutorService")
   public logger: LoggerInterface;
@@ -33,7 +35,7 @@ export default class ExecutorService {
 
   public async launch(): Promise<void> {
     try {
-      const resp = await (this.provider as providers.JsonRpcProvider).send(
+      const resp = await (this.provider as JsonRpcProvider).send(
         "anvil_nodeInfo",
         [],
       );
@@ -53,18 +55,18 @@ export default class ExecutorService {
    * @returns
    */
   public async mine(
-    tx: ContractTransaction,
+    tx: TransactionResponse,
     interval = 12_000,
     retries = 5,
-  ): Promise<ContractReceipt> {
+  ): Promise<TransactionReceipt> {
     if (this.#isAnvil) {
-      await (this.provider as providers.JsonRpcProvider)
+      await (this.provider as JsonRpcProvider)
         .send("evm_mine", [])
         .catch(() => {});
     }
 
     const run = async () => {
-      const receipt: ContractReceipt = await Promise.race([
+      const receipt = await Promise.race([
         tx.wait(),
         new Promise<never>((_, reject) => {
           setTimeout(() => {
@@ -72,15 +74,15 @@ export default class ExecutorService {
           }, interval);
         }),
       ]);
-      return receipt;
+      return receipt!;
     };
 
     return pRetry(run, { retries });
   }
 
   public async sendPrivate(
-    txData: PopulatedTransaction,
-  ): Promise<providers.TransactionReceipt> {
+    txData: ContractTransaction,
+  ): Promise<TransactionReceipt> {
     // if (!config.optimistic && config.flashbotsRpc) {
     //   const flashbots = await this.getFlashbots();
     //   this.logger.debug(`sending tx via flashbots`);
@@ -109,14 +111,14 @@ export default class ExecutorService {
     this.logger.debug(`sending tx via normal rpc`);
     const req = await this.wallet.populateTransaction(txData);
     if (req.maxPriorityFeePerGas && req.maxFeePerGas) {
-      const extraTip = BigNumber.from(req.maxPriorityFeePerGas)
-        .mul(GAS_TIP_MULTIPLIER)
-        .div(PERCENTAGE_FACTOR);
-      req.maxPriorityFeePerGas = extraTip.add(req.maxPriorityFeePerGas);
-      req.maxFeePerGas = extraTip.add(req.maxFeePerGas);
+      const extraTip =
+        (BigInt(req.maxPriorityFeePerGas) * GAS_TIP_MULTIPLIER) /
+        PERCENTAGE_FACTOR;
+      req.maxPriorityFeePerGas = BigInt(req.maxPriorityFeePerGas) + extraTip;
+      req.maxFeePerGas = BigInt(req.maxFeePerGas) + extraTip;
     }
     const signedTx = await this.wallet.signTransaction(req);
-    const tx = await this.provider.sendTransaction(signedTx);
+    const tx = await this.provider.broadcastTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
     return this.mine(tx);
   }

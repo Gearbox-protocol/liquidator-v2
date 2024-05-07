@@ -1,14 +1,16 @@
-import type { IAddressProviderV3, NetworkType } from "@gearbox-protocol/sdk";
+import { ADDRESS_PROVIDER, type NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
-  ADDRESS_PROVIDER,
-  detectNetwork,
+  type IAddressProviderV3,
   IAddressProviderV3__factory,
-} from "@gearbox-protocol/sdk";
-import { ethers, providers } from "ethers";
+} from "@gearbox-protocol/types/v3";
+import { encodeBytes32String, Provider } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../config";
-import { Logger, LoggerInterface } from "../log";
+import { CONFIG, type ConfigSchema } from "../config";
+import { Logger, type LoggerInterface } from "../log";
+import { PROVIDER } from "../utils";
+import { detectNetwork } from "../utils/ethers-6-temp";
+import { TxParser } from "../utils/ethers-6-temp/txparser";
 
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
   Mainnet: 18433056,
@@ -22,8 +24,8 @@ export class AddressProviderService {
   @Logger("AddressProviderService")
   log: LoggerInterface;
 
-  @Inject()
-  provider: providers.Provider;
+  @Inject(PROVIDER)
+  provider: Provider;
 
   @Inject(CONFIG)
   config: ConfigSchema;
@@ -40,7 +42,7 @@ export class AddressProviderService {
       this.provider.getNetwork(),
     ]);
     this.#network = await detectNetwork(this.provider);
-    this.#chainId = chainId;
+    this.#chainId = Number(chainId);
     this.#startBlock = startBlock;
     this.#address =
       this.config.addressProviderOverride ?? ADDRESS_PROVIDER[this.#network];
@@ -52,6 +54,9 @@ export class AddressProviderService {
       this.#address,
       this.provider,
     );
+
+    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
+    TxParser.addAddressProvider(this.#address);
 
     this.log.info(
       `Launched on ${this.#network} (${chainId}) using address provider ${this.#address}${overrideS}`,
@@ -72,20 +77,17 @@ export class AddressProviderService {
       `looking for ${service} in version range [${minVersion}, ${maxVersion}]`,
     );
 
-    const logs = await this.contract.provider.getLogs({
-      ...this.contract.filters.SetAddress(
-        ethers.utils.formatBytes32String(service),
-      ),
-      fromBlock: AP_BLOCK_BY_NETWORK[this.network],
-    });
+    const logs = await this.contract.queryFilter(
+      this.contract.filters.SetAddress(encodeBytes32String(service)),
+      AP_BLOCK_BY_NETWORK[this.network],
+    );
     let version = minVersion;
     let address = "";
     for (const l of logs) {
-      const e = this.contract.interface.parseLog(l);
-      const v = e.args.version.toNumber();
+      const v = Number(l.args.version);
       if (v >= version && v <= maxVersion) {
         version = v;
-        address = e.args.value;
+        address = l.args.value;
       }
     }
 

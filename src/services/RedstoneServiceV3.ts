@@ -1,21 +1,19 @@
-import type {
-  CreditAccountData,
-  MultiCall,
-  PriceFeedData,
-  PriceFeedType,
-} from "@gearbox-protocol/sdk";
 import {
-  ICreditFacadeV3Multicall__factory,
+  type PriceFeedData,
+  type PriceFeedType,
   REDSTONE_SIGNERS,
-} from "@gearbox-protocol/sdk";
-import { DataServiceWrapper } from "@redstone-finance/evm-connector/dist/src/wrappers/DataServiceWrapper";
-import { ethers, providers, utils } from "ethers";
-import { arrayify, hexlify } from "ethers/lib/utils";
+} from "@gearbox-protocol/sdk-gov";
+import type { MultiCall } from "@gearbox-protocol/types/v3";
+import { ICreditFacadeV3Multicall__factory } from "@gearbox-protocol/types/v3";
+import { DataServiceWrapper } from "@redstone-finance/evm-connector";
+import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../config";
-import { Logger, LoggerInterface } from "../log";
+import { CONFIG, type ConfigSchema } from "../config";
+import { Logger, type LoggerInterface } from "../log";
+import { PROVIDER } from "../utils";
+import type { CreditAccountData } from "../utils/ethers-6-temp";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
 import OracleServiceV3 from "./OracleServiceV3";
 
@@ -37,8 +35,8 @@ export class RedstoneServiceV3 {
   @Inject()
   oracle: OracleServiceV3;
 
-  @Inject()
-  provider: providers.Provider;
+  @Inject(PROVIDER)
+  provider: Provider;
 
   public launch(): void {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
@@ -70,17 +68,23 @@ export class RedstoneServiceV3 {
 
     if (this.config.optimistic && result.length > 0) {
       const redstoneTs = result[0].ts;
-      let block = await this.provider!.getBlock("latest");
+      let block = await this.provider.getBlock("latest");
+      if (!block) {
+        throw new Error("cannot get latest block");
+      }
       const delta = block.timestamp - redstoneTs;
       if (delta < 0) {
         this.log?.debug(
           `warp, because block ts ${block.timestamp} < ${redstoneTs} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        await (this.provider as any).send("evm_mine", [hexlify(redstoneTs)]);
+        await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
         // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
         // hexlify(redstoneTs),
         // ]);
-        block = await this.provider!.getBlock("latest");
+        block = await this.provider.getBlock("latest");
+        if (!block) {
+          throw new Error("cannot get latest block");
+        }
         this.log?.debug(`new block ts: ${block.timestamp}`);
       }
     }
@@ -134,7 +138,7 @@ export class RedstoneServiceV3 {
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
-      arrayify(`0x${dataPayload}`),
+      getBytes(`0x${dataPayload}`),
     );
 
     const dataPackagesList = splitResponse(
@@ -143,10 +147,7 @@ export class RedstoneServiceV3 {
     );
 
     const result = dataPackagesList.map(list => {
-      const payload = new RedstonePayload(
-        list,
-        utils.toUtf8String(unsignedMetadata),
-      );
+      const payload = new RedstonePayload(list, toUtf8String(unsignedMetadata));
 
       let ts = 0;
       list.forEach(p => {
@@ -159,9 +160,9 @@ export class RedstoneServiceV3 {
       });
 
       return [
-        ethers.utils.defaultAbiCoder.encode(
+        AbiCoder.defaultAbiCoder().encode(
           ["uint256", "bytes"],
-          [ts, arrayify(`0x${payload.toBytesHexWithout0xPrefix()}`)],
+          [ts, getBytes(`0x${payload.toBytesHexWithout0xPrefix()}`)],
         ),
         ts,
       ] as const;

@@ -1,18 +1,18 @@
-import { providers, Wallet } from "ethers";
+import { Wallet } from "ethers";
 import { Container, Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema, loadConfig } from "./config";
-import { Logger, LoggerInterface } from "./log";
+import { CONFIG, type ConfigSchema, loadConfig } from "./config";
+import { Logger, type LoggerInterface } from "./log";
 import { AddressProviderService } from "./services/AddressProviderService";
 import { AMPQService } from "./services/ampqService";
 import ExecutorService from "./services/ExecutorService";
-import { HealthChecker } from "./services/healthChecker";
+import HealthCheckerService from "./services/HealthCheckerService";
 import { OptimisticResults } from "./services/liquidate";
-import { IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
+import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
 import { ScanServiceV3 } from "./services/scan";
-import { ISwapper, SWAPPER } from "./services/swap";
-import { getProvider } from "./services/utils";
+import { type ISwapper, SWAPPER } from "./services/swap";
+import { getProvider, PROVIDER } from "./utils";
 import version from "./version";
 
 @Service()
@@ -33,7 +33,7 @@ class App {
   ampqService: AMPQService;
 
   @Inject()
-  healthChecker: HealthChecker;
+  healthChecker: HealthCheckerService;
 
   @Inject()
   optimistic: OptimisticResults;
@@ -89,7 +89,7 @@ export async function launchApp(): Promise<void> {
   Container.set(CONFIG, config);
 
   const provider = getProvider();
-  Container.set(providers.Provider, provider);
+  Container.set(PROVIDER, provider);
 
   const wallet = new Wallet(config.privateKey, provider);
   Container.set(Wallet, wallet);

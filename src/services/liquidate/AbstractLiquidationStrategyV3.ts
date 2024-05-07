@@ -1,14 +1,17 @@
-import type { IDataCompressorV3 } from "@gearbox-protocol/sdk";
+import {
+  type IDataCompressorV3,
+  IDataCompressorV3__factory,
+} from "@gearbox-protocol/types/v3";
+import { Inject } from "typedi";
+
+import { CONFIG, type ConfigSchema } from "../../config";
+import type { LoggerInterface } from "../../log";
 import {
   CreditAccountData,
   CreditManagerData,
-  IDataCompressorV3__factory,
-  PathFinder,
-} from "@gearbox-protocol/sdk";
-import { Inject } from "typedi";
-
-import { CONFIG, ConfigSchema } from "../../config";
-import type { LoggerInterface } from "../../log";
+} from "../../utils/ethers-6-temp";
+import { PathFinder } from "../../utils/ethers-6-temp/pathfinder";
+import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "../AddressProviderService";
 import ExecutorService from "../ExecutorService";
 import OracleServiceV3 from "../OracleServiceV3";
@@ -55,7 +58,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
   public async updateCreditAccountData(
     ca: CreditAccountData,
   ): Promise<CreditAccountData> {
-    const newCa = await this.compressor.callStatic.getCreditAccountData(
+    const newCa = await this.compressor.getCreditAccountData.staticCall(
       ca.addr,
       [],
     );
@@ -77,6 +80,8 @@ export default abstract class AbstractLiquidationStrategyV3 {
         this.#cmCache[addr.toLowerCase()] = cm;
       }
     }
+    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
+    TxParserHelper.addCreditManager(cm);
     return cm;
   }
 

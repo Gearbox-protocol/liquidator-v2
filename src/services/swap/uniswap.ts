@@ -1,11 +1,11 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
   CHAINS,
   decimals,
   getDecimals,
-  IERC20__factory,
   tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk-gov";
+import { IERC20__factory } from "@gearbox-protocol/types/v3";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
 import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json";
@@ -19,11 +19,10 @@ import {
   SwapRouter,
   Trade,
 } from "@uniswap/v3-sdk";
-import type { BigNumberish, Wallet } from "ethers";
-import { BigNumber, ethers } from "ethers";
+import { AbiCoder, type BigNumberish, Contract, type Wallet } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../../log";
+import { Logger, type LoggerInterface } from "../../log";
 import BaseSwapper from "./base";
 import type { ISwapper } from "./types";
 
@@ -53,12 +52,12 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
   public async swap(
     executor: Wallet,
     tokenAddr: string,
-    amount: BigNumberish,
+    amount: bigint,
     recipient?: string,
   ): Promise<void> {
-    if (BigNumber.from(amount).lte(10)) {
+    if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
       );
       return;
     }
@@ -140,7 +139,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
       fee: FeeAmount.MEDIUM,
     });
 
-    const poolContract = new ethers.Contract(
+    const poolContract = new Contract(
       currentPoolAddress,
       IUniswapV3PoolABI.abi,
       executor,
@@ -181,7 +180,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
       data: calldata,
     });
 
-    const [amountOut] = ethers.utils.defaultAbiCoder.decode(
+    const [amountOut] = AbiCoder.defaultAbiCoder().decode(
       ["uint256"],
       quoteCallReturnData,
     );

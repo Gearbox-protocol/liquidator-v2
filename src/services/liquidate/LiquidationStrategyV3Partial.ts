@@ -1,36 +1,32 @@
 import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts";
 import {
   AaveFLTaker__factory,
-  ICreditConfiguratorV3__factory,
-  ICreditManagerV3__factory,
   ILiquidator__factory,
   Liquidator__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts";
-import type {
-  CreditAccountData,
-  CreditManagerData,
-} from "@gearbox-protocol/sdk";
 import {
+  ADDRESS_0X0,
+  contractsByNetwork,
   formatBN,
   getDecimals,
   PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
   WAD,
-} from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, contractsByNetwork } from "@gearbox-protocol/sdk-gov";
-import type {
-  BigNumber,
-  BigNumberish,
-  ContractReceipt,
-  providers,
-  Wallet,
-} from "ethers";
+} from "@gearbox-protocol/sdk-gov";
+import {
+  IACL__factory,
+  ICreditConfiguratorV3__factory,
+  ICreditManagerV3__factory,
+} from "@gearbox-protocol/types/v3";
+import type { JsonRpcProvider, TransactionReceipt, Wallet } from "ethers";
 import { Service } from "typedi";
 
-import { IACL__factory } from "../../generated/IACL__factory";
-import { Logger, LoggerInterface } from "../../log";
-import { accountName, managerName } from "../utils";
-import { impersonate, stopImpersonate } from "../utils/impersonate";
+import { Logger, type LoggerInterface } from "../../log";
+import type {
+  CreditAccountData,
+  CreditManagerData,
+} from "../../utils/ethers-6-temp";
+import { impersonate, stopImpersonate } from "../../utils/impersonate";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
 import type {
   ILiquidationStrategy,
@@ -108,12 +104,13 @@ export default class LiquidationStrategyV3Partial
     const cm = await this.getCreditManagerData(ca.creditManager);
 
     const ltChanges = await this.#calcNewLTs(ca, cm);
-    const snapshotId = await (
-      this.executor.provider as providers.JsonRpcProvider
-    ).send("evm_snapshot", []);
+    const snapshotId = await (this.executor.provider as JsonRpcProvider).send(
+      "evm_snapshot",
+      [],
+    );
 
     await this.#setNewLTs(ca, cm, ltChanges);
-    const updCa = await this.compressor.callStatic.getCreditAccountData(
+    const updCa = await this.compressor.getCreditAccountData.staticCall(
       ca.addr,
       [],
     );
@@ -125,7 +122,7 @@ export default class LiquidationStrategyV3Partial
     return {
       snapshotId,
       partialLiquidationCondition: {
-        hfNew: updCa.healthFactor.toNumber(),
+        hfNew: Number(updCa.healthFactor),
         ltChanges,
       },
     };
@@ -172,7 +169,7 @@ export default class LiquidationStrategyV3Partial
         );
         try {
           const result =
-            await this.partialLiquidator.callStatic.previewPartialLiquidation(
+            await this.partialLiquidator.previewPartialLiquidation.staticCall(
               ca.creditManager,
               ca.addr,
               assetOut,
@@ -184,13 +181,16 @@ export default class LiquidationStrategyV3Partial
             );
           if (result.calls.length) {
             logger.info(
-              `preview of partial liquidation: ${i}% of ${symb} succeeded with profit ${result.profit.toString()}`,
+              `preview of partial liquidation: ${i}% of ${symb} succeeded with profit ${result.profit}`,
             );
             return {
               amountOut,
               assetOut,
               flashLoanAmount,
-              calls: result.calls,
+              calls: result.calls.map(c => ({
+                callData: c.callData,
+                target: c.target,
+              })),
               priceUpdates,
               underlyingBalance: 0n, // TODO: calculate
             };
@@ -206,7 +206,7 @@ export default class LiquidationStrategyV3Partial
     }
 
     throw new Error(
-      `cannot find token and amount for successfull partial liquidation of ${accountName(ca)}`,
+      `cannot find token and amount for successfull partial liquidation of ${ca.name}`,
     );
   }
 
@@ -342,9 +342,8 @@ export default class LiquidationStrategyV3Partial
   public async estimate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ): Promise<BigNumber> {
-    // TODO: recipient?
-    return this.partialLiquidator.estimateGas.partialLiquidateAndConvert(
+  ): Promise<bigint> {
+    return this.partialLiquidator.partialLiquidateAndConvert.estimateGas(
       account.creditManager,
       account.addr,
       preview.assetOut,
@@ -358,10 +357,10 @@ export default class LiquidationStrategyV3Partial
   public async liquidate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-    gasLimit?: BigNumberish,
-  ): Promise<ContractReceipt> {
+    gasLimit?: bigint,
+  ): Promise<TransactionReceipt> {
     const txData =
-      await this.partialLiquidator.populateTransaction.partialLiquidateAndConvert(
+      await this.partialLiquidator.partialLiquidateAndConvert.populateTransaction(
         account.creditManager,
         account.addr,
         preview.assetOut,
@@ -384,9 +383,9 @@ export default class LiquidationStrategyV3Partial
 
     const aaveFlTakerFactory = new AaveFLTaker__factory(executor);
     const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
-    await aaveFlTaker.deployTransaction.wait();
+    await aaveFlTaker.waitForDeployment();
     this.logger.info(
-      `deployed AaveFLTaker at ${aaveFlTaker.address} in tx ${aaveFlTaker.deployTransaction.hash}`,
+      `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
     );
 
     const liquidatorFactory = new Liquidator__factory(executor);
@@ -394,20 +393,20 @@ export default class LiquidationStrategyV3Partial
       router,
       bot,
       aavePool,
-      aaveFlTaker.address,
+      aaveFlTaker.target,
     );
-    await liquidator.deployTransaction.wait();
+    await liquidator.waitForDeployment();
     this.logger.info(
-      `deployed Liquidator ${liquidator.address} in tx ${liquidator.deployTransaction.hash}`,
+      `deployed Liquidator ${liquidator.target} in tx ${liquidator.deploymentTransaction()?.hash}`,
     );
 
-    const tx = await aaveFlTaker.setAllowedFLReceiver(liquidator.address, true);
+    const tx = await aaveFlTaker.setAllowedFLReceiver(liquidator.target, true);
     await tx.wait();
     this.logger.info(
-      `set allowed flashloan receiver on FLTaker ${aaveFlTaker.address} to ${liquidator.address} in tx ${tx.hash}`,
+      `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
     );
 
-    return liquidator.address;
+    return liquidator.target as string;
   }
 
   async #configurePartialLiquidator(
@@ -468,7 +467,7 @@ export default class LiquidationStrategyV3Partial
     return this.logger.child({
       account: ca.addr,
       borrower: ca.borrower,
-      manager: managerName(ca),
+      manager: ca.managerName,
       hf: ca.healthFactor,
     });
   }

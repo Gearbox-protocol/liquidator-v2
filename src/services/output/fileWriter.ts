@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { json_stringify } from "../utils/bigint-serializer";
+import { json_stringify } from "../../utils/bigint-serializer";
 import BaseWriter from "./BaseWriter";
 import type { IOptimisticOutputWriter } from "./types";
 

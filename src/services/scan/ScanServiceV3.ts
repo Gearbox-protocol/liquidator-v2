@@ -1,20 +1,25 @@
-import type { IDataCompressorV3, MCall } from "@gearbox-protocol/sdk";
 import {
-  CreditAccountData,
+  PERCENTAGE_FACTOR,
+  tokenSymbolByAddress,
+} from "@gearbox-protocol/sdk-gov";
+import type {
+  CreditAccountDataStructOutput,
+  ICreditManagerV3,
+  IDataCompressorV3,
+  PriceOnDemand,
+} from "@gearbox-protocol/types/v3";
+import {
   ICreditManagerV3__factory,
   IDataCompressorV3__factory,
-  PERCENTAGE_FACTOR,
-  safeMulticall,
-  tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
-import type { ICreditManagerV3Interface } from "@gearbox-protocol/sdk/lib/types/ICreditManagerV3.sol/ICreditManagerV3";
-import type { CreditAccountDataStructOutput } from "@gearbox-protocol/sdk/lib/types/IDataCompressorV3";
-import type { CallOverrides } from "ethers";
+} from "@gearbox-protocol/types/v3";
+import type { Overrides } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { Logger, LoggerInterface } from "../../log";
-import type { ILiquidatorService, PriceOnDemand } from "../liquidate";
-import { LiquidatorServiceV3 } from "../liquidate";
+import { Logger, type LoggerInterface } from "../../log";
+import type { MCall } from "../../utils/ethers-6-temp";
+import { CreditAccountData, safeMulticall } from "../../utils/ethers-6-temp";
+import type { ILiquidatorService } from "../liquidate";
+import { LiquidatorService } from "../liquidate";
 import OracleServiceV3 from "../OracleServiceV3";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
@@ -24,7 +29,7 @@ const iCreditManagerV3 = ICreditManagerV3__factory.createInterface();
 interface AccountSelection {
   liquidatableOnly: boolean;
   priceUpdates: PriceOnDemand[];
-  overrides?: CallOverrides;
+  overrides?: Overrides;
 }
 
 @Service()
@@ -33,7 +38,7 @@ export class ScanServiceV3 extends AbstractScanService {
   log: LoggerInterface;
 
   @Inject()
-  liquidarorServiceV3: LiquidatorServiceV3;
+  liquidarorService: LiquidatorService;
 
   @Inject()
   oracle: OracleServiceV3;
@@ -44,7 +49,7 @@ export class ScanServiceV3 extends AbstractScanService {
   protected dataCompressor: IDataCompressorV3;
 
   protected override get liquidatorService(): ILiquidatorService {
-    return this.liquidarorServiceV3;
+    return this.liquidarorService;
   }
 
   protected override async _launch(): Promise<void> {
@@ -184,7 +189,7 @@ export class ScanServiceV3 extends AbstractScanService {
   ): Promise<CreditAccountDataStructOutput[]> {
     const result: CreditAccountDataStructOutput[] = [];
     for (const acc of accs) {
-      const accData = await this.dataCompressor.callStatic.getCreditAccountData(
+      const accData = await this.dataCompressor.getCreditAccountData.staticCall(
         acc,
         priceUpdates,
         overrides,
@@ -205,7 +210,7 @@ export class ScanServiceV3 extends AbstractScanService {
       this.log.debug(
         `getting liquidatable credit accounts with ${priceUpdates.length} price updates...`,
       );
-      return this.dataCompressor.callStatic.getLiquidatableCreditAccounts(
+      return this.dataCompressor.getLiquidatableCreditAccounts.staticCall(
         priceUpdates,
         overrides,
       );
@@ -224,7 +229,7 @@ export class ScanServiceV3 extends AbstractScanService {
   ): Promise<CreditAccountDataStructOutput[]> {
     const all = await Promise.all(
       cms.map(cm =>
-        this.dataCompressor.callStatic.getCreditAccountsByCreditManager(
+        this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
           cm,
           priceUpdates,
           overrides,
@@ -243,22 +248,22 @@ export class ScanServiceV3 extends AbstractScanService {
   #filterZeroDebt(
     accs: CreditAccountDataStructOutput[],
   ): CreditAccountDataStructOutput[] {
-    return accs.filter(acc => acc.debt.gt(0));
+    return accs.filter(acc => acc.debt > 0n);
   }
 
   async #filterLiquidatable(
     accs: CreditAccountDataStructOutput[],
-    overrides: CallOverrides,
+    overrides: Overrides,
   ): Promise<CreditAccountDataStructOutput[]> {
     this.log.debug(
       `filtering liquidatable credit accounts from selection of ${accs.length}...`,
     );
-    const calls: MCall<ICreditManagerV3Interface>[] = [];
+    const calls: MCall<ICreditManagerV3["interface"]>[] = [];
     for (const { addr, creditManager } of accs) {
       calls.push({
         address: creditManager,
         interface: iCreditManagerV3,
-        method: "isLiquidatable(address,uint16)",
+        method: "isLiquidatable",
         params: [addr, PERCENTAGE_FACTOR],
       });
     }

@@ -1,9 +1,10 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { providers } from "ethers";
+import { Provider } from "ethers";
 import { Inject } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../../config";
+import { CONFIG, type ConfigSchema } from "../../config";
 import type { LoggerInterface } from "../../log";
+import { PROVIDER } from "../../utils";
+import type { CreditAccountData } from "../../utils/ethers-6-temp";
 import { AddressProviderService } from "../AddressProviderService";
 import type { ILiquidatorService } from "../liquidate";
 import { OptimisticResults } from "../liquidate/OptimisiticResults";
@@ -20,8 +21,8 @@ export default abstract class AbstractScanService {
   @Inject()
   optimistic: OptimisticResults;
 
-  @Inject()
-  provider: providers.Provider;
+  @Inject(PROVIDER)
+  provider: Provider;
 
   protected _lastUpdated = 0;
 

@@ -1,10 +1,10 @@
-import { GOERLI_NETWORK, MAINNET_NETWORK } from "@gearbox-protocol/sdk";
+import { GOERLI_NETWORK, MAINNET_NETWORK } from "@gearbox-protocol/sdk-gov";
 import type { Channel } from "amqplib";
 import { connect } from "amqplib";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../config";
-import { Logger, LoggerInterface } from "../log";
+import { CONFIG, type ConfigSchema } from "../config";
+import { Logger, type LoggerInterface } from "../log";
 
 @Service()
 export class AMPQService {

@@ -2,7 +2,7 @@ import { join } from "node:path";
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-import { json_stringify } from "../utils/bigint-serializer";
+import { json_stringify } from "../../utils/bigint-serializer";
 import BaseWriter from "./BaseWriter";
 import type { IOptimisticOutputWriter } from "./types";
 

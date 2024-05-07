@@ -1,32 +1,27 @@
+import { ADDRESS_0X0, type NetworkType, WAD } from "@gearbox-protocol/sdk-gov";
 import type {
-  CreditAccountData,
   IPriceOracleV3,
-  MCall,
-  NetworkType,
-  RedstonePriceFeed,
-} from "@gearbox-protocol/sdk";
+  IRedstonePriceFeed,
+} from "@gearbox-protocol/types/v3";
 import {
-  ADDRESS_0X0,
   IPriceOracleV3__factory,
-  RedstonePriceFeed__factory,
-  safeMulticall,
-  WAD,
-} from "@gearbox-protocol/sdk";
-import type {
-  IPriceOracleV3Interface,
-  SetPriceFeedEvent,
-  SetReservePriceFeedEvent,
-  SetReservePriceFeedStatusEvent,
-} from "@gearbox-protocol/sdk/lib/types/IPriceOracleV3.sol/IPriceOracleV3";
-import type { BigNumber } from "ethers";
-import { providers, utils } from "ethers";
+  IRedstonePriceFeed__factory,
+} from "@gearbox-protocol/types/v3";
+import type { LogDescription } from "ethers";
+import { Provider, toUtf8String } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../config";
-import { Logger, LoggerInterface } from "../log";
+import { CONFIG, type ConfigSchema } from "../config";
+import { Logger, type LoggerInterface } from "../log";
+import { PROVIDER } from "../utils";
+import type { CreditAccountData, MCall } from "../utils/ethers-6-temp";
+import { safeMulticall } from "../utils/ethers-6-temp";
+import { TxParser } from "../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "./AddressProviderService";
 
-const RedstoneInterface = RedstonePriceFeed__factory.createInterface();
+const IRedstonePriceFeedInterface =
+  IRedstonePriceFeed__factory.createInterface();
+const IPriceOracleV3Interface = IPriceOracleV3__factory.createInterface();
 
 interface PriceFeedEntry {
   address: string;
@@ -64,8 +59,8 @@ export default class OracleServiceV3 {
   @Inject()
   addressProvider: AddressProviderService;
 
-  @Inject()
-  providerr: providers.Provider;
+  @Inject(PROVIDER)
+  providerr: Provider;
 
   @Inject(CONFIG)
   config: ConfigSchema;
@@ -84,6 +79,10 @@ export default class OracleServiceV3 {
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
+
+    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
+    TxParser.addTokens(this.addressProvider.network);
+    TxParser.addPriceOracle(oracle);
   }
 
   public async update(blockNumber: number): Promise<void> {
@@ -100,7 +99,7 @@ export default class OracleServiceV3 {
     tokensFrom: Record<string, bigint>,
     tokenTo: string,
   ): Promise<Record<string, bigint>> {
-    const calls: MCall<IPriceOracleV3Interface>[] = [];
+    const calls: MCall<IPriceOracleV3["interface"]>[] = [];
     const result: Record<string, bigint> = {};
 
     for (const [tokenFrom, amount] of Object.entries(tokensFrom)) {
@@ -111,24 +110,24 @@ export default class OracleServiceV3 {
         result[tokenFrom.toLowerCase()] = fromCache;
       } else {
         calls.push({
-          address: this.oracle.address,
+          address: this.oracle.target as string,
           interface: this.oracle.interface,
-          method: "convert(uint256,address,address)",
+          method: "convert",
           params: [amount, tokenFrom, tokenTo],
         });
       }
     }
     this.log.debug(`need to peform convert on ${calls.length} feeds`);
-    const resp = await safeMulticall<BigNumber>(calls, this.providerr);
+    const resp = await safeMulticall<bigint>(calls, this.providerr);
 
     for (let i = 0; i < resp.length; i++) {
       const { value, error } = resp[i];
       const amountFrom = calls[i].params[0] as bigint;
       const tokenFrom = calls[i].params[1] as string;
       if (!error && !!value) {
-        result[tokenFrom.toLowerCase()] = value.toBigInt();
+        result[tokenFrom.toLowerCase()] = value;
         if (this.config.optimistic) {
-          this.#saveCached(tokenFrom, tokenTo, amountFrom, value.toBigInt());
+          this.#saveCached(tokenFrom, tokenTo, amountFrom, value);
         }
       }
     }
@@ -180,22 +179,23 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    const events = await this.oracle.queryFilter<
-      | SetPriceFeedEvent
-      | SetReservePriceFeedEvent
-      | SetReservePriceFeedStatusEvent
-    >({}, this.#lastBlock, toBlock);
-    this.log.debug(`found ${events.length} oracle events`);
-    for (const e of events) {
-      switch (e.event) {
+    const logs = await this.providerr.getLogs({
+      address: this.oracle.getAddress(),
+      fromBlock: this.#lastBlock,
+      toBlock,
+    });
+    this.log.debug(`found ${logs.length} oracle events`);
+    for (const l of logs) {
+      const e = IPriceOracleV3Interface.parseLog(l);
+      switch (e?.name) {
         case "SetPriceFeed":
-          await this.#setPriceFeed(e as SetPriceFeedEvent);
+          await this.#setPriceFeed(e);
           break;
         case "SetReservePriceFeed":
-          await this.#setPriceFeed(e as SetReservePriceFeedEvent);
+          await this.#setPriceFeed(e);
           break;
         case "SetReservePriceFeedStatus":
-          this.#setFeedStatus(e as SetReservePriceFeedStatusEvent);
+          this.#setFeedStatus(e);
           break;
       }
     }
@@ -203,10 +203,8 @@ export default class OracleServiceV3 {
     this.#lastBlock = toBlock;
   }
 
-  async #setPriceFeed(
-    e: SetPriceFeedEvent | SetReservePriceFeedEvent,
-  ): Promise<void> {
-    const kind = e.event === "SetPriceFeed" ? "main" : "reserve";
+  async #setPriceFeed(e: LogDescription): Promise<void> {
+    const kind = e.name === "SetPriceFeed" ? "main" : "reserve";
     const token = e.args.token.toLowerCase();
     const priceFeed = e.args.priceFeed.toLowerCase();
     let entry = this.#feeds[token];
@@ -220,7 +218,7 @@ export default class OracleServiceV3 {
         active: "main",
         main: {
           address: priceFeed,
-          trusted: (e as SetPriceFeedEvent).args.trusted,
+          trusted: e.args.trusted,
         },
       };
     }
@@ -229,20 +227,20 @@ export default class OracleServiceV3 {
   }
 
   async #loadRedstoneIds(): Promise<void> {
-    const calls: MCall<RedstonePriceFeed["interface"]>[] = [];
+    const calls: MCall<IRedstonePriceFeed["interface"]>[] = [];
     for (const f of Object.values(this.#feeds)) {
       if (f.main.dataFeedId === undefined) {
         calls.push({
           address: f.main.address,
-          interface: RedstoneInterface,
-          method: "dataFeedId()",
+          interface: IRedstonePriceFeedInterface,
+          method: "dataFeedId",
         });
       }
       if (!!f.reserve && f.reserve.dataFeedId === undefined) {
         calls.push({
           address: f.reserve.address,
-          interface: RedstoneInterface,
-          method: "dataFeedId()",
+          interface: IRedstonePriceFeedInterface,
+          method: "dataFeedId",
         });
       }
     }
@@ -252,8 +250,7 @@ export default class OracleServiceV3 {
       let dataFeedId = resp[i].value || null;
       let feedAddress = calls[i].address;
       if (dataFeedId) {
-        dataFeedId = utils
-          .toUtf8String(dataFeedId)
+        dataFeedId = toUtf8String(dataFeedId)
           .trim()
           .replace(/\u0000/g, "");
       }
@@ -268,7 +265,7 @@ export default class OracleServiceV3 {
     }
   }
 
-  #setFeedStatus(e: SetReservePriceFeedStatusEvent): void {
+  #setFeedStatus(e: LogDescription): void {
     const token = e.args.token.toLowerCase();
     const active = e.args.active;
     const entry = this.#feeds[token];
