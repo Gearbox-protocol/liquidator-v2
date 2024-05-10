@@ -1,13 +1,11 @@
 import type {
   IPriceOracleV3,
-  MCall,
   NetworkType,
   RedstonePriceFeed,
 } from "@gearbox-protocol/sdk";
 import {
   IPriceOracleV3__factory,
   RedstonePriceFeed__factory,
-  safeMulticall,
 } from "@gearbox-protocol/sdk";
 import type {
   SetPriceFeedEvent,
@@ -20,6 +18,8 @@ import { Inject, Service } from "typedi";
 
 import { Logger, LoggerInterface } from "../log";
 import { AddressProviderService } from "./AddressProviderService";
+import type { MCall } from "./utils";
+import { safeMulticall } from "./utils";
 
 const RedstoneInterface = RedstonePriceFeed__factory.createInterface();
 
