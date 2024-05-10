@@ -13,8 +13,6 @@ const booleanLike = z
 export const ConfigSchema = z.object({
   addressProviderOverride: z.string().optional(),
 
-  ampqExchange: z.string().optional(),
-  ampqUrl: z.string().optional(),
   appName: z.string().default("liquidator-ts"),
   balanceToNotify: z.coerce.number().int().positive().optional(),
   port: z.coerce.number().default(4000),
@@ -51,6 +49,10 @@ export const ConfigSchema = z.object({
   outS3Bucket: z.string().optional(),
   outS3Prefix: z.string().default(""),
   outSuffix: z.string().default("ts"),
+
+  telegramBotToken: z.string().optional(),
+  telegramAlersChannel: z.string().startsWith("-").optional(),
+  telegramNotificationsChannel: z.string().startsWith("-").optional(),
 });
 
 export type ConfigSchema = z.infer<typeof ConfigSchema>;

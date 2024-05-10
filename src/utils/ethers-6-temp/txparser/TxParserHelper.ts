@@ -1,4 +1,5 @@
 import { ADDRESS_0X0, tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
+import type { MultiCall } from "@gearbox-protocol/types/v3";
 
 import type { CreditManagerData } from "../CreditManagerData";
 import { TxParser } from "./txParser";
@@ -25,6 +26,14 @@ export class TxParserHelper {
           contract: contract,
         })),
       );
+    }
+  }
+
+  public static parseMultiCall(preview: { calls: MultiCall[] }): string[] {
+    try {
+      return TxParser.parseMultiCall(preview.calls);
+    } catch (e) {
+      return [`${e}`];
     }
   }
 }

@@ -3,8 +3,6 @@ import type { ConfigSchema } from "./schema";
 const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   addressProviderOverride: "ADDRESS_PROVIDER",
   appName: "APP_NAME",
-  ampqUrl: "CLOUDAMQP_URL",
-  ampqExchange: "AMPQ_EXCHANGE",
   debugAccounts: "DEBUG_ACCOUNTS",
   debugManagers: "DEBUG_MANAGERS",
   balanceToNotify: "BALANCE_TO_NOTIFY",
@@ -28,6 +26,9 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   slippage: "SLIPPAGE",
   swapToEth: "SWAP_TO_ETH",
   underlying: "UNDERLYING",
+  telegramBotToken: "TELEGRAM_BOT_TOKEN",
+  telegramNotificationsChannel: "TELEGRAM_NOTIFICATIONS_CHANNEL",
+  telegramAlersChannel: "TELEGRAM_ALERTS_CHANNEL",
 };
 
 export const envConfig: Record<string, string> = Object.fromEntries(

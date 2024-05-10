@@ -17,9 +17,9 @@ import { CONFIG, type ConfigSchema } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { filterDust, PROVIDER } from "../../utils";
 import type { CreditAccountData } from "../../utils/ethers-6-temp";
-import { TxParser } from "../../utils/ethers-6-temp/txparser";
+import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "../AddressProviderService";
-import { AMPQService } from "../ampqService";
+import { INotifier, NOTIFIER } from "../notifier";
 import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import { type ISwapper, SWAPPER } from "../swap";
@@ -46,8 +46,8 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   redstone: RedstoneServiceV3;
 
-  @Inject()
-  ampqService: AMPQService;
+  @Inject(NOTIFIER)
+  notifier: INotifier;
 
   @Inject(CONFIG)
   config: ConfigSchema;
@@ -117,28 +117,24 @@ export class LiquidatorService implements ILiquidatorService {
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
-    this.ampqService.info(
-      `start ${this.strategy.name} liquidation of ${ca.name} with HF ${ca.healthFactor}`,
+    this.notifier.alert(
+      `begin ${this.strategy.name} liquidation of ${ca.name} with HF ${ca.healthFactor}`,
     );
     try {
       const preview = await this.strategy.preview(ca);
-      let pathHuman: Array<string | null> = [];
-      try {
-        pathHuman = TxParser.parseMultiCall(preview.calls);
-      } catch (e) {
-        pathHuman = [`${e}`];
-      }
+      const pathHuman = TxParserHelper.parseMultiCall(preview);
       this.log.debug(pathHuman);
 
       const receipt = await this.strategy.liquidate(ca, preview);
 
-      this.ampqService.info(
-        `account ${ca.name} was ${this.strategy.adverb} liquidated\nTx receipt: ${this.etherscan(receipt)}\nGas used: ${receipt.gasUsed.toLocaleString(
-          "en",
-        )}\nPath used:\n${pathHuman.join("\n")}`,
-      );
+      this.notifier
+        .alert(`account ${ca.name} was ${this.strategy.adverb} liquidated      
+Tx receipt: ${this.etherscan(receipt)}
+Gas used: ${receipt.gasUsed.toLocaleString("en")}
+Path used:
+${pathHuman.join("\n")}`);
     } catch (e) {
-      this.ampqService.error(
+      this.notifier.alert(
         `${this.strategy.name} liquidation of ${ca.name} failed: ${e}`,
       );
     }
@@ -187,14 +183,7 @@ export class LiquidatorService implements ILiquidatorService {
       optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
       optimisticResult.priceUpdates = preview.priceUpdates;
-
-      try {
-        optimisticResult.callsHuman = TxParser.parseMultiCall(
-          preview.calls,
-        ).filter((s): s is string => !!s);
-      } catch (e) {
-        optimisticResult.callsHuman = [`${e}`];
-      }
+      optimisticResult.callsHuman = TxParserHelper.parseMultiCall(preview);
       logger.debug({ pathHuman: optimisticResult.callsHuman }, "path found");
 
       let gasLimit = 29_000_000n;

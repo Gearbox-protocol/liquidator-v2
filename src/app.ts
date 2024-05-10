@@ -4,7 +4,6 @@ import { Container, Inject, Service } from "typedi";
 import { CONFIG, type ConfigSchema, loadConfig } from "./config";
 import { Logger, type LoggerInterface } from "./log";
 import { AddressProviderService } from "./services/AddressProviderService";
-import { AMPQService } from "./services/ampqService";
 import ExecutorService from "./services/ExecutorService";
 import HealthCheckerService from "./services/HealthCheckerService";
 import { OptimisticResults } from "./services/liquidate";
@@ -28,9 +27,6 @@ class App {
 
   @Inject()
   scanServiceV3: ScanServiceV3;
-
-  @Inject()
-  ampqService: AMPQService;
 
   @Inject()
   healthChecker: HealthCheckerService;
@@ -67,8 +63,6 @@ class App {
     this.redstone.launch();
 
     this.healthChecker.launch();
-    await this.ampqService.launch(this.addressProvider.chainId);
-
     await this.swapper.launch(this.addressProvider.network);
     await this.scanServiceV3.launch();
 

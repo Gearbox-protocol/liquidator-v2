@@ -73,7 +73,6 @@ export default abstract class AbstractScanService {
     }
     this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts`);
     for (const ca of accountsToLiquidate) {
-      ca.isDeleting = true;
       await this.liquidatorService.liquidate(ca);
     }
   }
@@ -83,14 +82,8 @@ export default abstract class AbstractScanService {
    * @param accountsToLiquidate
    */
   protected async liquidateOptimistically(
-    accountsToLiquidate: CreditAccountData[],
+    accounts: CreditAccountData[],
   ): Promise<void> {
-    const accounts = this.config.debugAccounts
-      ? accountsToLiquidate.filter(({ addr }) =>
-          this.config.debugAccounts?.includes(addr),
-        )
-      : accountsToLiquidate;
-
     const total = accounts.length;
     const debugS = this.config.debugAccounts ? "selective " : " ";
     this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
