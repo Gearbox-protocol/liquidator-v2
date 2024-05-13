@@ -114,6 +114,7 @@ export class LiquidatorService implements ILiquidatorService {
         ? Container.get(LiquidationStrategyV3Partial)
         : Container.get(LiquidationStrategyV3Full);
     await this.strategy.launch();
+    this.notifier.notify("started liquidator");
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
