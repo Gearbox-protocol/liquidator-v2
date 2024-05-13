@@ -82,7 +82,7 @@ export class ScanServiceV3 extends AbstractScanService {
       atBlock,
     );
     this.log.debug(
-      `${accounts.length} v3 potential accounts to liquidate${blockS}, failed tokens: ${failedTokens.length}`,
+      `${accounts.length} potential accounts to liquidate${blockS}, failed tokens: ${failedTokens.length}`,
     );
     const redstoneUpdates = await this.redstone.updatesForTokens(
       failedTokens,
@@ -92,9 +92,7 @@ export class ScanServiceV3 extends AbstractScanService {
       redstoneUpdates,
       atBlock,
     );
-    this.log.debug(
-      `${accounts.length} v3 accounts to liquidate${blockS}: ${accounts.map(a => a.addr).join(",")}`,
-    );
+    this.log.debug(`${accounts.length} accounts to liquidate${blockS}`);
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     const redstoneSymbols = redstoneTokens.map(
       t => tokenSymbolByAddress[t.toLowerCase()],
