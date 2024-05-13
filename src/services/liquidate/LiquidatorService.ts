@@ -243,13 +243,15 @@ ${pathHuman.join("\n")}`);
       } catch (e: any) {
         const decoded = await this.#errorDecoder.decode(e);
         await this.saveTxTrace(e);
-        optimisticResult.error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
+        // there's some decoder error that returns nonce error instead of revert error
+        // in such cases, estimate gas error is reliably parsed
+        optimisticResult.error ||= `cant liquidate: ${decoded.type}: ${decoded.reason}`;
         logger.error({ decoded, original: e }, "cant liquidate");
       }
     } catch (e: any) {
       const decoded = await this.#errorDecoder.decode(e);
       optimisticResult.error = `cannot liquidate: ${decoded.type}: ${decoded.reason}`;
-      logger.error(optimisticResult.error);
+      logger.error({ decoded, original: e }, "cannot liquidate");
     }
 
     optimisticResult.duration = Date.now() - start;
