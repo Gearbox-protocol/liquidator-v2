@@ -239,10 +239,6 @@ ${pathHuman.join("\n")}`);
         optimisticResult.liquidatorProfit = (
           balanceAfter.eth - balanceBefore.eth
         ).toString(10);
-
-        if (balanceAfter.eth < balanceBefore.eth) {
-          logger.warn("negative liquidator profit");
-        }
       } catch (e: any) {
         console.log(e);
         const decoded = await this.#errorDecoder.decode(e);
