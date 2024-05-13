@@ -10,7 +10,6 @@ import type {
   TransactionResponse,
 } from "ethers";
 import { Provider, Wallet } from "ethers";
-import pRetry from "p-retry";
 import { Inject, Service } from "typedi";
 
 import { Logger, type LoggerInterface } from "../log";
@@ -54,30 +53,15 @@ export default class ExecutorService {
    * @param tx
    * @returns
    */
-  public async mine(
-    tx: TransactionResponse,
-    interval = 12_000,
-    retries = 5,
-  ): Promise<TransactionReceipt> {
+  public async mine(tx: TransactionResponse): Promise<TransactionReceipt> {
     if (this.#isAnvil) {
       await (this.provider as JsonRpcProvider)
         .send("evm_mine", [])
         .catch(() => {});
     }
 
-    const run = async () => {
-      const receipt = await Promise.race([
-        tx.wait(),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error("mine timeout"));
-          }, interval);
-        }),
-      ]);
-      return receipt!;
-    };
-
-    return pRetry(run, { retries });
+    const result = await tx.wait(1, 12_000);
+    return result!;
   }
 
   public async sendPrivate(
