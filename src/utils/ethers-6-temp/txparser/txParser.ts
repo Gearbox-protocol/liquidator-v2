@@ -19,6 +19,7 @@ import { AaveV2WrappedATokenAdapterParser } from "./aaveV2WrappedATokenAdapterPa
 import type { AbstractParser } from "./abstractParser";
 import { AddressProviderParser } from "./addressProviderParser";
 import { BalancerV2VaultParser } from "./balancerV2VaultParser";
+import { CamelotV3AdapterParser } from "./camelotV3AdapterParser";
 import { CompoundV2CTokenAdapterParser } from "./compoundV2CTokenAdapterParser";
 import { ConvexBaseRewardPoolAdapterParser } from "./convexBaseRewardPoolAdapterParser";
 import { ConvexBoosterAdapterParser } from "./convexBoosterAdapterParser";
@@ -35,6 +36,7 @@ import { PoolParser } from "./poolParser";
 import { PriceOracleParser } from "./priceOracleParser";
 import { UniswapV2AdapterParser } from "./uniV2AdapterParser";
 import { UniswapV3AdapterParser } from "./uniV3AdapterParser";
+import { VelodromeV2RouterAdapterParser } from "./velodromeV2RouterAdapterParser";
 import { WstETHAdapterParser } from "./wstETHAdapterParser";
 import { YearnV2AdapterParser } from "./yearnV2AdapterParser";
 
@@ -205,6 +207,7 @@ export class TxParser {
       case "CURVE_V1_4ASSETS":
       case "CURVE_V1_STECRV_POOL":
       case "CURVE_V1_WRAPPER":
+      case "CURVE_STABLE_NG":
         TxParser._addParser(
           addressLC,
           new CurveAdapterParser(contract, isContract),
@@ -284,6 +287,23 @@ export class TxParser {
           new ERC4626AdapterParser(contract, isContract),
         );
         break;
+
+      case "VELODROME_V2_ROUTER":
+        TxParser._addParser(
+          addressLC,
+          new VelodromeV2RouterAdapterParser(contract, isContract),
+        );
+        break;
+
+      case "CAMELOT_V3_ROUTER":
+        TxParser._addParser(
+          addressLC,
+          new CamelotV3AdapterParser(contract, isContract),
+        );
+        break;
+      // CONVEX_L2_BOOSTER = 25,
+      // CONVEX_L2_REWARD_POOL = 26,
+      // AAVE_V3_LENDING_POOL = 27
     }
   }
 
