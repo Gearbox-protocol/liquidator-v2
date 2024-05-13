@@ -241,11 +241,10 @@ ${pathHuman.join("\n")}`);
           balanceAfter.eth - balanceBefore.eth
         ).toString(10);
       } catch (e: any) {
-        console.log(e);
         const decoded = await this.#errorDecoder.decode(e);
         await this.saveTxTrace(e);
         optimisticResult.error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
-        logger.error(optimisticResult.error);
+        logger.error({ decoded, original: e }, "cant liquidate");
       }
     } catch (e: any) {
       const decoded = await this.#errorDecoder.decode(e);
