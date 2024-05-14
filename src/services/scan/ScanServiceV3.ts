@@ -89,15 +89,15 @@ export class ScanServiceV3 extends AbstractScanService {
       failedTokens,
       true,
     );
+    const redstoneTokens = redstoneUpdates.map(({ token }) => token);
+    this.log.debug(
+      `got ${redstoneTokens.length} redstone price updates: ${printTokens(redstoneTokens)}`,
+    );
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
       atBlock,
     );
     this.log.debug(`${accounts.length} accounts to liquidate${blockS}`);
-    const redstoneTokens = redstoneUpdates.map(({ token }) => token);
-    this.log.debug(
-      `got ${redstoneTokens.length} redstone price updates: ${printTokens(redstoneTokens)}`,
-    );
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
       this.log.error(
