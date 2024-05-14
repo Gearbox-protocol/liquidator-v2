@@ -1,4 +1,7 @@
-import { ILiquidator__factory } from "@gearbox-protocol/liquidator-v2-contracts";
+import {
+  ILiquidator__factory,
+  SafeERC20__factory,
+} from "@gearbox-protocol/liquidator-v2-contracts";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import {
   ICreditFacadeV3__factory,
@@ -88,6 +91,7 @@ export class LiquidatorService implements ILiquidatorService {
         ILiquidator__factory.createInterface(),
         IRouterV3__factory.createInterface(),
         IExceptions__factory.createInterface(),
+        SafeERC20__factory.createInterface(),
       ]);
       // this is needed because otherwise it's possible to hit deadlines in uniswap calls
       await (this.provider as JsonRpcProvider).send(
