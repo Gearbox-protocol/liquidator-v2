@@ -196,9 +196,8 @@ ${pathHuman.join("\n")}`);
         gasLimit = await this.strategy.estimate(acc, preview);
       } catch (e: any) {
         const decoded = await this.#errorDecoder.decode(e);
-        logger.error(
-          `failed to estimate gas: ${decoded.type}: ${decoded.reason}`,
-        );
+        optimisticResult.error = `failed to estimate gas: ${decoded.type}: ${decoded.reason}`;
+        logger.error(optimisticResult.error);
       }
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
