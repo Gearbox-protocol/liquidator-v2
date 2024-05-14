@@ -90,13 +90,13 @@ export default abstract class AbstractScanService {
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
-      const success = await this.liquidatorService.liquidateOptimistic(acc);
-      const status = success ? "OK" : "FAIL";
+      const result = await this.liquidatorService.liquidateOptimistic(acc);
+      const status = result.isError ? "FAIL" : "OK";
       const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
-      if (success) {
-        this.log.info(msg);
-      } else {
+      if (result.isError) {
         this.log.warn(msg);
+      } else {
+        this.log.info(msg);
       }
     }
     const success = this.optimistic.get().filter(r => !r.isError).length;
