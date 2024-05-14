@@ -245,6 +245,11 @@ export default class LiquidationStrategyV3Partial
   ): Promise<Record<string, [ltOld: bigint, ltNew: bigint]>> {
     const logger = this.#caLogger(ca);
     const balances = await this.#prepareAccountTokens(ca);
+    balances.forEach(b => {
+      logger.debug(
+        `${tokenSymbolByAddress[b.token]}: ${formatBN(b.balance, getDecimals(b.token))} ${tokenSymbolByAddress[b.token]} == ${formatBN(b.balanceInUnderlying, getDecimals(ca.underlyingToken))} (weighted ${formatBN(b.weightedBalance, getDecimals(ca.underlyingToken))}) ${tokenSymbolByAddress[ca.underlyingToken]}`,
+      );
+    });
     // const snapshotId = await (
     // this.executor.provider as providers.JsonRpcProvider
     // ).send("evm_snapshot", []);
