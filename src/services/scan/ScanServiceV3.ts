@@ -1,5 +1,6 @@
 import type { MCall } from "@gearbox-protocol/sdk-gov";
 import {
+  getTokenSymbolOrTicker,
   PERCENTAGE_FACTOR,
   safeMulticall,
   tokenSymbolByAddress,
@@ -82,7 +83,7 @@ export class ScanServiceV3 extends AbstractScanService {
       atBlock,
     );
     this.log.debug(
-      `${accounts.length} potential accounts to liquidate${blockS}, failed tokens: ${failedTokens.length}`,
+      `${accounts.length} potential accounts to liquidate${blockS}, ${failedTokens.length} failed tokens: ${printTokens(failedTokens)}`,
     );
     const redstoneUpdates = await this.redstone.updatesForTokens(
       failedTokens,
@@ -94,13 +95,8 @@ export class ScanServiceV3 extends AbstractScanService {
     );
     this.log.debug(`${accounts.length} accounts to liquidate${blockS}`);
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
-    const redstoneSymbols = redstoneTokens.map(
-      t => tokenSymbolByAddress[t.toLowerCase()],
-    );
     this.log.debug(
-      `got ${
-        redstoneSymbols.length
-      } redstone price updates: ${redstoneSymbols.join(", ")}`,
+      `got ${redstoneTokens.length} redstone price updates: ${printTokens(redstoneTokens)}`,
     );
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
@@ -281,5 +277,5 @@ export class ScanServiceV3 extends AbstractScanService {
 }
 
 function printTokens(tokens: string[]): string {
-  return tokens.map(t => tokenSymbolByAddress[t.toLowerCase()] ?? t).join(", ");
+  return tokens.map(getTokenSymbolOrTicker).join(", ");
 }
