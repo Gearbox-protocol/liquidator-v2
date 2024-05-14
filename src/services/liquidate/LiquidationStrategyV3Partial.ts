@@ -356,12 +356,12 @@ export default class LiquidationStrategyV3Partial
   ): Promise<ILiquidator> {
     let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
     if (!partialLiquidatorAddress) {
-      this.logger.info("deploying partial liquidator");
+      this.logger.debug("deploying partial liquidator");
 
       const aaveFlTakerFactory = new AaveFLTaker__factory(executor);
       const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
       await aaveFlTaker.waitForDeployment();
-      this.logger.info(
+      this.logger.debug(
         `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
       );
 
@@ -373,7 +373,7 @@ export default class LiquidationStrategyV3Partial
         aaveFlTaker.target,
       );
       await liquidator.waitForDeployment();
-      this.logger.info(
+      this.logger.debug(
         `deployed Liquidator ${liquidator.target} in tx ${liquidator.deploymentTransaction()?.hash}`,
       );
 
@@ -382,7 +382,7 @@ export default class LiquidationStrategyV3Partial
         true,
       );
       await tx.wait();
-      this.logger.info(
+      this.logger.debug(
         `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
       );
 
@@ -397,12 +397,12 @@ export default class LiquidationStrategyV3Partial
   async #deployPriceHelper(executor: Wallet): Promise<IPriceHelper> {
     let priceHelperAddress = this.config.priceHelperAddress;
     if (!priceHelperAddress) {
-      this.logger.info("deploying price helper");
+      this.logger.debug("deploying price helper");
 
       const factory = new PriceHelper__factory(executor);
       const priceHelper = await factory.deploy();
       await priceHelper.waitForDeployment();
-      this.logger.info(
+      this.logger.debug(
         `deployed PriceHelper at ${priceHelper.target} in tx ${priceHelper.deploymentTransaction()?.hash}`,
       );
       priceHelperAddress = priceHelper.target as string;
