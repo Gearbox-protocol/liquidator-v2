@@ -20,6 +20,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   outS3Bucket: "OUT_S3_BUCKET",
   outS3Prefix: "OUT_S3_PREFIX",
   partialLiquidatorAddress: "PARTIAL_LIQUIDATOR_ADDRESS",
+  priceHelperAddress: "PRICE_HELPER_ADDRESS",
   privateKey: "PRIVATE_KEY",
   skipBlocks: "SKIP_BLOCKS",
   port: "PORT",

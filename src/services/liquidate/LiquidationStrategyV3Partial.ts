@@ -1,9 +1,16 @@
-import type { ILiquidator } from "@gearbox-protocol/liquidator-v2-contracts";
+import type {
+  ILiquidator,
+  IPriceHelper,
+  TokenPriceInfoStructOutput,
+} from "@gearbox-protocol/liquidator-v2-contracts";
 import {
   AaveFLTaker__factory,
   ILiquidator__factory,
+  IPriceHelper__factory,
   Liquidator__factory,
+  PriceHelper__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts";
+import type { ExcludeArrayProps } from "@gearbox-protocol/sdk-gov";
 import {
   ADDRESS_0X0,
   contractsByNetwork,
@@ -34,10 +41,11 @@ import type {
   PartialLiquidationPreview,
 } from "./types";
 
-interface TokenBalance {
-  balance: bigint;
-  balanceInUnderlying: bigint;
-  lt: bigint;
+interface TokenBalance extends ExcludeArrayProps<TokenPriceInfoStructOutput> {
+  /**
+   * Balance in underlying * liquidationThreshold
+   */
+  weightedBalance: bigint;
 }
 
 @Service()
@@ -52,6 +60,7 @@ export default class LiquidationStrategyV3Partial
   logger: LoggerInterface;
 
   #partialLiquidator?: ILiquidator;
+  #priceHelper?: IPriceHelper;
   #configuratorAddr?: string;
   #registeredCMs: Record<string, boolean> = {};
 
@@ -67,19 +76,15 @@ export default class LiquidationStrategyV3Partial
       contractsByNetwork[this.addressProvider.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
-    let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
-    if (!partialLiquidatorAddress) {
-      partialLiquidatorAddress = await this.#deployPartialLiquidator(
-        this.executor.wallet,
-        router,
-        bot,
-        aavePool,
-      );
-    }
-    this.#partialLiquidator = ILiquidator__factory.connect(
-      partialLiquidatorAddress,
+    this.#partialLiquidator = await this.#deployPartialLiquidator(
       this.executor.wallet,
+      router,
+      bot,
+      aavePool,
     );
+
+    this.#priceHelper = await this.#deployPriceHelper(this.executor.wallet);
+
     await this.#configurePartialLiquidator(router, bot);
   }
 
@@ -103,7 +108,7 @@ export default class LiquidationStrategyV3Partial
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
 
-    const ltChanges = await this.#calcNewLTs(ca, cm);
+    const ltChanges = await this.#calcNewLTs(ca);
     const snapshotId = await (this.executor.provider as JsonRpcProvider).send(
       "evm_snapshot",
       [],
@@ -133,20 +138,18 @@ export default class LiquidationStrategyV3Partial
   ): Promise<PartialLiquidationPreview> {
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
-    const balances = await this.#prepareAccountTokens(ca, cm);
+    const balances = await this.#prepareAccountTokens(ca);
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
     const uSymb = tokenSymbolByAddress[cm.underlyingToken];
     const uDec = getDecimals(cm.underlyingToken);
 
     // TODO: maybe this should be refreshed every loop iteration
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
-    for (const [assetOut, { balance, balanceInUnderlying }] of Object.entries(
-      balances,
-    )) {
-      if (assetOut.toLowerCase() === ca.underlyingToken.toLowerCase()) {
+    for (const { token: assetOut, balance, balanceInUnderlying } of balances) {
+      if (assetOut === ca.underlyingToken) {
         continue;
       }
-      const symb = tokenSymbolByAddress[assetOut.toLowerCase()];
+      const symb = tokenSymbolByAddress[assetOut];
       const decimals = getDecimals(assetOut);
       logger.debug({
         assetOut: `${assetOut} (${symb})`,
@@ -210,50 +213,24 @@ export default class LiquidationStrategyV3Partial
     );
   }
 
-  async #prepareAccountTokens(
-    ca: CreditAccountData,
-    cm: CreditManagerData,
-    skipDust = true,
-  ): Promise<Record<string, TokenBalance>> {
-    // sort by liquidation threshold ASC, place underlying with lowest priority
-    const balances = Object.entries(ca.allBalances)
-      .filter(([t, { isEnabled, balance }]) => {
-        // filter out dust, we don't want to swap it
-        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(t)) - 8);
-        // gearbox liquidator only cares about enabled tokens.
-        // third-party liquidators might want to handle disabled tokens too
-        return isEnabled && (balance > minBalance || !skipDust);
-      })
+  async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
+    const tokens = await this.priceHelper.previewTokens(ca.addr);
+    // Sort by weighted value descending, but underlying token comes last
+    return tokens
       .map(
-        ([t, b]) => [t, b.balance, cm.liquidationThresholds[t] ?? 0n] as const,
-      );
-    // get balance in underlying
-    const converted = await this.oracle.convertMany(
-      Object.fromEntries(balances),
-      cm.underlyingToken,
-    );
-    return Object.fromEntries(
-      Object.entries(converted)
-        .map(
-          ([t, balanceInUnderlying]) =>
-            [
-              t,
-              {
-                balance: ca.allBalances[t].balance,
-                balanceInUnderlying,
-                lt: cm.liquidationThresholds[t],
-              },
-            ] as const,
-        )
-        // Sort by weighted value descending, but underlying token comes last
-        .sort((a, b) => {
-          if (a[0] === ca.underlyingToken) return 1;
-          if (b[0] === ca.underlyingToken) return -1;
-          const aWV = a[1].balanceInUnderlying * a[1].lt;
-          const bWV = b[1].balanceInUnderlying * b[1].lt;
-          return bWV > aWV ? 1 : -1;
+        (t): TokenBalance => ({
+          ...t,
+          token: t.token.toLowerCase(),
+          weightedBalance:
+            (t.balanceInUnderlying * t.liquidationThreshold) /
+            PERCENTAGE_FACTOR,
         }),
-    );
+      )
+      .sort((a, b) => {
+        if (a.token === ca.underlyingToken) return 1;
+        if (b.token === ca.underlyingToken) return -1;
+        return b.weightedBalance > a.weightedBalance ? 1 : -1;
+      });
   }
 
   /**
@@ -262,11 +239,10 @@ export default class LiquidationStrategyV3Partial
    */
   async #calcNewLTs(
     ca: CreditAccountData,
-    cm: CreditManagerData,
     factor = 9990n,
   ): Promise<Record<string, [ltOld: bigint, ltNew: bigint]>> {
     const logger = this.#caLogger(ca);
-    const balances = await this.#prepareAccountTokens(ca, cm);
+    const balances = await this.#prepareAccountTokens(ca);
     // const snapshotId = await (
     // this.executor.provider as providers.JsonRpcProvider
     // ).send("evm_snapshot", []);
@@ -279,13 +255,11 @@ export default class LiquidationStrategyV3Partial
     let divisor = 0n;
     let dividend =
       (factor * ca.borrowedAmountPlusInterestAndFees) / PERCENTAGE_FACTOR; // TODO: USDT fee
-    for (const [t, { balance, balanceInUnderlying, lt }] of Object.entries(
-      balances,
-    )) {
-      if (t === cm.underlyingToken) {
-        dividend -= (balance * lt) / PERCENTAGE_FACTOR;
+    for (const { token, weightedBalance } of balances) {
+      if (token === ca.underlyingToken) {
+        dividend -= weightedBalance;
       } else {
-        divisor += (balanceInUnderlying * lt) / PERCENTAGE_FACTOR;
+        divisor += weightedBalance;
       }
     }
     if (divisor === 0n) {
@@ -298,10 +272,11 @@ export default class LiquidationStrategyV3Partial
 
     const result: Record<string, [bigint, bigint]> = {};
     const ltChangesHuman: Record<string, string> = {};
-    for (const [t, { lt }] of Object.entries(balances)) {
-      if (t !== cm.underlyingToken) {
-        result[t] = [lt, (lt * k) / WAD];
-        ltChangesHuman[tokenSymbolByAddress[t]] = `${lt} => ${result[t][1]}`;
+    for (const { token, liquidationThreshold: oldLT } of balances) {
+      if (token !== ca.underlyingToken) {
+        const newLT = (oldLT * k) / WAD;
+        result[token] = [oldLT, newLT];
+        ltChangesHuman[tokenSymbolByAddress[token]] = `${oldLT} => ${newLT}`;
       }
     }
     logger.debug(
@@ -378,35 +353,62 @@ export default class LiquidationStrategyV3Partial
     router: string,
     bot: string,
     aavePool: string,
-  ): Promise<string> {
-    this.logger.info("deploying partial liquidator");
+  ): Promise<ILiquidator> {
+    let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
+    if (!partialLiquidatorAddress) {
+      this.logger.info("deploying partial liquidator");
 
-    const aaveFlTakerFactory = new AaveFLTaker__factory(executor);
-    const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
-    await aaveFlTaker.waitForDeployment();
+      const aaveFlTakerFactory = new AaveFLTaker__factory(executor);
+      const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
+      await aaveFlTaker.waitForDeployment();
+      this.logger.info(
+        `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
+      );
+
+      const liquidatorFactory = new Liquidator__factory(executor);
+      const liquidator = await liquidatorFactory.deploy(
+        router,
+        bot,
+        aavePool,
+        aaveFlTaker.target,
+      );
+      await liquidator.waitForDeployment();
+      this.logger.info(
+        `deployed Liquidator ${liquidator.target} in tx ${liquidator.deploymentTransaction()?.hash}`,
+      );
+
+      const tx = await aaveFlTaker.setAllowedFLReceiver(
+        liquidator.target,
+        true,
+      );
+      await tx.wait();
+      this.logger.info(
+        `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
+      );
+
+      partialLiquidatorAddress = liquidator.target as string;
+    }
     this.logger.info(
-      `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
+      `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
     );
+    return ILiquidator__factory.connect(partialLiquidatorAddress, executor);
+  }
 
-    const liquidatorFactory = new Liquidator__factory(executor);
-    const liquidator = await liquidatorFactory.deploy(
-      router,
-      bot,
-      aavePool,
-      aaveFlTaker.target,
-    );
-    await liquidator.waitForDeployment();
-    this.logger.info(
-      `deployed Liquidator ${liquidator.target} in tx ${liquidator.deploymentTransaction()?.hash}`,
-    );
+  async #deployPriceHelper(executor: Wallet): Promise<IPriceHelper> {
+    let priceHelperAddress = this.config.priceHelperAddress;
+    if (!priceHelperAddress) {
+      this.logger.info("deploying price helper");
 
-    const tx = await aaveFlTaker.setAllowedFLReceiver(liquidator.target, true);
-    await tx.wait();
-    this.logger.info(
-      `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
-    );
-
-    return liquidator.target as string;
+      const factory = new PriceHelper__factory(executor);
+      const priceHelper = await factory.deploy();
+      await priceHelper.waitForDeployment();
+      this.logger.info(
+        `deployed PriceHelper at ${priceHelper.target} in tx ${priceHelper.deploymentTransaction()?.hash}`,
+      );
+      priceHelperAddress = priceHelper.target as string;
+    }
+    this.logger.info(`price helper contract addesss: ${priceHelperAddress}`);
+    return IPriceHelper__factory.connect(priceHelperAddress, executor);
   }
 
   async #configurePartialLiquidator(
@@ -477,6 +479,13 @@ export default class LiquidationStrategyV3Partial
       throw new Error("strategy not launched");
     }
     return this.#partialLiquidator;
+  }
+
+  private get priceHelper(): IPriceHelper {
+    if (!this.#priceHelper) {
+      throw new Error("strategy not launched");
+    }
+    return this.#priceHelper;
   }
 
   private async getConfiguratorAddr(): Promise<string> {

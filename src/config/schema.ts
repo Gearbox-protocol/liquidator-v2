@@ -34,6 +34,7 @@ export const ConfigSchema = z.object({
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),
+  priceHelperAddress: z.string().regex(AddressRegExp).optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
   underlying: z.string().optional(),
 

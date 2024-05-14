@@ -1,10 +1,5 @@
 import type { MCall, NetworkType } from "@gearbox-protocol/sdk-gov";
-import {
-  ADDRESS_0X0,
-  safeMulticall,
-  tokenSymbolByAddress,
-  WAD,
-} from "@gearbox-protocol/sdk-gov";
+import { ADDRESS_0X0, safeMulticall } from "@gearbox-protocol/sdk-gov";
 import type {
   IPriceOracleV3,
   IRedstonePriceFeed,
@@ -74,8 +69,6 @@ export default class OracleServiceV3 {
   #lastBlock = 0;
 
   #feeds: Record<string, OracleEntry> = {};
-  // underlying (=tokenTo) -> token -> token price in underlying
-  #priceCache: Record<string, Record<string, bigint>> = {};
 
   public async launch(block: number): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.addressProvider.network];
@@ -92,67 +85,6 @@ export default class OracleServiceV3 {
 
   public async update(blockNumber: number): Promise<void> {
     await this.#updateFeeds(blockNumber);
-  }
-
-  /**
-   * Used to convert balances of account to underlying
-   * @param tokensFrom
-   * @param tokenTo
-   * @returns
-   */
-  public async convertMany(
-    tokensFrom: Record<string, bigint>,
-    destToken: string,
-  ): Promise<Record<string, bigint>> {
-    const calls: MCall<IPriceOracleV3["interface"]>[] = [];
-    const result: Record<string, bigint> = {};
-    const tokenTo = destToken.toLowerCase();
-
-    for (const [t, amount] of Object.entries(tokensFrom)) {
-      const tokenFrom = t.toLowerCase();
-      const fromCache = this.#convertCached(tokenFrom, tokenTo, amount);
-      if (tokenFrom === tokenTo) {
-        result[tokenTo] = amount;
-      } else if (this.config.optimistic && !!fromCache) {
-        result[tokenFrom] = fromCache;
-      } else {
-        calls.push({
-          address: this.oracle.target as string,
-          interface: this.oracle.interface,
-          method: "convert",
-          params: [amount, tokenFrom, tokenTo],
-        });
-      }
-    }
-    this.log.debug(`need to peform convert on ${calls.length} feeds`);
-    const resp = await safeMulticall<bigint>(calls, this.provider);
-
-    for (let i = 0; i < resp.length; i++) {
-      const { value, error } = resp[i];
-      const amountFrom = calls[i].params[0] as bigint;
-      const tokenFrom = calls[i].params[1] as string;
-      if (!error && !!value) {
-        result[tokenFrom] = value;
-        if (this.config.optimistic) {
-          this.#saveCached(tokenFrom, tokenTo, amountFrom, value);
-        }
-      }
-      if (error) {
-        this.log.warn(
-          `conversion ${tokenSymbolByAddress[tokenFrom]} -> ${tokenSymbolByAddress[tokenTo]} failed in multicall`,
-        );
-        result[tokenFrom] = await this.oracle.convert(
-          amountFrom,
-          tokenFrom,
-          tokenTo,
-        );
-        if (this.config.optimistic) {
-          this.#saveCached(tokenFrom, tokenTo, amountFrom, result[tokenFrom]);
-        }
-      }
-    }
-
-    return result;
   }
 
   public checkReserveFeeds(ca: CreditAccountData): boolean {
@@ -308,31 +240,6 @@ export default class OracleServiceV3 {
         `cannot set status for token ${token}: ${entry.active} price feed address not set`,
       );
     }
-  }
-
-  #convertCached(
-    tokenFrom: string,
-    tokenTo: string,
-    amountFrom: bigint,
-  ): bigint | undefined {
-    const price =
-      this.#priceCache[tokenTo.toLowerCase()]?.[tokenFrom.toLowerCase()];
-    if (!price) {
-      return undefined;
-    }
-    return (amountFrom * price) / WAD;
-  }
-
-  #saveCached(
-    tokenFrom: string,
-    tokenTo: string,
-    amountFrom: bigint,
-    amountTo: bigint,
-  ): void {
-    const price = (WAD * amountTo) / amountFrom;
-    const froms = this.#priceCache[tokenTo.toLowerCase()] ?? {};
-    froms[tokenFrom.toLowerCase()] = price;
-    this.#priceCache[tokenTo.toLowerCase()] = froms;
   }
 
   private get oracle(): IPriceOracleV3 {
