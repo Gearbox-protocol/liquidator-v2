@@ -219,8 +219,10 @@ export default class LiquidationStrategyV3Partial
     return tokens
       .map(
         (t): TokenBalance => ({
-          ...t,
           token: t.token.toLowerCase(),
+          balance: t.balance,
+          balanceInUnderlying: t.balanceInUnderlying,
+          liquidationThreshold: t.liquidationThreshold,
           weightedBalance:
             (t.balanceInUnderlying * t.liquidationThreshold) /
             PERCENTAGE_FACTOR,
