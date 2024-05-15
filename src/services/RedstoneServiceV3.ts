@@ -75,7 +75,7 @@ export class RedstoneServiceV3 {
           redstoneUpdates.push({
             dataFeedId: ticker.dataId,
             token: ticker.address,
-            reserve: false, // TODO: check this
+            reserve: false, // tickers are always added as main feed
           });
         } else {
           this.log.debug(
