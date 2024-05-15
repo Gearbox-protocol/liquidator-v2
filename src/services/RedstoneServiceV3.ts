@@ -63,12 +63,12 @@ export class RedstoneServiceV3 {
       if (ticker) {
         if (this.oracle.hasFeed(ticker.address)) {
           this.log.debug(
-            `will update redstone ticker ${ticker.symbol} for ${symb}`,
+            `will update redstone ticker ${ticker.symbol}/${ticker.address} for ${symb}`,
           );
           redstoneUpdates.push([ticker.address, ticker.dataId]);
         } else {
           this.log.debug(
-            `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
+            `ticker ${ticker.symbol}/${ticker.address} for ${symb} is not registered in price oracle, skipping`,
           );
         }
       }

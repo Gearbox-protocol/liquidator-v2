@@ -132,7 +132,8 @@ export default class OracleServiceV3 {
     e: SetPriceFeedEvent | SetReservePriceFeedEvent,
   ): Promise<void> {
     const kind = e.event === "SetPriceFeed" ? "main" : "reserve";
-    const { token, priceFeed } = e.args;
+    const token = e.args.token.toLowerCase();
+    const priceFeed = e.args.priceFeed.toLowerCase();
     let entry = this.#feeds[token];
     if (!entry) {
       if (kind === "reserve") {
@@ -187,7 +188,8 @@ export default class OracleServiceV3 {
   }
 
   #setFeedStatus(e: SetReservePriceFeedStatusEvent): void {
-    const { token, active } = e.args;
+    const token = e.args.token.toLowerCase();
+    const active = e.args.active;
     const entry = this.#feeds[token];
     if (!entry) {
       throw new Error(
