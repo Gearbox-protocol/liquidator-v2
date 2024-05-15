@@ -231,7 +231,7 @@ function printFeeds(feeds: RedstoneFeed[]): string {
       f =>
         `${getTokenSymbolOrTicker(f.token as any)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
     )
-    .join(" ,");
+    .join(", ");
 }
 
 function minTimestamp(updates: PriceOnDemandExtras[]): number {
