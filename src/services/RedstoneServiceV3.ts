@@ -104,7 +104,7 @@ export class RedstoneServiceV3 {
     );
 
     if (this.config.optimistic && result.length > 0) {
-      const redstoneTs = result[0].ts;
+      const redstoneTs = minTimestamp(result);
       let block = await this.provider.getBlock("latest");
       if (!block) {
         throw new Error("cannot get latest block");
@@ -114,21 +114,18 @@ export class RedstoneServiceV3 {
         new Date().getTime() / 1000 - redstoneTs,
       );
       this.log.debug(
-        `redstone delta ${delta} (realtime ${realtimeDelta}) for timestamp ${formatTs(block)}: ${formatTs(redstoneTs)}`,
+        `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${formatTs(block)}: ${result.map(formatTs)}`,
       );
       if (delta < 0) {
         this.log?.debug(
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
-        // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
-        // hexlify(redstoneTs),
-        // ]);
+        // await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
+        await (this.provider as any).send("anvil_setNextBlockTimestamp", [
+          toBeHex(redstoneTs),
+        ]);
         block = await this.provider.getBlock("latest");
-        if (!block) {
-          throw new Error("cannot get latest block");
-        }
-        this.log?.debug(`new block ts: ${block.timestamp}`);
+        this.log?.debug(`new block ts: ${formatTs(block)}`);
       }
     }
 
@@ -233,4 +230,12 @@ function printFeeds(feeds: RedstoneFeed[]): string {
         `${getTokenSymbolOrTicker(f.token as any)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
     )
     .join(" ,");
+}
+
+function minTimestamp(updates: PriceOnDemandExtras[]): number {
+  let result = Number.POSITIVE_INFINITY;
+  for (const { ts } of updates) {
+    result = Math.min(result, ts);
+  }
+  return result;
 }
