@@ -99,8 +99,9 @@ export class RedstoneServiceV3 {
         throw new Error("cannot get latest block");
       }
       const delta = block.timestamp - redstoneTs;
+      const realtimeDelta = new Date().getTime() / 1000 - redstoneTs;
       this.log.debug(
-        `redstone delta ${delta} for timestamp ${formatTs(block)}: ${formatTs(redstoneTs)}`,
+        `redstone delta ${delta} (realtime delta ${realtimeDelta}) for timestamp ${formatTs(block)}: ${formatTs(redstoneTs)}`,
       );
       if (delta < 0) {
         this.log?.debug(
