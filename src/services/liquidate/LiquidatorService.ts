@@ -83,17 +83,15 @@ export class LiquidatorService implements ILiquidatorService {
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
-    if (this.config.optimistic) {
-      this.#errorDecoder = ErrorDecoder.create([
-        IPriceOracleV3__factory.createInterface(),
-        ICreditFacadeV3__factory.createInterface(),
-        ICreditManagerV3__factory.createInterface(),
-        ILiquidator__factory.createInterface(),
-        IRouterV3__factory.createInterface(),
-        IExceptions__factory.createInterface(),
-        SafeERC20__factory.createInterface(),
-      ]);
-    }
+    this.#errorDecoder = ErrorDecoder.create([
+      IPriceOracleV3__factory.createInterface(),
+      ICreditFacadeV3__factory.createInterface(),
+      ICreditManagerV3__factory.createInterface(),
+      ILiquidator__factory.createInterface(),
+      IRouterV3__factory.createInterface(),
+      IExceptions__factory.createInterface(),
+      SafeERC20__factory.createInterface(),
+    ]);
     switch (this.addressProvider.network) {
       case "Mainnet":
         this.#etherscanUrl = "https://etherscan.io";
@@ -116,13 +114,22 @@ export class LiquidatorService implements ILiquidatorService {
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
+    const logger = this.log.child({
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: ca.managerName,
+    });
+    logger.info(
+      `begin ${this.strategy.name} liquidation: HF = ${ca.healthFactor}`,
+    );
     this.notifier.alert(
       `begin ${this.strategy.name} liquidation of ${ca.name} with HF ${ca.healthFactor}`,
     );
+    let pathHuman: string[] | undefined;
     try {
       const preview = await this.strategy.preview(ca);
-      const pathHuman = TxParserHelper.parseMultiCall(preview);
-      this.log.debug(pathHuman);
+      pathHuman = TxParserHelper.parseMultiCall(preview);
+      logger.debug({ pathHuman }, "path found");
 
       const receipt = await this.strategy.liquidate(ca, preview);
 
@@ -133,9 +140,13 @@ Gas used: ${receipt.gasUsed.toLocaleString("en")}
 Path used:
 ${pathHuman.join("\n")}`);
     } catch (e) {
-      this.notifier.alert(
-        `${this.strategy.name} liquidation of ${ca.name} failed: ${e}`,
-      );
+      const decoded = await this.#errorDecoder.decode(e);
+      const error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
+      logger.error({ decoded, original: e }, "cant liquidate");
+      this.notifier
+        .alert(`${this.strategy.name} liquidation of ${ca.name} failed.
+Path: ${pathHuman ?? "not found"}
+Error: ${error}`);
     }
   }
 
