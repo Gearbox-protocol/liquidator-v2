@@ -87,6 +87,20 @@ export default class OracleServiceV3 {
     await this.#updateFeeds(blockNumber);
   }
 
+  /**
+   * Checks if token is present in price oracle
+   * @param token
+   * @returns
+   */
+  public hasFeed(token: string): boolean {
+    return !!this.#feeds[token.toLowerCase()];
+  }
+
+  /**
+   * Returns false if account has tokens without reserve price feeds for some tokens
+   * @param ca
+   * @returns
+   */
   public checkReserveFeeds(ca: CreditAccountData): boolean {
     for (const [t, b] of Object.entries(ca.allBalances)) {
       if (t.toLowerCase() === ca.underlyingToken.toLowerCase()) {

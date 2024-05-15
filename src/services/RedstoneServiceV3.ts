@@ -68,12 +68,20 @@ export class RedstoneServiceV3 {
       const symb = tokenSymbolByAddress[token];
       const ticker = tickers[symb];
       if (ticker) {
-        this.log.debug(`found ticker ${ticker.symbol} for ${symb}`);
-        redstoneUpdates.push({
-          dataFeedId: ticker.dataId,
-          token: ticker.address,
-          reserve: false, // TODO: check this
-        });
+        if (this.oracle.hasFeed(ticker.address)) {
+          this.log.debug(
+            `will update redstone ticker ${ticker.symbol} for ${symb}`,
+          );
+          redstoneUpdates.push({
+            dataFeedId: ticker.dataId,
+            token: ticker.address,
+            reserve: false, // TODO: check this
+          });
+        } else {
+          this.log.debug(
+            `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
+          );
+        }
       }
     }
     if (!redstoneUpdates.length) {
