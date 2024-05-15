@@ -18,7 +18,7 @@ import Container, { Inject, Service } from "typedi";
 
 import { CONFIG, type ConfigSchema } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import { filterDust, PROVIDER } from "../../utils";
+import { filterDust, formatTs, PROVIDER } from "../../utils";
 import type { CreditAccountData } from "../../utils/ethers-6-temp";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
 import { AddressProviderService } from "../AddressProviderService";
@@ -93,12 +93,6 @@ export class LiquidatorService implements ILiquidatorService {
         IExceptions__factory.createInterface(),
         SafeERC20__factory.createInterface(),
       ]);
-      // this is needed because otherwise it's possible to hit deadlines in uniswap calls
-      await (this.provider as JsonRpcProvider).send(
-        "anvil_setBlockTimestampInterval",
-        [1],
-      );
-      this.log.info("set block timestamp interval to 1");
     }
     switch (this.addressProvider.network) {
       case "Mainnet":
@@ -173,7 +167,7 @@ ${pathHuman.join("\n")}`);
       liquidatorProfit: "0",
     };
     const start = Date.now();
-
+    const startBlock = await this.provider.getBlock("latest").catch(() => null);
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
       const mlRes = await this.strategy.makeLiquidatable(acc);
@@ -258,6 +252,12 @@ ${pathHuman.join("\n")}`);
     }
 
     optimisticResult.duration = Date.now() - start;
+    const endBlock = await this.provider.getBlock("latest").catch(() => null);
+    if (startBlock && endBlock) {
+      logger.debug(
+        `liquidation blocktime = ${endBlock.timestamp - startBlock.timestamp} (${formatTs(startBlock)} to ${formatTs(endBlock)})`,
+      );
+    }
     this.optimistic.push(optimisticResult);
 
     if (snapshotId) {

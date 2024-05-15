@@ -15,7 +15,7 @@ import { Inject, Service } from "typedi";
 
 import { CONFIG, type ConfigSchema } from "../config";
 import { Logger, type LoggerInterface } from "../log";
-import { PROVIDER } from "../utils";
+import { formatTs, PROVIDER } from "../utils";
 import type { CreditAccountData } from "../utils/ethers-6-temp";
 import { AddressProviderService } from "./AddressProviderService";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
@@ -100,11 +100,11 @@ export class RedstoneServiceV3 {
       }
       const delta = block.timestamp - redstoneTs;
       this.log.debug(
-        `redstone delta ${delta} for timestamp ${printTs(block)}: ${result.map(printTs).join(", ")}`,
+        `redstone delta ${delta} for timestamp ${formatTs(block)}: ${formatTs(redstoneTs)}`,
       );
       if (delta < 0) {
         this.log?.debug(
-          `warp, because block ts ${printTs(block)} < ${printTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
+          `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
         await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
         // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
@@ -219,10 +219,4 @@ function printFeeds(feeds: RedstoneFeed[]): string {
         `${getTokenSymbolOrTicker(f.token as any)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
     )
     .join(" ,");
-}
-
-function printTs(t: number | { timestamp: number } | { ts: number }): string {
-  const ts = typeof t === "number" ? t : "ts" in t ? t.ts : t.timestamp;
-  const d = new Date(ts * 1000);
-  return `${d} (${ts})`;
 }
