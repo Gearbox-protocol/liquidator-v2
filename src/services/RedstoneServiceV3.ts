@@ -1,4 +1,5 @@
 import {
+  getTokenSymbolOrTicker,
   type PriceFeedData,
   type PriceFeedType,
   REDSTONE_SIGNERS,
@@ -77,7 +78,7 @@ export class RedstoneServiceV3 {
     }
 
     this.log?.debug(
-      `need to update ${redstoneUpdates.length} redstone feeds: ${redstoneUpdates.map(({ dataFeedId }) => dataFeedId).join(", ")}`,
+      `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
     const result = await Promise.all(
       redstoneUpdates.map(({ token, dataFeedId, reserve }) =>
@@ -98,9 +99,12 @@ export class RedstoneServiceV3 {
         throw new Error("cannot get latest block");
       }
       const delta = block.timestamp - redstoneTs;
+      this.log.debug(
+        `redstone delta ${delta} for timestamp ${printTs(block)}: ${result.map(printTs).join(", ")}`,
+      );
       if (delta < 0) {
         this.log?.debug(
-          `warp, because block ts ${block.timestamp} < ${redstoneTs} redstone ts (${Math.ceil(-delta / 60)} min)`,
+          `warp, because block ts ${printTs(block)} < ${printTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
         await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
         // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
@@ -206,4 +210,19 @@ function splitResponse<T>(arr: T[], size: number): T[][] {
   }
 
   return chunks;
+}
+
+function printFeeds(feeds: RedstoneFeed[]): string {
+  return feeds
+    .map(
+      f =>
+        `${getTokenSymbolOrTicker(f.token as any)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
+    )
+    .join(" ,");
+}
+
+function printTs(t: number | { timestamp: number } | { ts: number }): string {
+  const ts = typeof t === "number" ? t : "ts" in t ? t.ts : t.timestamp;
+  const d = new Date(ts * 1000);
+  return `${d} (${ts})`;
 }
