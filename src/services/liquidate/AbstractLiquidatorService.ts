@@ -188,11 +188,6 @@ export default abstract class AbstractLiquidatorService
       );
       // Actual liquidation (write requests start here)
       try {
-        // this is needed because otherwise it's possible to hit deadlines in uniswap calls
-        await (this.provider as providers.JsonRpcProvider).send(
-          "anvil_setBlockTimestampInterval",
-          [12],
-        );
         // send profit to executor address because we're going to use swapper later
         const tx = await this._liquidate(
           executor,
