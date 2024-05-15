@@ -122,10 +122,10 @@ export class RedstoneServiceV3 {
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        // await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
-        await (this.provider as any).send("anvil_setNextBlockTimestamp", [
-          toBeHex(redstoneTs),
-        ]);
+        await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
+        // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
+        // toBeHex(redstoneTs),
+        // ]);
         block = await this.provider.getBlock("latest");
         this.log?.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
