@@ -76,6 +76,9 @@ export class RedstoneServiceV3 {
         });
       }
     }
+    if (!redstoneUpdates.length) {
+      return [];
+    }
 
     this.log?.debug(
       `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
