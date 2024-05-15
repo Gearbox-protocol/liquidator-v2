@@ -76,6 +76,15 @@ export default class OracleServiceV3 {
   }
 
   /**
+   * Checks if token is present in price oracle
+   * @param token
+   * @returns
+   */
+  public hasFeed(token: string): boolean {
+    return !!this.#feeds[token.toLowerCase()];
+  }
+
+  /**
    * Returns mapping of currently active redstone feeds
    * Keys are lowercased token addresses
    * Values are redstone dataFeedIds

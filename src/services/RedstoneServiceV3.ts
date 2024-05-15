@@ -5,6 +5,7 @@ import type {
   PriceFeedType,
 } from "@gearbox-protocol/sdk";
 import {
+  getTokenSymbolOrTicker,
   ICreditFacadeV3Multicall__factory,
   REDSTONE_SIGNERS,
   tickerInfoTokensByNetwork,
@@ -60,13 +61,24 @@ export class RedstoneServiceV3 {
       const symb = tokenSymbolByAddress[token.toLowerCase()];
       const ticker = tickers[symb];
       if (ticker) {
-        this.log.debug(`found ticker ${ticker.symbol} for ${symb}`);
-        redstoneUpdates.push([ticker.address, ticker.dataId]);
+        if (this.oracle.hasFeed(ticker.address)) {
+          this.log.debug(
+            `will update redstone ticker ${ticker.symbol} for ${symb}`,
+          );
+          redstoneUpdates.push([ticker.address, ticker.dataId]);
+        } else {
+          this.log.debug(
+            `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
+          );
+        }
       }
+    }
+    if (!redstoneUpdates.length) {
+      return [];
     }
 
     this.log?.debug(
-      `need to update ${redstoneUpdates.length} redstone feeds: ${redstoneUpdates.map(([_, d]) => d).join(", ")}`,
+      `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
     const result = await Promise.all(
       redstoneUpdates.map(([token, dataFeedId]) =>
@@ -80,7 +92,7 @@ export class RedstoneServiceV3 {
     );
 
     if (config.optimisticLiquidations && result.length > 0) {
-      const redstoneTs = result[0].ts;
+      const redstoneTs = minTimestamp(result);
       let block = await this.provider!.getBlock("latest");
       const delta = block.timestamp - redstoneTs;
       if (delta < 0) {
@@ -178,4 +190,21 @@ function splitResponse<T>(arr: T[], size: number): T[][] {
   }
 
   return chunks;
+}
+
+function printFeeds(feeds: Array<[token: string, dataFeedId: string]>): string {
+  return feeds
+    .map(
+      ([token, dataFeedId]) =>
+        `${getTokenSymbolOrTicker(token as any)} -> ${dataFeedId}`,
+    )
+    .join(", ");
+}
+
+function minTimestamp(updates: PriceOnDemand[]): number {
+  let result = Number.POSITIVE_INFINITY;
+  for (const { ts } of updates) {
+    result = Math.min(result, ts);
+  }
+  return result;
 }
