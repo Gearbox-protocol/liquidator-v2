@@ -266,6 +266,7 @@ Error: ${error}`);
     const endBlock = await this.provider.getBlock("latest").catch(() => null);
     if (startBlock && endBlock) {
       logger.debug(
+        { tag: "timing" },
         `liquidation blocktime = ${endBlock.timestamp - startBlock.timestamp} (${formatTs(startBlock)} to ${formatTs(endBlock)})`,
       );
     }

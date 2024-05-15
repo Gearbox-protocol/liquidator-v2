@@ -114,10 +114,12 @@ export class RedstoneServiceV3 {
         new Date().getTime() / 1000 - redstoneTs,
       );
       this.log.debug(
+        { tag: "timing" },
         `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${formatTs(block)}: ${result.map(formatTs)}`,
       );
       if (delta < 0) {
         this.log?.debug(
+          { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
         // await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
@@ -125,7 +127,7 @@ export class RedstoneServiceV3 {
           toBeHex(redstoneTs),
         ]);
         block = await this.provider.getBlock("latest");
-        this.log?.debug(`new block ts: ${formatTs(block)}`);
+        this.log?.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
     }
 
