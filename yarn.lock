@@ -1417,10 +1417,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@1.66.2", "@gearbox-protocol/sdk-gov@^1.69.0":
-  version "1.69.0"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.69.0.tgz#dc6fe5b68e3399c2f8e0dc2d5a16955297392be7"
-  integrity sha512-+8KbdtKD20q89azxMQyUOKct9D938dI7/WDPfFg4crWCfEqxgcgoTgYz3XEsyrlPru+z7zOpqd771lOHjx4Czw==
+"@gearbox-protocol/sdk-gov@1.66.2", "@gearbox-protocol/sdk-gov@^1.69.1":
+  version "1.69.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-1.69.1.tgz#6c872ed03c90aa86e01c32d973edba88b2720397"
+  integrity sha512-NESnI24PJul4mY2HHMogeBsXdlIfK9tlp4gP5lVzr1WrIX0FLN8kfbV0b0JsHi9cyjnU+3gOOeArdzZ4qbhL+Q==
   dependencies:
     ethers "5.7.2"
     humanize-duration-ts "^2.1.1"
