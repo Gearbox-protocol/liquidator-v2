@@ -57,7 +57,7 @@ export default class LiquidationStrategyV3Full
         throw new Error("result is empty");
       }
       // we want fresh redstone price in actual liquidation transactions
-      const priceUpdateCalls = await this.redstone.compressorUpdates(ca);
+      const priceUpdateCalls = await this.redstone.multicallUpdates(ca);
       return {
         amount: result.amount,
         minAmount: result.minAmount,

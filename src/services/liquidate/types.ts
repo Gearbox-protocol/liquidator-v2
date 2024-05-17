@@ -57,6 +57,11 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
   name: string;
   adverb: string;
   launch: () => Promise<void>;
+  /**
+   * Fetches credit account data again for optimistic report
+   * @param ca
+   * @returns
+   */
   updateCreditAccountData: (
     ca: CreditAccountData,
   ) => Promise<CreditAccountData>;

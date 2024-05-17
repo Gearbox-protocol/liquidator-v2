@@ -115,10 +115,7 @@ export default class LiquidationStrategyV3Partial
     );
 
     await this.#setNewLTs(ca, cm, ltChanges);
-    const updCa = await this.compressor.getCreditAccountData.staticCall(
-      ca.addr,
-      [],
-    );
+    const updCa = await this.updateCreditAccountData(ca);
     logger.debug({
       hfNew: updCa.healthFactor.toString(),
       hfOld: ca.healthFactor.toString(),
@@ -214,6 +211,8 @@ export default class LiquidationStrategyV3Partial
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
+    // this helper contract fetches prices while trying to ignore updatable price feeds
+    // prices here are not critical, as they're used for sorting and estimation
     const tokens = await this.priceHelper.previewTokens(ca.addr);
     // Sort by weighted value descending, but underlying token comes last
     return tokens

@@ -60,7 +60,7 @@ class App {
     await this.executor.launch();
     await this.addressProvider.launch();
 
-    this.redstone.launch();
+    await this.redstone.launch();
 
     this.healthChecker.launch();
     await this.swapper.launch(this.addressProvider.network);

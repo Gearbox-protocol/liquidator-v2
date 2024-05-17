@@ -58,9 +58,15 @@ export default abstract class AbstractLiquidationStrategyV3 {
   public async updateCreditAccountData(
     ca: CreditAccountData,
   ): Promise<CreditAccountData> {
+    if (!this.config.optimistic) {
+      throw new Error(
+        "updateCreditAccountData should only be used in optimistic mode",
+      );
+    }
+    const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
     const newCa = await this.compressor.getCreditAccountData.staticCall(
       ca.addr,
-      [],
+      priceUpdates,
     );
     return new CreditAccountData(newCa);
   }

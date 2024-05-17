@@ -6,7 +6,7 @@ import {
   tickerInfoTokensByNetwork,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
-import type { MultiCall } from "@gearbox-protocol/types/v3";
+import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
 import { ICreditFacadeV3Multicall__factory } from "@gearbox-protocol/types/v3";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
@@ -46,8 +46,24 @@ export class RedstoneServiceV3 {
   @Inject(PROVIDER)
   provider: Provider;
 
-  public launch(): void {
+  /**
+   * Timestamp to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
+   */
+  #optimisticTimestamp?: number;
+  #optimisticCache: Map<string, PriceOnDemandExtras> = new Map();
+
+  public async launch(): Promise<void> {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
+    if (this.config.optimistic) {
+      const block = await this.provider.getBlock("latest");
+      if (!block) {
+        throw new Error(`cannot get latest block`);
+      }
+      this.#optimisticTimestamp = block.timestamp;
+      this.log.info(
+        `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
+      );
+    }
   }
 
   public async updatesForTokens(
@@ -134,7 +150,7 @@ export class RedstoneServiceV3 {
     return result;
   }
 
-  public async compressorUpdates(ca: CreditAccountData): Promise<MultiCall[]> {
+  public async multicallUpdates(ca: CreditAccountData): Promise<MultiCall[]> {
     const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
     return priceUpdates.map(({ token, data, reserve }) => ({
       target: ca.creditFacade,
@@ -143,6 +159,16 @@ export class RedstoneServiceV3 {
         reserve,
         data,
       ]),
+    }));
+  }
+
+  public async dataCompressorUpdates(
+    ca: CreditAccountData,
+  ): Promise<PriceOnDemand[]> {
+    const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
+    return priceUpdates.map(({ token, data }) => ({
+      token,
+      callData: data,
     }));
   }
 
@@ -173,10 +199,25 @@ export class RedstoneServiceV3 {
     dataFeedId: string,
     uniqueSignersCount: number,
   ): Promise<PriceOnDemandExtras> {
+    const key = redstoneCacheKey(
+      token,
+      reserve,
+      dataServiceId,
+      dataFeedId,
+      uniqueSignersCount,
+    );
+    if (this.config.optimistic) {
+      if (this.#optimisticCache.has(key)) {
+        this.log.debug(`using cached response for ${key}`);
+        return this.#optimisticCache.get(key)!;
+      }
+    }
+
     const dataPayload = await new DataServiceWrapper({
       dataServiceId,
       dataFeeds: [dataFeedId],
       uniqueSignersCount,
+      historicalTimestamp: this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
@@ -210,8 +251,35 @@ export class RedstoneServiceV3 {
       ] as const;
     });
 
-    return { token, reserve, callData: result[0][0], ts: result[0][1] };
+    const response = {
+      token,
+      reserve,
+      callData: result[0][0],
+      ts: result[0][1],
+    };
+
+    if (this.config.optimistic) {
+      this.#optimisticCache.set(key, response);
+    }
+
+    return response;
   }
+}
+
+function redstoneCacheKey(
+  token: string,
+  reserve: boolean,
+  dataServiceId: string,
+  dataFeedId: string,
+  uniqueSignersCount: number,
+): string {
+  return [
+    getTokenSymbolOrTicker(token as any),
+    reserve ? "reserve" : "main",
+    dataServiceId,
+    dataFeedId,
+    uniqueSignersCount,
+  ].join("|");
 }
 
 function splitResponse<T>(arr: T[], size: number): T[][] {
