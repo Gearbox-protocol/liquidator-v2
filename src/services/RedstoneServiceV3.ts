@@ -59,7 +59,7 @@ export class RedstoneServiceV3 {
       if (!block) {
         throw new Error(`cannot get latest block`);
       }
-      this.#optimisticTimestamp = block.timestamp;
+      this.#optimisticTimestamp = block.timestamp * 1000;
       this.log.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
       );
