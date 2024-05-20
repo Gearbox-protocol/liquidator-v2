@@ -13,7 +13,6 @@ import {
   curveTokens,
   isBalancerLPToken,
   isCurveLPToken,
-  toBigInt,
   tokenDataByNetwork,
   tokenSymbolByAddress,
   yearnTokens,
@@ -88,13 +87,13 @@ export class PathOptionFactory {
     balances: Record<string, BalanceInterface>,
   ): Array<CurveLPToken> {
     const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => toBigInt(balance.balance) > 1,
+      ([, balance]) => balance.balance > 1n,
     );
     console.log(
       JSON.stringify({
         account,
         nonZeroBalances: Object.keys(nonZeroBalances).map(
-          t => tokenSymbolByAddress[t.toLowerCase()],
+          t => tokenSymbolByAddress[t.toLowerCase()] + ` (${t})`,
         ),
       }),
     );
@@ -145,7 +144,7 @@ export class PathOptionFactory {
     balances: Record<string, BalanceInterface>,
   ): Array<BalancerLPToken> {
     const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => toBigInt(balance.balance) > 1,
+      ([, balance]) => balance.balance > 1n,
     );
 
     const balancerPools = nonZeroBalances
