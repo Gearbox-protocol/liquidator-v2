@@ -221,7 +221,7 @@ export class RedstoneServiceV3 {
       dataServiceId,
       dataFeeds: [dataFeedId],
       uniqueSignersCount,
-      historicalTimestamp: this.#optimisticTimestamp,
+      // historicalTimestamp: this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
