@@ -1,5 +1,5 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { getConnectors } from "@gearbox-protocol/sdk-gov";
+import { getConnectors, getTokenSymbol } from "@gearbox-protocol/sdk-gov";
 import type {
   Balance,
   IRouterV3,
@@ -11,6 +11,7 @@ import type { Provider, Signer } from "ethers";
 import type { CreditAccountData } from "../CreditAccountData";
 import type { CreditManagerData } from "../CreditManagerData";
 import type { PathFinderCloseResult, PathFinderResult } from "./core";
+import type { PathOption } from "./pathOptions";
 import { PathOptionFactory } from "./pathOptions";
 
 const MAX_GAS_PER_ROUTE = 200e6;
@@ -85,6 +86,7 @@ export class PathFinder {
     }));
 
     const connectors = this.getAvailableConnectors(creditAccount.allBalances);
+    console.log({ connectors: connectors.map(c => getTokenSymbol(c as any)) });
     let results: RouterResult[] = [];
     if (noConcurrency) {
       for (const po of pathOptions) {
@@ -123,14 +125,23 @@ export class PathFinder {
       results = await Promise.all(requests);
     }
 
-    const bestResult = results.reduce<PathFinderResult>(
-      (best, pathFinderResult) => PathFinder.compare(best, pathFinderResult),
-      {
-        amount: 0n,
-        minAmount: 0n,
-        calls: [],
-      },
-    );
+    let bestResult: PathFinderResult = { amount: 0n, calls: [], minAmount: 0n };
+    let bestResultIndex = -1;
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      console.log({
+        pathOption: printPO(pathOptions[i]),
+        amount: result.amount.toString(),
+      });
+      if (result.amount > bestResult.amount) {
+        bestResult = result;
+        bestResultIndex = i;
+      }
+    }
+
+    if (bestResultIndex >= 0) {
+      console.log({ bestPathOption: printPO(pathOptions[bestResultIndex]) });
+    }
 
     return {
       amount: bestResult.amount,
@@ -144,10 +155,6 @@ export class PathFinder {
         creditAccount.allBalances[creditAccount.underlyingToken.toLowerCase()]
           .balance,
     };
-  }
-
-  static compare(r1: PathFinderResult, r2: PathFinderResult): PathFinderResult {
-    return r1.amount > r2.amount ? r1 : r2;
   }
 
   getAvailableConnectors(availableList: Record<string, any>) {
@@ -164,4 +171,8 @@ export class PathFinder {
   ) {
     return connectors.filter(t => availableList[t] !== undefined);
   }
+}
+
+function printPO(options: PathOption[]): string {
+  return options.map(o => getTokenSymbol(o.target as any)).join(" - ");
 }
