@@ -67,6 +67,14 @@ export class PathFinder {
       loopsPerTx,
       network,
     );
+    console.log(
+      JSON.stringify({
+        account: creditAccount.addr,
+        pathOptions,
+        loopsPerTx,
+        network,
+      }),
+    );
 
     const expected: Balance[] = cm.collateralTokens.map(token => {
       // When we pass expected balances explicitly, we need to mimic router behaviour by filtering out leftover tokens
@@ -87,6 +95,7 @@ export class PathFinder {
     const connectors = this.getAvailableConnectors(creditAccount.allBalances);
     console.log(
       JSON.stringify({
+        account: creditAccount.addr,
         connectors: connectors.map(c => getTokenSymbol(c as any)),
         totalPathOptions: pathOptions.length,
       }),
@@ -135,6 +144,7 @@ export class PathFinder {
       const result = results[i];
       console.log(
         JSON.stringify({
+          account: creditAccount.addr,
           pathOption: pathOptions[i] || null,
           amount: result.amount.toString(),
         }),
@@ -148,6 +158,7 @@ export class PathFinder {
     if (bestResultIndex >= 0) {
       console.log(
         JSON.stringify({
+          account: creditAccount.addr,
           bestPathOption: pathOptions[bestResultIndex] || null,
         }),
       );
