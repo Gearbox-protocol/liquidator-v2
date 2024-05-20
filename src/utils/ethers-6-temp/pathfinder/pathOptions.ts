@@ -13,6 +13,7 @@ import {
   curveTokens,
   isBalancerLPToken,
   isCurveLPToken,
+  toBigInt,
   tokenDataByNetwork,
   tokenSymbolByAddress,
   yearnTokens,
@@ -36,12 +37,11 @@ export type BalanceInterface = Pick<Balance, "balance">;
 
 export class PathOptionFactory {
   static generatePathOptions(
-    account: string,
     balances: Record<string, BalanceInterface>,
     loopsInTx: number,
     network: NetworkType,
   ): Array<PathOptionSerie> {
-    const curvePools = PathOptionFactory.getCurvePools(account, balances);
+    const curvePools = PathOptionFactory.getCurvePools(balances);
     const balancerPools = PathOptionFactory.getBalancerPools(balances);
 
     const curveInitPO: PathOptionSerie = curvePools.map(symbol => {
@@ -83,19 +83,10 @@ export class PathOptionFactory {
   }
 
   static getCurvePools(
-    account: string,
     balances: Record<string, BalanceInterface>,
   ): Array<CurveLPToken> {
     const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => balance.balance > 1n,
-    );
-    console.log(
-      JSON.stringify({
-        account,
-        nonZeroBalances: nonZeroBalances.map(
-          ([t]) => tokenSymbolByAddress[t.toLowerCase()] + ` (${t})`,
-        ),
-      }),
+      ([, balance]) => toBigInt(balance.balance) > 1,
     );
 
     const curvePools = nonZeroBalances
@@ -122,16 +113,6 @@ export class PathOptionFactory {
       .filter(symbol => convexCurveTokens.includes(symbol))
       .map(symbol => convexTokens[symbol as ConvexLPToken].underlying);
 
-    console.log(
-      JSON.stringify({
-        account,
-        curvePools,
-        curvePoolsFromYearn,
-        convexCurveTokens,
-        curvePoolsFromConvex,
-      }),
-    );
-
     const curveSet = new Set([
       ...curvePools,
       ...curvePoolsFromYearn,
@@ -144,7 +125,7 @@ export class PathOptionFactory {
     balances: Record<string, BalanceInterface>,
   ): Array<BalancerLPToken> {
     const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => balance.balance > 1n,
+      ([, balance]) => toBigInt(balance.balance) > 1,
     );
 
     const balancerPools = nonZeroBalances

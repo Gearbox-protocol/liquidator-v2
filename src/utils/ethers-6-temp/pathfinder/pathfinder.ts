@@ -8,10 +8,10 @@ import type {
 import { IRouterV3__factory } from "@gearbox-protocol/types/v3";
 import type { Provider, Signer } from "ethers";
 
-import { json_stringify } from "../../bigint-serializer";
 import type { CreditAccountData } from "../CreditAccountData";
 import type { CreditManagerData } from "../CreditManagerData";
 import type { PathFinderCloseResult, PathFinderResult } from "./core";
+import type { PathOption } from "./pathOptions";
 import { PathOptionFactory } from "./pathOptions";
 
 const MAX_GAS_PER_ROUTE = 200e6;
@@ -64,18 +64,9 @@ export class PathFinder {
   }: FindBestClosePathProps): Promise<PathFinderCloseResult> {
     const loopsPerTx = Math.floor(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
     const pathOptions = PathOptionFactory.generatePathOptions(
-      creditAccount.addr,
       creditAccount.allBalances,
       loopsPerTx,
       network,
-    );
-    console.log(
-      JSON.stringify({
-        account: creditAccount.addr,
-        pathOptions,
-        loopsPerTx,
-        network,
-      }),
     );
 
     const expected: Balance[] = cm.collateralTokens.map(token => {
@@ -95,31 +86,10 @@ export class PathFinder {
     }));
 
     const connectors = this.getAvailableConnectors(creditAccount.allBalances);
-    console.log(
-      JSON.stringify({
-        account: creditAccount.addr,
-        connectors: connectors.map(c => getTokenSymbol(c as any)),
-        totalPathOptions: pathOptions.length,
-      }),
-    );
+    console.log({ connectors: connectors.map(c => getTokenSymbol(c as any)) });
     let results: RouterResult[] = [];
     if (noConcurrency) {
       for (const po of pathOptions) {
-        console.log(
-          json_stringify({
-            account: creditAccount.addr,
-            findBestClosePath: {
-              creditAccount: creditAccount.addr,
-              expectedBalances: expected,
-              leftoverBalances: leftover,
-              connectors: connectors,
-              slippage: slippage,
-              pathOptions: po,
-              iterations: loopsPerTx,
-              force: false,
-            },
-          }),
-        );
         results.push(
           await this.pathFinder.findBestClosePath.staticCall(
             creditAccount.addr,
@@ -159,13 +129,10 @@ export class PathFinder {
     let bestResultIndex = -1;
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      console.log(
-        JSON.stringify({
-          account: creditAccount.addr,
-          pathOption: pathOptions[i] || null,
-          amount: result.amount.toString(),
-        }),
-      );
+      console.log({
+        pathOption: printPO(pathOptions[i]),
+        amount: result.amount.toString(),
+      });
       if (result.amount > bestResult.amount) {
         bestResult = result;
         bestResultIndex = i;
@@ -173,12 +140,7 @@ export class PathFinder {
     }
 
     if (bestResultIndex >= 0) {
-      console.log(
-        JSON.stringify({
-          account: creditAccount.addr,
-          bestPathOption: pathOptions[bestResultIndex] || null,
-        }),
-      );
+      console.log({ bestPathOption: printPO(pathOptions[bestResultIndex]) });
     }
 
     return {
@@ -209,4 +171,8 @@ export class PathFinder {
   ) {
     return connectors.filter(t => availableList[t] !== undefined);
   }
+}
+
+function printPO(options: PathOption[]): string {
+  return options.map(o => getTokenSymbol(o.target as any)).join(" - ");
 }

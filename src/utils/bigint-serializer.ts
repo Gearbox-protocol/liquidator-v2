@@ -18,8 +18,8 @@ function reviver(key: string, value: any) {
   return value;
 }
 
-export const json_stringify = (obj: any, space?: number) => {
-  return JSON.stringify(obj, replacer, space);
+export const json_stringify = (obj: any) => {
+  return JSON.stringify(obj, replacer, 2);
 };
 
 export const json_parse = (s: string) => {
