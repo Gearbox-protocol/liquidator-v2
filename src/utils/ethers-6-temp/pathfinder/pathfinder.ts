@@ -86,7 +86,11 @@ export class PathFinder {
     }));
 
     const connectors = this.getAvailableConnectors(creditAccount.allBalances);
-    console.log({ connectors: connectors.map(c => getTokenSymbol(c as any)) });
+    console.log(
+      JSON.stringify({
+        connectors: connectors.map(c => getTokenSymbol(c as any)),
+      }),
+    );
     let results: RouterResult[] = [];
     if (noConcurrency) {
       for (const po of pathOptions) {
@@ -140,7 +144,11 @@ export class PathFinder {
     }
 
     if (bestResultIndex >= 0) {
-      console.log({ bestPathOption: printPO(pathOptions[bestResultIndex]) });
+      console.log(
+        JSON.stringify({
+          bestPathOption: printPO(pathOptions[bestResultIndex]),
+        }),
+      );
     }
 
     return {
@@ -174,5 +182,7 @@ export class PathFinder {
 }
 
 function printPO(options: PathOption[]): string {
-  return options.map(o => getTokenSymbol(o.target as any)).join(" - ");
+  return options
+    .map(o => getTokenSymbol(o.target as any) + ` ${o.target}`)
+    .join(" - ");
 }
