@@ -17,6 +17,25 @@ import { PROVIDER } from "../utils";
 
 const GAS_TIP_MULTIPLIER = 5000n;
 
+interface AnvilNodeInfo {
+  currentBlockNumber: string; // hexutil.Big is a big number in hex format
+  currentBlockTimestamp: number;
+  currentBlockHash: string;
+  hardFork: string;
+  transactionOrder: string;
+  environment: {
+    baseFee: string; // big.Int is a big number, represented as string in JSON
+    chainId: number;
+    gasLimit: string;
+    gasPrice: string;
+  };
+  forkConfig: {
+    forkUrl: string;
+    forkBlockNumber: string;
+    forkRetryBackoff: number;
+  };
+}
+
 @Service()
 export default class ExecutorService {
   @Inject()
@@ -28,7 +47,7 @@ export default class ExecutorService {
   @Logger("ExecutorService")
   public logger: LoggerInterface;
 
-  #isAnvil = false;
+  #anvilInfo: AnvilNodeInfo | null = null;
 
   // #flashbots?: FlashbotsBundleProvider;
 
@@ -38,9 +57,9 @@ export default class ExecutorService {
         "anvil_nodeInfo",
         [],
       );
-      this.#isAnvil = "forkConfig" in resp;
+      this.#anvilInfo = resp;
     } catch {}
-    if (this.#isAnvil) {
+    if (this.#anvilInfo) {
       this.logger.debug("running on anvil");
     } else {
       this.logger.debug("running on real rpc");
@@ -54,7 +73,7 @@ export default class ExecutorService {
    * @returns
    */
   public async mine(tx: TransactionResponse): Promise<TransactionReceipt> {
-    if (this.#isAnvil) {
+    if (this.#anvilInfo) {
       await (this.provider as JsonRpcProvider)
         .send("evm_mine", [])
         .catch(() => {});
@@ -130,5 +149,13 @@ export default class ExecutorService {
 
   public get address(): string {
     return this.wallet.address;
+  }
+
+  public get anvilForkBlock(): number {
+    const n = this.#anvilInfo?.forkConfig.forkBlockNumber;
+    if (!n) {
+      throw new Error("cannot get anvil fork block");
+    }
+    return parseInt(n, 10);
   }
 }

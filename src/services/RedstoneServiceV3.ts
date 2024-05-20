@@ -18,6 +18,7 @@ import { Logger, type LoggerInterface } from "../log";
 import { formatTs, PROVIDER } from "../utils";
 import type { CreditAccountData } from "../utils/ethers-6-temp";
 import { AddressProviderService } from "./AddressProviderService";
+import ExecutorService from "./ExecutorService";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
 import type { RedstoneFeed } from "./OracleServiceV3";
 import OracleServiceV3 from "./OracleServiceV3";
@@ -43,6 +44,9 @@ export class RedstoneServiceV3 {
   @Inject()
   addressProvider: AddressProviderService;
 
+  @Inject()
+  executor: ExecutorService;
+
   @Inject(PROVIDER)
   provider: Provider;
 
@@ -55,7 +59,7 @@ export class RedstoneServiceV3 {
   public async launch(): Promise<void> {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
     if (this.config.optimistic) {
-      const block = await this.provider.getBlock("latest");
+      const block = await this.provider.getBlock(this.executor.anvilForkBlock);
       if (!block) {
         throw new Error(`cannot get latest block`);
       }
