@@ -63,6 +63,7 @@ export class PathFinder {
   }: FindBestClosePathProps): Promise<PathFinderCloseResult> {
     const loopsPerTx = Math.floor(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
     const pathOptions = PathOptionFactory.generatePathOptions(
+      creditAccount.addr,
       creditAccount.allBalances,
       loopsPerTx,
       network,
