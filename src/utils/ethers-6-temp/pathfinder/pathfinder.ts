@@ -11,7 +11,6 @@ import type { Provider, Signer } from "ethers";
 import type { CreditAccountData } from "../CreditAccountData";
 import type { CreditManagerData } from "../CreditManagerData";
 import type { PathFinderCloseResult, PathFinderResult } from "./core";
-import type { PathOption } from "./pathOptions";
 import { PathOptionFactory } from "./pathOptions";
 
 const MAX_GAS_PER_ROUTE = 200e6;
@@ -136,7 +135,7 @@ export class PathFinder {
       const result = results[i];
       console.log(
         JSON.stringify({
-          pathOption: printPO(pathOptions[i]),
+          pathOption: pathOptions[i] || null,
           amount: result.amount.toString(),
         }),
       );
@@ -149,7 +148,7 @@ export class PathFinder {
     if (bestResultIndex >= 0) {
       console.log(
         JSON.stringify({
-          bestPathOption: printPO(pathOptions[bestResultIndex]),
+          bestPathOption: pathOptions[bestResultIndex] || null,
         }),
       );
     }
@@ -182,10 +181,4 @@ export class PathFinder {
   ) {
     return connectors.filter(t => availableList[t] !== undefined);
   }
-}
-
-function printPO(options: PathOption[]): string {
-  return options
-    .map(o => getTokenSymbol(o.target as any) + ` ${o.target}`)
-    .join(" - ");
 }
