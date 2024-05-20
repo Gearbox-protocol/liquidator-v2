@@ -8,6 +8,7 @@ import type {
 import { IRouterV3__factory } from "@gearbox-protocol/types/v3";
 import type { Provider, Signer } from "ethers";
 
+import { json_stringify } from "../../bigint-serializer";
 import type { CreditAccountData } from "../CreditAccountData";
 import type { CreditManagerData } from "../CreditManagerData";
 import type { PathFinderCloseResult, PathFinderResult } from "./core";
@@ -104,6 +105,21 @@ export class PathFinder {
     let results: RouterResult[] = [];
     if (noConcurrency) {
       for (const po of pathOptions) {
+        console.log(
+          json_stringify({
+            account: creditAccount.addr,
+            findBestClosePath: {
+              creditAccount: creditAccount.addr,
+              expectedBalances: expected,
+              leftoverBalances: leftover,
+              connectors: connectors,
+              slippage: slippage,
+              pathOptions: po,
+              iterations: loopsPerTx,
+              force: false,
+            },
+          }),
+        );
         results.push(
           await this.pathFinder.findBestClosePath.staticCall(
             creditAccount.addr,
