@@ -92,8 +92,8 @@ export class PathOptionFactory {
     console.log(
       JSON.stringify({
         account,
-        nonZeroBalances: Object.keys(nonZeroBalances).map(
-          t => tokenSymbolByAddress[t.toLowerCase()] + ` (${t})`,
+        nonZeroBalances: nonZeroBalances.map(
+          ([t]) => tokenSymbolByAddress[t.toLowerCase()] + ` (${t})`,
         ),
       }),
     );
