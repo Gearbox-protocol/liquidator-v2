@@ -1369,10 +1369,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^2.2.7":
-  version "2.2.7"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.2.7.tgz#3c1745243a6f4544d418be7397dfef2c49c1d8e3"
-  integrity sha512-GelXOsVWQKk4vqobF9Bx/azVPGgOzLHTvyu45+pSx/WV4z+aY24yQ3wTZktKfA/qd8t51Fx7K6MHvc7JlSaZrQ==
+"@gearbox-protocol/sdk-gov@^2.2.8":
+  version "2.2.8"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.2.8.tgz#521717b9a0e3a4ba8af3e9b588252fb1889773f3"
+  integrity sha512-rrR7Eg/D/C8S14/EfPLj438foTwj71SbEfYjxjVjentv8ZktzQAheNThycJulUlCiNxrnSEkgLuxYMPhVdUegg==
   dependencies:
     ethers "6.12.1"
     humanize-duration-ts "^2.1.1"
@@ -2635,10 +2635,10 @@ axios@^1.6.2:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
-axios@^1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.7.0.tgz#b48f715325457ededfcb3f0a44a3fb9d5742acb6"
-  integrity sha512-IiB0wQeKyPRdsFVhBgIo31FbzOyf2M6wYl7/NVutFwFBRMiAbjNiydJIHKeLmPugF4kJLfA1uWZ82Is2QzqqFA==
+axios@^1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.7.1.tgz#522145622a09dfaf49359837db9649ff245a35b9"
+  integrity sha512-+LV37nQcd1EpFalkXksWNBiA17NZ5m5/WspmHGmZmdx1qBOg/VNq/c4eRJiA9VQQHBOs+N0ZhhdU10h2TyNK7Q==
   dependencies:
     follow-redirects "^1.15.6"
     form-data "^4.0.0"
