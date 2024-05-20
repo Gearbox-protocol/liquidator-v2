@@ -89,6 +89,7 @@ export class PathFinder {
     console.log(
       JSON.stringify({
         connectors: connectors.map(c => getTokenSymbol(c as any)),
+        totalPathOptions: pathOptions.length,
       }),
     );
     let results: RouterResult[] = [];
@@ -133,10 +134,12 @@ export class PathFinder {
     let bestResultIndex = -1;
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      console.log({
-        pathOption: printPO(pathOptions[i]),
-        amount: result.amount.toString(),
-      });
+      console.log(
+        JSON.stringify({
+          pathOption: printPO(pathOptions[i]),
+          amount: result.amount.toString(),
+        }),
+      );
       if (result.amount > bestResult.amount) {
         bestResult = result;
         bestResultIndex = i;
