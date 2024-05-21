@@ -187,7 +187,7 @@ export class ScanServiceV3 extends AbstractScanService {
       const accData = await this.dataCompressor.getCreditAccountData.staticCall(
         acc,
         priceUpdates,
-        overrides,
+        { gasLimit: 400_000_000, ...overrides },
       );
       result.push(accData);
     }
@@ -207,7 +207,7 @@ export class ScanServiceV3 extends AbstractScanService {
       );
       return this.dataCompressor.getLiquidatableCreditAccounts.staticCall(
         priceUpdates,
-        overrides,
+        { gasLimit: 400_000_000, ...overrides },
       );
     }
     const cms = await this.dataCompressor.getCreditManagersV3List(overrides);
