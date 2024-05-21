@@ -231,7 +231,7 @@ export class ScanServiceV3 extends AbstractScanService {
           await this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
             cm,
             priceUpdates,
-            overrides,
+            { gasLimit: 400_000_000, ...overrides },
           );
         accs.push(...cmAccs);
         this.log.debug(`${cmAccs.length} in credit manager ${cm}`);
