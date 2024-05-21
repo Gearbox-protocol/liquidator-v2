@@ -63,7 +63,9 @@ export class RedstoneServiceV3 {
       if (!block) {
         throw new Error(`cannot get latest block`);
       }
-      this.#optimisticTimestamp = block.timestamp * 1000;
+      // we round the timestamp to full minutes for being compatible with
+      // oracle-nodes, which usually work with rounded 10s and 60s intervals
+      this.#optimisticTimestamp = 10 * Math.floor(block.timestamp / 10) * 1000;
       this.log.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
       );
@@ -221,7 +223,7 @@ export class RedstoneServiceV3 {
       dataServiceId,
       dataFeeds: [dataFeedId],
       uniqueSignersCount,
-      // historicalTimestamp: this.#optimisticTimestamp,
+      historicalTimestamp: this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
