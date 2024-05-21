@@ -211,9 +211,13 @@ export default class LiquidationStrategyV3Partial
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
+    const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
     // this helper contract fetches prices while trying to ignore updatable price feeds
     // prices here are not critical, as they're used for sorting and estimation
-    const tokens = await this.priceHelper.previewTokens(ca.addr);
+    const tokens = await this.priceHelper.previewTokens.staticCall(
+      ca.addr,
+      priceUpdates,
+    );
     // Sort by weighted value descending, but underlying token comes last
     return tokens
       .map(
