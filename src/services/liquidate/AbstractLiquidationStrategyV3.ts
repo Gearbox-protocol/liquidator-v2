@@ -67,7 +67,6 @@ export default abstract class AbstractLiquidationStrategyV3 {
     const newCa = await this.compressor.getCreditAccountData.staticCall(
       ca.addr,
       priceUpdates,
-      { gasLimit: 400_000_000 },
     );
     return new CreditAccountData(newCa);
   }

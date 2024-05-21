@@ -2,12 +2,9 @@
 
 import "reflect-metadata";
 
-import v8 from "node:v8";
-
 import { launchApp } from "./app";
 
 Error.stackTraceLimit = Infinity;
-v8.setFlagsFromString("--stack-size=4096");
 
 process.on("uncaughtException", e => {
   console.error(e);

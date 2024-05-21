@@ -25,7 +25,7 @@
     "@redstone-finance/evm-connector": "^0.5.1",
     "@uniswap/sdk-core": "^5.0.0",
     "@uniswap/v3-sdk": "^3.11.1",
-    "axios": "^1.7.2",
+    "axios": "^1.7.1",
     "axios-retry": "^4.3.0",
     "date-fns": "^3.6.0",
     "ethers": "^6.12.1",

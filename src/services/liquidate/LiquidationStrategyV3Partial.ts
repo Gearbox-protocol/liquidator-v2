@@ -178,7 +178,6 @@ export default class LiquidationStrategyV3Partial
               priceUpdates,
               connectors,
               this.config.slippage,
-              { gasLimit: 400_000_000 },
             );
           if (result.calls.length) {
             logger.info(
@@ -218,7 +217,6 @@ export default class LiquidationStrategyV3Partial
     const tokens = await this.priceHelper.previewTokens.staticCall(
       ca.addr,
       priceUpdates,
-      { gasLimit: 400_000_000 },
     );
     // Sort by weighted value descending, but underlying token comes last
     return tokens
