@@ -226,13 +226,20 @@ export class ScanServiceV3 extends AbstractScanService {
     // using Promise.all here causes "RangeError: Maximum call stack size exceeded"
     // anyways, this should only be used in optimistic mode
     for (const cm of cms) {
-      const cmAccs =
-        await this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
-          cm,
-          priceUpdates,
-          overrides,
+      try {
+        const cmAccs =
+          await this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
+            cm,
+            priceUpdates,
+            overrides,
+          );
+        accs = accs.concat(...cmAccs);
+        this.log.debug(`${cmAccs.length} in credit manager ${cm}`);
+      } catch (e) {
+        this.log.debug(
+          `failed to getCreditAccountsByCreditManager in ${cm}: ${e}`,
         );
-      accs = accs.concat(...cmAccs);
+      }
     }
     this.log.debug(
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
