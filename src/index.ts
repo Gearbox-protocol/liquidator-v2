@@ -2,13 +2,9 @@
 
 import "reflect-metadata";
 
-import v8 from "node:v8";
-
 import { launchApp } from "./app";
 
 Error.stackTraceLimit = Infinity;
-// Promise.all on credit managers causes this error "Maximum call stack size exceeded"
-v8.setFlagsFromString("--stack-size=1024");
 
 process.on("uncaughtException", e => {
   console.error(e);
