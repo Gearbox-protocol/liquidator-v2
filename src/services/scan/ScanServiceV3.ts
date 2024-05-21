@@ -16,6 +16,7 @@ import {
   IDataCompressorV3__factory,
 } from "@gearbox-protocol/types/v3";
 import type { Overrides } from "ethers";
+import { ErrorDecoder } from "ethers-decode-error";
 import { Inject, Service } from "typedi";
 
 import { Logger, type LoggerInterface } from "../../log";
@@ -49,6 +50,7 @@ export class ScanServiceV3 extends AbstractScanService {
   _liquidatorService: LiquidatorService;
 
   #dataCompressor?: IDataCompressorV3;
+  #errorDecoder = ErrorDecoder.create();
 
   protected override async _launch(): Promise<void> {
     const dcAddr = await this.addressProvider.findService(
@@ -227,12 +229,11 @@ export class ScanServiceV3 extends AbstractScanService {
     // anyways, this should only be used in optimistic mode
     for (const cm of cms) {
       try {
-        const cmAccs =
-          await this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
-            cm,
-            priceUpdates,
-            { gasLimit: 400_000_000, ...overrides },
-          );
+        const cmAccs = await this.#getCreditAccountsByCreditManager(
+          cm,
+          priceUpdates,
+          overrides,
+        );
         accs.push(...cmAccs);
         this.log.debug(`${cmAccs.length} in credit manager ${cm}`);
       } catch (e) {
@@ -247,6 +248,38 @@ export class ScanServiceV3 extends AbstractScanService {
     return liquidatableOnly
       ? this.#filterLiquidatable(accs, overrides)
       : this.#filterZeroDebt(accs);
+  }
+
+  async #getCreditAccountsByCreditManager(
+    cm: string,
+    priceUpdates: PriceOnDemand[],
+    overrides: Overrides = {},
+  ): Promise<CreditAccountDataStructOutput[]> {
+    try {
+      const gasLimit =
+        await this.dataCompressor.getCreditAccountsByCreditManager.estimateGas(
+          cm,
+          priceUpdates,
+          overrides,
+        );
+      this.log.debug(
+        `getCreditAccountsByCreditManager gas estimation for ${cm}: ${gasLimit.toString()}`,
+      );
+      return this.dataCompressor.getCreditAccountsByCreditManager.staticCall(
+        cm,
+        priceUpdates,
+        { gasLimit, ...overrides },
+      );
+    } catch (e) {
+      const decoded = await this.#errorDecoder.decode(e);
+      this.log.error(
+        { cm, decoded, original: e },
+        "cant getCreditAccountsByCreditManager",
+      );
+      throw new Error(
+        `cant getCreditAccountsByCreditManager for cm ${cm}: ${decoded.type}: ${decoded.reason}`,
+      );
+    }
   }
 
   #filterZeroDebt(
