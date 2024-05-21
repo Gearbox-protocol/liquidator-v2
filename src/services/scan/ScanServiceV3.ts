@@ -222,7 +222,7 @@ export class ScanServiceV3 extends AbstractScanService {
     cms: string[],
     { liquidatableOnly, priceUpdates, overrides = {} }: AccountSelection,
   ): Promise<CreditAccountDataStructOutput[]> {
-    let accs: CreditAccountDataStructOutput[] = [];
+    const accs: CreditAccountDataStructOutput[] = [];
     // using Promise.all here causes "RangeError: Maximum call stack size exceeded"
     // anyways, this should only be used in optimistic mode
     for (const cm of cms) {
@@ -233,7 +233,7 @@ export class ScanServiceV3 extends AbstractScanService {
             priceUpdates,
             overrides,
           );
-        accs = accs.concat(...cmAccs);
+        accs.push(...cmAccs);
         this.log.debug(`${cmAccs.length} in credit manager ${cm}`);
       } catch (e) {
         this.log.debug(
