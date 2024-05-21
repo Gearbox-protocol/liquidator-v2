@@ -142,6 +142,10 @@ export class ScanServiceV3 extends AbstractScanService {
       priceUpdates,
       overrides: atBlock ? { blockTag: atBlock } : {},
     };
+    this.log.debug(
+      { debugAccounts, debugManagers, selection },
+      "selecting accounts",
+    );
 
     let accountsRaw: CreditAccountDataStructOutput[] = [];
 
