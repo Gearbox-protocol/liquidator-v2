@@ -16,6 +16,7 @@ import {
   contractsByNetwork,
   formatBN,
   getDecimals,
+  getTokenSymbolOrAddress,
   PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
   WAD,
@@ -135,79 +136,99 @@ export default class LiquidationStrategyV3Partial
   ): Promise<PartialLiquidationPreview> {
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
-    const balances = await this.#prepareAccountTokens(ca);
-    const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
-    const uSymb = tokenSymbolByAddress[cm.underlyingToken];
-    const uDec = getDecimals(cm.underlyingToken);
-
-    // TODO: maybe this should be refreshed every loop iteration
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
-    for (const { token: assetOut, balance, balanceInUnderlying } of balances) {
-      if (assetOut === ca.underlyingToken) {
-        continue;
-      }
-      const symb = tokenSymbolByAddress[assetOut];
-      const decimals = getDecimals(assetOut);
-      logger.debug({
-        assetOut: `${assetOut} (${symb})`,
-        amountOut: `${balance} (${formatBN(balance, decimals)})`,
-        flashLoanAmount: `${balanceInUnderlying} (${formatBN(balanceInUnderlying, uDec)}) ${uSymb}`,
+    const {
+      tokenOut,
+      optimalAmount,
+      flashLoanAmount,
+      repaidAmount,
+      isOptimalRepayable,
+    } = await this.partialLiquidator.getOptimalLiquidation.staticCall(
+      ca.addr,
+      10100,
+      priceUpdates,
+    );
+    const [symb, decimals, uSymb, uDec] = [
+      getTokenSymbolOrAddress(tokenOut),
+      getDecimals(tokenOut),
+      getTokenSymbolOrAddress(cm.underlyingToken),
+      getDecimals(cm.underlyingToken),
+    ];
+    logger.debug(
+      {
+        tokenOut: `${symb} (${tokenOut})`,
+        optimalAmount: formatBN(optimalAmount, decimals) + " " + symb,
+        flashLoanAmount: formatBN(flashLoanAmount, uDec) + " " + uSymb,
+        repaidAmount: formatBN(repaidAmount, uDec) + " " + uSymb,
+        isOptimalRepayable,
+      },
+      "found optimal liquidation",
+    );
+    const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
+
+    const preview =
+      await this.partialLiquidator.previewPartialLiquidation.staticCall(
+        ca.creditManager,
+        ca.addr,
+        tokenOut,
+        optimalAmount,
+        flashLoanAmount,
         priceUpdates,
         connectors,
-        slippage: this.config.slippage,
-      });
-
-      // naively try to figure out amount that works
-      const steps = [5n, 10n, 15n, 20n, 30n, 40n, 50n, 70n, 90n];
-      for (const i of steps) {
-        const amountOut = (i * balance) / 100n;
-        const flashLoanAmount = (i * balanceInUnderlying) / 100n;
-        const flHuman = formatBN(flashLoanAmount, uDec);
-        const amountHuman = formatBN(amountOut, decimals);
-        logger.debug(
-          `trying ${i}% out: ${amountHuman} ${symb}/${flHuman} ${uSymb}`,
-        );
-        try {
-          const result =
-            await this.partialLiquidator.previewPartialLiquidation.staticCall(
-              ca.creditManager,
-              ca.addr,
-              assetOut,
-              amountOut,
-              flashLoanAmount,
-              priceUpdates,
-              connectors,
-              this.config.slippage,
-            );
-          if (result.calls.length) {
-            logger.info(
-              `preview of partial liquidation: ${i}% of ${symb} succeeded with profit ${result.profit}`,
-            );
-            return {
-              amountOut,
-              assetOut,
-              flashLoanAmount,
-              calls: result.calls.map(c => ({
-                callData: c.callData,
-                target: c.target,
-              })),
-              priceUpdates,
-              underlyingBalance: 0n, // TODO: calculate
-            };
-          }
-        } catch (e) {
-          // TODO: it's possible to save cast call --trace here
-          // if (i === steps[steps.length - 1]) {
-          //   // console.log(">>>> failed");
-          //   console.log(e);
-          // }
-        }
+        this.config.slippage,
+      );
+    if (preview.profit < 0n) {
+      if (isOptimalRepayable) {
+        throw new Error("optimal liquidation is not profitable or errored");
+      } else {
+        throw new Error("cannot liquidate with remaining debt surplus");
       }
     }
+    return {
+      assetOut: tokenOut,
+      amountOut: optimalAmount,
+      flashLoanAmount,
+      priceUpdates,
+      calls: preview.calls.map(c => ({
+        callData: c.callData,
+        target: c.target,
+      })),
+      underlyingBalance: preview.profit,
+    };
+  }
 
-    throw new Error(
-      `cannot find token and amount for successfull partial liquidation of ${ca.name}`,
+  public async estimate(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+  ): Promise<bigint> {
+    return this.partialLiquidator.partialLiquidateAndConvert.estimateGas(
+      account.creditManager,
+      account.addr,
+      preview.assetOut,
+      preview.amountOut,
+      preview.flashLoanAmount,
+      preview.priceUpdates,
+      preview.calls,
     );
+  }
+
+  public async liquidate(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+    gasLimit?: bigint,
+  ): Promise<TransactionReceipt> {
+    const txData =
+      await this.partialLiquidator.partialLiquidateAndConvert.populateTransaction(
+        account.creditManager,
+        account.addr,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
+        preview.priceUpdates,
+        preview.calls,
+        gasLimit ? { gasLimit } : {},
+      );
+    return this.executor.sendPrivate(txData);
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
@@ -322,40 +343,6 @@ export default class LiquidationStrategyV3Partial
       logger.debug(`set LT of ${tokenSymbolByAddress[t]} to ${lt}: ${newLT}`);
     }
     await stopImpersonate(this.executor.provider, configuratorAddr);
-  }
-
-  public async estimate(
-    account: CreditAccountData,
-    preview: PartialLiquidationPreview,
-  ): Promise<bigint> {
-    return this.partialLiquidator.partialLiquidateAndConvert.estimateGas(
-      account.creditManager,
-      account.addr,
-      preview.assetOut,
-      preview.amountOut,
-      preview.flashLoanAmount,
-      preview.priceUpdates,
-      preview.calls,
-    );
-  }
-
-  public async liquidate(
-    account: CreditAccountData,
-    preview: PartialLiquidationPreview,
-    gasLimit?: bigint,
-  ): Promise<TransactionReceipt> {
-    const txData =
-      await this.partialLiquidator.partialLiquidateAndConvert.populateTransaction(
-        account.creditManager,
-        account.addr,
-        preview.assetOut,
-        preview.amountOut,
-        preview.flashLoanAmount,
-        preview.priceUpdates,
-        preview.calls,
-        gasLimit ? { gasLimit } : {},
-      );
-    return this.executor.sendPrivate(txData);
   }
 
   async #deployPartialLiquidator(
