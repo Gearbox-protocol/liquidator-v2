@@ -69,10 +69,21 @@ export default class LiquidationStrategyV3Partial
     await super.launch();
 
     const router = await this.addressProvider.findService("ROUTER", 300);
-    const bot = await this.addressProvider.findService(
-      "PARTIAL_LIQUIDATION_BOT",
-      300,
-    );
+
+    // TODO: workaround, we forgot to set it in Address Provider on arbitrum
+    let bot: string | undefined;
+    if (this.addressProvider.network === "Arbitrum") {
+      bot = "0x938094B41dDaC7bD3f21fC962D424E1a84ac4a85";
+    } else {
+      bot = await this.addressProvider.findService(
+        "PARTIAL_LIQUIDATION_BOT",
+        300,
+      );
+    }
+    if (!bot) {
+      throw new Error("partial liquidation bot address not found");
+    }
+
     const aavePool =
       contractsByNetwork[this.addressProvider.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
