@@ -136,13 +136,17 @@ export default class LiquidationStrategyV3Partial
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
-    const { tokenOut, optimalAmount, repaidAmount, isOptimalRepayable } =
-      await this.partialLiquidator.getOptimalLiquidation.staticCall(
-        ca.addr,
-        10100,
-        priceUpdates,
-      );
-    const flashLoanAmount = (repaidAmount * 10050n) / 10000n;
+    const {
+      tokenOut,
+      optimalAmount,
+      repaidAmount,
+      flashLoanAmount,
+      isOptimalRepayable,
+    } = await this.partialLiquidator.getOptimalLiquidation.staticCall(
+      ca.addr,
+      10100,
+      priceUpdates,
+    );
     const [symb, decimals, uSymb, uDec] = [
       tokenSymbolByAddress[tokenOut.toLowerCase()],
       getDecimals(tokenOut),
