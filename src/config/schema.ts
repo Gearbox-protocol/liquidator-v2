@@ -14,7 +14,6 @@ export const ConfigSchema = z.object({
   addressProviderOverride: z.string().optional(),
 
   appName: z.string().default("liquidator-ts"),
-  balanceToNotify: z.coerce.number().int().positive().optional(),
   port: z.coerce.number().default(4000),
 
   debugAccounts: stringArrayLike

@@ -5,7 +5,6 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   appName: "APP_NAME",
   debugAccounts: "DEBUG_ACCOUNTS",
   debugManagers: "DEBUG_MANAGERS",
-  balanceToNotify: "BALANCE_TO_NOTIFY",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   ethProviderRpcs: ["JSON_RPC_PROVIDERS", "JSON_RPC_PROVIDER"],
   hfThreshold: "HF_TRESHOLD",
