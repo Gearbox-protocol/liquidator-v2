@@ -148,17 +148,13 @@ export default class LiquidationStrategyV3Partial
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
-    const {
-      tokenOut,
-      optimalAmount,
-      flashLoanAmount,
-      repaidAmount,
-      isOptimalRepayable,
-    } = await this.partialLiquidator.getOptimalLiquidation.staticCall(
-      ca.addr,
-      10100,
-      priceUpdates,
-    );
+    const { tokenOut, optimalAmount, repaidAmount, isOptimalRepayable } =
+      await this.partialLiquidator.getOptimalLiquidation.staticCall(
+        ca.addr,
+        10100,
+        priceUpdates,
+      );
+    const flashLoanAmount = (repaidAmount * 10050n) / 10000n;
     const [symb, decimals, uSymb, uDec] = [
       getTokenSymbolOrAddress(tokenOut),
       getDecimals(tokenOut),
@@ -192,7 +188,9 @@ export default class LiquidationStrategyV3Partial
       if (isOptimalRepayable) {
         throw new Error("optimal liquidation is not profitable or errored");
       } else {
-        throw new Error("cannot liquidate with remaining debt surplus");
+        throw new Error(
+          "cannot liquidate while remaining within borrowing limits",
+        );
       }
     }
     return {
@@ -244,8 +242,8 @@ export default class LiquidationStrategyV3Partial
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
     const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
-    // this helper contract fetches prices while trying to ignore updatable price feeds
-    // prices here are not critical, as they're used for sorting and estimation
+    // this helper contract fetches prices while trying to ignore failed price feeds
+    // prices here are not critical, as they're used for sorting and estimation and only in optimistic mode
     const tokens = await this.priceHelper.previewTokens.staticCall(
       ca.addr,
       priceUpdates,
