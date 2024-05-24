@@ -16,7 +16,6 @@ import {
   contractsByNetwork,
   formatBN,
   getDecimals,
-  getTokenSymbolOrAddress,
   PERCENTAGE_FACTOR,
   tokenSymbolByAddress,
   WAD,
@@ -156,9 +155,9 @@ export default class LiquidationStrategyV3Partial
       );
     const flashLoanAmount = (repaidAmount * 10050n) / 10000n;
     const [symb, decimals, uSymb, uDec] = [
-      getTokenSymbolOrAddress(tokenOut),
+      tokenSymbolByAddress[tokenOut.toLowerCase()],
       getDecimals(tokenOut),
-      getTokenSymbolOrAddress(cm.underlyingToken),
+      tokenSymbolByAddress[cm.underlyingToken.toLowerCase()],
       getDecimals(cm.underlyingToken),
     ];
     logger.debug(
