@@ -29,7 +29,7 @@ export const ConfigSchema = z.object({
     .pipe(z.array(z.string().url()).min(1)),
 
   privateKey: z.string().min(1),
-  hfThreshold: z.coerce.number().min(0).max(10000).int().default(9975),
+  hfThreshold: z.coerce.number().min(0).max(10000).int().default(10000),
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),

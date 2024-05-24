@@ -157,6 +157,16 @@ export class ScanServiceV3 extends AbstractScanService {
     }
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
+    accounts = accounts.filter(ca => {
+      const ok = ca.healthFactor <= this.config.hfThreshold;
+      if (!ok) {
+        this.log.warn(
+          `health factor of ${ca.name} ${ca.healthFactor} > ${this.config.hfThreshold} threshold, skipping`,
+        );
+      }
+      return ok;
+    });
+
     // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
     if (underlying) {
       this.log.debug(`filtering accounts by underlying: ${underlying}`);
