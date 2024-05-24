@@ -178,6 +178,7 @@ Error: ${error}`);
       liquidatorProfit: "0",
     };
     const start = Date.now();
+    // On anvil fork of L2, block.number is anvil block
     const startBlock = await this.provider.getBlock("latest").catch(() => null);
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);

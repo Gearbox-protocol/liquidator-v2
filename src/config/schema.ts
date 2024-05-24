@@ -27,19 +27,14 @@ export const ConfigSchema = z.object({
   ethProviderRpcs: stringArrayLike
     .optional()
     .pipe(z.array(z.string().url()).min(1)),
-  ethProviderTimeout: z.coerce.number().optional(),
 
   privateKey: z.string().min(1),
   hfThreshold: z.coerce.number().min(0).max(10000).int().default(9975),
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),
-  priceHelperAddress: z.string().regex(AddressRegExp).optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
   underlying: z.string().optional(),
-
-  multicallChunkSize: z.coerce.number().int().default(30),
-  skipBlocks: z.coerce.number().int().min(0).default(0),
 
   swapToEth: z.enum(["1inch", "uniswap"]).optional(),
   oneInchApiKey: z.string().optional(),

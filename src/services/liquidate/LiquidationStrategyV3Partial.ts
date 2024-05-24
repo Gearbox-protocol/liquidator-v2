@@ -401,18 +401,15 @@ export default class LiquidationStrategyV3Partial
     if (!this.config.optimistic) {
       return undefined;
     }
-    let priceHelperAddress = this.config.priceHelperAddress;
-    if (!priceHelperAddress) {
-      this.logger.debug("deploying price helper");
+    this.logger.debug("deploying price helper");
 
-      const factory = new PriceHelper__factory(executor);
-      const priceHelper = await factory.deploy();
-      await priceHelper.waitForDeployment();
-      this.logger.debug(
-        `deployed PriceHelper at ${priceHelper.target} in tx ${priceHelper.deploymentTransaction()?.hash}`,
-      );
-      priceHelperAddress = priceHelper.target as string;
-    }
+    const factory = new PriceHelper__factory(executor);
+    const priceHelper = await factory.deploy();
+    await priceHelper.waitForDeployment();
+    this.logger.debug(
+      `deployed PriceHelper at ${priceHelper.target} in tx ${priceHelper.deploymentTransaction()?.hash}`,
+    );
+    const priceHelperAddress = priceHelper.target as string;
     this.logger.info(`price helper contract addesss: ${priceHelperAddress}`);
     return IPriceHelper__factory.connect(priceHelperAddress, executor);
   }

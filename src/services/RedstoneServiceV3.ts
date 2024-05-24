@@ -127,6 +127,7 @@ export class RedstoneServiceV3 {
 
     if (this.config.optimistic && result.length > 0) {
       const redstoneTs = minTimestamp(result);
+      // On anvil fork of L2, block.number is anvil block
       let block = await this.provider.getBlock("latest");
       if (!block) {
         throw new Error("cannot get latest block");
