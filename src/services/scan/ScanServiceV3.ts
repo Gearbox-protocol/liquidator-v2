@@ -159,7 +159,7 @@ export class ScanServiceV3 extends AbstractScanService {
 
     accounts = accounts.filter(ca => {
       const ok = ca.healthFactor <= this.config.hfThreshold;
-      if (!ok) {
+      if (!ok && ca.healthFactor !== 65535) {
         this.log.warn(
           `health factor of ${ca.name} ${ca.healthFactor} > ${this.config.hfThreshold} threshold, skipping`,
         );
