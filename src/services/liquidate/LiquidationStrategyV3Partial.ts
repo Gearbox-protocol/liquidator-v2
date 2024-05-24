@@ -163,9 +163,12 @@ export default class LiquidationStrategyV3Partial
     logger.debug(
       {
         tokenOut: `${symb} (${tokenOut})`,
-        optimalAmount: formatBN(optimalAmount, decimals) + " " + symb,
-        flashLoanAmount: formatBN(flashLoanAmount, uDec) + " " + uSymb,
-        repaidAmount: formatBN(repaidAmount, uDec) + " " + uSymb,
+        optimalAmount:
+          formatBN(optimalAmount, decimals) + ` ${symb} (${optimalAmount})`,
+        flashLoanAmount:
+          formatBN(flashLoanAmount, uDec) + ` ${uSymb} (${flashLoanAmount})`,
+        repaidAmount:
+          formatBN(repaidAmount, uDec) + ` ${uSymb} (${repaidAmount})`,
         isOptimalRepayable,
       },
       "found optimal liquidation",
