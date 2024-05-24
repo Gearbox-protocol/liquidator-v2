@@ -21,6 +21,7 @@ import { Logger, LoggerInterface } from "../../log";
 import { filterDust, formatTs, PROVIDER } from "../../utils";
 import type { CreditAccountData } from "../../utils/ethers-6-temp";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
+import version from "../../version";
 import { AddressProviderService } from "../AddressProviderService";
 import { INotifier, NOTIFIER } from "../notifier";
 import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
@@ -110,7 +111,7 @@ export class LiquidatorService implements ILiquidatorService {
         ? Container.get(LiquidationStrategyV3Partial)
         : Container.get(LiquidationStrategyV3Full);
     await this.strategy.launch();
-    this.notifier.notify("started liquidator");
+    this.notifier.notify(`started ${this.config.appName} ${version}`);
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
