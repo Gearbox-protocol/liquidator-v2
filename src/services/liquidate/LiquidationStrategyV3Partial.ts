@@ -391,7 +391,12 @@ export default class LiquidationStrategyV3Partial
     return ILiquidator__factory.connect(partialLiquidatorAddress, executor);
   }
 
-  async #deployPriceHelper(executor: Wallet): Promise<IPriceHelper> {
+  async #deployPriceHelper(
+    executor: Wallet,
+  ): Promise<IPriceHelper | undefined> {
+    if (!this.config.optimistic) {
+      return undefined;
+    }
     let priceHelperAddress = this.config.priceHelperAddress;
     if (!priceHelperAddress) {
       this.logger.debug("deploying price helper");
@@ -479,6 +484,9 @@ export default class LiquidationStrategyV3Partial
   }
 
   private get priceHelper(): IPriceHelper {
+    if (!this.config.optimistic) {
+      throw new Error("price helper is only available in optimistic mode");
+    }
     if (!this.#priceHelper) {
       throw new Error("strategy not launched");
     }
