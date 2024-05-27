@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 
@@ -316,6 +317,7 @@ Error: ${error}`);
         const traceId = `${nanoid()}.trace`;
         const traceFile = path.resolve(this.config.outDir, traceId);
         const out = createWriteStream(traceFile, "utf-8");
+        await events.once(out, "open");
         spawnSync(
           this.config.castBin,
           [
