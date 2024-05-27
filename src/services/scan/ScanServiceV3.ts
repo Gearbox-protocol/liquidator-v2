@@ -158,7 +158,7 @@ export class ScanServiceV3 extends AbstractScanService {
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
     accounts = accounts.filter(ca => {
-      const ok = ca.healthFactor <= this.config.hfThreshold;
+      const ok = ca.healthFactor < this.config.hfThreshold;
       // 65535 is zero-debt account, no need to warn about it
       if (!ok && ca.healthFactor !== 65535) {
         this.log.warn(
