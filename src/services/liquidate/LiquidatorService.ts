@@ -317,7 +317,7 @@ Error: ${error}`);
         const traceFile = path.resolve(this.config.outDir, traceId);
         const out = createWriteStream(traceFile, "utf-8");
         spawnSync(
-          "cast",
+          this.config.castBin,
           [
             "call",
             "--trace",
