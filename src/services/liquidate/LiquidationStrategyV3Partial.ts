@@ -95,14 +95,16 @@ export default class LiquidationStrategyV3Partial
       throw new Error("makeLiquidatable only works in optimistic mode");
     }
     if (ca.borrowedAmount === 0n) {
-      throw new Error("zero-debt account");
+      throw new Error("warning: zero-debt account");
     }
     if (!this.oracle.checkReserveFeeds(ca)) {
-      throw new Error("account has tokens without reserve price feeds");
+      throw new Error(
+        "warning: account has tokens without reserve price feeds",
+      );
     }
     if (!this.#registeredCMs[ca.creditManager.toLowerCase()]) {
       throw new Error(
-        "account's credit manager is not registered in partial liquidator",
+        "warning: account's credit manager is not registered in partial liquidator",
       );
     }
     const logger = this.#caLogger(ca);
@@ -184,7 +186,7 @@ export default class LiquidationStrategyV3Partial
         throw new Error("optimal liquidation is not profitable or errored");
       } else {
         throw new Error(
-          "cannot liquidate while remaining within borrowing limits",
+          "warning: cannot liquidate while remaining within borrowing limits",
         );
       }
     }
@@ -298,10 +300,10 @@ export default class LiquidationStrategyV3Partial
       }
     }
     if (divisor === 0n) {
-      throw new Error("assets have zero weighted value in underlying");
+      throw new Error("warning: assets have zero weighted value in underlying");
     }
     if (dividend <= 0n) {
-      throw new Error(`account balance in underlying covers debt`);
+      throw new Error(`warning: account balance in underlying covers debt`);
     }
     const k = (WAD * dividend) / divisor;
 
