@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
@@ -20,6 +19,7 @@ import type { JsonRpcProvider, TransactionReceipt } from "ethers";
 import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
 import { nanoid } from "nanoid";
+import { spawn } from "node-pty";
 import Container, { Inject, Service } from "typedi";
 
 import { CONFIG, type ConfigSchema } from "../../config";
@@ -318,7 +318,8 @@ Error: ${error}`);
         const traceFile = path.resolve(this.config.outDir, traceId);
         const out = createWriteStream(traceFile, "utf-8");
         await events.once(out, "open");
-        spawnSync(
+        // use node-pty instead of node:child_process to have colored output
+        const pty = spawn(
           this.config.castBin,
           [
             "call",
@@ -328,11 +329,12 @@ Error: ${error}`);
             e.transaction.to,
             e.transaction.data,
           ],
-          {
-            stdio: ["ignore", out, out],
-            env: { ...process.env, FORCE_COLOR: "2" },
-          },
+          { cols: 1024 },
         );
+        pty.onData(data => out.write(data));
+        await new Promise(resolve => {
+          pty.onExit(() => resolve(undefined));
+        });
         this.log.debug(`saved trace file: ${traceFile}`);
         return traceId;
       } catch (e) {
