@@ -322,7 +322,7 @@ Error: ${error}`);
             "call",
             "--trace",
             "--rpc-url",
-            "",
+            this.config.ethProviderRpcs[0],
             e.transaction.to,
             e.transaction.data,
           ],
