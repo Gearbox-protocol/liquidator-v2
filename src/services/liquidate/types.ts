@@ -173,6 +173,10 @@ export interface OptimisticResultV2 extends OptimisticResult {
    * Error occured during liquidation
    */
   error?: string;
+  /**
+   * In case of error, cast call --trace ansii file name
+   */
+  traceFile?: string;
 
   /**
    * Changes made to enable partial liquidation of account

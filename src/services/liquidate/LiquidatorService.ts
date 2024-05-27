@@ -1,3 +1,7 @@
+import { spawnSync } from "node:child_process";
+import { createWriteStream } from "node:fs";
+import path from "node:path";
+
 import {
   ILiquidator__factory,
   SafeERC20__factory,
@@ -14,6 +18,7 @@ import {
 import type { JsonRpcProvider, TransactionReceipt } from "ethers";
 import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
+import { nanoid } from "nanoid";
 import Container, { Inject, Service } from "typedi";
 
 import { CONFIG, type ConfigSchema } from "../../config";
@@ -252,7 +257,7 @@ Error: ${error}`);
         ).toString(10);
       } catch (e: any) {
         const decoded = await this.#errorDecoder.decode(e);
-        await this.saveTxTrace(e);
+        optimisticResult.traceFile = await this.saveErrorTrace(e);
         // there's some decoder error that returns nonce error instead of revert error
         // in such cases, estimate gas error is reliably parsed
         optimisticResult.error ||= `cant liquidate: ${decoded.type}: ${decoded.reason}`;
@@ -260,6 +265,7 @@ Error: ${error}`);
       }
     } catch (e: any) {
       const decoded = await this.#errorDecoder.decode(e);
+      optimisticResult.traceFile = await this.saveErrorTrace(e);
       optimisticResult.error = `cannot liquidate: ${decoded.type}: ${decoded.reason}`;
       logger.error({ decoded, original: e }, "cannot liquidate");
     }
@@ -297,20 +303,37 @@ Error: ${error}`);
 
   /**
    * Safely tries to save trace of failed transaction to configured output
-   * @param txHash
+   * @param error
    * @returns
    */
-  protected async saveTxTrace(e: any): Promise<void> {
-    if (isError(e, "CALL_EXCEPTION") && e.receipt) {
+  protected async saveErrorTrace(e: any): Promise<string | undefined> {
+    if (!this.config.castBin || !this.config.outDir) {
+      return undefined;
+    }
+
+    if (isError(e, "CALL_EXCEPTION") && e.transaction?.to) {
       try {
-        const txTrace = await (this.provider as JsonRpcProvider).send(
-          "trace_transaction",
-          [e.receipt.hash],
+        const traceId = `${nanoid()}.trace`;
+        const traceFile = path.resolve(this.config.outDir, traceId);
+        const out = createWriteStream(traceFile, "utf-8");
+        spawnSync(
+          "cast",
+          [
+            "call",
+            "--trace",
+            "--rpc-url",
+            "",
+            e.transaction.to,
+            e.transaction.data,
+          ],
+          {
+            stdio: ["ignore", out, out],
+          },
         );
-        await this.outputWriter.write(e.receipt.hash, txTrace);
-        this.log.debug(`saved trace_transaction result for ${e.receipt.hash}`);
+        this.log.debug(`saved trace file: ${traceFile}`);
+        return traceId;
       } catch (e) {
-        this.log.warn(`failed to save tx trace: ${e}`);
+        this.log.warn(`failed to save trace: ${e}`);
       }
     }
   }

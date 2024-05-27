@@ -22,6 +22,10 @@ export const ConfigSchema = z.object({
   debugManagers: stringArrayLike
     .optional()
     .pipe(z.array(z.string().regex(AddressRegExp)).optional()),
+  /**
+   * Path to foundry/cast binary, so that we can create tree-like traces in case of errors
+   */
+  castBin: z.string().optional(),
 
   ethProviderRpcs: stringArrayLike
     .optional()
