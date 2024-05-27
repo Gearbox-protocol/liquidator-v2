@@ -330,6 +330,7 @@ Error: ${error}`);
           ],
           {
             stdio: ["ignore", out, out],
+            env: { ...process.env, FORCE_COLOR: "2" },
           },
         );
         this.log.debug(`saved trace file: ${traceFile}`);
