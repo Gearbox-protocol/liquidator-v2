@@ -226,10 +226,15 @@ export class ScanServiceV3 extends AbstractScanService {
       this.log.debug(
         `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
       );
-      return this.dataCompressor.getLiquidatableCreditAccounts.staticCall(
-        priceUpdates,
-        overrides,
-      );
+      const start = new Date().getTime();
+      const result =
+        await this.dataCompressor.getLiquidatableCreditAccounts.staticCall(
+          priceUpdates,
+          overrides,
+        );
+      const duration = Math.round((new Date().getTime() - start) / 1000);
+      this.log.debug(`getLiquidatableCreditAccounts timing: ${duration}s`);
+      return result;
     }
     const cms = await this.dataCompressor.getCreditManagersV3List(overrides);
     this.log.debug(`found ${cms.length} credit managers`);
