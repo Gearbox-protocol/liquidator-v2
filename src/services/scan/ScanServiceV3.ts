@@ -220,9 +220,10 @@ export class ScanServiceV3 extends AbstractScanService {
     selection: AccountSelection,
   ): Promise<CreditAccountDataStructOutput[]> {
     const { liquidatableOnly, priceUpdates, overrides = {} } = selection;
+    const blockS = overrides.blockTag ? ` in ${overrides.blockTag}` : "";
     if (liquidatableOnly) {
       this.log.debug(
-        `getting liquidatable credit accounts with ${priceUpdates.length} price updates...`,
+        `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
       );
       return this.dataCompressor.getLiquidatableCreditAccounts.staticCall(
         priceUpdates,
