@@ -52,7 +52,6 @@ export class ScanServiceV3 extends AbstractScanService {
   #processing: number | null = null;
 
   protected override async _launch(): Promise<void> {
-    const start = new Date().getTime();
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
@@ -67,8 +66,6 @@ export class ScanServiceV3 extends AbstractScanService {
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.updateAccounts(this.config.optimistic ? undefined : block);
-    const ms = new Date().getTime() - start;
-    this.log.debug(`launched in ${ms} ms`);
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
@@ -78,13 +75,10 @@ export class ScanServiceV3 extends AbstractScanService {
       );
       return;
     }
-    const start = new Date().getTime();
     this.#processing = blockNumber;
     await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
     this.#processing = null;
-    const ms = new Date().getTime() - start;
-    this.log.debug(`processed block ${blockNumber} in ${ms} ms`);
   }
 
   /**
@@ -92,6 +86,7 @@ export class ScanServiceV3 extends AbstractScanService {
    * @param atBlock Fiex block for archive node which is needed to get data
    */
   protected async updateAccounts(atBlock?: number): Promise<void> {
+    const start = new Date().getTime();
     const blockS = atBlock ? ` in ${atBlock}` : "";
     let [accounts, failedTokens] = await this.#potentialLiquidations(
       [],
@@ -112,7 +107,10 @@ export class ScanServiceV3 extends AbstractScanService {
       redstoneUpdates,
       atBlock,
     );
-    this.log.debug(`${accounts.length} accounts to liquidate${blockS}`);
+    const time = Math.round((new Date().getTime() - start) / 1000);
+    this.log.debug(
+      `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,
+    );
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
       this.log.error(
