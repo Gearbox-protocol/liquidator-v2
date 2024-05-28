@@ -49,6 +49,7 @@ export class ScanServiceV3 extends AbstractScanService {
   _liquidatorService: LiquidatorService;
 
   #dataCompressor?: IDataCompressorV3;
+  #processing: number | null = null;
 
   protected override async _launch(): Promise<void> {
     const dcAddr = await this.addressProvider.findService(
@@ -68,8 +69,16 @@ export class ScanServiceV3 extends AbstractScanService {
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
+    if (this.#processing) {
+      this.log.debug(
+        `skipping block ${blockNumber}, still processing block ${this.#processing}`,
+      );
+      return;
+    }
+    this.#processing = blockNumber;
     await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
+    this.#processing = null;
   }
 
   /**
@@ -91,7 +100,7 @@ export class ScanServiceV3 extends AbstractScanService {
     );
     const redstoneTokens = redstoneUpdates.map(({ token }) => token);
     this.log.debug(
-      `got ${redstoneTokens.length} redstone price updates: ${printTokens(redstoneTokens)}`,
+      `got ${redstoneTokens.length} redstone price updates${blockS}: ${printTokens(redstoneTokens)}`,
     );
     [accounts, failedTokens] = await this.#potentialLiquidations(
       redstoneUpdates,
@@ -101,7 +110,7 @@ export class ScanServiceV3 extends AbstractScanService {
     // TODO: what to do when non-redstone price fails?
     if (failedTokens.length > 0) {
       this.log.error(
-        `failed tokens on second iteration: ${printTokens(failedTokens)}`,
+        `failed tokens on second iteration${blockS}: ${printTokens(failedTokens)}`,
       );
     }
 
