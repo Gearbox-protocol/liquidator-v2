@@ -52,6 +52,7 @@ export class ScanServiceV3 extends AbstractScanService {
   #processing: number | null = null;
 
   protected override async _launch(): Promise<void> {
+    const start = new Date().getTime();
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
@@ -66,6 +67,8 @@ export class ScanServiceV3 extends AbstractScanService {
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.updateAccounts(this.config.optimistic ? undefined : block);
+    const ms = new Date().getTime() - start;
+    this.log.debug(`launched in ${ms} ms`);
   }
 
   protected override async onBlock(blockNumber: number): Promise<void> {
