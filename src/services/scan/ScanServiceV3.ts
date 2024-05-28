@@ -75,10 +75,13 @@ export class ScanServiceV3 extends AbstractScanService {
       );
       return;
     }
+    const start = new Date().getTime();
     this.#processing = blockNumber;
     await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
     this.#processing = null;
+    const ms = new Date().getTime() - start;
+    this.log.debug(`processed block ${blockNumber} in ${ms} ms`);
   }
 
   /**
