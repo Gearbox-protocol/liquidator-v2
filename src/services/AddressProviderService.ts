@@ -1,4 +1,5 @@
-import { ADDRESS_PROVIDER, type NetworkType } from "@gearbox-protocol/sdk-gov";
+import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
+import { ADDRESS_PROVIDER } from "@gearbox-protocol/sdk-gov";
 import {
   type IAddressProviderV3,
   IAddressProviderV3__factory,
@@ -67,7 +68,7 @@ export class AddressProviderService {
     service: string,
     minVersion: number,
     maxVersion_?: number,
-  ): Promise<string> {
+  ): Promise<Address> {
     // defaults to same version for single-digit versions
     // or to same major version for 3-digit versions
     const maxVersion =
@@ -96,7 +97,7 @@ export class AddressProviderService {
     }
     this.log.debug(`latest version of ${service}: v${version} at ${address}`);
 
-    return address;
+    return address as Address;
   }
 
   public get startBlock(): number {

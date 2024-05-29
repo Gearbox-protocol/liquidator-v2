@@ -11,7 +11,12 @@ import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
 import { ScanServiceV3 } from "./services/scan";
 import { type ISwapper, SWAPPER } from "./services/swap";
-import { getProvider, PROVIDER } from "./utils";
+import {
+  getProvider,
+  getViemPublicClient,
+  PROVIDER,
+  VIEM_PUBLIC_CLIENT,
+} from "./utils";
 import version from "./version";
 
 @Service()
@@ -84,6 +89,9 @@ export async function launchApp(): Promise<void> {
 
   const provider = getProvider();
   Container.set(PROVIDER, provider);
+
+  const viemPublicClient = getViemPublicClient();
+  Container.set(VIEM_PUBLIC_CLIENT, viemPublicClient);
 
   const wallet = new Wallet(config.privateKey, provider);
   Container.set(Wallet, wallet);

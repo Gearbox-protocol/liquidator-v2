@@ -3,7 +3,7 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import type {
-  CreditAccountDataStructOutput,
+  CreditAccountData as ICreditAccountData,
   TokenBalance,
 } from "@gearbox-protocol/types/v3";
 
@@ -45,7 +45,7 @@ export class CreditAccountData {
   readonly forbiddenTokens: Record<string, true> = {};
   readonly quotedTokens: Record<string, true> = {};
 
-  constructor(payload: CreditAccountDataStructOutput) {
+  constructor(payload: ICreditAccountData) {
     this.isSuccessful = payload.isSuccessful;
     this.priceFeedsNeeded = payload.priceFeedsNeeded;
 

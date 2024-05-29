@@ -5,7 +5,7 @@ import Container, { Token } from "typedi";
 import type { ConfigSchema } from "../config";
 import { CONFIG } from "../config";
 
-export const PROVIDER = new Token("config");
+export const PROVIDER = new Token("provider");
 
 export function getProvider(): Provider {
   const config = Container.get(CONFIG) as ConfigSchema;

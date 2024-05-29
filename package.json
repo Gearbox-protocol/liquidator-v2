@@ -21,8 +21,8 @@
     "@aws-sdk/client-s3": "^3.583.0",
     "@flashbots/ethers-provider-bundle": "^1.0.0",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.12",
-    "@gearbox-protocol/sdk-gov": "^2.3.1",
-    "@gearbox-protocol/types": "^1.7.2",
+    "@gearbox-protocol/sdk-gov": "^2.6.0",
+    "@gearbox-protocol/types": "^1.8.0",
     "@redstone-finance/evm-connector": "^0.5.1",
     "@uniswap/sdk-core": "^5.0.0",
     "@uniswap/v3-sdk": "^3.11.1",
@@ -38,14 +38,15 @@
     "postinstall-postinstall": "^2.1.0",
     "redstone-protocol": "^1.0.5",
     "reflect-metadata": "^0.2.2",
-    "typedi": "^0.10.0"
+    "typedi": "^0.10.0",
+    "viem": "^2.13.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
     "@gearbox-protocol/prettier-config": "2.0.0-next.0",
-    "@types/node": "^20.12.12",
+    "@types/node": "^20.12.13",
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "husky": "^9.0.11",
