@@ -95,24 +95,26 @@ export class ScanServiceV3 extends AbstractScanService {
     this.log.debug(
       `${accounts.length} potential accounts to liquidate${blockS}, ${failedTokens.length} failed tokens: ${printTokens(failedTokens)}`,
     );
-    const redstoneUpdates = await this.redstone.updatesForTokens(
-      failedTokens,
-      true,
-    );
-    const redstoneTokens = redstoneUpdates.map(({ token }) => token);
-    this.log.debug(
-      `got ${redstoneTokens.length} redstone price updates${blockS}: ${printTokens(redstoneTokens)}`,
-    );
-    [accounts, failedTokens] = await this.#potentialLiquidations(
-      redstoneUpdates,
-      atBlock,
-    );
+    if (failedTokens.length) {
+      const redstoneUpdates = await this.redstone.updatesForTokens(
+        failedTokens,
+        true,
+      );
+      const redstoneTokens = redstoneUpdates.map(({ token }) => token);
+      this.log.debug(
+        `got ${redstoneTokens.length} redstone price updates${blockS}: ${printTokens(redstoneTokens)}`,
+      );
+      [accounts, failedTokens] = await this.#potentialLiquidations(
+        redstoneUpdates,
+        atBlock,
+      );
+    }
     const time = Math.round((new Date().getTime() - start) / 1000);
     this.log.debug(
       `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,
     );
     // TODO: what to do when non-redstone price fails?
-    if (failedTokens.length > 0) {
+    if (failedTokens.length) {
       this.log.error(
         `failed tokens on second iteration${blockS}: ${printTokens(failedTokens)}`,
       );
