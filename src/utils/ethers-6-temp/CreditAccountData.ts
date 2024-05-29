@@ -89,7 +89,7 @@ export class CreditAccountData {
         isEnabled: b.isEnabled,
         isQuoted: b.isQuoted,
         quota: b.quota,
-        quotaRate: b.quotaRate * PERCENTAGE_DECIMALS,
+        quotaRate: BigInt(b.quotaRate) * PERCENTAGE_DECIMALS,
         quotaCumulativeIndexLU: b.quotaCumulativeIndexLU,
       };
 
