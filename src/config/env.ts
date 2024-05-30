@@ -9,6 +9,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   ethProviderRpcs: ["JSON_RPC_PROVIDERS", "JSON_RPC_PROVIDER"],
   hfThreshold: "HF_TRESHOLD",
+  restakingWorkaround: "RESTAKING_WORKAROUND",
   oneInchApiKey: "ONE_INCH_API_KEY",
   optimistic: ["OPTIMISTIC", "OPTIMISTIC_LIQUIDATIONS"],
   outDir: "OUT_DIR",

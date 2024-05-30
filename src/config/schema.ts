@@ -42,6 +42,7 @@ export const ConfigSchema = z.object({
   partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
   underlying: z.string().optional(),
+  restakingWorkaround: booleanLike.pipe(z.boolean().optional()),
 
   swapToEth: z.enum(["1inch", "uniswap"]).optional(),
   oneInchApiKey: z.string().optional(),

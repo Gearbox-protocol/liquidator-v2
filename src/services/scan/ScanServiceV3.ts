@@ -1,7 +1,8 @@
-import type { Address } from "@gearbox-protocol/sdk-gov";
+import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
   getTokenSymbolOrTicker,
   PERCENTAGE_FACTOR,
+  tokenDataByNetwork,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import {
@@ -26,7 +27,10 @@ import OracleServiceV3 from "../OracleServiceV3";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import AbstractScanService from "./AbstractScanService";
 
-const iCreditManagerV3 = ICreditManagerV3__factory.createInterface();
+const RESTAKING_CMS: Partial<Record<NetworkType, string>> = {
+  Mainnet: "0x50ba483272484fc5eebe8676dc87d814a11faef6".toLowerCase(), // Mainnet WETH_V3_RESTAKING
+  Arbitrum: "0xcedaa4b4a42c0a771f6c24a3745c3ca3ed73f17a".toLowerCase(), // Arbitrum WETH_V3_TRADE_TIER_1
+};
 
 interface AccountSelection {
   liquidatableOnly: boolean;
@@ -58,8 +62,13 @@ export class ScanServiceV3 extends AbstractScanService {
 
   #dataCompressor?: IDataCompressorContract;
   #processing: number | null = null;
+  #restakingCMAddr?: string;
+  #restakingMinHF?: bigint;
 
   protected override async _launch(): Promise<void> {
+    if (this.config.restakingWorkaround) {
+      await this.#setupRestakingWorkaround();
+    }
     const dcAddr = await this.addressProvider.findService(
       "DATA_COMPRESSOR",
       300,
@@ -116,6 +125,14 @@ export class ScanServiceV3 extends AbstractScanService {
       [accounts, failedTokens] = await this.#potentialLiquidations(
         redstoneUpdates,
         atBlock,
+      );
+    }
+    accounts = accounts.sort((a, b) => a.healthFactor - b.healthFactor);
+    if (this.config.restakingWorkaround) {
+      const before = accounts.length;
+      accounts = this.#filterRestakingAccounts(accounts);
+      this.log.debug(
+        `filtered out ${before - accounts.length} restaking accounts`,
       );
     }
     const time = Math.round((new Date().getTime() - start) / 1000);
@@ -305,6 +322,81 @@ export class ScanServiceV3 extends AbstractScanService {
     );
     this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
     return result;
+  }
+
+  async #setupRestakingWorkaround(): Promise<void> {
+    this.#restakingCMAddr = RESTAKING_CMS[this.addressProvider.network];
+
+    if (this.#restakingCMAddr) {
+      const cm = ICreditManagerV3__factory.connect(
+        this.#restakingCMAddr,
+        this.provider,
+      );
+      const [{ liquidationDiscount }, ezETHLT] = await Promise.all([
+        cm.fees(),
+        cm.liquidationThresholds(
+          tokenDataByNetwork[this.addressProvider.network].ezETH,
+        ),
+      ]);
+
+      // For restaking accounts, say for simplicity account with only ezETH:
+      //
+      //        price(ezETH) * balance(ezETH) * LT(ezETH)
+      // HF = ----------------------------------------------
+      //                     debt(WETH)
+      //
+      // Assuming that price(ezETH) at some point becomes 1 (when you can withdraw ezETH):
+      //
+      //               balance(ezETH) * LT(ezETH)
+      // debt(WETH) = ----------------------------
+      //                        HF
+      //
+      // Amount that goes to gearbox + to account owner (if any) when account is liquidated:
+      // liquidationDiscount == 100% - liquidatorPremium
+      //
+      // discounted = balance(ezETH) * LiquidationDiscount
+      //
+      // To avoid bad debt (discounted >= debt):
+      //
+      //                                           balance(ezETH) * LT(ezETH)
+      // balance(ezETH) * LiquidationDiscount >=  ---------------------------
+      //                                                        HF
+      //          LT(ezETH)
+      // HF >= --------------------
+      //       LiquidationDiscount
+      //
+      // So it's safe to liquidate accounts with such HF, otherwise we get into bad debt zone
+      // For current settings of  Restaking WETH credit manager on mainnet it translates to HF >= 91.50% / 0.97 == 94.33%
+      this.#restakingMinHF =
+        (PERCENTAGE_FACTOR * ezETHLT) / liquidationDiscount;
+      this.log.warn(
+        {
+          restakingCMAddr: this.#restakingCMAddr,
+          liquidationDiscount,
+          ezETHLT,
+          restakingMinHF: this.#restakingMinHF,
+        },
+        "restaking workaround enabled",
+      );
+    }
+  }
+
+  #filterRestakingAccounts(accounts: CreditAccountData[]): CreditAccountData[] {
+    return accounts.filter(ca => {
+      if (
+        this.#restakingCMAddr === ca.creditManager.toLowerCase() &&
+        !!this.#restakingMinHF
+      ) {
+        const ok = ca.healthFactor >= this.#restakingMinHF;
+        if (!ok) {
+          this.log.debug(
+            `filtered out ${ca.addr} due to restaking workaround (HF ${ca.healthFactor} < ${this.#restakingMinHF})`,
+          );
+        }
+        return ok;
+      }
+      return true;
+    });
   }
 
   protected override get liquidatorService(): ILiquidatorService {
