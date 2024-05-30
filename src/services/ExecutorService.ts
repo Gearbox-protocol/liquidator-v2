@@ -140,6 +140,9 @@ export default class ExecutorService {
         this.#checkBalance().catch(() => {});
       });
     }
+    this.logger.debug(
+      `got receipt for tx ${tx.hash}: ${result.status === 1 ? "success" : "revert"}`,
+    );
 
     return result;
   }
