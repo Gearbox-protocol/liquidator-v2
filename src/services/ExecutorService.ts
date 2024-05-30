@@ -2,6 +2,8 @@
 //   FlashbotsBundleProvider,
 //   FlashbotsTransactionResolution,
 // } from "@flashbots/ethers-provider-bundle";
+import { nextTick } from "node:process";
+
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type {
   ContractTransaction,
@@ -9,11 +11,13 @@ import type {
   TransactionReceipt,
   TransactionResponse,
 } from "ethers";
-import { Provider, Wallet } from "ethers";
+import { formatUnits, Provider, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
+import { CONFIG, ConfigSchema } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
+import { INotifier, NOTIFIER } from "./notifier";
 
 const GAS_TIP_MULTIPLIER = 5000n;
 
@@ -41,8 +45,14 @@ export default class ExecutorService {
   @Inject()
   public wallet: Wallet;
 
+  @Inject(CONFIG)
+  config: ConfigSchema;
+
   @Inject(PROVIDER)
   public provider: Provider;
+
+  @Inject(NOTIFIER)
+  notifier: INotifier;
 
   @Logger("ExecutorService")
   public logger: LoggerInterface;
@@ -64,6 +74,7 @@ export default class ExecutorService {
     } else {
       this.logger.debug("running on real rpc");
     }
+    await this.#checkBalance();
   }
 
   /**
@@ -123,7 +134,25 @@ export default class ExecutorService {
     const signedTx = await this.wallet.signTransaction(req);
     const tx = await this.provider.broadcastTransaction(signedTx);
     this.logger.debug(`sent transaction ${tx.hash}`);
-    return this.mine(tx);
+    const result = await this.mine(tx);
+    if (!this.config.optimistic) {
+      nextTick(() => {
+        this.#checkBalance().catch(() => {});
+      });
+    }
+
+    return result;
+  }
+
+  async #checkBalance(): Promise<void> {
+    // this.config.minBalance
+    const balance = await this.provider.getBalance(this.wallet.address);
+    this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
+    if (balance < this.config.minBalance) {
+      this.notifier.alert(
+        `balance of liquidator ${this.wallet.address} is ${formatUnits(balance, "ether")} is below minumum of ${formatUnits(this.config.minBalance, "ether")}`,
+      );
+    }
   }
 
   // private async getFlashbots(): Promise<FlashbotsBundleProvider> {

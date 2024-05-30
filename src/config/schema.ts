@@ -10,6 +10,8 @@ const booleanLike = z
   .any()
   .transform(v => (typeof v === "string" ? v === "true" : Boolean(v)));
 
+const bigintLike = z.any().transform(v => BigInt(v));
+
 export const ConfigSchema = z.object({
   addressProviderOverride: z.string().optional(),
 
@@ -32,6 +34,12 @@ export const ConfigSchema = z.object({
     .pipe(z.array(z.string().url()).min(1)),
 
   privateKey: z.string().min(1),
+  /**
+   * If balance drops before this value - we should send notification
+   */
+  minBalance: bigintLike
+    .optional()
+    .pipe(z.bigint().positive().default(500000000000000000n)),
   /**
    * Filter out all accounts with HF >= threshold during scan stage
    * 65535 is constant for zero-debt account

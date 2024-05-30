@@ -10,6 +10,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   ethProviderRpcs: ["JSON_RPC_PROVIDERS", "JSON_RPC_PROVIDER"],
   hfThreshold: "HF_TRESHOLD",
   restakingWorkaround: "RESTAKING_WORKAROUND",
+  minBalance: "MIN_BALANCE",
   oneInchApiKey: "ONE_INCH_API_KEY",
   optimistic: ["OPTIMISTIC", "OPTIMISTIC_LIQUIDATIONS"],
   outDir: "OUT_DIR",
