@@ -145,7 +145,6 @@ export default class ExecutorService {
   }
 
   async #checkBalance(): Promise<void> {
-    // this.config.minBalance
     const balance = await this.provider.getBalance(this.wallet.address);
     this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
     if (balance < this.config.minBalance) {
