@@ -84,12 +84,12 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
   }
 
   public get plain(): string {
-    return `balance of liquidator ${this.#wallet} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
+    return `balance of liquidator ${this.#wallet.address} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`balance of liquidator ${md.link(this.#wallet, etherscanUrl(this.#wallet, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
+      md`balance of liquidator ${md.link(this.#wallet.address, etherscanUrl(this.#wallet, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
     );
   }
 }
