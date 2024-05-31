@@ -8,7 +8,9 @@ export const VIEM_PUBLIC_CLIENT = new Token("viemPublicClient");
 
 export function getViemPublicClient(): PublicClient {
   const config = Container.get(CONFIG) as ConfigSchema;
-  const rpcs = config.ethProviderRpcs.map(url => http(url));
+  const rpcs = config.ethProviderRpcs.map(url =>
+    http(url, { timeout: 120_000 }),
+  );
 
   return createPublicClient({
     cacheTime: 0,
