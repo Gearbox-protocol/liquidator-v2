@@ -53,7 +53,7 @@ class BaseMessage {
     if (!this.ca) {
       throw new Error(`credit account not specified`);
     }
-    return md.link(this.ca.creditManager, this.cmPlain);
+    return md.link(this.ca.cmName, this.cmPlain);
   }
 
   protected get receiptPlain(): string {
