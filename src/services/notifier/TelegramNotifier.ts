@@ -1,6 +1,6 @@
 import type { AxiosInstance } from "axios";
 import axios, { isAxiosError } from "axios";
-import axiosRetry from "axios-retry";
+import axiosRetry, { isNetworkError, isRetryableError } from "axios-retry";
 import { Inject, Service } from "typedi";
 
 import { CONFIG, Config } from "../../config/index.js";
@@ -41,7 +41,7 @@ export default class TelegramNotifier implements INotifier {
     channelId: string,
     severity = "notification",
   ): Promise<void> {
-    console.log(`sending telegram ${severity} to channel ${channelId}...`);
+    this.log.debug(`sending telegram ${severity} to channel ${channelId}...`);
     try {
       await this.client.post("", {
         ...this.#messageOptions,
@@ -72,11 +72,7 @@ export default class TelegramNotifier implements INotifier {
       axiosRetry(this.#client, {
         retries: 5,
         retryDelay: cnt => 5000 + cnt * 500,
-        validateResponse: response => {
-          return (
-            response.status >= 200 && response.status < 300 && response.data.ok
-          );
-        },
+        retryCondition: e => isNetworkError(e) || isRetryableError(e),
       });
     }
     return this.#client;
