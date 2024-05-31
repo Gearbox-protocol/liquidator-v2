@@ -200,7 +200,7 @@ export class LiquidationErrorMessage
   ) {
     super({ ca });
     this.#strategyAdverb = strategyAdverb;
-    this.#error = error;
+    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
     this.#callsHuman = callsHuman;
   }
 
@@ -214,7 +214,7 @@ ${callsPlain(this.#callsHuman)}`;
   public get markdown(): string {
     return md.build(
       md`❌ failed to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
-Error: ${md.codeBlock(this.#error)}
+Error: ${md.inlineCode(this.#error)}
 Path used:
 ${callsMd(this.#callsHuman)}`,
     );
