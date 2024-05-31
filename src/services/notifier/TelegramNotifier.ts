@@ -15,7 +15,10 @@ export default class TelegramNotifier implements INotifier {
   @Inject(CONFIG)
   config: Config;
 
-  #messageOptions: Record<string, string> = { parse_mode: "MarkdownV2" };
+  #messageOptions: Record<string, any> = {
+    parse_mode: "MarkdownV2",
+    link_preview_options: { is_disabled: true },
+  };
   #client?: AxiosInstance;
 
   public alert(message: INotifierMessage): void {
@@ -67,12 +70,9 @@ export default class TelegramNotifier implements INotifier {
         },
       });
       axiosRetry(this.#client, {
-        retryDelay: () => 5000,
+        retries: 5,
+        retryDelay: cnt => 5000 + cnt * 500,
         validateResponse: response => {
-          this.log.debug(
-            { state: response.status, data: response.data },
-            "telegram bot error",
-          );
           return (
             response.status >= 200 && response.status < 300 && response.data.ok
           );
