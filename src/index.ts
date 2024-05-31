@@ -2,7 +2,7 @@
 
 import "reflect-metadata";
 
-import { launchApp } from "./app";
+import { launchApp } from "./app.js";
 
 Error.stackTraceLimit = Infinity;
 

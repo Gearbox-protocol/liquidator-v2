@@ -4,12 +4,12 @@ import { md } from "@vlad-yakovlev/telegram-md";
 import type { TransactionReceipt } from "ethers";
 import { Container } from "typedi";
 
-import type { Config } from "../../config";
-import { CONFIG } from "../../config";
-import { etherscanUrl } from "../../utils";
-import type { CreditAccountData } from "../../utils/ethers-6-temp";
-import version from "../../version";
-import type { INotifierMessage } from "./types";
+import type { Config } from "../../config/index.js";
+import { CONFIG } from "../../config/index.js";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import { etherscanUrl } from "../../utils/index.js";
+import version from "../../version.js";
+import type { INotifierMessage } from "./types.js";
 
 export class LowBalanceMessage implements INotifierMessage {
   #wallet: string;

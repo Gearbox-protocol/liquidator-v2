@@ -1,7 +1,7 @@
 import axios from "axios";
 
-import BaseWriter from "./BaseWriter";
-import type { IOptimisticOutputWriter } from "./types";
+import BaseWriter from "./BaseWriter.js";
+import type { IOptimisticOutputWriter } from "./types.js";
 
 export default class RestWriter
   extends BaseWriter

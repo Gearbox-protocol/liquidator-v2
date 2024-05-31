@@ -1,13 +1,13 @@
-import Container, { Service } from "typedi";
+import { Container, Service } from "typedi";
 
-import type { Config } from "../../config";
-import { CONFIG } from "../../config";
-import ConsoleWriter from "./consoleWriter";
-import { OUTPUT_WRITER } from "./constants";
-import FileWriter from "./fileWriter";
-import RestWriter from "./restWriter";
-import S3Writer from "./s3Writer";
-import type { IOptimisticOutputWriter } from "./types";
+import type { Config } from "../../config/index.js";
+import { CONFIG } from "../../config/index.js";
+import ConsoleWriter from "./consoleWriter.js";
+import { OUTPUT_WRITER } from "./constants.js";
+import FileWriter from "./fileWriter.js";
+import RestWriter from "./restWriter.js";
+import S3Writer from "./s3Writer.js";
+import type { IOptimisticOutputWriter } from "./types.js";
 
 function createOutputWriter(): IOptimisticOutputWriter {
   const config = Container.get(CONFIG) as Config;

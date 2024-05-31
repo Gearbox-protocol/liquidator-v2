@@ -6,8 +6,8 @@ import type {
 import { ICreditFacadeV3Multicall__factory } from "@gearbox-protocol/types/v3";
 import type { BigNumberish } from "ethers";
 
-import { AbstractParser } from "./abstractParser";
-import type { IParser } from "./iParser";
+import { AbstractParser } from "./abstractParser.js";
+import type { IParser } from "./iParser.js";
 
 export class CreditFacadeParser extends AbstractParser implements IParser {
   version: number;

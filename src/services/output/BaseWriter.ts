@@ -1,4 +1,4 @@
-import type { Config } from "../../config";
+import type { Config } from "../../config/index.js";
 
 export default class BaseWriter {
   protected readonly config: Config;

@@ -28,18 +28,18 @@ import {
 import type { JsonRpcProvider, TransactionReceipt, Wallet } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, type LoggerInterface } from "../../log";
+import { Logger, type LoggerInterface } from "../../log/index.js";
 import type {
   CreditAccountData,
   CreditManagerData,
-} from "../../utils/ethers-6-temp";
-import { impersonate, stopImpersonate } from "../../utils/impersonate";
-import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
+} from "../../utils/ethers-6-temp/index.js";
+import { impersonate, stopImpersonate } from "../../utils/index.js";
+import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
   ILiquidationStrategy,
   MakeLiquidatableResult,
   PartialLiquidationPreview,
-} from "./types";
+} from "./types.js";
 
 interface TokenBalance extends ExcludeArrayProps<TokenPriceInfoStructOutput> {
   /**
@@ -361,14 +361,14 @@ export default class LiquidationStrategyV3Partial
     if (!partialLiquidatorAddress) {
       this.logger.debug("deploying partial liquidator");
 
-      const aaveFlTakerFactory = new AaveFLTaker__factory(executor);
+      const aaveFlTakerFactory = new AaveFLTaker__factory(executor as any);
       const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
       await aaveFlTaker.waitForDeployment();
       this.logger.debug(
         `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
       );
 
-      const liquidatorFactory = new Liquidator__factory(executor);
+      const liquidatorFactory = new Liquidator__factory(executor as any);
       const liquidator = await liquidatorFactory.deploy(
         router,
         bot,
@@ -394,7 +394,10 @@ export default class LiquidationStrategyV3Partial
     this.logger.info(
       `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
     );
-    return ILiquidator__factory.connect(partialLiquidatorAddress, executor);
+    return ILiquidator__factory.connect(
+      partialLiquidatorAddress,
+      executor as any,
+    );
   }
 
   async #deployPriceHelper(
@@ -405,7 +408,7 @@ export default class LiquidationStrategyV3Partial
     }
     this.logger.debug("deploying price helper");
 
-    const factory = new PriceHelper__factory(executor);
+    const factory = new PriceHelper__factory(executor as any);
     const priceHelper = await factory.deploy();
     await priceHelper.waitForDeployment();
     this.logger.debug(
@@ -413,7 +416,7 @@ export default class LiquidationStrategyV3Partial
     );
     const priceHelperAddress = priceHelper.target as string;
     this.logger.info(`price helper contract addesss: ${priceHelperAddress}`);
-    return IPriceHelper__factory.connect(priceHelperAddress, executor);
+    return IPriceHelper__factory.connect(priceHelperAddress, executor as any);
   }
 
   async #configurePartialLiquidator(

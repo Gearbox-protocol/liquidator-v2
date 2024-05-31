@@ -1,4 +1,4 @@
-import type { ConfigSchema } from "./schema";
+import type { ConfigSchema } from "./schema.js";
 
 const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   addressProviderOverride: "ADDRESS_PROVIDER",

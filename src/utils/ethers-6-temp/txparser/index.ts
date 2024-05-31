@@ -1,2 +1,2 @@
-export * from "./txParser";
-export * from "./TxParserHelper";
+export * from "./txParser.js";
+export * from "./TxParserHelper.js";

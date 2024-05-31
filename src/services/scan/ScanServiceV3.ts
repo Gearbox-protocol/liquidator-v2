@@ -18,14 +18,14 @@ import { Inject, Service } from "typedi";
 import type { GetContractReturnType } from "viem";
 import { getContract, PublicClient } from "viem";
 
-import { Logger, type LoggerInterface } from "../../log";
-import { VIEM_PUBLIC_CLIENT } from "../../utils";
-import { CreditAccountData } from "../../utils/ethers-6-temp";
-import type { ILiquidatorService } from "../liquidate";
-import { LiquidatorService } from "../liquidate";
-import OracleServiceV3 from "../OracleServiceV3";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3";
-import AbstractScanService from "./AbstractScanService";
+import { Logger, type LoggerInterface } from "../../log/index.js";
+import { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import { VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
+import type { ILiquidatorService } from "../liquidate/index.js";
+import { LiquidatorService } from "../liquidate/index.js";
+import OracleServiceV3 from "../OracleServiceV3.js";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
+import AbstractScanService from "./AbstractScanService.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, string>> = {
   Mainnet: "0x50ba483272484fc5eebe8676dc87d814a11faef6".toLowerCase(), // Mainnet WETH_V3_RESTAKING

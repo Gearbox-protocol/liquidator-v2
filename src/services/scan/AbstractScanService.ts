@@ -1,13 +1,13 @@
 import { Provider } from "ethers";
 import { Inject } from "typedi";
 
-import { CONFIG, type Config } from "../../config";
-import type { LoggerInterface } from "../../log";
-import { PROVIDER } from "../../utils";
-import type { CreditAccountData } from "../../utils/ethers-6-temp";
-import { AddressProviderService } from "../AddressProviderService";
-import type { ILiquidatorService } from "../liquidate";
-import { OptimisticResults } from "../liquidate/OptimisiticResults";
+import { CONFIG, type Config } from "../../config/index.js";
+import type { LoggerInterface } from "../../log/index.js";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import { PROVIDER } from "../../utils/index.js";
+import { AddressProviderService } from "../AddressProviderService.js";
+import type { ILiquidatorService } from "../liquidate/index.js";
+import { OptimisticResults } from "../liquidate/index.js";
 
 export default abstract class AbstractScanService {
   log: LoggerInterface;

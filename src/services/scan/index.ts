@@ -1,1 +1,1 @@
-export * from "./ScanServiceV3";
+export * from "./ScanServiceV3.js";

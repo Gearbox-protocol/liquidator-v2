@@ -1,7 +1,7 @@
 import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
 import type { TransactionReceipt } from "ethers";
 
-import type { CreditAccountData } from "../../utils/ethers-6-temp";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
   ts: number;

@@ -4,11 +4,11 @@ import { ICreditFacadeV3__factory } from "@gearbox-protocol/types/v3";
 import type { TransactionReceipt } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, type LoggerInterface } from "../../log";
-import type { CreditAccountData } from "../../utils/ethers-6-temp";
-import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder";
-import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types";
+import { Logger, type LoggerInterface } from "../../log/index.js";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
+import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
+import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
 
 @Service()
 export default class LiquidationStrategyV3Full

@@ -8,7 +8,7 @@ import {
 import { IERC20__factory } from "@gearbox-protocol/types/v3";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
-import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json";
+import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json" assert { type: "json" };
 import type { SwapOptions } from "@uniswap/v3-sdk";
 import {
   computePoolAddress,
@@ -22,9 +22,9 @@ import {
 import { AbiCoder, type BigNumberish, Contract, type Wallet } from "ethers";
 import { Service } from "typedi";
 
-import { Logger, type LoggerInterface } from "../../log";
-import BaseSwapper from "./base";
-import type { ISwapper } from "./types";
+import { Logger, type LoggerInterface } from "../../log/index.js";
+import BaseSwapper from "./base.js";
+import type { ISwapper } from "./types.js";
 
 const QUOTER_CONTRACT_ADDRESS = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
 const POOL_FACTORY_CONTRACT_ADDRESS =

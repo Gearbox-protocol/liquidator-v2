@@ -2,10 +2,10 @@ import { createServer } from "node:http";
 
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../config";
-import { Logger, type LoggerInterface } from "../log";
-import version from "../version";
-import { ScanServiceV3 } from "./scan";
+import { CONFIG, type Config } from "../config/index.js";
+import { Logger, type LoggerInterface } from "../log/index.js";
+import version from "../version.js";
+import { ScanServiceV3 } from "./scan/index.js";
 
 @Service()
 export default class HealthCheckerService {

@@ -1,8 +1,8 @@
-import Container, { Token } from "typedi";
+import { Container, Token } from "typedi";
 import { createPublicClient, fallback, http, type PublicClient } from "viem";
 
-import type { Config } from "../config";
-import { CONFIG } from "../config";
+import type { Config } from "../config/index.js";
+import { CONFIG } from "../config/index.js";
 
 export const VIEM_PUBLIC_CLIENT = new Token("viemPublicClient");
 

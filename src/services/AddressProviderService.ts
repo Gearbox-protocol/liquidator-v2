@@ -7,10 +7,10 @@ import {
 import { encodeBytes32String, Provider } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../config";
-import { Logger, type LoggerInterface } from "../log";
-import { PROVIDER } from "../utils";
-import { TxParser } from "../utils/ethers-6-temp/txparser";
+import { CONFIG, type Config } from "../config/index.js";
+import { Logger, type LoggerInterface } from "../log/index.js";
+import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
+import { PROVIDER } from "../utils/index.js";
 
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
   Mainnet: 18433056,

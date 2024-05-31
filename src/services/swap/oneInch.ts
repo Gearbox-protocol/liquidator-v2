@@ -12,11 +12,11 @@ import axiosRetry from "axios-retry";
 import type { Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../../config";
-import { Logger, type LoggerInterface } from "../../log";
-import ExecutorService from "../ExecutorService";
-import BaseSwapper from "./base";
-import type { ISwapper } from "./types";
+import { CONFIG, type Config } from "../../config/index.js";
+import { Logger, type LoggerInterface } from "../../log/index.js";
+import ExecutorService from "../ExecutorService.js";
+import BaseSwapper from "./base.js";
+import type { ISwapper } from "./types.js";
 
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 

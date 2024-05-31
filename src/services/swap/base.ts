@@ -1,7 +1,7 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 
-import type { LoggerInterface } from "../../log";
+import type { LoggerInterface } from "../../log/index.js";
 
 export default class BaseSwapper {
   public log: LoggerInterface;

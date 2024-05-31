@@ -4,10 +4,11 @@
   "version": "1.0.0",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "clean": "rm -rf build",
     "build": "tsc --p tsconfig.build.json",
-    "start": "ts-node -r dotenv/config src/index.ts",
+    "start": "node --loader ts-node/esm --env-file .env src/index.ts",
     "prepare": "husky",
     "prettier": "prettier --write .",
     "prettier:ci": "npx prettier --check .",
@@ -18,21 +19,21 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.583.0",
+    "@aws-sdk/client-s3": "^3.587.0",
     "@flashbots/ethers-provider-bundle": "^1.0.0",
-    "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.12",
-    "@gearbox-protocol/sdk-gov": "^2.6.0",
+    "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.13",
+    "@gearbox-protocol/sdk-gov": "^2.6.1",
     "@gearbox-protocol/types": "^1.8.0",
     "@redstone-finance/evm-connector": "^0.5.1",
     "@uniswap/sdk-core": "^5.0.0",
-    "@uniswap/v3-sdk": "^3.11.1",
+    "@uniswap/v3-sdk": "^3.12.0",
     "@vlad-yakovlev/telegram-md": "^2.0.0",
     "axios": "^1.7.2",
     "axios-retry": "^4.3.0",
     "date-fns": "^3.6.0",
     "ethers": "^6.12.1",
     "ethers-decode-error": "^2.1.3",
-    "nanoid": "^3.3.7",
+    "nanoid": "^5.0.7",
     "node-pty": "^1.0.0",
     "patch-package": "^8.0.0",
     "pino": "^9.1.0",
@@ -40,7 +41,7 @@
     "redstone-protocol": "^1.0.5",
     "reflect-metadata": "^0.2.2",
     "typedi": "^0.10.0",
-    "viem": "^2.13.1"
+    "viem": "^2.13.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.3.0",

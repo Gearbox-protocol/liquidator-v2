@@ -11,8 +11,8 @@ import {
 } from "@gearbox-protocol/types/v3";
 import type { BigNumberish } from "ethers";
 
-import { AbstractParser } from "./abstractParser";
-import type { IParser } from "./iParser";
+import { AbstractParser } from "./abstractParser.js";
+import type { IParser } from "./iParser.js";
 
 export class CurveAdapterParser extends AbstractParser implements IParser {
   protected lpToken: SupportedToken;

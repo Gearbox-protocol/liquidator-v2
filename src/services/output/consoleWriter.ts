@@ -1,5 +1,5 @@
-import { json_stringify } from "../../utils/bigint-serializer";
-import type { IOptimisticOutputWriter } from "./types";
+import { json_stringify } from "../../utils/index.js";
+import type { IOptimisticOutputWriter } from "./types.js";
 
 export default class ConsoleWriter implements IOptimisticOutputWriter {
   public async write(prefix: string | number, result: unknown): Promise<void> {

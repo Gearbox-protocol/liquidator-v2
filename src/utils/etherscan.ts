@@ -1,7 +1,7 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import type { TransactionReceipt } from "ethers";
 
-import type { CreditAccountData } from "./ethers-6-temp";
+import type { CreditAccountData } from "./ethers-6-temp/index.js";
 
 export type EtherscanURLParam =
   | { block: number }

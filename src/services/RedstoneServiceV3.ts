@@ -13,15 +13,15 @@ import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../config";
-import { Logger, type LoggerInterface } from "../log";
-import { formatTs, PROVIDER } from "../utils";
-import type { CreditAccountData } from "../utils/ethers-6-temp";
-import { AddressProviderService } from "./AddressProviderService";
-import ExecutorService from "./ExecutorService";
-import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/types";
-import type { RedstoneFeed } from "./OracleServiceV3";
-import OracleServiceV3 from "./OracleServiceV3";
+import { CONFIG, type Config } from "../config/index.js";
+import { Logger, type LoggerInterface } from "../log/index.js";
+import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
+import { formatTs, PROVIDER } from "../utils/index.js";
+import { AddressProviderService } from "./AddressProviderService.js";
+import ExecutorService from "./ExecutorService.js";
+import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
+import type { RedstoneFeed } from "./OracleServiceV3.js";
+import OracleServiceV3 from "./OracleServiceV3.js";
 
 const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 

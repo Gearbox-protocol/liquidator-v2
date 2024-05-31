@@ -1,6 +1,6 @@
 import { Service } from "typedi";
 
-import type { OptimisticResultV2 } from "./types";
+import type { OptimisticResultV2 } from "./types.js";
 
 @Service()
 export class OptimisticResults {

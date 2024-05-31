@@ -14,10 +14,10 @@ import type {
 import { formatUnits, Provider, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, Config } from "../config";
-import { Logger, type LoggerInterface } from "../log";
-import { PROVIDER } from "../utils";
-import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier";
+import { CONFIG, Config } from "../config/index.js";
+import { Logger, type LoggerInterface } from "../log/index.js";
+import { PROVIDER } from "../utils/index.js";
+import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
 

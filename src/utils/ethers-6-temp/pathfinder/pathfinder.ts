@@ -8,10 +8,10 @@ import type {
 import { IRouterV3__factory } from "@gearbox-protocol/types/v3";
 import type { Provider, Signer } from "ethers";
 
-import type { CreditAccountData } from "../CreditAccountData";
-import type { CreditManagerData } from "../CreditManagerData";
-import type { PathFinderCloseResult, PathFinderResult } from "./core";
-import { PathOptionFactory } from "./pathOptions";
+import type { CreditAccountData } from "../CreditAccountData.js";
+import type { CreditManagerData } from "../CreditManagerData.js";
+import type { PathFinderCloseResult, PathFinderResult } from "./core.js";
+import { PathOptionFactory } from "./pathOptions.js";
 
 const MAX_GAS_PER_ROUTE = 200e6;
 const GAS_PER_BLOCK = 400e6;

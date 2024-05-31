@@ -1,23 +1,26 @@
 import { Wallet } from "ethers";
 import { Container, Inject, Service } from "typedi";
 
-import { CONFIG, Config, loadConfig } from "./config";
-import { Logger, type LoggerInterface } from "./log";
-import { AddressProviderService } from "./services/AddressProviderService";
-import ExecutorService from "./services/ExecutorService";
-import HealthCheckerService from "./services/HealthCheckerService";
-import { OptimisticResults } from "./services/liquidate";
-import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "./services/output";
-import { RedstoneServiceV3 } from "./services/RedstoneServiceV3";
-import { ScanServiceV3 } from "./services/scan";
-import { type ISwapper, SWAPPER } from "./services/swap";
+import { CONFIG, Config, loadConfig } from "./config/index.js";
+import { Logger, type LoggerInterface } from "./log/index.js";
+import { AddressProviderService } from "./services/AddressProviderService.js";
+import ExecutorService from "./services/ExecutorService.js";
+import HealthCheckerService from "./services/HealthCheckerService.js";
+import { OptimisticResults } from "./services/liquidate/index.js";
+import {
+  type IOptimisticOutputWriter,
+  OUTPUT_WRITER,
+} from "./services/output/index.js";
+import { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
+import { ScanServiceV3 } from "./services/scan/index.js";
+import { type ISwapper, SWAPPER } from "./services/swap/index.js";
 import {
   getProvider,
   getViemPublicClient,
   PROVIDER,
   VIEM_PUBLIC_CLIENT,
-} from "./utils";
-import version from "./version";
+} from "./utils/index.js";
+import version from "./version.js";
 
 @Service()
 class App {

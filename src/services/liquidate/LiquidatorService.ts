@@ -20,14 +20,14 @@ import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
-import Container, { Inject, Service } from "typedi";
+import { Container, Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../../config";
-import { Logger, LoggerInterface } from "../../log";
-import { filterDust, formatTs, PROVIDER } from "../../utils";
-import type { CreditAccountData } from "../../utils/ethers-6-temp";
-import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
-import { AddressProviderService } from "../AddressProviderService";
+import { CONFIG, type Config } from "../../config/index.js";
+import { Logger, LoggerInterface } from "../../log/index.js";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
+import { filterDust, formatTs, PROVIDER } from "../../utils/index.js";
+import { AddressProviderService } from "../AddressProviderService.js";
 import {
   INotifier,
   LiquidationErrorMessage,
@@ -35,19 +35,22 @@ import {
   LiquidationSuccessMessage,
   NOTIFIER,
   StartedMessage,
-} from "../notifier";
-import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3";
-import { type ISwapper, SWAPPER } from "../swap";
-import LiquidationStrategyV3Full from "./LiquidationStrategyV3Full";
-import LiquidationStrategyV3Partial from "./LiquidationStrategyV3Partial";
-import { OptimisticResults } from "./OptimisiticResults";
+} from "../notifier/index.js";
+import {
+  type IOptimisticOutputWriter,
+  OUTPUT_WRITER,
+} from "../output/index.js";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
+import { type ISwapper, SWAPPER } from "../swap/index.js";
+import LiquidationStrategyV3Full from "./LiquidationStrategyV3Full.js";
+import LiquidationStrategyV3Partial from "./LiquidationStrategyV3Partial.js";
+import { OptimisticResults } from "./OptimisiticResults.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
   OptimisticResultV2,
   StrategyPreview,
-} from "./types";
+} from "./types.js";
 
 export interface Balance {
   underlying: bigint;
@@ -94,14 +97,15 @@ export class LiquidatorService implements ILiquidatorService {
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
+    // ethers-decode-error is wrongly detected as CJS module
     this.#errorDecoder = ErrorDecoder.create([
-      IPriceOracleV3__factory.createInterface(),
-      ICreditFacadeV3__factory.createInterface(),
-      ICreditManagerV3__factory.createInterface(),
-      ILiquidator__factory.createInterface(),
-      IRouterV3__factory.createInterface(),
-      IExceptions__factory.createInterface(),
-      SafeERC20__factory.createInterface(),
+      Array.from(IPriceOracleV3__factory.createInterface().fragments) as any,
+      Array.from(ICreditFacadeV3__factory.createInterface().fragments) as any,
+      Array.from(ICreditManagerV3__factory.createInterface().fragments) as any,
+      Array.from(ILiquidator__factory.createInterface().fragments) as any,
+      Array.from(IRouterV3__factory.createInterface().fragments) as any,
+      Array.from(IExceptions__factory.createInterface().fragments) as any,
+      Array.from(SafeERC20__factory.createInterface().fragments) as any,
     ]);
     const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
       this.config;

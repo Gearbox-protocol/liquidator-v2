@@ -1,9 +1,6 @@
 import type { MCall, NetworkType } from "@gearbox-protocol/sdk-gov";
 import { ADDRESS_0X0, safeMulticall } from "@gearbox-protocol/sdk-gov";
-import type {
-  IPriceOracleV3,
-  IRedstonePriceFeed,
-} from "@gearbox-protocol/types/v3";
+import type { IPriceOracleV3 } from "@gearbox-protocol/types/v3";
 import {
   IPriceOracleV3__factory,
   IRedstonePriceFeed__factory,
@@ -12,12 +9,12 @@ import type { LogDescription } from "ethers";
 import { Provider, toUtf8String } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type Config } from "../config";
-import { Logger, type LoggerInterface } from "../log";
-import { PROVIDER } from "../utils";
-import type { CreditAccountData } from "../utils/ethers-6-temp";
-import { TxParser } from "../utils/ethers-6-temp/txparser";
-import { AddressProviderService } from "./AddressProviderService";
+import { CONFIG, type Config } from "../config/index.js";
+import { Logger, type LoggerInterface } from "../log/index.js";
+import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
+import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
+import { PROVIDER } from "../utils/index.js";
+import { AddressProviderService } from "./AddressProviderService.js";
 
 const IRedstonePriceFeedInterface =
   IRedstonePriceFeed__factory.createInterface();
@@ -201,7 +198,7 @@ export default class OracleServiceV3 {
   }
 
   async #loadRedstoneIds(): Promise<void> {
-    const calls: MCall<IRedstonePriceFeed["interface"]>[] = [];
+    const calls: MCall<any>[] = [];
     for (const f of Object.values(this.#feeds)) {
       if (f.main.dataFeedId === undefined) {
         calls.push({
@@ -219,7 +216,7 @@ export default class OracleServiceV3 {
       }
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await safeMulticall(calls, this.provider);
+    const resp = await safeMulticall(calls, this.provider as any);
     for (let i = 0; i < resp.length; i++) {
       let dataFeedId = resp[i].value || null;
       let feedAddress = calls[i].address;

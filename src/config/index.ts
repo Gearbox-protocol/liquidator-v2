@@ -1,10 +1,10 @@
 import { Token } from "typedi";
 
-import { getProvider } from "../utils";
-import { detectNetwork } from "../utils/ethers-6-temp";
-import { envConfig } from "./env";
-import type { Config } from "./schema";
-import { ConfigSchema } from "./schema";
+import { detectNetwork } from "../utils/ethers-6-temp/index.js";
+import { getProvider } from "../utils/index.js";
+import { envConfig } from "./env.js";
+import type { Config } from "./schema.js";
+import { ConfigSchema } from "./schema.js";
 
 export const CONFIG = new Token("config");
 
@@ -24,4 +24,4 @@ export async function loadConfig(): Promise<Config> {
   };
 }
 
-export type { Config } from "./schema";
+export type { Config } from "./schema.js";

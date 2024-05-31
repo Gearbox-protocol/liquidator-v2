@@ -4,18 +4,18 @@ import {
 } from "@gearbox-protocol/types/v3";
 import { Inject } from "typedi";
 
-import { CONFIG, type Config } from "../../config";
-import type { LoggerInterface } from "../../log";
+import { CONFIG, type Config } from "../../config/index.js";
+import type { LoggerInterface } from "../../log/index.js";
 import {
   CreditAccountData,
   CreditManagerData,
-} from "../../utils/ethers-6-temp";
-import { PathFinder } from "../../utils/ethers-6-temp/pathfinder";
-import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
-import { AddressProviderService } from "../AddressProviderService";
-import ExecutorService from "../ExecutorService";
-import OracleServiceV3 from "../OracleServiceV3";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3";
+} from "../../utils/ethers-6-temp/index.js";
+import { PathFinder } from "../../utils/ethers-6-temp/pathfinder/index.js";
+import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
+import { AddressProviderService } from "../AddressProviderService.js";
+import ExecutorService from "../ExecutorService.js";
+import OracleServiceV3 from "../OracleServiceV3.js";
+import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 
 export default abstract class AbstractLiquidationStrategyV3 {
   logger: LoggerInterface;

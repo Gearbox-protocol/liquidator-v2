@@ -2,8 +2,8 @@ import type { SupportedContract } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
 import { ICamelotV3Adapter__factory } from "@gearbox-protocol/types/v3";
 
-import { AbstractParser } from "./abstractParser";
-import type { IParser } from "./iParser";
+import { AbstractParser } from "./abstractParser.js";
+import type { IParser } from "./iParser.js";
 
 export class CamelotV3AdapterParser extends AbstractParser implements IParser {
   constructor(contract: SupportedContract, isContract: boolean) {

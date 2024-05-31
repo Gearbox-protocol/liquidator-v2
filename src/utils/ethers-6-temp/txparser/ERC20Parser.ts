@@ -2,8 +2,8 @@ import type { SupportedToken } from "@gearbox-protocol/sdk-gov";
 import { toBigInt } from "@gearbox-protocol/sdk-gov";
 import { IERC20__factory } from "@gearbox-protocol/types/v3";
 
-import { AbstractParser } from "./abstractParser";
-import type { IParser } from "./iParser";
+import { AbstractParser } from "./abstractParser.js";
+import type { IParser } from "./iParser.js";
 
 export class ERC20Parser extends AbstractParser implements IParser {
   constructor(symbol: SupportedToken) {

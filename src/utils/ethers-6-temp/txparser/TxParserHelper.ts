@@ -1,8 +1,8 @@
 import { ADDRESS_0X0, tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import type { MultiCall } from "@gearbox-protocol/types/v3";
 
-import type { CreditManagerData } from "../CreditManagerData";
-import { TxParser } from "./txParser";
+import type { CreditManagerData } from "../CreditManagerData.js";
+import { TxParser } from "./txParser.js";
 
 export class TxParserHelper {
   /**

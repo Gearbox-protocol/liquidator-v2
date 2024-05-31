@@ -1,3 +1,3 @@
-export * from "./CreditAccountData";
-export * from "./CreditManagerData";
-export * from "./detect-network";
+export * from "./CreditAccountData.js";
+export * from "./CreditManagerData.js";
+export * from "./detect-network.js";

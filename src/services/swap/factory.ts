@@ -1,14 +1,14 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import type { BigNumberish, Wallet } from "ethers";
-import Container, { Service } from "typedi";
+import { Container, Service } from "typedi";
 
-import type { Config } from "../../config";
-import { CONFIG } from "../../config";
-import { SWAPPER } from "./constants";
-import NoopSwapper from "./noop";
-import OneInch from "./oneInch";
-import type { ISwapper } from "./types";
-import Uniswap from "./uniswap";
+import type { Config } from "../../config/index.js";
+import { CONFIG } from "../../config/index.js";
+import { SWAPPER } from "./constants.js";
+import NoopSwapper from "./noop.js";
+import OneInch from "./oneInch.js";
+import type { ISwapper } from "./types.js";
+import Uniswap from "./uniswap.js";
 
 function createSwapper(): ISwapper {
   const config = Container.get(CONFIG) as Config;

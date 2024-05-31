@@ -1,3 +1,3 @@
-export * from "./core";
-export * from "./pathfinder";
-export * from "./pathOptions";
+export * from "./core.js";
+export * from "./pathfinder.js";
+export * from "./pathOptions.js";

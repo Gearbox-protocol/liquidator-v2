@@ -3,9 +3,9 @@ import axios, { isAxiosError } from "axios";
 import axiosRetry from "axios-retry";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, Config } from "../../config";
-import { Logger, LoggerInterface } from "../../log";
-import type { INotifier, INotifierMessage } from "./types";
+import { CONFIG, Config } from "../../config/index.js";
+import { Logger, LoggerInterface } from "../../log/index.js";
+import type { INotifier, INotifierMessage } from "./types.js";
 
 @Service()
 export default class TelegramNotifier implements INotifier {

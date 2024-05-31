@@ -1,9 +1,9 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { json_stringify } from "../../utils/bigint-serializer";
-import BaseWriter from "./BaseWriter";
-import type { IOptimisticOutputWriter } from "./types";
+import { json_stringify } from "../../utils/index.js";
+import BaseWriter from "./BaseWriter.js";
+import type { IOptimisticOutputWriter } from "./types.js";
 
 export default class FileWriter
   extends BaseWriter

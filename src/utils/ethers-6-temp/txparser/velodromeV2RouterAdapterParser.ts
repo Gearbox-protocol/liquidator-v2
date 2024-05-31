@@ -1,8 +1,8 @@
 import type { SupportedContract } from "@gearbox-protocol/sdk-gov";
 import { IVelodromeV2RouterAdapter__factory } from "@gearbox-protocol/types/v3";
 
-import { AbstractParser } from "./abstractParser";
-import type { IParser } from "./iParser";
+import { AbstractParser } from "./abstractParser.js";
+import type { IParser } from "./iParser.js";
 
 export class VelodromeV2RouterAdapterParser
   extends AbstractParser

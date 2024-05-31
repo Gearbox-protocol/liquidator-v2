@@ -1,11 +1,11 @@
-import Container, { Service } from "typedi";
+import { Container, Service } from "typedi";
 
-import type { Config } from "../../config";
-import { CONFIG } from "../../config";
-import { NOTIFIER } from "./constants";
-import NoopNotifier from "./NoopNotifier";
-import TelegramNotifier from "./TelegramNotifier";
-import type { INotifier, INotifierMessage } from "./types";
+import type { Config } from "../../config/index.js";
+import { CONFIG } from "../../config/index.js";
+import { NOTIFIER } from "./constants.js";
+import NoopNotifier from "./NoopNotifier.js";
+import TelegramNotifier from "./TelegramNotifier.js";
+import type { INotifier, INotifierMessage } from "./types.js";
 
 function createNotifier(): INotifier {
   const cfg = Container.get(CONFIG) as Config;

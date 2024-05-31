@@ -1,4 +1,4 @@
-import type { INotifier, INotifierMessage } from "./types";
+import type { INotifier, INotifierMessage } from "./types.js";
 
 export default class NoopNotifier implements INotifier {
   public alert(message: INotifierMessage): void {}
