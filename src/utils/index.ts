@@ -1,3 +1,4 @@
+export * from "./etherscan";
 export * from "./filterDust";
 export * from "./formatters";
 export * from "./getProvider";

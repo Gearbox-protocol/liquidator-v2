@@ -7,10 +7,9 @@ import {
 import { encodeBytes32String, Provider } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../config";
+import { CONFIG, type Config } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
-import { detectNetwork } from "../utils/ethers-6-temp";
 import { TxParser } from "../utils/ethers-6-temp/txparser";
 
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
@@ -29,26 +28,17 @@ export class AddressProviderService {
   provider: Provider;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
-  #startBlock?: number;
-  #chainId?: number;
-  #network?: NetworkType;
   #address?: string;
   #contract?: IAddressProviderV3;
 
   public async launch(): Promise<void> {
-    const [startBlock, { chainId }] = await Promise.all([
-      this.provider.getBlockNumber(),
-      this.provider.getNetwork(),
-    ]);
-    this.#network = await detectNetwork(this.provider);
-    this.#chainId = Number(chainId);
-    this.#startBlock = startBlock;
     this.#address =
-      this.config.addressProviderOverride ?? ADDRESS_PROVIDER[this.#network];
+      this.config.addressProviderOverride ??
+      ADDRESS_PROVIDER[this.config.network];
     const overrideS = this.config.addressProviderOverride
-      ? ` (overrides default ${ADDRESS_PROVIDER[this.#network]})`
+      ? ` (overrides default ${ADDRESS_PROVIDER[this.config.network]})`
       : "";
 
     this.#contract = IAddressProviderV3__factory.connect(
@@ -60,7 +50,7 @@ export class AddressProviderService {
     TxParser.addAddressProvider(this.#address);
 
     this.log.info(
-      `Launched on ${this.#network} (${chainId}) using address provider ${this.#address}${overrideS}`,
+      `Launched on ${this.config.network} (${this.config.chainId}) using address provider ${this.#address}${overrideS}`,
     );
   }
 
@@ -80,7 +70,7 @@ export class AddressProviderService {
 
     const logs = await this.contract.queryFilter(
       this.contract.filters.SetAddress(encodeBytes32String(service)),
-      AP_BLOCK_BY_NETWORK[this.network],
+      AP_BLOCK_BY_NETWORK[this.config.network],
     );
     let version = minVersion;
     let address = "";
@@ -98,27 +88,6 @@ export class AddressProviderService {
     this.log.debug(`latest version of ${service}: v${version} at ${address}`);
 
     return address as Address;
-  }
-
-  public get startBlock(): number {
-    if (!this.#startBlock) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#startBlock;
-  }
-
-  public get chainId(): number {
-    if (!this.#chainId) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#chainId;
-  }
-
-  public get network(): NetworkType {
-    if (!this.#network) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#network;
   }
 
   public get address(): string {

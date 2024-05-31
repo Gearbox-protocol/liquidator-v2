@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../config";
+import { CONFIG, type Config } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import version from "../version";
 import { ScanServiceV3 } from "./scan";
@@ -16,7 +16,7 @@ export default class HealthCheckerService {
   scanServiceV3: ScanServiceV3;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   #start = Math.round(new Date().valueOf() / 1000);
 

@@ -51,7 +51,7 @@ export default class LiquidationStrategyV3Full
         leftoverBalances,
         slippage: this.config.slippage,
         noConcurrency: true,
-        network: this.addressProvider.network,
+        network: this.config.network,
       });
       if (!result) {
         throw new Error("result is empty");

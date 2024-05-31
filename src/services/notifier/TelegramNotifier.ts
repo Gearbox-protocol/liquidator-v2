@@ -3,9 +3,9 @@ import axios, { isAxiosError } from "axios";
 import axiosRetry from "axios-retry";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../../config";
+import { CONFIG, Config } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
-import type { INotifier } from "./types";
+import type { INotifier, INotifierMessage } from "./types";
 
 @Service()
 export default class TelegramNotifier implements INotifier {
@@ -13,26 +13,22 @@ export default class TelegramNotifier implements INotifier {
   log: LoggerInterface;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
-  #messageOptions: Record<string, string>;
+  #messageOptions: Record<string, string> = { parse_mode: "MarkdownV2" };
   #client?: AxiosInstance;
 
-  constructor(markdown?: boolean) {
-    this.#messageOptions = markdown ? { parse_mode: "MarkdownV2" } : {};
-  }
-
-  public alert(message: string): void {
+  public alert(message: INotifierMessage): void {
     this.#sendToTelegram(
-      message,
+      message.markdown,
       this.config.telegramAlersChannel!,
       "alert",
     ).catch(console.error);
   }
 
-  public notify(message: string): void {
+  public notify(message: INotifierMessage): void {
     this.#sendToTelegram(
-      message,
+      message.markdown,
       this.config.telegramNotificationsChannel!,
     ).catch(console.error);
   }
@@ -70,7 +66,18 @@ export default class TelegramNotifier implements INotifier {
           "Content-Type": "application/json",
         },
       });
-      axiosRetry(this.#client);
+      axiosRetry(this.#client, {
+        retryDelay: () => 5000,
+        validateResponse: response => {
+          this.log.debug(
+            { state: response.status, data: response.data },
+            "telegram bot error",
+          );
+          return (
+            response.status >= 200 && response.status < 300 && response.data.ok
+          );
+        },
+      });
     }
     return this.#client;
   }

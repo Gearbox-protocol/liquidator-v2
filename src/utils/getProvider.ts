@@ -1,14 +1,10 @@
 import type { Provider } from "ethers";
 import { FallbackProvider, JsonRpcProvider } from "ethers";
-import Container, { Token } from "typedi";
-
-import type { ConfigSchema } from "../config";
-import { CONFIG } from "../config";
+import { Token } from "typedi";
 
 export const PROVIDER = new Token("provider");
 
-export function getProvider(): Provider {
-  const config = Container.get(CONFIG) as ConfigSchema;
+export function getProvider(config: { ethProviderRpcs: string[] }): Provider {
   const rpcs = config.ethProviderRpcs.map(
     url =>
       new JsonRpcProvider(url, undefined, {

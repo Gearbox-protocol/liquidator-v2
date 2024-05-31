@@ -1,9 +1,9 @@
-import type { ConfigSchema } from "../../config";
+import type { Config } from "../../config";
 
 export default class BaseWriter {
-  protected readonly config: ConfigSchema;
+  protected readonly config: Config;
 
-  constructor(config: ConfigSchema) {
+  constructor(config: Config) {
     this.config = config;
   }
 

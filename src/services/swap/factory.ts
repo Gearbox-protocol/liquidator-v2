@@ -2,7 +2,7 @@ import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import type { BigNumberish, Wallet } from "ethers";
 import Container, { Service } from "typedi";
 
-import type { ConfigSchema } from "../../config";
+import type { Config } from "../../config";
 import { CONFIG } from "../../config";
 import { SWAPPER } from "./constants";
 import NoopSwapper from "./noop";
@@ -11,7 +11,7 @@ import type { ISwapper } from "./types";
 import Uniswap from "./uniswap";
 
 function createSwapper(): ISwapper {
-  const config = Container.get(CONFIG) as ConfigSchema;
+  const config = Container.get(CONFIG) as Config;
   switch (config.swapToEth) {
     case "uniswap":
       return Container.get(Uniswap);

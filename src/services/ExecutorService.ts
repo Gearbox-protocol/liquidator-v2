@@ -14,10 +14,10 @@ import type {
 import { formatUnits, Provider, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, ConfigSchema } from "../config";
+import { CONFIG, Config } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
-import { INotifier, NOTIFIER } from "./notifier";
+import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier";
 
 const GAS_TIP_MULTIPLIER = 5000n;
 
@@ -46,7 +46,7 @@ export default class ExecutorService {
   public wallet: Wallet;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject(PROVIDER)
   public provider: Provider;
@@ -152,7 +152,11 @@ export default class ExecutorService {
     this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
-        `balance of liquidator ${this.wallet.address} is ${formatUnits(balance, "ether")} is below minumum of ${formatUnits(this.config.minBalance, "ether")}`,
+        new LowBalanceMessage(
+          this.wallet.address,
+          balance,
+          this.config.minBalance,
+        ),
       );
     }
   }

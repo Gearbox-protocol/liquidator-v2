@@ -12,7 +12,7 @@ import type { LogDescription } from "ethers";
 import { Provider, toUtf8String } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../config";
+import { CONFIG, type Config } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { PROVIDER } from "../utils";
 import type { CreditAccountData } from "../utils/ethers-6-temp";
@@ -63,7 +63,7 @@ export default class OracleServiceV3 {
   provider: Provider;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   #oracle?: IPriceOracleV3;
   #lastBlock = 0;
@@ -71,7 +71,7 @@ export default class OracleServiceV3 {
   #feeds: Record<string, OracleEntry> = {};
 
   public async launch(block: number): Promise<void> {
-    this.#lastBlock = ORACLE_START_BLOCK[this.addressProvider.network];
+    this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
     const oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
     this.#oracle = IPriceOracleV3__factory.connect(oracle, this.provider);
     this.log.debug(`starting oracle v3 at ${block}`);
@@ -79,7 +79,7 @@ export default class OracleServiceV3 {
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
-    TxParser.addTokens(this.addressProvider.network);
+    TxParser.addTokens(this.config.network);
     TxParser.addPriceOracle(oracle);
   }
 

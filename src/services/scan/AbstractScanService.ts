@@ -1,7 +1,7 @@
 import { Provider } from "ethers";
 import { Inject } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../../config";
+import { CONFIG, type Config } from "../../config";
 import type { LoggerInterface } from "../../log";
 import { PROVIDER } from "../../utils";
 import type { CreditAccountData } from "../../utils/ethers-6-temp";
@@ -13,7 +13,7 @@ export default abstract class AbstractScanService {
   log: LoggerInterface;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject()
   addressProvider: AddressProviderService;
@@ -47,15 +47,7 @@ export default abstract class AbstractScanService {
     if (this.config.optimistic) {
       return;
     }
-    if (this.addressProvider.network === "Mainnet") {
-      this.provider.on("block", async num => await this.onBlock(num));
-      return;
-    }
-    // on L2 blocks are too frequent
-    setInterval(async () => {
-      const block = await this.provider.getBlockNumber();
-      await this.onBlock(block);
-    }, 12_000);
+    this.provider.on("block", async num => await this.onBlock(num));
   }
 
   protected abstract _launch(): Promise<void>;

@@ -1,3 +1,4 @@
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { z } from "zod";
 
 const AddressRegExp = /^0x[a-fA-F0-9]{40}$/;
@@ -68,3 +69,12 @@ export const ConfigSchema = z.object({
 });
 
 export type ConfigSchema = z.infer<typeof ConfigSchema>;
+
+/**
+ * Config + derived fields
+ */
+export type Config = ConfigSchema & {
+  network: NetworkType;
+  chainId: number;
+  startBlock: number;
+};

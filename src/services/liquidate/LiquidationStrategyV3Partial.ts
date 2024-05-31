@@ -73,7 +73,7 @@ export default class LiquidationStrategyV3Partial
       300,
     );
     const aavePool =
-      contractsByNetwork[this.addressProvider.network].AAVE_V3_LENDING_POOL;
+      contractsByNetwork[this.config.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
     this.#partialLiquidator = await this.#deployPartialLiquidator(

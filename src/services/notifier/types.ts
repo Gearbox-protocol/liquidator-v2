@@ -1,4 +1,9 @@
+export interface INotifierMessage {
+  markdown: string;
+  plain: string;
+}
+
 export interface INotifier {
-  alert: (message: string) => void;
-  notify: (message: string) => void;
+  alert: (message: INotifierMessage) => void;
+  notify: (message: INotifierMessage) => void;
 }

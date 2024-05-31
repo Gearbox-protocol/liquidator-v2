@@ -12,7 +12,7 @@ import axiosRetry from "axios-retry";
 import type { Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../../config";
+import { CONFIG, type Config } from "../../config";
 import { Logger, type LoggerInterface } from "../../log";
 import ExecutorService from "../ExecutorService";
 import BaseSwapper from "./base";
@@ -30,7 +30,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   log: LoggerInterface;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject()
   executor: ExecutorService;

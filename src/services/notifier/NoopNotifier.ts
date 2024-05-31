@@ -1,6 +1,6 @@
-import type { INotifier } from "./types";
+import type { INotifier, INotifierMessage } from "./types";
 
 export default class NoopNotifier implements INotifier {
-  public alert(message: string): void {}
-  public notify(message: string): void {}
+  public alert(message: INotifierMessage): void {}
+  public notify(message: INotifierMessage): void {}
 }

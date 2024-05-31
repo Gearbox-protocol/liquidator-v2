@@ -15,21 +15,27 @@ import {
   IPriceOracleV3__factory,
   IRouterV3__factory,
 } from "@gearbox-protocol/types/v3";
-import type { JsonRpcProvider, TransactionReceipt } from "ethers";
+import type { JsonRpcProvider } from "ethers";
 import { isError, Provider, Wallet } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import Container, { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../../config";
+import { CONFIG, type Config } from "../../config";
 import { Logger, LoggerInterface } from "../../log";
 import { filterDust, formatTs, PROVIDER } from "../../utils";
 import type { CreditAccountData } from "../../utils/ethers-6-temp";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser";
-import version from "../../version";
 import { AddressProviderService } from "../AddressProviderService";
-import { INotifier, NOTIFIER } from "../notifier";
+import {
+  INotifier,
+  LiquidationErrorMessage,
+  LiquidationStartMessage,
+  LiquidationSuccessMessage,
+  NOTIFIER,
+  StartedMessage,
+} from "../notifier";
 import { type IOptimisticOutputWriter, OUTPUT_WRITER } from "../output";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3";
 import { type ISwapper, SWAPPER } from "../swap";
@@ -60,7 +66,7 @@ export class LiquidatorService implements ILiquidatorService {
   notifier: INotifier;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject()
   addressProvider: AddressProviderService;
@@ -84,8 +90,6 @@ export class LiquidatorService implements ILiquidatorService {
 
   #errorDecoder = ErrorDecoder.create();
 
-  #etherscanUrl = "";
-
   /**
    * Launch LiquidatorService
    */
@@ -99,17 +103,6 @@ export class LiquidatorService implements ILiquidatorService {
       IExceptions__factory.createInterface(),
       SafeERC20__factory.createInterface(),
     ]);
-    switch (this.addressProvider.network) {
-      case "Mainnet":
-        this.#etherscanUrl = "https://etherscan.io";
-        break;
-      case "Arbitrum":
-        this.#etherscanUrl = "https://arbiscan.io";
-        break;
-      case "Optimism":
-        this.#etherscanUrl = "https://optimistic.etherscan.io";
-        break;
-    }
     const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
       this.config;
     this.strategy =
@@ -117,7 +110,7 @@ export class LiquidatorService implements ILiquidatorService {
         ? Container.get(LiquidationStrategyV3Partial)
         : Container.get(LiquidationStrategyV3Full);
     await this.strategy.launch();
-    this.notifier.notify(`started ${this.config.appName} ${version}`);
+    this.notifier.notify(new StartedMessage());
   }
 
   public async liquidate(ca: CreditAccountData): Promise<void> {
@@ -129,9 +122,7 @@ export class LiquidatorService implements ILiquidatorService {
     logger.info(
       `begin ${this.strategy.name} liquidation: HF = ${ca.healthFactor}`,
     );
-    this.notifier.alert(
-      `begin ${this.strategy.name} liquidation of ${ca.name} with HF ${ca.healthFactor}`,
-    );
+    this.notifier.alert(new LiquidationStartMessage(ca, this.strategy.name));
     let pathHuman: string[] | undefined;
     try {
       const preview = await this.strategy.preview(ca);
@@ -140,20 +131,21 @@ export class LiquidatorService implements ILiquidatorService {
 
       const receipt = await this.strategy.liquidate(ca, preview);
 
-      this.notifier
-        .alert(`account ${ca.name} was ${this.strategy.adverb} liquidated      
-Tx receipt: ${this.etherscan(receipt)}
-Gas used: ${receipt.gasUsed.toLocaleString("en")}
-Path used:
-${pathHuman.join("\n")}`);
+      this.notifier.alert(
+        new LiquidationSuccessMessage(
+          ca,
+          this.strategy.adverb,
+          receipt,
+          pathHuman,
+        ),
+      );
     } catch (e) {
       const decoded = await this.#errorDecoder.decode(e);
       const error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
       logger.error({ decoded, original: e }, "cant liquidate");
-      this.notifier
-        .alert(`${this.strategy.name} liquidation of ${ca.name} failed.
-Path: ${pathHuman ?? "not found"}
-Error: ${error}`);
+      this.notifier.alert(
+        new LiquidationErrorMessage(ca, this.strategy.adverb, error, pathHuman),
+      );
     }
   }
 
@@ -341,9 +333,5 @@ Error: ${error}`);
         this.log.warn(`failed to save trace: ${e}`);
       }
     }
-  }
-
-  protected etherscan({ hash }: TransactionReceipt): string {
-    return `${this.#etherscanUrl}/tx/${hash}`;
   }
 }

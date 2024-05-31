@@ -1,14 +1,14 @@
 import Container, { Service } from "typedi";
 
-import type { ConfigSchema } from "../../config";
+import type { Config } from "../../config";
 import { CONFIG } from "../../config";
 import { NOTIFIER } from "./constants";
 import NoopNotifier from "./NoopNotifier";
 import TelegramNotifier from "./TelegramNotifier";
-import type { INotifier } from "./types";
+import type { INotifier, INotifierMessage } from "./types";
 
 function createNotifier(): INotifier {
-  const cfg = Container.get(CONFIG) as ConfigSchema;
+  const cfg = Container.get(CONFIG) as Config;
   if (
     cfg.telegramBotToken &&
     cfg.telegramAlersChannel &&
@@ -21,6 +21,6 @@ function createNotifier(): INotifier {
 
 @Service({ factory: createNotifier, id: NOTIFIER })
 export class Notifier implements INotifier {
-  alert: (message: string) => void;
-  notify: (message: string) => void;
+  alert: (message: INotifierMessage) => void;
+  notify: (message: INotifierMessage) => void;
 }

@@ -325,7 +325,7 @@ export class ScanServiceV3 extends AbstractScanService {
   }
 
   async #setupRestakingWorkaround(): Promise<void> {
-    this.#restakingCMAddr = RESTAKING_CMS[this.addressProvider.network];
+    this.#restakingCMAddr = RESTAKING_CMS[this.config.network];
 
     if (this.#restakingCMAddr) {
       const cm = ICreditManagerV3__factory.connect(
@@ -334,9 +334,7 @@ export class ScanServiceV3 extends AbstractScanService {
       );
       const [{ liquidationDiscount }, ezETHLT] = await Promise.all([
         cm.fees(),
-        cm.liquidationThresholds(
-          tokenDataByNetwork[this.addressProvider.network].ezETH,
-        ),
+        cm.liquidationThresholds(tokenDataByNetwork[this.config.network].ezETH),
       ]);
 
       // For restaking accounts, say for simplicity account with only ezETH:

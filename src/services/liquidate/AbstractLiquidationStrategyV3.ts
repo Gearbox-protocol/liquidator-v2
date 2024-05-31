@@ -4,7 +4,7 @@ import {
 } from "@gearbox-protocol/types/v3";
 import { Inject } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../../config";
+import { CONFIG, type Config } from "../../config";
 import type { LoggerInterface } from "../../log";
 import {
   CreditAccountData,
@@ -24,7 +24,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
   addressProvider: AddressProviderService;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject()
   redstone: RedstoneServiceV3;
@@ -51,7 +51,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
     this.#pathFinder = new PathFinder(
       pfAddr,
       this.executor.provider,
-      this.addressProvider.network,
+      this.config.network,
     );
   }
 

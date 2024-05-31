@@ -13,7 +13,7 @@ import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
 
-import { CONFIG, type ConfigSchema } from "../config";
+import { CONFIG, type Config } from "../config";
 import { Logger, type LoggerInterface } from "../log";
 import { formatTs, PROVIDER } from "../utils";
 import type { CreditAccountData } from "../utils/ethers-6-temp";
@@ -36,7 +36,7 @@ export class RedstoneServiceV3 {
   log: LoggerInterface;
 
   @Inject(CONFIG)
-  config: ConfigSchema;
+  config: Config;
 
   @Inject()
   oracle: OracleServiceV3;
@@ -77,7 +77,7 @@ export class RedstoneServiceV3 {
     activeOnly: boolean,
   ): Promise<PriceOnDemandExtras[]> {
     const redstoneFeeds = this.oracle.getRedstoneFeeds(activeOnly);
-    const tickers = tickerInfoTokensByNetwork[this.addressProvider.network];
+    const tickers = tickerInfoTokensByNetwork[this.config.network];
 
     const redstoneUpdates: RedstoneFeed[] = [];
     for (const t of tokens) {
