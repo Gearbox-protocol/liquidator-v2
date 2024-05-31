@@ -152,11 +152,7 @@ export default class ExecutorService {
     this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
-        new LowBalanceMessage(
-          this.wallet.address,
-          balance,
-          this.config.minBalance,
-        ),
+        new LowBalanceMessage(this.wallet, balance, this.config.minBalance),
       );
     }
   }
