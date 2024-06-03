@@ -96,18 +96,30 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
 
 export class StartedMessage extends BaseMessage implements INotifierMessage {
   #name: string;
+  #hfThreshold: number;
+  #restakingWA: boolean;
 
   constructor() {
     super();
-    this.#name = (Container.get(CONFIG) as Config).appName;
+    const cfg = Container.get(CONFIG) as Config;
+    this.#name = cfg.appName;
+    this.#hfThreshold = cfg.hfThreshold;
+    this.#restakingWA = !!cfg.restakingWorkaround;
   }
 
   public get plain(): string {
-    return `[${this.network}] started ${this.#name} ${version}`;
+    return `[${this.network}] started ${this.#name} ${version}
+HF threshold: ${this.#hfThreshold}
+Restaking workaround: ${this.#restakingWA}
+`;
   }
 
   public get markdown(): string {
-    return md.build(md`[${this.network}] started ${this.#name} ${version}`);
+    return md.build(md`[${this.network}] started ${this.#name} 
+Version: ${md.bold(version)}
+HF threshold: ${md.bold(this.#hfThreshold.toString(10))}
+Restaking workaround: ${md.bold(this.#restakingWA.toString())}
+`);
   }
 }
 
