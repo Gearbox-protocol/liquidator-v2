@@ -45,7 +45,7 @@ export const ConfigSchema = z.object({
    * Filter out all accounts with HF >= threshold during scan stage
    * 65535 is constant for zero-debt account
    */
-  hfThreshold: z.coerce.number().min(0).max(65536).int().default(65535),
+  hfThreshold: z.coerce.number().min(0).max(65536).int().default(65536),
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),
