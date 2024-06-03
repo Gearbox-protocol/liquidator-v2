@@ -261,7 +261,10 @@ export class ScanServiceV3 extends AbstractScanService {
           { blockNumber },
         );
       const duration = Math.round((new Date().getTime() - start) / 1000);
-      this.log.debug(`getLiquidatableCreditAccounts timing: ${duration}s`);
+      this.log.debug(
+        { duration: `${duration}s`, count: result.result.length },
+        `getLiquidatableCreditAccounts`,
+      );
       return result.result as any;
     }
     const cms = await this.dataCompressor.read.getCreditManagersV3List({
