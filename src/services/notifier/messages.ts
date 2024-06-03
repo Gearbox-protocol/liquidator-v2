@@ -94,19 +94,20 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
   }
 }
 
-export class StartedMessage implements INotifierMessage {
+export class StartedMessage extends BaseMessage implements INotifierMessage {
   #name: string;
 
   constructor() {
+    super();
     this.#name = (Container.get(CONFIG) as Config).appName;
   }
 
   public get plain(): string {
-    return `started ${this.#name} ${version}`;
+    return `started ${this.#name} ${version} on ${this.network}`;
   }
 
   public get markdown(): string {
-    return this.plain;
+    return md.build(md`started ${this.#name} ${version} on ${this.network}`);
   }
 }
 
