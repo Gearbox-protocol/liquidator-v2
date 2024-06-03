@@ -20,7 +20,6 @@ WORKDIR /app
 
 COPY --from=dev /app/package.json /app
 COPY --from=dev /app/build/ /app/build
-COPY --from=dev /app/patches/ /app/patches
 
 RUN --mount=type=cache,id=yarn,target=/root/.yarn \
     yarn install --production --frozen-lockfile --ignore-engines
