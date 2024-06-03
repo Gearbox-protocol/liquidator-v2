@@ -84,12 +84,12 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
   }
 
   public get plain(): string {
-    return `balance of liquidator ${this.#wallet.address} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
+    return `[${this.network}] balance of liquidator ${this.#wallet.address} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`balance of liquidator ${md.link(this.#wallet.address, etherscanUrl(this.#wallet, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
+      md`[${this.network}] balance of liquidator ${md.link(this.#wallet.address, etherscanUrl(this.#wallet, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
     );
   }
 }
@@ -103,11 +103,11 @@ export class StartedMessage extends BaseMessage implements INotifierMessage {
   }
 
   public get plain(): string {
-    return `started ${this.#name} ${version} on ${this.network}`;
+    return `[${this.network}] started ${this.#name} ${version}`;
   }
 
   public get markdown(): string {
-    return md.build(md`started ${this.#name} ${version} on ${this.network}`);
+    return md.build(md`[${this.network}] started ${this.#name} ${version}`);
   }
 }
 
@@ -123,12 +123,12 @@ export class LiquidationStartMessage
   }
 
   public get plain(): string {
-    return `begin ${this.#strategyName} liquidation of ${this.caPlain} in ${this.cmPlain} with HF ${this.ca?.healthFactor}`;
+    return `[${this.network}] begin ${this.#strategyName} liquidation of ${this.caPlain} in ${this.cmPlain} with HF ${this.ca?.healthFactor}`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`begin ${this.#strategyName} liquidation of ${this.caMd} with HF ${md.bold(this.ca?.healthFactor)} in credit manager ${this.cmMd}`,
+      md`[${this.network}] begin ${this.#strategyName} liquidation of ${this.caMd} with HF ${md.bold(this.ca?.healthFactor)} in credit manager ${this.cmMd}`,
     );
   }
 }
@@ -153,13 +153,13 @@ export class LiquidationSuccessMessage
 
   public get plain(): string {
     if (this.receipt?.status === 1) {
-      return `✅ account ${this.caPlain} in credit manager ${this.cmPlain} was ${this.#strategyAdverb} liquidated      
+      return `✅ [${this.network}] account ${this.caPlain} in credit manager ${this.cmPlain} was ${this.#strategyAdverb} liquidated      
 Tx receipt: ${this.receiptPlain}
 Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}
 Path used:
 ${this.#callsHuman.join("\n")}`;
     }
-    return `❌ tried to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
+    return `❌ [${this.network}] tried to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
 Tx reverted: ${this.receiptPlain}
 Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}
 Path used:
@@ -169,7 +169,7 @@ ${this.#callsHuman.join("\n")}`;
   public get markdown(): string {
     if (this.receipt?.status === 1) {
       return md.build(
-        md`✅ account ${this.caMd} in credit manager ${this.cmMd} was ${this.#strategyAdverb} liquidated
+        md`✅ [${this.network}] account ${this.caMd} in credit manager ${this.cmMd} was ${this.#strategyAdverb} liquidated
 Tx receipt: ${this.receiptMd}
 Gas used: ${md.bold(this.receipt?.gasUsed?.toLocaleString("en"))}
 Path used:
@@ -177,7 +177,7 @@ ${callsPlain(this.#callsHuman)}`,
       );
     }
     return md.build(
-      md`❌ tried to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
+      md`❌ [${this.network}] tried to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
 Tx reverted: ${this.receiptMd}
 Path used:
 ${callsMd(this.#callsHuman)}`,
@@ -206,7 +206,7 @@ export class LiquidationErrorMessage
   }
 
   public get plain(): string {
-    return `❌ failed to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
+    return `❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
 Error: ${this.#error}
 Path used:
 ${callsPlain(this.#callsHuman)}`;
@@ -214,7 +214,7 @@ ${callsPlain(this.#callsHuman)}`;
 
   public get markdown(): string {
     return md.build(
-      md`❌ failed to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
+      md`❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
 Error: ${md.inlineCode(this.#error)}
 Path used:
 ${callsMd(this.#callsHuman)}`,
