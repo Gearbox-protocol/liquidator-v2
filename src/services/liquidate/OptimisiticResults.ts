@@ -1,6 +1,5 @@
+import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import { Service } from "typedi";
-
-import type { OptimisticResultV2 } from "./types.js";
 
 @Service()
 export class OptimisticResults {

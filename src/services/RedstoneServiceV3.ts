@@ -12,6 +12,7 @@ import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
+import type { Address } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
@@ -193,7 +194,7 @@ export class RedstoneServiceV3 {
     }
     const priceUpdates = await this.updatesForTokens(accTokens, activeOnly);
     return priceUpdates.map(({ token, reserve, callData }) => ({
-      token,
+      token: token as Address,
       reserve,
       data: callData,
     }));

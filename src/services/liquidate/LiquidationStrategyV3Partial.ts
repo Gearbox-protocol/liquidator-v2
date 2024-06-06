@@ -27,6 +27,7 @@ import {
 } from "@gearbox-protocol/types/v3";
 import type { JsonRpcProvider, TransactionReceipt, Wallet } from "ethers";
 import { Service } from "typedi";
+import type { Address } from "viem";
 
 import { Logger, type LoggerInterface } from "../../log/index.js";
 import type {
@@ -191,7 +192,7 @@ export default class LiquidationStrategyV3Partial
       }
     }
     return {
-      assetOut: tokenOut,
+      assetOut: tokenOut as Address,
       amountOut: optimalAmount,
       flashLoanAmount,
       priceUpdates,

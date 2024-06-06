@@ -6,16 +6,17 @@ import type {
   CreditAccountData as ICreditAccountData,
   TokenBalance,
 } from "@gearbox-protocol/types/v3";
+import type { Address } from "viem";
 
 export class CreditAccountData {
   readonly isSuccessful: boolean;
   readonly priceFeedsNeeded: string[];
 
-  readonly addr: string;
-  readonly borrower: string;
-  readonly creditManager: string;
-  readonly creditFacade: string;
-  readonly underlyingToken: string;
+  readonly addr: Address;
+  readonly borrower: Address;
+  readonly creditManager: Address;
+  readonly creditFacade: Address;
+  readonly underlyingToken: Address;
   readonly since: number;
   readonly expirationDate: number;
   readonly version: number;
@@ -49,11 +50,11 @@ export class CreditAccountData {
     this.isSuccessful = payload.isSuccessful;
     this.priceFeedsNeeded = payload.priceFeedsNeeded;
 
-    this.addr = payload.addr.toLowerCase();
-    this.borrower = payload.borrower.toLowerCase();
-    this.creditManager = payload.creditManager.toLowerCase();
-    this.creditFacade = payload.creditFacade.toLowerCase();
-    this.underlyingToken = payload.underlying.toLowerCase();
+    this.addr = payload.addr.toLowerCase() as Address;
+    this.borrower = payload.borrower.toLowerCase() as Address;
+    this.creditManager = payload.creditManager.toLowerCase() as Address;
+    this.creditFacade = payload.creditFacade.toLowerCase() as Address;
+    this.underlyingToken = payload.underlying.toLowerCase() as Address;
     this.since = Number(payload.since);
     this.expirationDate = Number(payload.expirationDate);
     this.version = Number(payload.cfVersion);

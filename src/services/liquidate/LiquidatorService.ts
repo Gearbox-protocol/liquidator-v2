@@ -7,6 +7,7 @@ import {
   SafeERC20__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
+import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import {
   ICreditFacadeV3__factory,
   ICreditManagerV3__factory,
@@ -48,7 +49,6 @@ import { OptimisticResults } from "./OptimisiticResults.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
-  OptimisticResultV2,
   StrategyPreview,
 } from "./types.js";
 
@@ -194,7 +194,7 @@ export class LiquidatorService implements ILiquidatorService {
       optimisticResult.assetOut = preview.assetOut;
       optimisticResult.amountOut = preview.amountOut;
       optimisticResult.flashLoanAmount = preview.flashLoanAmount;
-      optimisticResult.calls = preview.calls;
+      optimisticResult.calls = preview.calls as any;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
       optimisticResult.priceUpdates = preview.priceUpdates;
       optimisticResult.callsHuman = TxParserHelper.parseMultiCall(preview);
