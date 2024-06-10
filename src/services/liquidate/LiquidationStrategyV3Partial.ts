@@ -390,7 +390,7 @@ export default class LiquidationStrategyV3Partial
         `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
       );
 
-      partialLiquidatorAddress = liquidator.target as string;
+      partialLiquidatorAddress = liquidator.target as Address;
     }
     this.logger.info(
       `partial liquidator contract addesss: ${partialLiquidatorAddress}`,

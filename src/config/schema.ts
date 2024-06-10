@@ -1,7 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import { Address } from "abitype/zod";
 import { z } from "zod";
-
-const AddressRegExp = /^0x[a-fA-F0-9]{40}$/;
 
 const stringArrayLike = z
   .union([z.string(), z.array(z.string())])
@@ -14,17 +13,13 @@ const booleanLike = z
 const bigintLike = z.any().transform(v => BigInt(v));
 
 export const ConfigSchema = z.object({
-  addressProviderOverride: z.string().optional(),
+  addressProviderOverride: Address.optional(),
 
   appName: z.string().default("liquidator-ts"),
   port: z.coerce.number().default(4000),
 
-  debugAccounts: stringArrayLike
-    .optional()
-    .pipe(z.array(z.string().regex(AddressRegExp)).optional()),
-  debugManagers: stringArrayLike
-    .optional()
-    .pipe(z.array(z.string().regex(AddressRegExp)).optional()),
+  debugAccounts: stringArrayLike.optional().pipe(z.array(Address).optional()),
+  debugManagers: stringArrayLike.optional().pipe(z.array(Address).optional()),
   /**
    * Path to foundry/cast binary, so that we can create tree-like traces in case of errors
    */
@@ -48,7 +43,7 @@ export const ConfigSchema = z.object({
   hfThreshold: z.coerce.number().min(0).max(65536).int().default(65536),
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
-  partialLiquidatorAddress: z.string().regex(AddressRegExp).optional(),
+  partialLiquidatorAddress: Address.optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
   underlying: z.string().optional(),
   restakingWorkaround: booleanLike.pipe(z.boolean().optional()),

@@ -6,13 +6,14 @@ import {
   tickerInfoTokensByNetwork,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
+import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
 import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
-import { ICreditFacadeV3Multicall__factory } from "@gearbox-protocol/types/v3";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
 import type { Address } from "viem";
+import { encodeFunctionData } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
@@ -23,8 +24,6 @@ import ExecutorService from "./ExecutorService.js";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
 import type { RedstoneFeed } from "./OracleServiceV3.js";
 import OracleServiceV3 from "./OracleServiceV3.js";
-
-const cfMulticall = ICreditFacadeV3Multicall__factory.createInterface();
 
 export type RedstonePriceFeed = Extract<
   PriceFeedData,
@@ -162,11 +161,11 @@ export class RedstoneServiceV3 {
     const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
     return priceUpdates.map(({ token, data, reserve }) => ({
       target: ca.creditFacade,
-      callData: cfMulticall.encodeFunctionData("onDemandPriceUpdate", [
-        token,
-        reserve,
-        data,
-      ]),
+      callData: encodeFunctionData({
+        abi: iCreditFacadeV3MulticallAbi,
+        functionName: "onDemandPriceUpdate",
+        args: [token, reserve, data as any],
+      }),
     }));
   }
 

@@ -1,27 +1,29 @@
-import type { MCall, NetworkType } from "@gearbox-protocol/sdk-gov";
-import { ADDRESS_0X0, safeMulticall } from "@gearbox-protocol/sdk-gov";
-import type { IPriceOracleV3 } from "@gearbox-protocol/types/v3";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import { ADDRESS_0X0 } from "@gearbox-protocol/sdk-gov";
 import {
-  IPriceOracleV3__factory,
-  IRedstonePriceFeed__factory,
-} from "@gearbox-protocol/types/v3";
-import type { LogDescription } from "ethers";
-import { Provider, toUtf8String } from "ethers";
+  iPriceOracleV3EventsAbi,
+  iRedstonePriceFeedAbi,
+} from "@gearbox-protocol/types/abi";
+import type { ExtractAbiEvent } from "abitype";
 import { Inject, Service } from "typedi";
+import type { Address, Log } from "viem";
+import { bytesToString, hexToBytes, PublicClient } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { PROVIDER } from "../utils/index.js";
+import { VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { AddressProviderService } from "./AddressProviderService.js";
 
-const IRedstonePriceFeedInterface =
-  IRedstonePriceFeed__factory.createInterface();
-const IPriceOracleV3Interface = IPriceOracleV3__factory.createInterface();
+interface DataFeedMulticall {
+  abi: typeof iRedstonePriceFeedAbi;
+  address: Address;
+  functionName: "dataFeedId";
+}
 
 interface PriceFeedEntry {
-  address: string;
+  address: Address;
   /**
    * Is set for redstone feeds, null for non-redstone feeds, undefined if unknown
    */
@@ -30,7 +32,7 @@ interface PriceFeedEntry {
 }
 
 export interface RedstoneFeed {
-  token: string;
+  token: Address;
   dataFeedId: string;
   reserve: boolean;
 }
@@ -56,28 +58,27 @@ export default class OracleServiceV3 {
   @Inject()
   addressProvider: AddressProviderService;
 
-  @Inject(PROVIDER)
-  provider: Provider;
+  @Inject(VIEM_PUBLIC_CLIENT)
+  publicClient: PublicClient;
 
   @Inject(CONFIG)
   config: Config;
 
-  #oracle?: IPriceOracleV3;
+  #oracle?: Address;
   #lastBlock = 0;
 
-  #feeds: Record<string, OracleEntry> = {};
+  #feeds: Record<Address, OracleEntry> = {};
 
   public async launch(block: number): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
-    const oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
-    this.#oracle = IPriceOracleV3__factory.connect(oracle, this.provider);
+    this.#oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
     TxParser.addTokens(this.config.network);
-    TxParser.addPriceOracle(oracle);
+    TxParser.addPriceOracle(this.#oracle);
   }
 
   public async update(blockNumber: number): Promise<void> {
@@ -90,7 +91,7 @@ export default class OracleServiceV3 {
    * @returns
    */
   public hasFeed(token: string): boolean {
-    return !!this.#feeds[token.toLowerCase()];
+    return !!this.#feeds[token.toLowerCase() as Address];
   }
 
   /**
@@ -106,7 +107,7 @@ export default class OracleServiceV3 {
       if (b.balance < 10n) {
         continue;
       }
-      const entry = this.#feeds[t.toLowerCase()];
+      const entry = this.#feeds[t.toLowerCase() as Address];
       if (!entry) {
         return false;
       }
@@ -125,9 +126,9 @@ export default class OracleServiceV3 {
    * For single token, it can include multiple feeds (main and/or reserve)
    */
   public getRedstoneFeeds(activeOnly: boolean): Record<string, RedstoneFeed[]> {
-    const result: Record<string, RedstoneFeed[]> = {};
+    const result: Record<Address, RedstoneFeed[]> = {};
     for (const [t, entry] of Object.entries(this.#feeds)) {
-      const token = t.toLowerCase();
+      const token = t.toLowerCase() as Address;
       const { active, main, reserve } = entry;
       if (main.dataFeedId && (!activeOnly || active === "main")) {
         result[token] = [
@@ -150,23 +151,23 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    const logs = await this.provider.getLogs({
-      address: this.oracle.getAddress(),
-      fromBlock: this.#lastBlock,
-      toBlock,
+    const logs = await this.publicClient.getLogs({
+      address: this.oracle,
+      events: iPriceOracleV3EventsAbi,
+      fromBlock: BigInt(this.#lastBlock),
+      toBlock: BigInt(toBlock),
     });
     this.log.debug(`found ${logs.length} oracle events`);
     for (const l of logs) {
-      const e = IPriceOracleV3Interface.parseLog(l);
-      switch (e?.name) {
+      switch (l.eventName) {
         case "SetPriceFeed":
-          await this.#setPriceFeed(e);
+          await this.#setPriceFeed(l);
           break;
         case "SetReservePriceFeed":
-          await this.#setPriceFeed(e);
+          await this.#setPriceFeed(l);
           break;
         case "SetReservePriceFeedStatus":
-          this.#setFeedStatus(e);
+          this.#setFeedStatus(l);
           break;
       }
     }
@@ -174,10 +175,30 @@ export default class OracleServiceV3 {
     this.#lastBlock = toBlock;
   }
 
-  async #setPriceFeed(e: LogDescription): Promise<void> {
-    const kind = e.name === "SetPriceFeed" ? "main" : "reserve";
-    const token = e.args.token.toLowerCase();
-    const priceFeed = e.args.priceFeed.toLowerCase();
+  async #setPriceFeed(
+    e:
+      | Log<
+          bigint,
+          number,
+          boolean,
+          ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetPriceFeed">
+        >
+      | Log<
+          bigint,
+          number,
+          boolean,
+          ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetReservePriceFeed">
+        >,
+  ): Promise<void> {
+    const kind = e.eventName === "SetPriceFeed" ? "main" : "reserve";
+    const token = e.args.token?.toLowerCase() as Address;
+    if (!token) {
+      throw new Error("token argument not found");
+    }
+    const priceFeed = e.args.priceFeed?.toLowerCase() as Address;
+    if (!priceFeed) {
+      throw new Error("priceFeed argument not found");
+    }
     let entry = this.#feeds[token];
     if (!entry) {
       if (kind === "reserve") {
@@ -185,11 +206,12 @@ export default class OracleServiceV3 {
           `cannot add reserve price feed ${priceFeed} for token ${token} because main price feed is not added yet`,
         );
       }
+      const trusted = "trusted" in e.args && !!e.args.trusted;
       entry = {
         active: "main",
         main: {
           address: priceFeed,
-          trusted: e.args.trusted,
+          trusted,
         },
       };
     }
@@ -198,30 +220,34 @@ export default class OracleServiceV3 {
   }
 
   async #loadRedstoneIds(): Promise<void> {
-    const calls: MCall<any>[] = [];
+    const calls: DataFeedMulticall[] = [];
     for (const f of Object.values(this.#feeds)) {
       if (f.main.dataFeedId === undefined) {
         calls.push({
           address: f.main.address,
-          interface: IRedstonePriceFeedInterface,
-          method: "dataFeedId",
+          abi: iRedstonePriceFeedAbi,
+          functionName: "dataFeedId",
         });
       }
       if (!!f.reserve && f.reserve.dataFeedId === undefined) {
         calls.push({
           address: f.reserve.address,
-          interface: IRedstonePriceFeedInterface,
-          method: "dataFeedId",
+          abi: iRedstonePriceFeedAbi,
+          functionName: "dataFeedId",
         });
       }
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await safeMulticall(calls, this.provider as any);
+    const resp = await this.publicClient.multicall({
+      contracts: calls,
+      allowFailure: true,
+    });
     for (let i = 0; i < resp.length; i++) {
-      let dataFeedId = resp[i].value || null;
+      let dataFeedId: string | null =
+        (resp[i].status === "success" ? resp[i].result : null) ?? null;
       let feedAddress = calls[i].address;
       if (dataFeedId) {
-        dataFeedId = toUtf8String(dataFeedId)
+        dataFeedId = bytesToString(hexToBytes(dataFeedId as `0x${string}`))
           .trim()
           .replace(/\u0000/g, "");
       }
@@ -236,9 +262,22 @@ export default class OracleServiceV3 {
     }
   }
 
-  #setFeedStatus(e: LogDescription): void {
-    const token = e.args.token.toLowerCase();
-    const active = e.args.active;
+  #setFeedStatus(
+    e: Log<
+      bigint,
+      number,
+      boolean,
+      ExtractAbiEvent<
+        typeof iPriceOracleV3EventsAbi,
+        "SetReservePriceFeedStatus"
+      >
+    >,
+  ): void {
+    const token = e.args.token?.toLowerCase() as Address;
+    if (!token) {
+      throw new Error("token argument not found");
+    }
+    const active = !!e.args.active;
     const entry = this.#feeds[token];
     if (!entry) {
       throw new Error(
@@ -253,9 +292,9 @@ export default class OracleServiceV3 {
     }
   }
 
-  private get oracle(): IPriceOracleV3 {
+  private get oracle(): Address {
     if (!this.#oracle) {
-      throw new Error(`oracle serive is not launched`);
+      throw new Error(`oracle service is not launched`);
     }
     return this.#oracle;
   }
