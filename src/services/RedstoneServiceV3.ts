@@ -9,16 +9,24 @@ import {
 import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
 import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
-import { AbiCoder, getBytes, Provider, toBeHex, toUtf8String } from "ethers";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
-import type { Address } from "viem";
-import { encodeFunctionData } from "viem";
+import type { Address, TestClient } from "viem";
+import {
+  bytesToString,
+  createTestClient,
+  encodeAbiParameters,
+  encodeFunctionData,
+  http,
+  parseAbiParameters,
+  PublicClient,
+  toBytes,
+} from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
-import { formatTs, PROVIDER } from "../utils/index.js";
+import { formatTs, VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { AddressProviderService } from "./AddressProviderService.js";
 import ExecutorService from "./ExecutorService.js";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
@@ -47,8 +55,10 @@ export class RedstoneServiceV3 {
   @Inject()
   executor: ExecutorService;
 
-  @Inject(PROVIDER)
-  provider: Provider;
+  @Inject(VIEM_PUBLIC_CLIENT)
+  publicClient: PublicClient;
+
+  #anvilClient?: TestClient<"anvil">;
 
   /**
    * Timestamp to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
@@ -58,14 +68,23 @@ export class RedstoneServiceV3 {
 
   public async launch(): Promise<void> {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
+
     if (this.config.optimistic) {
-      const block = await this.provider.getBlock(this.executor.anvilForkBlock);
+      this.#anvilClient = createTestClient({
+        transport: http(this.config.ethProviderRpcs[0], { timeout: 120_000 }),
+        mode: "anvil",
+        chain: this.publicClient.chain,
+      });
+      const block = await this.publicClient.getBlock({
+        blockNumber: this.executor.anvilForkBlock,
+      });
       if (!block) {
         throw new Error(`cannot get latest block`);
       }
       // we round the timestamp to full minutes for being compatible with
       // oracle-nodes, which usually work with rounded 10s and 60s intervals
-      this.#optimisticTimestamp = 10 * Math.floor(block.timestamp / 10) * 1000;
+      this.#optimisticTimestamp =
+        10 * Math.floor(Number(block.timestamp) / 10) * 1000;
       this.log.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
       );
@@ -128,11 +147,11 @@ export class RedstoneServiceV3 {
     if (this.config.optimistic && result.length > 0) {
       const redstoneTs = minTimestamp(result);
       // On anvil fork of L2, block.number is anvil block
-      let block = await this.provider.getBlock("latest");
+      let block = await this.publicClient.getBlock({ blockTag: "latest" });
       if (!block) {
         throw new Error("cannot get latest block");
       }
-      const delta = block.timestamp - redstoneTs;
+      const delta = Number(block.timestamp) - redstoneTs;
       const realtimeDelta = Math.floor(
         new Date().getTime() / 1000 - redstoneTs,
       );
@@ -145,11 +164,10 @@ export class RedstoneServiceV3 {
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        await (this.provider as any).send("evm_mine", [toBeHex(redstoneTs)]);
-        // await (this.provider as any).send("anvil_setNextBlockTimestamp", [
-        // toBeHex(redstoneTs),
-        // ]);
-        block = await this.provider.getBlock("latest");
+        await this.anvilClient.setNextBlockTimestamp({
+          timestamp: BigInt(redstoneTs),
+        });
+        block = await this.publicClient.getBlock({ blockTag: "latest" });
         this.log?.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
     }
@@ -228,7 +246,7 @@ export class RedstoneServiceV3 {
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
-      getBytes(`0x${dataPayload}`),
+      toBytes(`0x${dataPayload}`),
     );
 
     const dataPackagesList = splitResponse(
@@ -237,7 +255,10 @@ export class RedstoneServiceV3 {
     );
 
     const result = dataPackagesList.map(list => {
-      const payload = new RedstonePayload(list, toUtf8String(unsignedMetadata));
+      const payload = new RedstonePayload(
+        list,
+        bytesToString(unsignedMetadata),
+      );
 
       let ts = 0;
       list.forEach(p => {
@@ -250,10 +271,10 @@ export class RedstoneServiceV3 {
       });
 
       return [
-        AbiCoder.defaultAbiCoder().encode(
-          ["uint256", "bytes"],
-          [ts, getBytes(`0x${payload.toBytesHexWithout0xPrefix()}`)],
-        ),
+        encodeAbiParameters(parseAbiParameters("uint256, bytes"), [
+          BigInt(ts),
+          `0x${payload.toBytesHexWithout0xPrefix()}`,
+        ]),
         ts,
       ] as const;
     });
@@ -270,6 +291,13 @@ export class RedstoneServiceV3 {
     }
 
     return response;
+  }
+
+  private get anvilClient(): TestClient<"anvil"> {
+    if (!this.#anvilClient) {
+      throw new Error("anvil client not initalized");
+    }
+    return this.#anvilClient;
   }
 }
 

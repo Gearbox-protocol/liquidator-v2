@@ -182,11 +182,11 @@ export default class ExecutorService {
     return this.wallet.address;
   }
 
-  public get anvilForkBlock(): number {
+  public get anvilForkBlock(): bigint {
     const n = this.#anvilInfo?.forkConfig.forkBlockNumber;
     if (!n) {
       throw new Error("cannot get anvil fork block");
     }
-    return parseInt(n, 10);
+    return BigInt(n);
   }
 }
