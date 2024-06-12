@@ -7,7 +7,7 @@ import {
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
-import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
+import type { MultiCall } from "@gearbox-protocol/types/v3";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import { RedstonePayload } from "redstone-protocol";
 import { Inject, Service } from "typedi";
@@ -26,6 +26,7 @@ import {
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
+import type { PriceOnDemand } from "../utils/index.js";
 import { formatTs, VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { AddressProviderService } from "./AddressProviderService.js";
 import ExecutorService from "./ExecutorService.js";
@@ -218,7 +219,7 @@ export class RedstoneServiceV3 {
   }
 
   async #getRedstonePayloadForManualUsage(
-    token: string,
+    token: Address,
     reserve: boolean,
     dataServiceId: string,
     dataFeedId: string,

@@ -30,10 +30,8 @@ import { Service } from "typedi";
 import type { Address } from "viem";
 
 import { Logger, type LoggerInterface } from "../../log/index.js";
-import type {
-  CreditAccountData,
-  CreditManagerData,
-} from "../../utils/ethers-6-temp/index.js";
+import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import type { CreditManagerData } from "../../utils/index.js";
 import { impersonate, stopImpersonate } from "../../utils/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {

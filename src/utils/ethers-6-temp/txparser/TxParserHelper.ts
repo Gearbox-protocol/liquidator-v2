@@ -1,7 +1,7 @@
 import { ADDRESS_0X0, tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import type { MultiCall } from "@gearbox-protocol/types/v3";
 
-import type { CreditManagerData } from "../CreditManagerData.js";
+import type { CreditManagerData } from "../../types.js";
 import { TxParser } from "./txParser.js";
 
 export class TxParserHelper {
@@ -13,7 +13,7 @@ export class TxParserHelper {
   public static addCreditManager(cm: CreditManagerData): void {
     TxParser.addCreditManager(cm.address, cm.version);
 
-    if (cm.creditFacade !== "" && cm.creditFacade !== ADDRESS_0X0) {
+    if (!!cm.creditFacade && cm.creditFacade !== ADDRESS_0X0) {
       TxParser.addCreditFacade(
         cm.creditFacade,
         tokenSymbolByAddress[cm.underlyingToken],

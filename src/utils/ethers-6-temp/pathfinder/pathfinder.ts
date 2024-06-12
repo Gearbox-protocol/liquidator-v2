@@ -8,8 +8,8 @@ import type {
 import { IRouterV3__factory } from "@gearbox-protocol/types/v3";
 import type { Provider, Signer } from "ethers";
 
+import type { CreditManagerData } from "../../types.js";
 import type { CreditAccountData } from "../CreditAccountData.js";
-import type { CreditManagerData } from "../CreditManagerData.js";
 import type { PathFinderCloseResult, PathFinderResult } from "./core.js";
 import { PathOptionFactory } from "./pathOptions.js";
 

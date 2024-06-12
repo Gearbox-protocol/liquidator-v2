@@ -15,11 +15,11 @@ import type {
 } from "@gearbox-protocol/types/v3";
 import { ICreditManagerV3__factory } from "@gearbox-protocol/types/v3";
 import { Inject, Service } from "typedi";
-import type { GetContractReturnType } from "viem";
 import { getContract, PublicClient } from "viem";
 
 import { Logger, type LoggerInterface } from "../../log/index.js";
 import { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import type { IDataCompressorContract } from "../../utils/index.js";
 import { VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
 import { LiquidatorService } from "../liquidate/index.js";
@@ -37,11 +37,6 @@ interface AccountSelection {
   priceUpdates: PriceOnDemand[];
   blockNumber?: bigint;
 }
-
-type IDataCompressorContract = GetContractReturnType<
-  typeof iDataCompressorV3Abi,
-  PublicClient
->;
 
 @Service()
 export class ScanServiceV3 extends AbstractScanService {

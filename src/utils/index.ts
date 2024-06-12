@@ -5,3 +5,4 @@ export * from "./formatters.js";
 export * from "./getProvider.js";
 export * from "./getViemPublicClient.js";
 export * from "./impersonate.js";
+export * from "./types.js";

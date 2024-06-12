@@ -2,11 +2,12 @@ import type {
   OptimisticResultV2,
   PartialLiquidationCondition,
 } from "@gearbox-protocol/types/optimist";
-import type { MultiCall, PriceOnDemand } from "@gearbox-protocol/types/v3";
+import type { MultiCall } from "@gearbox-protocol/types/v3";
 import type { TransactionReceipt } from "ethers";
 import type { Address } from "viem";
 
 import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import type { PriceOnDemand } from "../../utils/types.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
   ts: number;
@@ -15,7 +16,7 @@ export interface PriceOnDemandExtras extends PriceOnDemand {
 
 export interface PriceUpdate {
   token: Address;
-  data: string;
+  data: `0x${string}`;
   reserve: boolean;
 }
 
