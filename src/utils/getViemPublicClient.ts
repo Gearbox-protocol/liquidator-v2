@@ -17,7 +17,9 @@ const CHAINS: Record<NetworkType, Chain> = {
 };
 
 export function getViemPublicClient(): PublicClient {
-  const { ethProviderRpcs, chainId, network } = Container.get(CONFIG) as Config;
+  const { ethProviderRpcs, chainId, network, optimistic } = Container.get(
+    CONFIG,
+  ) as Config;
   const rpcs = ethProviderRpcs.map(url => http(url, { timeout: 120_000 }));
 
   return createPublicClient({
@@ -27,5 +29,6 @@ export function getViemPublicClient(): PublicClient {
       id: chainId,
     }),
     transport: rpcs.length > 1 ? fallback(rpcs) : rpcs[0],
+    pollingInterval: optimistic ? 25 : undefined,
   });
 }
