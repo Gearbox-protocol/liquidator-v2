@@ -185,7 +185,7 @@ export class RedstoneServiceV3 {
       callData: encodeFunctionData({
         abi: iCreditFacadeV3MulticallAbi,
         functionName: "onDemandPriceUpdate",
-        args: [token, reserve, data as any],
+        args: [token, reserve, data],
       }),
     }));
   }
@@ -305,14 +305,14 @@ export class RedstoneServiceV3 {
 }
 
 function redstoneCacheKey(
-  token: string,
+  token: Address,
   reserve: boolean,
   dataServiceId: string,
   dataFeedId: string,
   uniqueSignersCount: number,
 ): string {
   return [
-    getTokenSymbolOrTicker(token as any),
+    getTokenSymbolOrTicker(token),
     reserve ? "reserve" : "main",
     dataServiceId,
     dataFeedId,
@@ -335,7 +335,7 @@ function printFeeds(feeds: RedstoneFeed[]): string {
   return feeds
     .map(
       f =>
-        `${getTokenSymbolOrTicker(f.token as any)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
+        `${getTokenSymbolOrTicker(f.token)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
     )
     .join(", ");
 }

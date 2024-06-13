@@ -66,11 +66,11 @@ export default abstract class AbstractLiquidationStrategyV3 {
       );
     }
     const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
-    const newCa = await this.compressor.simulate.getCreditAccountData([
+    const { result } = await this.compressor.simulate.getCreditAccountData([
       ca.addr,
       priceUpdates,
     ]);
-    return new CreditAccountData(newCa as any);
+    return new CreditAccountData(result);
   }
 
   protected async getCreditManagerData(

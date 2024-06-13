@@ -9,14 +9,10 @@ import {
   iCreditManagerV3Abi,
   iDataCompressorV3Abi,
 } from "@gearbox-protocol/types/abi";
-import type {
-  CreditAccountData as ICreditAccountData,
-  PriceOnDemand,
-} from "@gearbox-protocol/types/v3";
-import { ICreditManagerV3__factory } from "@gearbox-protocol/types/v3";
 import { Inject, Service } from "typedi";
 import { getContract, PublicClient } from "viem";
 
+import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
@@ -27,9 +23,11 @@ import OracleServiceV3 from "../OracleServiceV3.js";
 import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 import AbstractScanService from "./AbstractScanService.js";
 
-const RESTAKING_CMS: Partial<Record<NetworkType, string>> = {
-  Mainnet: "0x50ba483272484fc5eebe8676dc87d814a11faef6".toLowerCase(), // Mainnet WETH_V3_RESTAKING
-  Arbitrum: "0xcedaa4b4a42c0a771f6c24a3745c3ca3ed73f17a".toLowerCase(), // Arbitrum WETH_V3_TRADE_TIER_1
+const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
+  Mainnet:
+    "0x50ba483272484fc5eebe8676dc87d814a11faef6".toLowerCase() as Address, // Mainnet WETH_V3_RESTAKING
+  Arbitrum:
+    "0xcedaa4b4a42c0a771f6c24a3745c3ca3ed73f17a".toLowerCase() as Address, // Arbitrum WETH_V3_TRADE_TIER_1
 };
 
 interface AccountSelection {
@@ -57,7 +55,7 @@ export class ScanServiceV3 extends AbstractScanService {
 
   #dataCompressor?: IDataCompressorContract;
   #processing: number | null = null;
-  #restakingCMAddr?: string;
+  #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
 
   protected override async _launch(): Promise<void> {
@@ -179,7 +177,7 @@ export class ScanServiceV3 extends AbstractScanService {
       blockNumber: blockNumber ? BigInt(blockNumber) : undefined,
     };
 
-    let accountsRaw: ICreditAccountData[] = [];
+    let accountsRaw: CreditAccountDataRaw[] = [];
 
     if (debugAccounts?.length) {
       accountsRaw = await this.#getParticularAccounts(debugAccounts, selection);
@@ -224,15 +222,15 @@ export class ScanServiceV3 extends AbstractScanService {
   async #getParticularAccounts(
     accs: string[],
     { liquidatableOnly, priceUpdates, blockNumber }: AccountSelection,
-  ): Promise<ICreditAccountData[]> {
-    const result: ICreditAccountData[] = [];
+  ): Promise<CreditAccountDataRaw[]> {
+    const result: CreditAccountDataRaw[] = [];
     for (const acc of accs) {
       const { result: accData } =
         await this.dataCompressor.simulate.getCreditAccountData(
-          [acc as Address, priceUpdates as any],
+          [acc as Address, priceUpdates],
           { blockNumber },
         );
-      result.push(accData as any);
+      result.push(accData);
     }
     return liquidatableOnly
       ? this.#filterLiquidatable(result, blockNumber)
@@ -242,7 +240,7 @@ export class ScanServiceV3 extends AbstractScanService {
   // TODO: this can be nicely solved by exposing _queryCreditAccounts in DataCompressor
   async #getAllAccounts(
     selection: AccountSelection,
-  ): Promise<ICreditAccountData[]> {
+  ): Promise<CreditAccountDataRaw[]> {
     const { liquidatableOnly, priceUpdates, blockNumber } = selection;
     const blockS = blockNumber ? ` in ${blockNumber}` : "";
     if (liquidatableOnly) {
@@ -250,17 +248,17 @@ export class ScanServiceV3 extends AbstractScanService {
         `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
       );
       const start = new Date().getTime();
-      const result =
+      const { result } =
         await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
-          [priceUpdates as any],
+          [priceUpdates],
           { blockNumber },
         );
       const duration = Math.round((new Date().getTime() - start) / 1000);
       this.log.debug(
-        { duration: `${duration}s`, count: result.result.length },
+        { duration: `${duration}s`, count: result.length },
         `getLiquidatableCreditAccounts`,
       );
-      return result.result as any;
+      return [...result];
     }
     const cms = await this.dataCompressor.read.getCreditManagersV3List({
       blockNumber,
@@ -275,11 +273,11 @@ export class ScanServiceV3 extends AbstractScanService {
   async #getAccountsFromManagers(
     cms: Address[],
     { liquidatableOnly, priceUpdates, blockNumber }: AccountSelection,
-  ): Promise<ICreditAccountData[]> {
+  ): Promise<CreditAccountDataRaw[]> {
     const all = await Promise.all(
       cms.map(cm =>
         this.dataCompressor.simulate.getCreditAccountsByCreditManager(
-          [cm, priceUpdates as any],
+          [cm, priceUpdates],
           { blockNumber },
         ),
       ),
@@ -289,18 +287,18 @@ export class ScanServiceV3 extends AbstractScanService {
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
     );
     return liquidatableOnly
-      ? this.#filterLiquidatable(accs as any, blockNumber)
-      : this.#filterZeroDebt(accs as any);
+      ? this.#filterLiquidatable(accs, blockNumber)
+      : this.#filterZeroDebt(accs);
   }
 
-  #filterZeroDebt(accs: ICreditAccountData[]): ICreditAccountData[] {
+  #filterZeroDebt(accs: CreditAccountDataRaw[]): CreditAccountDataRaw[] {
     return accs.filter(acc => acc.debt > 0n);
   }
 
   async #filterLiquidatable(
-    accs: ICreditAccountData[],
+    accs: CreditAccountDataRaw[],
     blockNumber?: bigint,
-  ): Promise<ICreditAccountData[]> {
+  ): Promise<CreditAccountDataRaw[]> {
     this.log.debug(
       `filtering liquidatable credit accounts from selection of ${accs.length}...`,
     );
@@ -326,13 +324,16 @@ export class ScanServiceV3 extends AbstractScanService {
     this.#restakingCMAddr = RESTAKING_CMS[this.config.network];
 
     if (this.#restakingCMAddr) {
-      const cm = ICreditManagerV3__factory.connect(
-        this.#restakingCMAddr,
-        this.provider,
-      );
-      const [{ liquidationDiscount }, ezETHLT] = await Promise.all([
-        cm.fees(),
-        cm.liquidationThresholds(tokenDataByNetwork[this.config.network].ezETH),
+      const cm = getContract({
+        abi: iCreditManagerV3Abi,
+        address: this.#restakingCMAddr,
+        client: this.publicClient,
+      });
+      const [[, , liquidationDiscount], ezETHLT] = await Promise.all([
+        cm.read.fees(),
+        cm.read.liquidationThresholds([
+          tokenDataByNetwork[this.config.network].ezETH,
+        ]),
       ]);
 
       // For restaking accounts, say for simplicity account with only ezETH:
@@ -364,7 +365,7 @@ export class ScanServiceV3 extends AbstractScanService {
       // So it's safe to liquidate accounts with such HF, otherwise we get into bad debt zone
       // For current settings of  Restaking WETH credit manager on mainnet it translates to HF >= 91.50% / 0.97 == 94.33%
       this.#restakingMinHF =
-        (PERCENTAGE_FACTOR * ezETHLT) / liquidationDiscount;
+        (PERCENTAGE_FACTOR * BigInt(ezETHLT)) / BigInt(liquidationDiscount);
       this.log.warn(
         {
           restakingCMAddr: this.#restakingCMAddr,

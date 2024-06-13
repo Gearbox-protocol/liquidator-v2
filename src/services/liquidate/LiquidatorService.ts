@@ -199,7 +199,7 @@ export class LiquidatorService implements ILiquidatorService {
       optimisticResult.assetOut = preview.assetOut;
       optimisticResult.amountOut = preview.amountOut;
       optimisticResult.flashLoanAmount = preview.flashLoanAmount;
-      optimisticResult.calls = preview.calls as any;
+      optimisticResult.calls = preview.calls;
       optimisticResult.pathAmount = preview.underlyingBalance.toString();
       optimisticResult.priceUpdates = preview.priceUpdates;
       optimisticResult.callsHuman = TxParserHelper.parseMultiCall(preview);

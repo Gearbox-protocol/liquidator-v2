@@ -180,7 +180,7 @@ export default class LiquidationStrategyV3Partial
         optimalAmount,
         flashLoanAmount,
         priceUpdates,
-        connectors as any,
+        connectors,
         BigInt(this.config.slippage),
       ]);
     if (preview.profit < 0n) {
