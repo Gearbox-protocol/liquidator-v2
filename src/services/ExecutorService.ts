@@ -12,6 +12,7 @@ import type {
   Address,
   Chain,
   CustomTransport,
+  EncodeFunctionDataParameters,
   Hex,
   PrivateKeyAccount,
   SimulateContractReturnType,
@@ -19,7 +20,12 @@ import type {
   Transport,
   WalletClient,
 } from "viem";
-import { createWalletClient, custom, PublicClient } from "viem";
+import {
+  createWalletClient,
+  custom,
+  encodeFunctionData,
+  PublicClient,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 import { CONFIG, Config } from "../config/index.js";
@@ -130,8 +136,18 @@ export default class ExecutorService {
       borrower: ca.borrower,
       manager: ca.managerName,
     });
-    logger.debug(request, `sending tx via normal rpc`);
-    const req = { ...request };
+    logger.debug("sending liquidation tx");
+    const { abi, address, args, dataSuffix, functionName, ...rest } = request;
+    const data = encodeFunctionData({
+      abi,
+      args,
+      functionName,
+    } as EncodeFunctionDataParameters);
+    const req = await this.walletClient.prepareTransactionRequest({
+      ...rest,
+      to: request.address,
+      data,
+    });
     if (req.maxPriorityFeePerGas && req.maxFeePerGas) {
       const extraTip =
         (BigInt(req.maxPriorityFeePerGas) * GAS_TIP_MULTIPLIER) /
@@ -146,7 +162,10 @@ export default class ExecutorService {
         `increase gas fees`,
       );
     }
-    const hash = await this.walletClient.writeContract(request);
+    const serializedTransaction = await this.walletClient.signTransaction(req);
+    const hash = await this.walletClient.sendRawTransaction({
+      serializedTransaction,
+    });
 
     logger.debug(`sent transaction ${hash}`);
     const result = await this.publicClient.waitForTransactionReceipt({ hash });
