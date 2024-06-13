@@ -1,15 +1,16 @@
-import type {
-  ILiquidator,
-  IPriceHelper,
-  TokenPriceInfoStructOutput,
-} from "@gearbox-protocol/liquidator-v2-contracts";
+import type { TokenPriceInfoStructOutput } from "@gearbox-protocol/liquidator-v2-contracts";
 import {
-  AaveFLTaker__factory,
-  ILiquidator__factory,
-  IPriceHelper__factory,
-  Liquidator__factory,
-  PriceHelper__factory,
-} from "@gearbox-protocol/liquidator-v2-contracts";
+  aaveFlTakerAbi,
+  iLiquidatorAbi,
+  iPriceHelperAbi,
+  liquidatorAbi,
+  priceHelperAbi,
+} from "@gearbox-protocol/liquidator-v2-contracts/abi";
+import {
+  AaveFLTaker_bytecode,
+  Liquidator_bytecode,
+  PriceHelper_bytecode,
+} from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import type { ExcludeArrayProps } from "@gearbox-protocol/sdk-gov";
 import {
   ADDRESS_0X0,
@@ -21,24 +22,28 @@ import {
   WAD,
 } from "@gearbox-protocol/sdk-gov";
 import {
-  IACL__factory,
-  ICreditConfiguratorV3__factory,
-  ICreditManagerV3__factory,
-} from "@gearbox-protocol/types/v3";
-import type { JsonRpcProvider, TransactionReceipt, Wallet } from "ethers";
+  iaclAbi,
+  iCreditConfiguratorV3Abi,
+  iCreditManagerV3Abi,
+} from "@gearbox-protocol/types/abi";
+import type { JsonRpcProvider, TransactionReceipt } from "ethers";
 import { Service } from "typedi";
 import type { Address } from "viem";
+import { createTestClient, custom, getContract } from "viem";
 
 import { Logger, type LoggerInterface } from "../../log/index.js";
 import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import type { CreditManagerData } from "../../utils/index.js";
-import { impersonate, stopImpersonate } from "../../utils/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
   ILiquidationStrategy,
   MakeLiquidatableResult,
   PartialLiquidationPreview,
 } from "./types.js";
+import type {
+  ILiquidatorContract,
+  IPriceHelperContract,
+} from "./viem-types.js";
 
 interface TokenBalance extends ExcludeArrayProps<TokenPriceInfoStructOutput> {
   /**
@@ -58,10 +63,10 @@ export default class LiquidationStrategyV3Partial
   @Logger("LiquidationStrategyV3Partial")
   logger: LoggerInterface;
 
-  #partialLiquidator?: ILiquidator;
-  #priceHelper?: IPriceHelper;
-  #configuratorAddr?: string;
-  #registeredCMs: Record<string, boolean> = {};
+  #partialLiquidator?: ILiquidatorContract;
+  #priceHelper?: IPriceHelperContract;
+  #configuratorAddr?: Address;
+  #registeredCMs: Record<Address, boolean> = {};
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -75,15 +80,12 @@ export default class LiquidationStrategyV3Partial
       contractsByNetwork[this.config.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
+    this.#priceHelper = await this.#deployPriceHelper();
     this.#partialLiquidator = await this.#deployPartialLiquidator(
-      this.executor.wallet,
       router,
       bot,
       aavePool,
     );
-
-    this.#priceHelper = await this.#deployPriceHelper(this.executor.wallet);
-
     await this.#configurePartialLiquidator(router, bot);
   }
 
@@ -101,7 +103,7 @@ export default class LiquidationStrategyV3Partial
         "warning: account has tokens without reserve price feeds",
       );
     }
-    if (!this.#registeredCMs[ca.creditManager.toLowerCase()]) {
+    if (!this.#registeredCMs[ca.creditManager.toLowerCase() as Address]) {
       throw new Error(
         "warning: account's credit manager is not registered in partial liquidator",
       );
@@ -138,16 +140,18 @@ export default class LiquidationStrategyV3Partial
     const cm = await this.getCreditManagerData(ca.creditManager);
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
     const {
-      tokenOut,
-      optimalAmount,
-      repaidAmount,
-      flashLoanAmount,
-      isOptimalRepayable,
-    } = await this.partialLiquidator.getOptimalLiquidation.staticCall(
+      result: [
+        tokenOut,
+        optimalAmount,
+        repaidAmount,
+        flashLoanAmount,
+        isOptimalRepayable,
+      ],
+    } = await this.partialLiquidator.simulate.getOptimalLiquidation([
       ca.addr,
-      10100,
+      10100n,
       priceUpdates,
-    );
+    ]);
     const [symb, decimals, uSymb, uDec] = [
       tokenSymbolByAddress[tokenOut.toLowerCase()],
       getDecimals(tokenOut),
@@ -169,17 +173,17 @@ export default class LiquidationStrategyV3Partial
     );
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
 
-    const preview =
-      await this.partialLiquidator.previewPartialLiquidation.staticCall(
+    const { result: preview } =
+      await this.partialLiquidator.simulate.previewPartialLiquidation([
         ca.creditManager,
         ca.addr,
         tokenOut,
         optimalAmount,
         flashLoanAmount,
         priceUpdates,
-        connectors,
-        this.config.slippage,
-      );
+        connectors as any,
+        BigInt(this.config.slippage),
+      ]);
     if (preview.profit < 0n) {
       if (isOptimalRepayable) {
         throw new Error("optimal liquidation is not profitable or errored");
@@ -206,14 +210,17 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<bigint> {
-    return this.partialLiquidator.partialLiquidateAndConvert.estimateGas(
-      account.creditManager,
-      account.addr,
-      preview.assetOut,
-      preview.amountOut,
-      preview.flashLoanAmount,
-      preview.priceUpdates,
-      preview.calls,
+    return this.partialLiquidator.estimateGas.partialLiquidateAndConvert(
+      [
+        account.creditManager,
+        account.addr,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
+        preview.priceUpdates,
+        preview.calls as any,
+      ],
+      {},
     );
   }
 
@@ -222,30 +229,33 @@ export default class LiquidationStrategyV3Partial
     preview: PartialLiquidationPreview,
     gasLimit?: bigint,
   ): Promise<TransactionReceipt> {
-    const txData =
-      await this.partialLiquidator.partialLiquidateAndConvert.populateTransaction(
-        account.creditManager,
-        account.addr,
-        preview.assetOut,
-        preview.amountOut,
-        preview.flashLoanAmount,
-        preview.priceUpdates,
-        preview.calls,
-        gasLimit ? { gasLimit } : {},
+    const { request } =
+      await this.partialLiquidator.simulate.partialLiquidateAndConvert(
+        [
+          account.creditManager,
+          account.addr,
+          preview.assetOut,
+          preview.amountOut,
+          preview.flashLoanAmount,
+          preview.priceUpdates,
+          preview.calls as any,
+        ],
+        { gas: gasLimit },
       );
-    return this.executor.sendPrivate(txData);
+    // TODO: compatibility between ethers and viem
+    return this.executor.sendPrivate(request as any);
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
     const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
     // this helper contract fetches prices while trying to ignore failed price feeds
     // prices here are not critical, as they're used for sorting and estimation and only in optimistic mode
-    const tokens = await this.priceHelper.previewTokens.staticCall(
+    const tokens = await this.priceHelper.simulate.previewTokens([
       ca.addr,
       priceUpdates,
-    );
+    ]);
     // Sort by weighted value descending, but underlying token comes last
-    return tokens
+    return tokens.result
       .map(
         (t): TokenBalance => ({
           token: t.token.toLowerCase(),
@@ -325,106 +335,152 @@ export default class LiquidationStrategyV3Partial
   async #setNewLTs(
     ca: CreditAccountData,
     cm: CreditManagerData,
-    ltChanges: Record<string, [bigint, bigint]>,
+    ltChanges: Record<Address, [bigint, bigint]>,
   ): Promise<void> {
     const logger = this.#caLogger(ca);
+    const anvilClient = createTestClient({
+      transport: custom(this.publicClient.transport),
+      mode: "anvil",
+      chain: this.publicClient.chain,
+    });
     const configuratorAddr = await this.getConfiguratorAddr();
-    const impConfiurator = await impersonate(
-      this.executor.provider,
-      configuratorAddr,
-    );
-    const cc = ICreditConfiguratorV3__factory.connect(
-      cm.creditConfigurator,
-      impConfiurator,
-    );
-    const mgr = ICreditManagerV3__factory.connect(
-      cm.address,
-      this.executor.provider,
-    );
+    await anvilClient.impersonateAccount({ address: configuratorAddr });
     for (const [t, [_, lt]] of Object.entries(ltChanges)) {
-      const tx = await cc.setLiquidationThreshold(t, lt);
-      await this.executor.mine(tx);
-      const newLT = await mgr.liquidationThresholds(t);
+      const hash = await this.executor.walletClient.writeContract({
+        address: cm.creditConfigurator,
+        account: configuratorAddr,
+        abi: iCreditConfiguratorV3Abi,
+        functionName: "setLiquidationThreshold",
+        args: [t as Address, Number(lt)],
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash });
+      const newLT = await this.publicClient.readContract({
+        address: cm.address,
+        abi: iCreditManagerV3Abi,
+        functionName: "liquidationThresholds",
+        args: [t as Address],
+      });
       logger.debug(`set LT of ${tokenSymbolByAddress[t]} to ${lt}: ${newLT}`);
     }
-    await stopImpersonate(this.executor.provider, configuratorAddr);
+    await anvilClient.stopImpersonatingAccount({ address: configuratorAddr });
   }
 
   async #deployPartialLiquidator(
-    executor: Wallet,
-    router: string,
-    bot: string,
-    aavePool: string,
-  ): Promise<ILiquidator> {
+    router: Address,
+    bot: Address,
+    aavePool: Address,
+  ): Promise<ILiquidatorContract> {
     let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
     if (!partialLiquidatorAddress) {
       this.logger.debug("deploying partial liquidator");
 
-      const aaveFlTakerFactory = new AaveFLTaker__factory(executor as any);
-      const aaveFlTaker = await aaveFlTakerFactory.deploy(aavePool);
-      await aaveFlTaker.waitForDeployment();
+      let hash = await this.executor.walletClient.deployContract({
+        abi: aaveFlTakerAbi,
+        bytecode: AaveFLTaker_bytecode,
+        args: [aavePool],
+      });
+      this.logger.debug(`waiting for AaveFLTaker to deploy, tx hash: ${hash}`);
+      const { contractAddress: aaveFlTakerAddr } =
+        await this.publicClient.waitForTransactionReceipt({ hash });
+      if (!aaveFlTakerAddr) {
+        throw new Error(`AaveFLTaker was not deployed, tx hash: ${hash}`);
+      }
+      let owner = await this.publicClient.readContract({
+        abi: aaveFlTakerAbi,
+        functionName: "owner",
+        address: aaveFlTakerAddr,
+      });
       this.logger.debug(
-        `deployed AaveFLTaker at ${aaveFlTaker.target} in tx ${aaveFlTaker.deploymentTransaction()?.hash}`,
+        `deployed AaveFLTaker at ${aaveFlTakerAddr} owned by ${owner} in tx ${hash}`,
       );
 
-      const liquidatorFactory = new Liquidator__factory(executor as any);
-      const liquidator = await liquidatorFactory.deploy(
-        router,
-        bot,
-        aavePool,
-        aaveFlTaker.target,
-      );
-      await liquidator.waitForDeployment();
+      hash = await this.executor.walletClient.deployContract({
+        abi: liquidatorAbi,
+        bytecode: Liquidator_bytecode,
+        args: [router, bot, aavePool, aaveFlTakerAddr],
+      });
+      this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
+      const { contractAddress: liquidatorAddr } =
+        await this.publicClient.waitForTransactionReceipt({ hash });
+      if (!liquidatorAddr) {
+        throw new Error(`Liquidator was not deployed, tx hash: ${hash}`);
+      }
+      owner = await this.publicClient.readContract({
+        abi: liquidatorAbi,
+        address: liquidatorAddr,
+        functionName: "owner",
+      });
       this.logger.debug(
-        `deployed Liquidator ${liquidator.target} in tx ${liquidator.deploymentTransaction()?.hash}`,
+        `deployed Liquidator at ${liquidatorAddr} owned by ${owner} in tx ${hash}`,
       );
 
-      const tx = await aaveFlTaker.setAllowedFLReceiver(
-        liquidator.target,
-        true,
-      );
-      await tx.wait();
+      const { request } = await this.publicClient.simulateContract({
+        account: this.executor.walletClient.account,
+        address: aaveFlTakerAddr,
+        abi: aaveFlTakerAbi,
+        functionName: "setAllowedFLReceiver",
+        args: [liquidatorAddr, true],
+      });
+      hash = await this.executor.walletClient.writeContract(request);
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+      });
+      if (receipt.status === "reverted") {
+        throw new Error(
+          `AaveFLTaker.setAllowedFLReceiver reverted, tx hash: ${hash}`,
+        );
+      }
       this.logger.debug(
-        `set allowed flashloan receiver on FLTaker ${aaveFlTaker.target} to ${liquidator.target} in tx ${tx.hash}`,
+        `set allowed flashloan receiver on FLTaker ${aaveFlTakerAddr} to ${liquidatorAddr} in tx ${hash}`,
       );
 
-      partialLiquidatorAddress = liquidator.target as Address;
+      partialLiquidatorAddress = liquidatorAddr;
     }
     this.logger.info(
       `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
     );
-    return ILiquidator__factory.connect(
-      partialLiquidatorAddress,
-      executor as any,
-    );
+    return getContract({
+      abi: iLiquidatorAbi,
+      address: partialLiquidatorAddress,
+      client: this.publicClient,
+    });
   }
 
-  async #deployPriceHelper(
-    executor: Wallet,
-  ): Promise<IPriceHelper | undefined> {
+  async #deployPriceHelper(): Promise<IPriceHelperContract | undefined> {
     if (!this.config.optimistic) {
       return undefined;
     }
     this.logger.debug("deploying price helper");
 
-    const factory = new PriceHelper__factory(executor as any);
-    const priceHelper = await factory.deploy();
-    await priceHelper.waitForDeployment();
+    const hash = await this.executor.walletClient.deployContract({
+      abi: priceHelperAbi,
+      bytecode: PriceHelper_bytecode,
+      args: [],
+    });
+    this.logger.debug(`waiting for PriceHelper to deploy, tx hash: ${hash}`);
+    const { contractAddress: priceHelperAddr } =
+      await this.publicClient.waitForTransactionReceipt({ hash });
+    if (!priceHelperAddr) {
+      throw new Error(`PriceHelper was not deployed, tx hash: ${hash}`);
+    }
     this.logger.debug(
-      `deployed PriceHelper at ${priceHelper.target} in tx ${priceHelper.deploymentTransaction()?.hash}`,
+      `deployed PriceHelper at ${priceHelperAddr} in tx ${hash}`,
     );
-    const priceHelperAddress = priceHelper.target as string;
-    this.logger.info(`price helper contract addesss: ${priceHelperAddress}`);
-    return IPriceHelper__factory.connect(priceHelperAddress, executor as any);
+
+    return getContract({
+      abi: iPriceHelperAbi,
+      address: priceHelperAddr,
+      client: this.publicClient,
+    });
   }
 
   async #configurePartialLiquidator(
-    router: string,
-    bot: string,
+    router: Address,
+    bot: Address,
   ): Promise<void> {
     const [currentRouter, currentBot, cms] = await Promise.all([
-      this.partialLiquidator.router(),
-      this.partialLiquidator.partialLiquidationBot(),
+      this.partialLiquidator.read.router(),
+      this.partialLiquidator.read.partialLiquidationBot(),
       this.getCreditManagersV3List(),
     ]);
 
@@ -432,43 +488,92 @@ export default class LiquidationStrategyV3Partial
       this.logger.warn(
         `need to update router from ${currentRouter} to ${router}`,
       );
-      const tx = await this.partialLiquidator.setRouter(router);
-      await tx.wait();
-      this.logger.info(`set router to ${router} in tx ${tx.hash}`);
+      const { request } = await this.partialLiquidator.simulate.setRouter([
+        router,
+      ]);
+      const hash = await this.executor.walletClient.writeContract(request);
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+      });
+      if (receipt.status === "reverted") {
+        throw new Error(
+          `PartialLiquidator.setRouter(${router}) tx ${hash} reverted`,
+        );
+      }
+      this.logger.info(`set router to ${router} in tx ${hash}`);
     }
 
     if (bot.toLowerCase() !== currentBot.toLowerCase()) {
       this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
-      const tx = await this.partialLiquidator.setPartialLiquidationBot(bot);
-      await tx.wait();
-      this.logger.info(`set bit to ${bot} in tx ${tx.hash}`);
+      const { request } =
+        await this.partialLiquidator.simulate.setPartialLiquidationBot([bot]);
+      const hash = await this.executor.walletClient.writeContract(request);
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+      });
+      if (receipt.status === "reverted") {
+        throw new Error(
+          `PartialLiquidator.setPartialLiquidationBot(${bot}) tx ${hash} reverted`,
+        );
+      }
+      this.logger.info(`set bot to ${bot} in tx ${hash}`);
     }
+    const cmToCa = await this.#getLiquidatorAccounts(cms);
+    // TODO: count required number of DefenNFT tokens to transfer from owner to liquidator
 
-    for (const { address, name } of cms) {
-      const ca = await this.partialLiquidator.cmToCA(address);
+    for (const cm of cms) {
+      const { address, name } = cm;
+      const ca = cmToCa[address];
       if (ca === ADDRESS_0X0) {
-        try {
-          this.logger.debug(
-            `need to register credit manager ${name} (${address})`,
-          );
-          const tx = await this.partialLiquidator.registerCM(address);
-          await tx.wait();
-          this.logger.info(
-            `registered credit manager ${name} (${address}) in tx ${tx.hash}`,
-          );
-          this.#registeredCMs[address.toLowerCase()] = true;
-        } catch (e) {
-          this.logger.error(
-            `failed to register credit manager ${name} (${address}): ${e}`,
-          );
-          this.#registeredCMs[address.toLowerCase()] = false;
-        }
+        await this.#registerCM(cm);
       } else {
         this.logger.debug(
           `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
-        this.#registeredCMs[address.toLowerCase()] = true;
+        this.#registeredCMs[address.toLowerCase() as Address] = true;
       }
+    }
+  }
+
+  async #getLiquidatorAccounts(
+    cms: CreditManagerData[],
+  ): Promise<Record<Address, Address>> {
+    const results = await this.publicClient.multicall({
+      allowFailure: false,
+      contracts: cms.map(cm => ({
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator.address,
+        functionName: "cmToCA",
+        args: [cm.address],
+      })),
+    });
+    this.logger.debug(`loaded ${cms.length} liquidator credit accounts`);
+    return Object.fromEntries(cms.map((cm, i) => [cm.address, results[i]]));
+  }
+
+  async #registerCM(cm: CreditManagerData): Promise<void> {
+    const { address, name } = cm;
+    try {
+      this.logger.debug(`need to register credit manager ${name} (${address})`);
+      const { request } = await this.partialLiquidator.simulate.registerCM([
+        address,
+      ]);
+      const hash = await this.executor.walletClient.writeContract(request);
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+      });
+      if (receipt.status === "reverted") {
+        throw new Error(`Liquidator.registerCM(${address}) reverted`);
+      }
+      this.logger.info(
+        `registered credit manager ${name} (${address}) in tx ${hash}`,
+      );
+      this.#registeredCMs[address.toLowerCase() as Address] = true;
+    } catch (e) {
+      this.logger.error(
+        `failed to register credit manager ${name} (${address}): ${e}`,
+      );
+      this.#registeredCMs[address.toLowerCase() as Address] = false;
     }
   }
 
@@ -481,14 +586,14 @@ export default class LiquidationStrategyV3Partial
     });
   }
 
-  private get partialLiquidator(): ILiquidator {
+  private get partialLiquidator(): ILiquidatorContract {
     if (!this.#partialLiquidator) {
       throw new Error("strategy not launched");
     }
     return this.#partialLiquidator;
   }
 
-  private get priceHelper(): IPriceHelper {
+  private get priceHelper(): IPriceHelperContract {
     if (!this.config.optimistic) {
       throw new Error("price helper is only available in optimistic mode");
     }
@@ -498,11 +603,14 @@ export default class LiquidationStrategyV3Partial
     return this.#priceHelper;
   }
 
-  private async getConfiguratorAddr(): Promise<string> {
+  private async getConfiguratorAddr(): Promise<Address> {
     if (!this.#configuratorAddr) {
       const aclAddr = await this.addressProvider.findService("ACL", 0);
-      const acl = IACL__factory.connect(aclAddr, this.executor.provider);
-      this.#configuratorAddr = await acl.owner();
+      this.#configuratorAddr = await this.publicClient.readContract({
+        address: aclAddr,
+        abi: iaclAbi,
+        functionName: "owner",
+      });
       this.logger.debug(`configurator address: ${this.#configuratorAddr}`);
     }
     return this.#configuratorAddr;

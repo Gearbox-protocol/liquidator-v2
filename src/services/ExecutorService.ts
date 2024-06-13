@@ -13,10 +13,20 @@ import type {
 } from "ethers";
 import { formatUnits, Provider, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
+import type {
+  Chain,
+  CustomTransport,
+  Hex,
+  PrivateKeyAccount,
+  Transport,
+  WalletClient,
+} from "viem";
+import { createWalletClient, custom, PublicClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { CONFIG, Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
-import { PROVIDER } from "../utils/index.js";
+import { PROVIDER, VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
@@ -51,6 +61,9 @@ export default class ExecutorService {
   @Inject(PROVIDER)
   public provider: Provider;
 
+  @Inject(VIEM_PUBLIC_CLIENT)
+  publicClient: PublicClient<Transport, Chain>;
+
   @Inject(NOTIFIER)
   notifier: INotifier;
 
@@ -59,9 +72,25 @@ export default class ExecutorService {
 
   #anvilInfo: AnvilNodeInfo | null = null;
 
+  #walletClient?: WalletClient<
+    CustomTransport,
+    Chain,
+    PrivateKeyAccount,
+    undefined
+  >;
+
   // #flashbots?: FlashbotsBundleProvider;
 
   public async launch(): Promise<void> {
+    let pk = this.config.privateKey as Hex;
+    if (!pk.startsWith("0x")) {
+      pk = `0x${pk}`;
+    }
+    this.#walletClient = createWalletClient({
+      account: privateKeyToAccount(pk),
+      chain: this.publicClient.chain,
+      transport: custom(this.publicClient.transport),
+    });
     try {
       const resp = await (this.provider as JsonRpcProvider).send(
         "anvil_nodeInfo",
@@ -177,6 +206,18 @@ export default class ExecutorService {
 
   //   return this.#flashbots;
   // }
+
+  public get walletClient(): WalletClient<
+    CustomTransport,
+    Chain,
+    PrivateKeyAccount,
+    undefined
+  > {
+    if (!this.#walletClient) {
+      throw new Error("wallet client not initialized");
+    }
+    return this.#walletClient;
+  }
 
   public get address(): string {
     return this.wallet.address;
