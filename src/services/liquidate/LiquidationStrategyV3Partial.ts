@@ -28,7 +28,7 @@ import {
 import type { JsonRpcProvider } from "ethers";
 import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
-import { createTestClient, custom, getContract } from "viem";
+import { createTestClient, custom, getContract, parseEther } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
@@ -325,6 +325,10 @@ export default class LiquidationStrategyV3Partial
     });
     const configuratorAddr = await this.getConfiguratorAddr();
     await anvilClient.impersonateAccount({ address: configuratorAddr });
+    await anvilClient.setBalance({
+      address: configuratorAddr,
+      value: parseEther("100"),
+    });
     for (const [t, [_, lt]] of Object.entries(ltChanges)) {
       const hash = await this.executor.walletClient.writeContract({
         address: cm.creditConfigurator,
