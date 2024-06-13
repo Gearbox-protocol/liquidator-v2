@@ -205,9 +205,7 @@ export class RedstoneServiceV3 {
     activeOnly = false,
   ): Promise<PriceUpdate[]> {
     const accTokens: string[] = [];
-    for (const [token, { balance, isEnabled }] of Object.entries(
-      ca.allBalances,
-    )) {
+    for (const { token, balance, isEnabled } of ca.allBalances) {
       if (isEnabled && balance > 10n) {
         accTokens.push(token);
       }

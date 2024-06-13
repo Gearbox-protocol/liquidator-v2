@@ -100,14 +100,14 @@ export default class OracleServiceV3 {
    * @returns
    */
   public checkReserveFeeds(ca: CreditAccountData): boolean {
-    for (const [t, b] of Object.entries(ca.allBalances)) {
-      if (t.toLowerCase() === ca.underlyingToken.toLowerCase()) {
+    for (const { token, balance } of ca.allBalances) {
+      if (token === ca.underlyingToken) {
         continue;
       }
-      if (b.balance < 10n) {
+      if (balance < 10n) {
         continue;
       }
-      const entry = this.#feeds[t.toLowerCase() as Address];
+      const entry = this.#feeds[token];
       if (!entry) {
         return false;
       }
