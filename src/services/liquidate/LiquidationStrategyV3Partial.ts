@@ -1,4 +1,3 @@
-import type { TokenPriceInfoStructOutput } from "@gearbox-protocol/liquidator-v2-contracts";
 import {
   aaveFlTakerAbi,
   iLiquidatorAbi,
@@ -43,9 +42,10 @@ import type {
 import type {
   ILiquidatorContract,
   IPriceHelperContract,
+  TokenPriceInfo,
 } from "./viem-types.js";
 
-interface TokenBalance extends ExcludeArrayProps<TokenPriceInfoStructOutput> {
+interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   /**
    * Balance in underlying * liquidationThreshold
    */
@@ -258,7 +258,7 @@ export default class LiquidationStrategyV3Partial
     return tokens.result
       .map(
         (t): TokenBalance => ({
-          token: t.token.toLowerCase(),
+          token: t.token.toLowerCase() as Address,
           balance: t.balance,
           balanceInUnderlying: t.balanceInUnderlying,
           liquidationThreshold: t.liquidationThreshold,

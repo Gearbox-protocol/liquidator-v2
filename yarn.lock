@@ -1357,10 +1357,10 @@
     eslint-plugin-simple-import-sort "^10.0.0"
     eslint-plugin-unused-imports "^3.0.0"
 
-"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.15":
-  version "2.1.0-next.15"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.15.tgz#812570bc5e4fe2903b3426fd19879457aac568ac"
-  integrity sha512-OSTHOog47dG5m7wGTVALKIx/k1Qt3PS2mSzzGCaB5UFYxFV9WARACZp1ZhXQYx/aPzJUwJ/Jek+A6VEKxFINfA==
+"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.16":
+  version "2.1.0-next.16"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.16.tgz#6d470b53f8bc4e015c61a92d10cd713eb940971b"
+  integrity sha512-XjZjSi/OmVhsnzCN5egbauH6hsaecHIApIeZYYP/XWbb/M9WurbnJZ9FjY/Rt8t/D/TXFkgDouz5OqW2CFLFdQ==
 
 "@gearbox-protocol/prettier-config@2.0.0-next.0":
   version "2.0.0-next.0"

@@ -5,7 +5,7 @@ import path from "node:path";
 import {
   ILiquidator__factory,
   SafeERC20__factory,
-} from "@gearbox-protocol/liquidator-v2-contracts";
+} from "@gearbox-protocol/liquidator-v2-contracts/types";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import {

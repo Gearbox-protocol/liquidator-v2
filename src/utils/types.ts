@@ -7,6 +7,10 @@ import type { iDataCompressorV3Abi } from "@gearbox-protocol/types/abi";
 import type { AbiParameterToPrimitiveType, ExtractAbiFunction } from "abitype";
 import type { Address, GetContractReturnType, PublicClient } from "viem";
 
+export type ArrayElementType<T> = T extends readonly (infer U)[] | (infer U)[]
+  ? U
+  : never;
+
 export interface PriceOnDemand {
   token: `0x${string}`;
   callData: `0x${string}`;
