@@ -21,21 +21,20 @@ import {
   tokenSymbolByAddress,
   yearnTokens,
 } from "@gearbox-protocol/sdk-gov";
-import type { Balance } from "@gearbox-protocol/types/v3";
+import type { TokenBalance } from "@gearbox-protocol/types/v3";
+import type { Address } from "viem";
 
 export interface PathOption {
-  target: string;
+  target: Address;
   option: number;
   totalOptions: number;
 }
 
-export type PathOptionSerie = Array<PathOption>;
-
-export type BalanceInterface = Pick<Balance, "balance">;
+export type PathOptionSerie = PathOption[];
 
 export class PathOptionFactory {
   static generatePathOptions(
-    balances: Record<string, BalanceInterface>,
+    balances: Array<Pick<TokenBalance, "token" | "balance">>,
     loopsInTx: number,
     network: NetworkType,
   ): Array<PathOptionSerie> {
@@ -81,14 +80,12 @@ export class PathOptionFactory {
   }
 
   static getCurvePools(
-    balances: Record<string, BalanceInterface>,
+    balances: Array<Pick<TokenBalance, "token" | "balance">>,
   ): Array<CurveLPToken> {
-    const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => toBigInt(balance.balance) > 1,
-    );
+    const nonZeroBalances = balances.filter(b => toBigInt(b.balance) > 1);
 
     const curvePools = nonZeroBalances
-      .map(([token]) => tokenSymbolByAddress[token.toLowerCase()])
+      .map(b => tokenSymbolByAddress[b.token.toLowerCase()])
       .filter(symbol => isCurveLPToken(symbol)) as Array<CurveLPToken>;
 
     const yearnCurveTokens = Object.entries(yearnTokens)
@@ -96,7 +93,7 @@ export class PathOptionFactory {
       .map(([token]) => token);
 
     const curvePoolsFromYearn = nonZeroBalances
-      .map(([token]) => tokenSymbolByAddress[token.toLowerCase()])
+      .map(b => tokenSymbolByAddress[b.token.toLowerCase()])
       .filter(symbol => yearnCurveTokens.includes(symbol))
       .map(
         symbol => yearnTokens[symbol as YearnLPToken].underlying,
@@ -107,7 +104,7 @@ export class PathOptionFactory {
       .map(([token]) => token);
 
     const curvePoolsFromConvex = nonZeroBalances
-      .map(([token]) => tokenSymbolByAddress[token.toLowerCase()])
+      .map(b => tokenSymbolByAddress[b.token.toLowerCase()])
       .filter(symbol => convexCurveTokens.includes(symbol))
       .map(symbol => convexTokens[symbol as ConvexLPToken].underlying);
 
@@ -120,14 +117,12 @@ export class PathOptionFactory {
   }
 
   static getBalancerPools(
-    balances: Record<string, BalanceInterface>,
+    balances: Array<Pick<TokenBalance, "token" | "balance">>,
   ): Array<BalancerLPToken> {
-    const nonZeroBalances = Object.entries(balances).filter(
-      ([, balance]) => toBigInt(balance.balance) > 1,
-    );
+    const nonZeroBalances = balances.filter(b => toBigInt(b.balance) > 1);
 
     const balancerPools = nonZeroBalances
-      .map(([token]) => tokenSymbolByAddress[token.toLowerCase()])
+      .map(b => tokenSymbolByAddress[b.token.toLowerCase()])
       .filter(symbol => isBalancerLPToken(symbol)) as Array<BalancerLPToken>;
 
     const balancerAuraTokens = Object.entries(auraTokens)
@@ -135,7 +130,7 @@ export class PathOptionFactory {
       .map(([token]) => token);
 
     const balancerTokensFromAura = nonZeroBalances
-      .map(([token]) => tokenSymbolByAddress[token.toLowerCase()])
+      .map(b => tokenSymbolByAddress[b.token.toLowerCase()])
       .filter(symbol => balancerAuraTokens.includes(symbol))
       .map(
         symbol =>

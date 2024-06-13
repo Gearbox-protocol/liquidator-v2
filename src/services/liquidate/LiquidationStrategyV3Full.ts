@@ -1,11 +1,10 @@
 import { getDecimals } from "@gearbox-protocol/sdk-gov";
-import type { Balance } from "@gearbox-protocol/types/v3";
-import { ICreditFacadeV3__factory } from "@gearbox-protocol/types/v3";
-import type { TransactionReceipt } from "ethers";
+import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
+import type { SimulateContractReturnType } from "viem";
 
+import type { Balance, CreditAccountData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
@@ -33,28 +32,24 @@ export default class LiquidationStrategyV3Full
       const cm = await this.getCreditManagerData(ca.creditManager);
       const expectedBalances: Record<string, Balance> = {};
       const leftoverBalances: Record<string, Balance> = {};
-      Object.entries(ca.allBalances).forEach(
-        ([token, { balance, isEnabled }]) => {
-          expectedBalances[token] = { token, balance };
-          // filter out dust, we don't want to swap it
-          const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
-          // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
-          if (balance < minBalance || !isEnabled) {
-            leftoverBalances[token] = { token, balance };
-          }
-        },
-      );
+      for (const { token, balance, isEnabled } of ca.allBalances) {
+        expectedBalances[token] = { token, balance };
+        // filter out dust, we don't want to swap it
+        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
+        // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
+        if (balance < minBalance || !isEnabled) {
+          leftoverBalances[token] = { token, balance };
+        }
+      }
       const result = await this.pathFinder.findBestClosePath({
         creditAccount: ca,
         creditManager: cm,
         expectedBalances,
         leftoverBalances,
         slippage: this.config.slippage,
-        noConcurrency: true,
-        network: this.config.network,
       });
       if (!result) {
-        throw new Error("result is empty");
+        throw new Error("pathfinder result is empty");
       }
       // we want fresh redstone price in actual liquidation transactions
       const priceUpdateCalls = await this.redstone.multicallUpdates(ca);
@@ -69,36 +64,15 @@ export default class LiquidationStrategyV3Full
     }
   }
 
-  public async estimate(
+  public async simulate(
     account: CreditAccountData,
     preview: PathFinderCloseResult,
-  ): Promise<bigint> {
-    const facade = ICreditFacadeV3__factory.connect(
-      account.creditFacade,
-      this.executor.wallet,
-    );
-    return facade.liquidateCreditAccount.estimateGas(
-      account.addr,
-      this.executor.address,
-      preview.calls,
-    );
-  }
-
-  public async liquidate(
-    account: CreditAccountData,
-    preview: PathFinderCloseResult,
-    gasLimit?: bigint,
-  ): Promise<TransactionReceipt> {
-    const facade = ICreditFacadeV3__factory.connect(
-      account.creditFacade,
-      this.executor.wallet,
-    );
-    const txData = await facade.liquidateCreditAccount.populateTransaction(
-      account.addr,
-      this.executor.address,
-      preview.calls,
-      gasLimit ? { gasLimit } : {},
-    );
-    return this.executor.sendPrivate(txData);
+  ): Promise<SimulateContractReturnType> {
+    return this.publicClient.simulateContract({
+      abi: iCreditFacadeV3Abi,
+      address: account.creditFacade,
+      functionName: "liquidateCreditAccount",
+      args: [account.addr, this.executor.address, preview.calls],
+    });
   }
 }

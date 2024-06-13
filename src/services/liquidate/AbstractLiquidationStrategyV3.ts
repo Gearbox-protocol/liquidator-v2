@@ -4,12 +4,12 @@ import type { Address } from "viem";
 import { getContract, PublicClient } from "viem";
 
 import { CONFIG, type Config } from "../../config/index.js";
+import { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import type { LoggerInterface } from "../../log/index.js";
-import { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import { PathFinder } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
-import { CreditManagerData, VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
+import { VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
 import ExecutorService from "../ExecutorService.js";
 import OracleServiceV3 from "../OracleServiceV3.js";
@@ -52,7 +52,7 @@ export default abstract class AbstractLiquidationStrategyV3 {
     });
     this.#pathFinder = new PathFinder(
       pfAddr,
-      this.executor.provider,
+      this.executor.publicClient,
       this.config.network,
     );
   }

@@ -5,19 +5,17 @@
 import { nextTick } from "node:process";
 
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
-import type {
-  ContractTransaction,
-  JsonRpcProvider,
-  TransactionReceipt,
-  TransactionResponse,
-} from "ethers";
+import type { JsonRpcProvider, TransactionResponse } from "ethers";
 import { formatUnits, Provider, Wallet } from "ethers";
 import { Inject, Service } from "typedi";
 import type {
+  Address,
   Chain,
   CustomTransport,
   Hex,
   PrivateKeyAccount,
+  SimulateContractReturnType,
+  TransactionReceipt,
   Transport,
   WalletClient,
 } from "viem";
@@ -25,6 +23,7 @@ import { createWalletClient, custom, PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 import { CONFIG, Config } from "../config/index.js";
+import type { CreditAccountData } from "../data/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import { PROVIDER, VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
@@ -112,66 +111,51 @@ export default class ExecutorService {
    * @param tx
    * @returns
    */
-  public async mine(tx: TransactionResponse): Promise<TransactionReceipt> {
+  public async mine(tx: TransactionResponse): Promise<void> {
     if (this.#anvilInfo) {
       await (this.provider as JsonRpcProvider)
         .send("evm_mine", [])
         .catch(() => {});
     }
 
-    const result = await tx.wait(1, 12_000);
-    return result!;
+    await tx.wait(1, 12_000);
   }
 
-  public async sendPrivate(
-    txData: ContractTransaction,
+  public async liquidate(
+    ca: CreditAccountData,
+    request: SimulateContractReturnType["request"],
   ): Promise<TransactionReceipt> {
-    // if (!config.optimistic && config.flashbotsRpc) {
-    //   const flashbots = await this.getFlashbots();
-    //   this.logger.debug(`sending tx via flashbots`);
-    //   const resp = await flashbots.sendPrivateTransaction({
-    //     transaction: txData,
-    //     signer: this.wallet,
-    //   });
-    //   if ("error" in resp) {
-    //     this.logger.error(
-    //       `flashbots relay error ${resp.error.code}: ${resp.error.message}`,
-    //     );
-    //   } else {
-    //     this.logger.debug(resp.transaction, "sent tx via flashbots");
-    //     const resolution = await resp.wait();
-    //     if (resolution === FlashbotsTransactionResolution.TransactionIncluded) {
-    //       this.logger.debug(resp.transaction, "transaction included");
-    //       const receipts = await resp.receipts();
-    //       if (receipts.length === 0) {
-    //         throw new Error(`receipts are empty`);
-    //       }
-    //       return receipts[0];
-    //     }
-    //   }
-    // }
-
-    this.logger.debug(`sending tx via normal rpc`);
-    const req = await this.wallet.populateTransaction(txData);
+    const logger = this.logger.child({
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: ca.managerName,
+    });
+    logger.debug(request, `sending tx via normal rpc`);
+    const req = { ...request };
     if (req.maxPriorityFeePerGas && req.maxFeePerGas) {
       const extraTip =
         (BigInt(req.maxPriorityFeePerGas) * GAS_TIP_MULTIPLIER) /
         PERCENTAGE_FACTOR;
       req.maxPriorityFeePerGas = BigInt(req.maxPriorityFeePerGas) + extraTip;
       req.maxFeePerGas = BigInt(req.maxFeePerGas) + extraTip;
+      logger.debug(
+        {
+          maxFeePerGas: req.maxFeePerGas,
+          maxPriorityFeePerGas: req.maxPriorityFeePerGas,
+        },
+        `increase gas fees`,
+      );
     }
-    const signedTx = await this.wallet.signTransaction(req);
-    const tx = await this.provider.broadcastTransaction(signedTx);
-    this.logger.debug(`sent transaction ${tx.hash}`);
-    const result = await this.mine(tx);
+    const hash = await this.walletClient.writeContract(request);
+
+    logger.debug(`sent transaction ${hash}`);
+    const result = await this.publicClient.waitForTransactionReceipt({ hash });
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});
       });
     }
-    this.logger.debug(
-      `got receipt for tx ${tx.hash}: ${result.status === 1 ? "success" : "revert"}`,
-    );
+    this.logger.debug(`got receipt for tx ${hash}: ${result.status}`);
 
     return result;
   }
@@ -219,8 +203,8 @@ export default class ExecutorService {
     return this.#walletClient;
   }
 
-  public get address(): string {
-    return this.wallet.address;
+  public get address(): Address {
+    return this.wallet.address as Address;
   }
 
   public get anvilForkBlock(): bigint {

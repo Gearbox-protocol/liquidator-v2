@@ -25,14 +25,13 @@ import {
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
 } from "@gearbox-protocol/types/abi";
-import type { JsonRpcProvider, TransactionReceipt } from "ethers";
+import type { JsonRpcProvider } from "ethers";
 import { Service } from "typedi";
-import type { Address } from "viem";
+import type { Address, SimulateContractReturnType } from "viem";
 import { createTestClient, custom, getContract } from "viem";
 
+import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
-import type { CreditManagerData } from "../../utils/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
   ILiquidationStrategy,
@@ -206,44 +205,22 @@ export default class LiquidationStrategyV3Partial
     };
   }
 
-  public async estimate(
+  public async simulate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ): Promise<bigint> {
-    return this.partialLiquidator.estimateGas.partialLiquidateAndConvert(
-      [
+  ): Promise<SimulateContractReturnType> {
+    const simulation =
+      await this.partialLiquidator.simulate.partialLiquidateAndConvert([
         account.creditManager,
         account.addr,
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount,
         preview.priceUpdates,
-        preview.calls as any,
-      ],
-      {},
-    );
-  }
-
-  public async liquidate(
-    account: CreditAccountData,
-    preview: PartialLiquidationPreview,
-    gasLimit?: bigint,
-  ): Promise<TransactionReceipt> {
-    const { request } =
-      await this.partialLiquidator.simulate.partialLiquidateAndConvert(
-        [
-          account.creditManager,
-          account.addr,
-          preview.assetOut,
-          preview.amountOut,
-          preview.flashLoanAmount,
-          preview.priceUpdates,
-          preview.calls as any,
-        ],
-        { gas: gasLimit },
-      );
-    // TODO: compatibility between ethers and viem
-    return this.executor.sendPrivate(request as any);
+        preview.calls,
+      ]);
+    // TODO: check type mismatch
+    return simulation as any;
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {

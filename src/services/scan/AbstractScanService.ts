@@ -2,8 +2,8 @@ import { Provider } from "ethers";
 import { Inject } from "typedi";
 
 import { CONFIG, type Config } from "../../config/index.js";
+import type { CreditAccountData } from "../../data/index.js";
 import type { LoggerInterface } from "../../log/index.js";
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import { PROVIDER } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
 import type { ILiquidatorService } from "../liquidate/index.js";

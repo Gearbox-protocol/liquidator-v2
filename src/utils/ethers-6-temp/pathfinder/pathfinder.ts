@@ -1,46 +1,41 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { getConnectors } from "@gearbox-protocol/sdk-gov";
+import { iRouterV3Abi } from "@gearbox-protocol/types/abi";
+import { type Address, getContract, type PublicClient } from "viem";
+
 import type {
   Balance,
-  IRouterV3,
-  RouterResult,
-} from "@gearbox-protocol/types/v3";
-import { IRouterV3__factory } from "@gearbox-protocol/types/v3";
-import type { Provider, Signer } from "ethers";
-
-import type { CreditManagerData } from "../../types.js";
-import type { CreditAccountData } from "../CreditAccountData.js";
-import type { PathFinderCloseResult, PathFinderResult } from "./core.js";
+  CreditAccountData,
+  CreditManagerData,
+} from "../../../data/index.js";
+import type { PathFinderCloseResult } from "./core.js";
 import { PathOptionFactory } from "./pathOptions.js";
+import type { IRouterV3Contract, RouterResult } from "./viem-types.js";
 
-const MAX_GAS_PER_ROUTE = 200e6;
-const GAS_PER_BLOCK = 400e6;
+const MAX_GAS_PER_ROUTE = 200_000_000n;
+const GAS_PER_BLOCK = 400_000_000n;
 
 interface FindBestClosePathProps {
   creditAccount: CreditAccountData;
   creditManager: CreditManagerData;
-  expectedBalances: Record<string, Balance>;
-  leftoverBalances: Record<string, Balance>;
+  expectedBalances: Record<Address, Balance>;
+  leftoverBalances: Record<Address, Balance>;
   slippage: number;
-  noConcurrency?: boolean;
-  network: NetworkType;
 }
 
 export class PathFinder {
-  pathFinder: IRouterV3;
-  network: NetworkType;
+  readonly #pathFinder: IRouterV3Contract;
+  readonly #connectors: Address[];
+  readonly #network: NetworkType;
 
-  protected readonly _connectors: Array<string>;
-
-  constructor(
-    address: string,
-    provider: Signer | Provider,
-    network: NetworkType = "Mainnet",
-  ) {
-    this.pathFinder = IRouterV3__factory.connect(address, provider);
-    this.network = network;
-
-    this._connectors = getConnectors(network);
+  constructor(address: Address, client: PublicClient, network: NetworkType) {
+    this.#pathFinder = getContract({
+      abi: iRouterV3Abi,
+      address,
+      client,
+    });
+    this.#network = network;
+    this.#connectors = getConnectors(network);
   }
 
   /**
@@ -58,14 +53,12 @@ export class PathFinder {
     expectedBalances,
     leftoverBalances,
     slippage,
-    noConcurrency = false,
-    network,
   }: FindBestClosePathProps): Promise<PathFinderCloseResult> {
-    const loopsPerTx = Math.floor(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
+    const loopsPerTx = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
     const pathOptions = PathOptionFactory.generatePathOptions(
       creditAccount.allBalances,
       loopsPerTx,
-      network,
+      this.#network,
     );
 
     const expected: Balance[] = cm.collateralTokens.map(token => {
@@ -86,44 +79,26 @@ export class PathFinder {
 
     const connectors = this.getAvailableConnectors(creditAccount.allBalances);
     let results: RouterResult[] = [];
-    if (noConcurrency) {
-      for (const po of pathOptions) {
-        results.push(
-          await this.pathFinder.findBestClosePath.staticCall(
-            creditAccount.addr,
-            expected,
-            leftover,
-            connectors,
-            slippage,
-            po,
-            loopsPerTx,
-            false,
-            {
-              gasLimit: GAS_PER_BLOCK,
-            },
-          ),
-        );
-      }
-    } else {
-      const requests = pathOptions.map(po =>
-        this.pathFinder.findBestClosePath.staticCall(
+    for (const po of pathOptions) {
+      const { result } = await this.#pathFinder.simulate.findBestClosePath(
+        [
           creditAccount.addr,
           expected,
           leftover,
           connectors,
-          slippage,
+          BigInt(slippage),
           po,
-          loopsPerTx,
+          BigInt(loopsPerTx),
           false,
-          {
-            gasLimit: GAS_PER_BLOCK,
-          },
-        ),
+        ],
+        {
+          gas: GAS_PER_BLOCK,
+        },
       );
-      results = await Promise.all(requests);
+      results.push(result);
     }
 
-    const bestResult = results.reduce<PathFinderResult>(
+    const bestResult = results.reduce(
       (best, pathFinderResult) => PathFinder.compare(best, pathFinderResult),
       {
         amount: 0n,
@@ -141,27 +116,31 @@ export class PathFinder {
       })),
       underlyingBalance:
         bestResult.minAmount +
-        creditAccount.allBalances[creditAccount.underlyingToken.toLowerCase()]
-          .balance,
+        creditAccount.balances[
+          creditAccount.underlyingToken.toLowerCase() as Address
+        ],
     };
   }
 
-  static compare(r1: PathFinderResult, r2: PathFinderResult): PathFinderResult {
+  static compare<T extends { amount: bigint }>(r1: T, r2: T): T {
     return r1.amount > r2.amount ? r1 : r2;
   }
 
-  getAvailableConnectors(availableList: Record<string, any>) {
+  getAvailableConnectors(availableList: Array<{ token: Address }>) {
     const connectors = PathFinder.getAvailableConnectors(
       availableList,
-      this._connectors,
+      this.#connectors,
     );
     return connectors;
   }
 
   static getAvailableConnectors(
-    availableList: Record<string, any>,
-    connectors: string[],
+    availableList: Array<{ token: Address }>,
+    connectors: Address[],
   ) {
-    return connectors.filter(t => availableList[t] !== undefined);
+    const available = new Set(
+      availableList.map(t => t.token.toLowerCase() as Address),
+    );
+    return connectors.filter(t => available.has(t.toLowerCase() as Address));
   }
 }

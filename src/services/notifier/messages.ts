@@ -2,12 +2,13 @@ import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import type { TransactionReceipt, Wallet } from "ethers";
+import type { Wallet } from "ethers";
 import { Container } from "typedi";
+import type { TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
 import { CONFIG } from "../../config/index.js";
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
+import type { CreditAccountData } from "../../data/index.js";
 import { etherscanUrl } from "../../utils/index.js";
 import version from "../../version.js";
 import type { INotifierMessage } from "./types.js";
@@ -67,7 +68,7 @@ class BaseMessage {
     if (!this.receipt) {
       throw new Error(`receipt not specified`);
     }
-    return md.link(this.receipt.hash, this.receiptPlain);
+    return md.link(this.receipt.transactionHash, this.receiptPlain);
   }
 }
 
@@ -164,7 +165,7 @@ export class LiquidationSuccessMessage
   }
 
   public get plain(): string {
-    if (this.receipt?.status === 1) {
+    if (this.receipt?.status === "success") {
       return `✅ [${this.network}] account ${this.caPlain} in credit manager ${this.cmPlain} was ${this.#strategyAdverb} liquidated      
 Tx receipt: ${this.receiptPlain}
 Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}
@@ -179,7 +180,7 @@ ${this.#callsHuman.join("\n")}`;
   }
 
   public get markdown(): string {
-    if (this.receipt?.status === 1) {
+    if (this.receipt?.status === "success") {
       return md.build(
         md`✅ [${this.network}] account ${this.caMd} in credit manager ${this.cmMd} was ${this.#strategyAdverb} liquidated
 Tx receipt: ${this.receiptMd}

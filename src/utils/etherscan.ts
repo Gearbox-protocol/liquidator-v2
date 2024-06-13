@@ -1,7 +1,7 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import type { TransactionReceipt } from "ethers";
+import type { TransactionReceipt } from "viem";
 
-import type { CreditAccountData } from "./ethers-6-temp/index.js";
+import type { CreditAccountData } from "../data/index.js";
 
 export type EtherscanURLParam =
   | { block: number }
@@ -15,8 +15,8 @@ export function etherscanUrl(
   let [prefix, domain] = ["", "etherscan.io"];
 
   let param: EtherscanURLParam;
-  if ("hash" in entity && "blockHash" in entity) {
-    param = { tx: entity.hash };
+  if ("transactionHash" in entity && "blockHash" in entity) {
+    param = { tx: entity.transactionHash };
   } else if ("addr" in entity && "creditManager" in entity) {
     param = { address: entity.addr };
   } else {

@@ -24,11 +24,12 @@ import { spawn } from "node-pty";
 import { Container, Inject, Service } from "typedi";
 
 import { CONFIG, type Config } from "../../config/index.js";
+import type { CreditAccountData } from "../../data/index.js";
 import { Logger, LoggerInterface } from "../../log/index.js";
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
-import { filterDust, formatTs, PROVIDER } from "../../utils/index.js";
+import { formatTs, PROVIDER } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
+import ExecutorService from "../ExecutorService.js";
 import {
   INotifier,
   LiquidationErrorMessage,
@@ -89,6 +90,9 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   wallet: Wallet;
 
+  @Inject()
+  executor: ExecutorService;
+
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
   #errorDecoder = ErrorDecoder.create();
@@ -133,7 +137,8 @@ export class LiquidatorService implements ILiquidatorService {
       pathHuman = TxParserHelper.parseMultiCall(preview);
       logger.debug({ pathHuman }, "path found");
 
-      const receipt = await this.strategy.liquidate(ca, preview);
+      const { request } = await this.strategy.simulate(ca, preview);
+      const receipt = await this.executor.liquidate(ca, request);
 
       this.notifier.alert(
         new LiquidationSuccessMessage(
@@ -168,7 +173,7 @@ export class LiquidatorService implements ILiquidatorService {
       creditManager: acc.creditManager,
       borrower: acc.borrower,
       account: acc.addr,
-      balancesBefore: filterDust(acc.allBalances),
+      balancesBefore: ca.filterDust(),
       hfBefore: acc.healthFactor,
       balancesAfter: {},
       hfAfter: 0,
@@ -200,18 +205,7 @@ export class LiquidatorService implements ILiquidatorService {
       optimisticResult.callsHuman = TxParserHelper.parseMultiCall(preview);
       logger.debug({ pathHuman: optimisticResult.callsHuman }, "path found");
 
-      let gasLimit = 29_000_000n;
-      // before actual transaction, try to estimate gas
-      // this effectively will load state and contracts from fork origin to anvil
-      // so following actual tx should not be slow
-      // also tx will act as retry in case of anvil external's error
-      try {
-        gasLimit = await this.strategy.estimate(acc, preview);
-      } catch (e: any) {
-        const decoded = await this.#errorDecoder.decode(e);
-        optimisticResult.error = `failed to estimate gas: ${decoded.type}: ${decoded.reason}`;
-        logger.error(optimisticResult.error);
-      }
+      const { request } = await this.strategy.simulate(acc, preview);
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
       // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
@@ -224,17 +218,14 @@ export class LiquidatorService implements ILiquidatorService {
       // Actual liquidation (write requests start here)
       try {
         // send profit to executor address because we're going to use swapper later
-        const receipt = await this.strategy.liquidate(acc, preview, gasLimit);
-        logger.debug(`Liquidation tx hash: ${receipt.hash}`);
-        optimisticResult.isError = receipt.status !== 1;
-        const strStatus = optimisticResult.isError ? "failure" : "success";
+        const receipt = await this.executor.liquidate(acc, request);
+        logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
+        optimisticResult.isError = receipt.status === "reverted";
         logger.debug(
-          `Liquidation tx receipt: status=${strStatus} (${
-            receipt.status
-          }), gas=${receipt.cumulativeGasUsed.toString()}`,
+          `Liquidation tx receipt: status=${receipt.status}, gas=${receipt.cumulativeGasUsed.toString()}`,
         );
         acc = await this.strategy.updateCreditAccountData(acc);
-        optimisticResult.balancesAfter = filterDust(acc.allBalances);
+        optimisticResult.balancesAfter = ca.filterDust();
         optimisticResult.hfAfter = acc.healthFactor;
 
         let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);

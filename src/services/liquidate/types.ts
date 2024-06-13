@@ -2,12 +2,13 @@ import type {
   OptimisticResultV2,
   PartialLiquidationCondition,
 } from "@gearbox-protocol/types/optimist";
-import type { MultiCall } from "@gearbox-protocol/types/v3";
-import type { TransactionReceipt } from "ethers";
-import type { Address } from "viem";
+import type { Address, SimulateContractReturnType } from "viem";
 
-import type { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
-import type { PriceOnDemand } from "../../utils/types.js";
+import type {
+  CreditAccountData,
+  MultiCall,
+  PriceOnDemand,
+} from "../../data/index.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
   ts: number;
@@ -80,12 +81,16 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
    */
   makeLiquidatable: (ca: CreditAccountData) => Promise<MakeLiquidatableResult>;
   preview: (ca: CreditAccountData) => Promise<T>;
-  estimate: (account: CreditAccountData, preview: T) => Promise<bigint>;
-  liquidate: (
+  /**
+   * Simulates liquidation
+   * @param account
+   * @param preview
+   * @returns
+   */
+  simulate: (
     account: CreditAccountData,
     preview: T,
-    gasLimit?: bigint,
-  ) => Promise<TransactionReceipt>;
+  ) => Promise<SimulateContractReturnType>;
 }
 
 export interface MakeLiquidatableResult {

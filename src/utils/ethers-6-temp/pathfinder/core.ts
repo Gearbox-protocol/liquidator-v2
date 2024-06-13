@@ -1,4 +1,6 @@
-import type { MultiCall, RouterResult } from "@gearbox-protocol/types/v3";
+import type { Address } from "viem";
+
+import type { MultiCall } from "../../../data/MultiCall.js";
 
 export enum SwapOperation {
   EXACT_INPUT,
@@ -6,13 +8,15 @@ export enum SwapOperation {
   EXACT_OUTPUT,
 }
 
-export type PathFinderResult = Omit<RouterResult, "calls"> & {
+export interface PathFinderResult {
+  amount: bigint;
+  minAmount: bigint;
   calls: MultiCall[];
-};
+}
 
 export interface PathFinderOpenStrategyResult extends PathFinderResult {
-  balances: Record<string, bigint>;
-  minBalances: Record<string, bigint>;
+  balances: Record<Address, bigint>;
+  minBalances: Record<Address, bigint>;
 }
 
 export interface PathFinderCloseResult extends PathFinderResult {

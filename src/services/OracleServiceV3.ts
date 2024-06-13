@@ -10,8 +10,8 @@ import type { Address, Log } from "viem";
 import { bytesToString, hexToBytes, PublicClient } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
+import type { CreditAccountData } from "../data/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
-import type { CreditAccountData } from "../utils/ethers-6-temp/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
 import { VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { AddressProviderService } from "./AddressProviderService.js";

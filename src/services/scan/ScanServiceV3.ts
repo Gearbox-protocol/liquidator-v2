@@ -17,8 +17,8 @@ import { ICreditManagerV3__factory } from "@gearbox-protocol/types/v3";
 import { Inject, Service } from "typedi";
 import { getContract, PublicClient } from "viem";
 
+import { CreditAccountData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
-import { CreditAccountData } from "../../utils/ethers-6-temp/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
 import { VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
