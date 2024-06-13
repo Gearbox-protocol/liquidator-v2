@@ -4,7 +4,11 @@ import {
 } from "@gearbox-protocol/sdk-gov";
 import type { Address } from "viem";
 
-import type { Arrayish, Numberish } from "../utils/index.js";
+import {
+  type Arrayish,
+  json_stringify,
+  type Numberish,
+} from "../utils/index.js";
 
 export interface TokenBalanceRaw {
   token: string;
@@ -91,6 +95,13 @@ export class CreditAccountData {
   readonly allBalances: TokenBalance[] = [];
 
   constructor(payload: CreditAccountDataRaw) {
+    console.log(
+      json_stringify({
+        payload,
+        pf: payload.priceFeedsNeeded,
+        pfType: typeof payload.priceFeedsNeeded,
+      }),
+    );
     this.isSuccessful = payload.isSuccessful;
     this.priceFeedsNeeded = [...payload.priceFeedsNeeded] as Address[];
 
