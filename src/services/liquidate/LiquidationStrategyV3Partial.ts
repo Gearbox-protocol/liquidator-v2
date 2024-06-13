@@ -209,8 +209,12 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
-    const simulation =
-      await this.partialLiquidator.simulate.partialLiquidateAndConvert([
+    return this.publicClient.simulateContract({
+      account: this.executor.walletClient.account,
+      address: this.partialLiquidator.address,
+      abi: iLiquidatorAbi,
+      functionName: "partialLiquidateAndConvert",
+      args: [
         account.creditManager,
         account.addr,
         preview.assetOut,
@@ -218,9 +222,8 @@ export default class LiquidationStrategyV3Partial
         preview.flashLoanAmount,
         preview.priceUpdates,
         preview.calls,
-      ]);
-    // TODO: check type mismatch
-    return simulation as any;
+      ],
+    });
   }
 
   async #prepareAccountTokens(ca: CreditAccountData): Promise<TokenBalance[]> {
