@@ -226,7 +226,7 @@ export default class Client {
     if (args.account && !this.config.optimistic) {
       throw new Error(`not allowed to override account in non-optimistic mode`);
     }
-    const account = args.account ?? this.account.address;
+    const account = args.account ?? this.account;
     const { request } = await this.pub.simulateContract<
       abi,
       functionName,
