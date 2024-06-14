@@ -337,7 +337,8 @@ export default class LiquidationStrategyV3Partial
         functionName: "setLiquidationThreshold",
         args: [t as Address, Number(lt)],
       });
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      // await this.publicClient.waitForTransactionReceipt({ hash });
+      await this.publicClient.getTransactionReceipt({ hash });
       const newLT = await this.publicClient.readContract({
         address: cm.address,
         abi: iCreditManagerV3Abi,
@@ -443,7 +444,8 @@ export default class LiquidationStrategyV3Partial
     });
     this.logger.debug(`waiting for PriceHelper to deploy, tx hash: ${hash}`);
     const { contractAddress: priceHelperAddr } =
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      // await this.publicClient.waitForTransactionReceipt({ hash });
+      await this.publicClient.getTransactionReceipt({ hash });
     if (!priceHelperAddr) {
       throw new Error(`PriceHelper was not deployed, tx hash: ${hash}`);
     }

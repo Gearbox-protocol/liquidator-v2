@@ -168,7 +168,10 @@ export default class ExecutorService {
     });
 
     logger.debug(`sent transaction ${hash}`);
-    const result = await this.publicClient.waitForTransactionReceipt({ hash });
+    const result = await this.publicClient.waitForTransactionReceipt({
+      hash,
+      timeout: 120_000,
+    });
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});
