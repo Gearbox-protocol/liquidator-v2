@@ -1357,20 +1357,20 @@
     eslint-plugin-simple-import-sort "^10.0.0"
     eslint-plugin-unused-imports "^3.0.0"
 
-"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.16":
-  version "2.1.0-next.16"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.16.tgz#6d470b53f8bc4e015c61a92d10cd713eb940971b"
-  integrity sha512-XjZjSi/OmVhsnzCN5egbauH6hsaecHIApIeZYYP/XWbb/M9WurbnJZ9FjY/Rt8t/D/TXFkgDouz5OqW2CFLFdQ==
+"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.17":
+  version "2.1.0-next.17"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.17.tgz#6b6664c2bfacec11f05608fbe008aac64aff283f"
+  integrity sha512-SX/0uuMgFKVfahwel9hNwpnQ/1qmBhmxzodeTRqfApLdlrS4a81BFgl1er96UT7SKTZlBXBap7vQz+EPBi6lEQ==
 
 "@gearbox-protocol/prettier-config@2.0.0-next.0":
   version "2.0.0-next.0"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0-next.0.tgz#8183cfa8c6ee538543089961ecb4d03fe77045de"
   integrity sha512-hDokre6TjEkpNdf+tTk/Gh2dTJpkJFgMPTpE7KS4KFddUqGLqDKMaE4/ZzBA8kvYNm5gSXytCwWrxPXO8kFKYA==
 
-"@gearbox-protocol/sdk-gov@^2.7.3":
-  version "2.7.3"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.7.3.tgz#4bfe8b2b70e29a4dd445d16b706782e42dc41193"
-  integrity sha512-k11S40ZH8yrpdiVFyLjwe9SxzyAD8TPDavSOG8FlRT0lv9+DY9nYKFCGRLsMQxSBruZcL34VLYznBUDozbWhdw==
+"@gearbox-protocol/sdk-gov@^2.8.0":
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.8.0.tgz#0ecc36c5b37a25d0d341c9b9d4632a97f5148410"
+  integrity sha512-B180KnTMbQk2RuE6sby9uFH33ptUYy4fU+OzkyTeJkY8bvfMBiX/MSyg+78NmK2Po4DnDOGFHyr6UVyHYtKceA==
   dependencies:
     ethers "6.12.1"
     humanize-duration-ts "^2.1.1"
@@ -5741,10 +5741,10 @@ v8-compile-cache-lib@^3.0.1:
   resolved "https://registry.yarnpkg.com/v8-compile-cache-lib/-/v8-compile-cache-lib-3.0.1.tgz#6336e8d71965cb3d35a1bbb7868445a7c05264bf"
   integrity sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==
 
-viem@^2.13.10:
-  version "2.13.10"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-2.13.10.tgz#c15e5050dde8939ec86e0e0f8a85a34b37b421c4"
-  integrity sha512-fPnbjqlLfWniczYCbnK47MKjyp1/O/b5wMe5ZpflpccD3GUz/f47dLxwLjfSYxXkwS+GERWHWd+2OXb6N/BBQA==
+viem@^2.14.0:
+  version "2.14.0"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.14.0.tgz#e9908b7c5512c419ca51cb74615c1893df3b9404"
+  integrity sha512-+XnuRNONDRyMNEM+1n6Ak41Py0KBFOmirQ67wPv//ytCmNIJhmy8vqhdFREr3m51GAGgDkllh4JoAdCUUaZJLw==
   dependencies:
     "@adraffy/ens-normalize" "1.10.0"
     "@noble/curves" "1.2.0"

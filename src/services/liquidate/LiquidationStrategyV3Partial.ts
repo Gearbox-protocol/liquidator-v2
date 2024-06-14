@@ -38,11 +38,7 @@ import type {
   MakeLiquidatableResult,
   PartialLiquidationPreview,
 } from "./types.js";
-import type {
-  ILiquidatorContract,
-  IPriceHelperContract,
-  TokenPriceInfo,
-} from "./viem-types.js";
+import type { IPriceHelperContract, TokenPriceInfo } from "./viem-types.js";
 
 interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   /**
@@ -62,7 +58,7 @@ export default class LiquidationStrategyV3Partial
   @Logger("LiquidationStrategyV3Partial")
   logger: LoggerInterface;
 
-  #partialLiquidator?: ILiquidatorContract;
+  #partialLiquidator?: Address;
   #priceHelper?: IPriceHelperContract;
   #configuratorAddr?: Address;
   #registeredCMs: Record<Address, boolean> = {};
@@ -146,11 +142,13 @@ export default class LiquidationStrategyV3Partial
         flashLoanAmount,
         isOptimalRepayable,
       ],
-    } = await this.partialLiquidator.simulate.getOptimalLiquidation([
-      ca.addr,
-      10100n,
-      priceUpdates,
-    ]);
+    } = await this.publicClient.simulateContract({
+      account: this.executor.walletClient.account,
+      abi: iLiquidatorAbi,
+      address: this.partialLiquidator,
+      functionName: "getOptimalLiquidation",
+      args: [ca.addr, 10100n, priceUpdates as any],
+    });
     const [symb, decimals, uSymb, uDec] = [
       tokenSymbolByAddress[tokenOut.toLowerCase()],
       getDecimals(tokenOut),
@@ -172,17 +170,22 @@ export default class LiquidationStrategyV3Partial
     );
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
 
-    const { result: preview } =
-      await this.partialLiquidator.simulate.previewPartialLiquidation([
+    const { result: preview } = await this.publicClient.simulateContract({
+      account: this.executor.walletClient.account,
+      address: this.partialLiquidator,
+      abi: iLiquidatorAbi,
+      functionName: "previewPartialLiquidation",
+      args: [
         ca.creditManager,
         ca.addr,
         tokenOut,
         optimalAmount,
         flashLoanAmount,
-        priceUpdates,
+        priceUpdates as any,
         connectors,
         BigInt(this.config.slippage),
-      ]);
+      ],
+    });
     if (preview.profit < 0n) {
       if (isOptimalRepayable) {
         throw new Error("optimal liquidation is not profitable or errored");
@@ -211,7 +214,7 @@ export default class LiquidationStrategyV3Partial
   ): Promise<SimulateContractReturnType> {
     return this.publicClient.simulateContract({
       account: this.executor.walletClient.account,
-      address: this.partialLiquidator.address,
+      address: this.partialLiquidator,
       abi: iLiquidatorAbi,
       functionName: "partialLiquidateAndConvert",
       args: [
@@ -353,7 +356,7 @@ export default class LiquidationStrategyV3Partial
     router: Address,
     bot: Address,
     aavePool: Address,
-  ): Promise<ILiquidatorContract> {
+  ): Promise<Address> {
     let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
     if (!partialLiquidatorAddress) {
       this.logger.debug("deploying partial liquidator");
@@ -423,11 +426,7 @@ export default class LiquidationStrategyV3Partial
     this.logger.info(
       `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
     );
-    return getContract({
-      abi: iLiquidatorAbi,
-      address: partialLiquidatorAddress,
-      client: this.publicClient,
-    });
+    return partialLiquidatorAddress;
   }
 
   async #deployPriceHelper(): Promise<IPriceHelperContract | undefined> {
@@ -463,8 +462,16 @@ export default class LiquidationStrategyV3Partial
     bot: Address,
   ): Promise<void> {
     const [currentRouter, currentBot, cms] = await Promise.all([
-      this.partialLiquidator.read.router(),
-      this.partialLiquidator.read.partialLiquidationBot(),
+      this.publicClient.readContract({
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator,
+        functionName: "router",
+      }),
+      this.publicClient.readContract({
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator,
+        functionName: "partialLiquidationBot",
+      }),
       this.getCreditManagersV3List(),
     ]);
 
@@ -472,9 +479,13 @@ export default class LiquidationStrategyV3Partial
       this.logger.warn(
         `need to update router from ${currentRouter} to ${router}`,
       );
-      const { request } = await this.partialLiquidator.simulate.setRouter([
-        router,
-      ]);
+      const { request } = await this.publicClient.simulateContract({
+        account: this.executor.publicClient.account,
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator,
+        functionName: "setRouter",
+        args: [router],
+      });
       const hash = await this.executor.walletClient.writeContract(request);
       const receipt = await this.publicClient.waitForTransactionReceipt({
         hash,
@@ -489,8 +500,13 @@ export default class LiquidationStrategyV3Partial
 
     if (bot.toLowerCase() !== currentBot.toLowerCase()) {
       this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
-      const { request } =
-        await this.partialLiquidator.simulate.setPartialLiquidationBot([bot]);
+      const { request } = await this.publicClient.simulateContract({
+        account: this.executor.publicClient.account,
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator,
+        functionName: "setPartialLiquidationBot",
+        args: [bot],
+      });
       const hash = await this.executor.walletClient.writeContract(request);
       const receipt = await this.publicClient.waitForTransactionReceipt({
         hash,
@@ -526,7 +542,7 @@ export default class LiquidationStrategyV3Partial
       allowFailure: false,
       contracts: cms.map(cm => ({
         abi: iLiquidatorAbi,
-        address: this.partialLiquidator.address,
+        address: this.partialLiquidator,
         functionName: "cmToCA",
         args: [cm.address],
       })),
@@ -539,9 +555,13 @@ export default class LiquidationStrategyV3Partial
     const { address, name } = cm;
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);
-      const { request } = await this.partialLiquidator.simulate.registerCM([
-        address,
-      ]);
+      const { request } = await this.publicClient.simulateContract({
+        account: this.executor.publicClient.account,
+        abi: iLiquidatorAbi,
+        address: this.partialLiquidator,
+        functionName: "registerCM",
+        args: [address],
+      });
       const hash = await this.executor.walletClient.writeContract(request);
       const receipt = await this.publicClient.waitForTransactionReceipt({
         hash,
@@ -570,7 +590,7 @@ export default class LiquidationStrategyV3Partial
     });
   }
 
-  private get partialLiquidator(): ILiquidatorContract {
+  private get partialLiquidator(): Address {
     if (!this.#partialLiquidator) {
       throw new Error("strategy not launched");
     }
