@@ -5,16 +5,14 @@ import {
   getDecimals,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
-import { IERC20__factory } from "@gearbox-protocol/types/v3";
+import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import type { Wallet } from "ethers";
-import { Inject, Service } from "typedi";
+import { Service } from "typedi";
+import type { Address } from "viem";
 
-import { CONFIG, type Config } from "../../config/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
-import ExecutorService from "../ExecutorService.js";
 import BaseSwapper from "./base.js";
 import type { ISwapper } from "./types.js";
 
@@ -29,15 +27,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   @Logger("one_inch")
   log: LoggerInterface;
 
-  @Inject(CONFIG)
-  config: Config;
-
-  @Inject()
-  executor: ExecutorService;
-
   private apiClient: AxiosInstance;
   private readonly slippage: number;
-  private routerAddress = "0x111111125421cA6dc452d289314280a0f8842A65";
+  private routerAddress: Address = "0x111111125421cA6dc452d289314280a0f8842A65";
 
   constructor(slippage = 2) {
     super();
@@ -75,12 +67,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     }
   }
 
-  public async swap(
-    executor: Wallet,
-    tokenAddr: string,
-    amount: bigint,
-    recipient?: string,
-  ): Promise<void> {
+  public async swap(tokenAddr: Address, amount: bigint): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
     let transactionHash: string | undefined;
     if (amount <= 10n) {
@@ -97,31 +84,38 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       this.log.debug(
         `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
-      const erc20 = IERC20__factory.connect(tokenAddr, executor);
-      const approveTx = await erc20.approve(this.routerAddress, amount);
-      await this.executor.mine(approveTx);
+      const { request } = await this.client.pub.simulateContract({
+        account: this.client.account,
+        abi: ierc20Abi,
+        address: tokenAddr,
+        functionName: "approve",
+        args: [this.routerAddress, amount],
+      });
+      const hash = await this.client.wallet.writeContract(request);
+      await this.client.pub.waitForTransactionReceipt({ hash });
 
       const swap = await this.apiClient.get("/swap", {
         params: {
           src: tokenAddr,
           dst: ETH,
           amount: amount.toString(),
-          from: executor.address,
+          from: this.client.address,
           slippage: this.slippage,
           disableEstimate: true,
           allowPartialFill: false,
-          receiver: recipient ?? executor.address,
+          receiver: this.client.address,
         },
       });
 
+      // TODO: this was not tested after viem rewrite
       const {
         tx: { gas, gasPrice, ...tx },
         // ...rest
       } = swap.data;
-
-      const txR = await executor.sendTransaction(tx);
-      transactionHash = txR.hash;
-      await this.executor.mine(txR);
+      const transactionHash = await this.client.wallet.sendTransaction(tx);
+      await this.client.pub.waitForTransactionReceipt({
+        hash: transactionHash,
+      });
       this.log.debug(
         `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );

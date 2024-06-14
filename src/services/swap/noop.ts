@@ -1,5 +1,5 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import type { BigNumberish, Wallet } from "ethers";
+import type { Address } from "viem";
 
 import type { ISwapper } from "./types.js";
 
@@ -8,12 +8,7 @@ export default class NoopSwapper implements ISwapper {
     // nothing to do here
   }
 
-  public async swap(
-    _executor: Wallet,
-    _tokenAddr: string,
-    _amount: BigNumberish,
-    recipient?: string,
-  ): Promise<void> {
+  public async swap(_tokenAddr: Address, _amount: bigint): Promise<void> {
     // nothing to do here
   }
 }

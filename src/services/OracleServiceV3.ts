@@ -7,14 +7,14 @@ import {
 import type { ExtractAbiEvent } from "abitype";
 import { Inject, Service } from "typedi";
 import type { Address, Log } from "viem";
-import { bytesToString, hexToBytes, PublicClient } from "viem";
+import { bytesToString, hexToBytes } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { VIEM_PUBLIC_CLIENT } from "../utils/index.js";
 import { AddressProviderService } from "./AddressProviderService.js";
+import Client from "./Client.js";
 
 interface DataFeedMulticall {
   abi: typeof iRedstonePriceFeedAbi;
@@ -43,11 +43,11 @@ interface OracleEntry {
   active: "main" | "reserve";
 }
 
-const ORACLE_START_BLOCK: Record<NetworkType, number> = {
-  Mainnet: 18797638,
-  Optimism: 116864678, // not deployed yet, arbitrary block here
-  Arbitrum: 184650373,
-  Base: 12299805, // not deployed yet, arbitrary block here
+const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
+  Mainnet: 18797638n,
+  Optimism: 116864678n, // not deployed yet, arbitrary block here
+  Arbitrum: 184650373n,
+  Base: 12299805n, // not deployed yet, arbitrary block here
 };
 
 @Service()
@@ -55,21 +55,21 @@ export default class OracleServiceV3 {
   @Logger("ScanServiceV3")
   log: LoggerInterface;
 
-  @Inject()
-  addressProvider: AddressProviderService;
-
-  @Inject(VIEM_PUBLIC_CLIENT)
-  publicClient: PublicClient;
-
   @Inject(CONFIG)
   config: Config;
 
+  @Inject()
+  client: Client;
+
+  @Inject()
+  addressProvider: AddressProviderService;
+
   #oracle?: Address;
-  #lastBlock = 0;
+  #lastBlock = 0n;
 
   #feeds: Record<Address, OracleEntry> = {};
 
-  public async launch(block: number): Promise<void> {
+  public async launch(block: bigint): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
     this.#oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
     this.log.debug(`starting oracle v3 at ${block}`);
@@ -81,7 +81,7 @@ export default class OracleServiceV3 {
     TxParser.addPriceOracle(this.#oracle);
   }
 
-  public async update(blockNumber: number): Promise<void> {
+  public async update(blockNumber: bigint): Promise<void> {
     await this.#updateFeeds(blockNumber);
   }
 
@@ -146,12 +146,12 @@ export default class OracleServiceV3 {
     return result;
   }
 
-  async #updateFeeds(toBlock: number): Promise<void> {
+  async #updateFeeds(toBlock: bigint): Promise<void> {
     if (toBlock <= this.#lastBlock) {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    const logs = await this.publicClient.getLogs({
+    const logs = await this.client.pub.getLogs({
       address: this.oracle,
       events: iPriceOracleV3EventsAbi,
       fromBlock: BigInt(this.#lastBlock),
@@ -238,7 +238,7 @@ export default class OracleServiceV3 {
       }
     }
     this.log.debug(`need to get redstone data ids on ${calls.length} feeds`);
-    const resp = await this.publicClient.multicall({
+    const resp = await this.client.pub.multicall({
       contracts: calls,
       allowFailure: true,
     });

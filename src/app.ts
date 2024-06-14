@@ -1,10 +1,9 @@
-import { Wallet } from "ethers";
 import { Container, Inject, Service } from "typedi";
 
 import { CONFIG, Config, loadConfig } from "./config/index.js";
 import { Logger, type LoggerInterface } from "./log/index.js";
 import { AddressProviderService } from "./services/AddressProviderService.js";
-import ExecutorService from "./services/ExecutorService.js";
+import Client from "./services/Client.js";
 import HealthCheckerService from "./services/HealthCheckerService.js";
 import { OptimisticResults } from "./services/liquidate/index.js";
 import {
@@ -14,12 +13,6 @@ import {
 import { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
 import { ScanServiceV3 } from "./services/scan/index.js";
 import { type ISwapper, SWAPPER } from "./services/swap/index.js";
-import {
-  getProvider,
-  getViemPublicClient,
-  PROVIDER,
-  VIEM_PUBLIC_CLIENT,
-} from "./utils/index.js";
 import version from "./version.js";
 
 @Service()
@@ -46,7 +39,7 @@ class App {
   redstone: RedstoneServiceV3;
 
   @Inject()
-  executor: ExecutorService;
+  client: Client;
 
   @Inject(OUTPUT_WRITER)
   outputWriter: IOptimisticOutputWriter;
@@ -65,7 +58,7 @@ class App {
       .join(" ");
     this.log.info(msg);
 
-    await this.executor.launch();
+    await this.client.launch();
     await this.addressProvider.launch();
 
     await this.redstone.launch();
@@ -89,15 +82,5 @@ class App {
 export async function launchApp(): Promise<void> {
   const config = await loadConfig();
   Container.set(CONFIG, config);
-
-  const provider = getProvider(config);
-  Container.set(PROVIDER, provider);
-
-  const viemPublicClient = getViemPublicClient();
-  Container.set(VIEM_PUBLIC_CLIENT, viemPublicClient);
-
-  const wallet = new Wallet(config.privateKey, provider);
-  Container.set(Wallet, wallet);
-
   await Container.get(App).launch();
 }

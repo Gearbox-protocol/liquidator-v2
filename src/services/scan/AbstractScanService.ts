@@ -1,11 +1,10 @@
-import { Provider } from "ethers";
 import { Inject } from "typedi";
 
 import { CONFIG, type Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
 import type { LoggerInterface } from "../../log/index.js";
-import { PROVIDER } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
+import Client from "../Client.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
 import { OptimisticResults } from "../liquidate/index.js";
 
@@ -21,12 +20,12 @@ export default abstract class AbstractScanService {
   @Inject()
   optimistic: OptimisticResults;
 
-  @Inject(PROVIDER)
-  provider: Provider;
+  @Inject()
+  client: Client;
 
-  protected _lastUpdated = 0;
+  protected _lastUpdated = 0n;
 
-  public get lastUpdated(): number {
+  public get lastUpdated(): bigint {
     return this._lastUpdated;
   }
 
@@ -47,11 +46,13 @@ export default abstract class AbstractScanService {
     if (this.config.optimistic) {
       return;
     }
-    this.provider.on("block", async num => await this.onBlock(num));
+    this.client.pub.watchBlockNumber({
+      onBlockNumber: n => this.onBlock(n),
+    });
   }
 
   protected abstract _launch(): Promise<void>;
-  protected abstract onBlock(block: number): Promise<void>;
+  protected abstract onBlock(block: bigint): Promise<void>;
 
   /**
    * Liquidate accounts using NORMAL flow

@@ -7,29 +7,29 @@ import {
   SafeERC20__factory,
 } from "@gearbox-protocol/liquidator-v2-contracts/types";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
+import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import {
   ICreditFacadeV3__factory,
   ICreditManagerV3__factory,
-  IERC20__factory,
   IExceptions__factory,
   IPriceOracleV3__factory,
   IRouterV3__factory,
 } from "@gearbox-protocol/types/v3";
-import type { JsonRpcProvider } from "ethers";
-import { isError, Provider, Wallet } from "ethers";
+import { isError } from "ethers";
 import { ErrorDecoder } from "ethers-decode-error";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import { Container, Inject, Service } from "typedi";
+import type { Address, Hex } from "viem";
 
 import { CONFIG, type Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
 import { Logger, LoggerInterface } from "../../log/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
-import { formatTs, PROVIDER } from "../../utils/index.js";
+import { formatTs } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
-import ExecutorService from "../ExecutorService.js";
+import Client from "../Client.js";
 import {
   INotifier,
   LiquidationErrorMessage,
@@ -84,14 +84,8 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   optimistic: OptimisticResults;
 
-  @Inject(PROVIDER)
-  provider: Provider;
-
   @Inject()
-  wallet: Wallet;
-
-  @Inject()
-  executor: ExecutorService;
+  client: Client;
 
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
@@ -138,7 +132,7 @@ export class LiquidatorService implements ILiquidatorService {
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.strategy.simulate(ca, preview);
-      const receipt = await this.executor.liquidate(ca, request);
+      const receipt = await this.client.liquidate(ca, request);
 
       this.notifier.alert(
         new LiquidationSuccessMessage(
@@ -167,7 +161,7 @@ export class LiquidatorService implements ILiquidatorService {
       borrower: acc.borrower,
       manager: acc.managerName,
     });
-    let snapshotId: number | undefined;
+    let snapshotId: Hex | undefined;
     const optimisticResult: OptimisticResultV2 = {
       version: "2",
       creditManager: acc.creditManager,
@@ -187,7 +181,9 @@ export class LiquidatorService implements ILiquidatorService {
     };
     const start = Date.now();
     // On anvil fork of L2, block.number is anvil block
-    const startBlock = await this.provider.getBlock("latest").catch(() => null);
+    const startBlock = await this.client.pub
+      .getBlock({ blockTag: "latest" })
+      .catch(() => null);
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
       const mlRes = await this.strategy.makeLiquidatable(acc);
@@ -210,15 +206,12 @@ export class LiquidatorService implements ILiquidatorService {
       // snapshotId might be present if we had to setup liquidation conditions for single account
       // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
       if (!snapshotId) {
-        snapshotId = await (this.provider as JsonRpcProvider).send(
-          "evm_snapshot",
-          [],
-        );
+        snapshotId = await this.client.anvil.snapshot();
       }
       // Actual liquidation (write requests start here)
       try {
         // send profit to executor address because we're going to use swapper later
-        const receipt = await this.executor.liquidate(acc, request);
+        const receipt = await this.client.liquidate(acc, request);
         logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
         optimisticResult.isError = receipt.status === "reverted";
         logger.debug(
@@ -234,11 +227,7 @@ export class LiquidatorService implements ILiquidatorService {
           balanceAfter.underlying - balanceBefore.underlying
         ).toString(10);
         // swap underlying back to ETH
-        await this.swapper.swap(
-          this.wallet,
-          acc.underlyingToken,
-          balanceAfter.underlying,
-        );
+        await this.swapper.swap(acc.underlyingToken, balanceAfter.underlying);
         balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
         optimisticResult.liquidatorProfit = (
           balanceAfter.eth - balanceBefore.eth
@@ -259,7 +248,9 @@ export class LiquidatorService implements ILiquidatorService {
     }
 
     optimisticResult.duration = Date.now() - start;
-    const endBlock = await this.provider.getBlock("latest").catch(() => null);
+    const endBlock = await this.client.pub
+      .getBlock({ blockTag: "latest" })
+      .catch(() => null);
     if (startBlock && endBlock) {
       logger.debug(
         { tag: "timing" },
@@ -269,23 +260,28 @@ export class LiquidatorService implements ILiquidatorService {
     this.optimistic.push(optimisticResult);
 
     if (snapshotId) {
-      await (this.provider as JsonRpcProvider).send("evm_revert", [snapshotId]);
+      await this.client.anvil.revert({ id: snapshotId });
     }
 
     return optimisticResult;
   }
 
   protected async getExecutorBalance(
-    underlyingToken: string,
+    underlyingToken: Address,
   ): Promise<Balance> {
     // using promise.all here sometimes results in anvil being stuck
     const isWeth = tokenSymbolByAddress[underlyingToken] === "WETH";
-    const eth = await this.provider.getBalance(this.wallet.address);
+    const eth = await this.client.pub.getBalance({
+      address: this.client.address,
+    });
     const underlying = isWeth
       ? eth
-      : await IERC20__factory.connect(underlyingToken, this.provider).balanceOf(
-          this.wallet.address,
-        );
+      : await this.client.pub.readContract({
+          address: underlyingToken,
+          abi: ierc20Abi,
+          functionName: "balanceOf",
+          args: [this.client.address],
+        });
     return { eth, underlying };
   }
 

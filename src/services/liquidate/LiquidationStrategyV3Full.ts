@@ -68,12 +68,12 @@ export default class LiquidationStrategyV3Full
     account: CreditAccountData,
     preview: PathFinderCloseResult,
   ): Promise<SimulateContractReturnType> {
-    return this.publicClient.simulateContract({
-      account: this.executor.account,
+    return this.client.pub.simulateContract({
+      account: this.client.account,
       abi: iCreditFacadeV3Abi,
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",
-      args: [account.addr, this.executor.address, preview.calls],
+      args: [account.addr, this.client.address, preview.calls],
     });
   }
 }

@@ -2,7 +2,7 @@ import type {
   OptimisticResultV2,
   PartialLiquidationCondition,
 } from "@gearbox-protocol/types/optimist";
-import type { Address, SimulateContractReturnType } from "viem";
+import type { Address, Hex, SimulateContractReturnType } from "viem";
 
 import type {
   CreditAccountData,
@@ -94,6 +94,6 @@ export interface ILiquidationStrategy<T extends StrategyPreview> {
 }
 
 export interface MakeLiquidatableResult {
-  snapshotId?: number;
+  snapshotId?: Hex;
   partialLiquidationCondition?: PartialLiquidationCondition;
 }

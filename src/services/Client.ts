@@ -1,37 +1,39 @@
-// import {
-//   FlashbotsBundleProvider,
-//   FlashbotsTransactionResolution,
-// } from "@flashbots/ethers-provider-bundle";
 import { nextTick } from "node:process";
 
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
-import type { JsonRpcProvider, TransactionResponse } from "ethers";
-import { formatUnits, Provider, Wallet } from "ethers";
+import { formatUnits, Provider } from "ethers";
 import { Inject, Service } from "typedi";
 import type {
   Address,
   Chain,
-  CustomTransport,
   EncodeFunctionDataParameters,
   Hex,
   PrivateKeyAccount,
+  PublicClient,
   SimulateContractReturnType,
+  TestClient,
+  TestRpcSchema,
   TransactionReceipt,
   Transport,
   WalletClient,
 } from "viem";
 import {
+  createPublicClient,
+  createTestClient,
   createWalletClient,
-  custom,
+  defineChain,
   encodeFunctionData,
-  PublicClient,
+  fallback,
+  http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 import { CONFIG, Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
-import { PROVIDER, VIEM_PUBLIC_CLIENT } from "../utils/index.js";
+import { PROVIDER } from "../utils/index.js";
 import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
@@ -55,19 +57,29 @@ interface AnvilNodeInfo {
   };
 }
 
-@Service()
-export default class ExecutorService {
-  @Inject()
-  public wallet: Wallet;
+type AnvilRPCSchema = [
+  ...TestRpcSchema<"anvil">,
+  {
+    Method: "anvil_nodeInfo";
+    Parameters: [];
+    ReturnType: AnvilNodeInfo;
+  },
+];
 
+const CHAINS: Record<NetworkType, Chain> = {
+  Mainnet: mainnet,
+  Arbitrum: arbitrum,
+  Optimism: optimism,
+  Base: base,
+};
+
+@Service()
+export default class Client {
   @Inject(CONFIG)
   config: Config;
 
   @Inject(PROVIDER)
   public provider: Provider;
-
-  @Inject(VIEM_PUBLIC_CLIENT)
-  publicClient: PublicClient<Transport, Chain>;
 
   @Inject(NOTIFIER)
   notifier: INotifier;
@@ -77,54 +89,76 @@ export default class ExecutorService {
 
   #anvilInfo: AnvilNodeInfo | null = null;
 
-  #walletClient?: WalletClient<
-    CustomTransport,
+  #publicClient?: PublicClient;
+
+  #walletClient?: WalletClient<Transport, Chain, PrivateKeyAccount, undefined>;
+
+  #testClient?: TestClient<
+    "anvil",
+    Transport,
     Chain,
-    PrivateKeyAccount,
-    undefined
+    undefined,
+    true,
+    AnvilRPCSchema
   >;
 
-  // #flashbots?: FlashbotsBundleProvider;
-
   public async launch(): Promise<void> {
-    let pk = this.config.privateKey as Hex;
+    const {
+      ethProviderRpcs,
+      chainId,
+      network,
+      optimistic,
+      privateKey: pk,
+    } = this.config;
+    // TODO: move this manipulation to config
+    let privateKey: Hex = pk as Hex;
     if (!pk.startsWith("0x")) {
-      pk = `0x${pk}`;
+      privateKey = `0x${pk}`;
     }
+    const rpcs = ethProviderRpcs.map(url => http(url, { timeout: 120_000 }));
+    const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
+    const chain = defineChain({
+      ...CHAINS[network],
+      id: chainId,
+    });
+
+    this.#publicClient = createPublicClient({
+      cacheTime: 0,
+      chain,
+      transport,
+      pollingInterval: optimistic ? 25 : undefined,
+    });
     this.#walletClient = createWalletClient({
-      account: privateKeyToAccount(pk),
-      chain: this.publicClient.chain,
-      transport: custom(this.publicClient.transport),
+      account: privateKeyToAccount(privateKey),
+      chain,
+      transport,
+      pollingInterval: optimistic ? 25 : undefined,
     });
     try {
-      const resp = await (this.provider as JsonRpcProvider).send(
-        "anvil_nodeInfo",
-        [],
-      );
+      this.#testClient = createTestClient<
+        "anvil",
+        Transport,
+        Chain,
+        undefined,
+        AnvilRPCSchema
+      >({
+        mode: "anvil",
+        transport,
+        chain,
+        pollingInterval: 25,
+      });
+      const resp = await this.#testClient?.request({
+        method: "anvil_nodeInfo",
+        params: [],
+      });
       this.#anvilInfo = resp;
     } catch {}
     if (this.#anvilInfo) {
-      this.logger.debug("running on anvil");
+      this.logger.debug(`running on anvil, fork block: ${this.anvilForkBlock}`);
     } else {
       this.logger.debug("running on real rpc");
     }
     await this.#checkBalance();
-  }
-
-  /**
-   * Mines transaction on anvil. Because sometimes it gets stuck for unknown reasons,
-   * add retries and timeout
-   * @param tx
-   * @returns
-   */
-  public async mine(tx: TransactionResponse): Promise<void> {
-    if (this.#anvilInfo) {
-      await (this.provider as JsonRpcProvider)
-        .send("evm_mine", [])
-        .catch(() => {});
-    }
-
-    await tx.wait(1, 12_000);
   }
 
   public async liquidate(
@@ -143,7 +177,7 @@ export default class ExecutorService {
       args,
       functionName,
     } as EncodeFunctionDataParameters);
-    const req = await this.walletClient.prepareTransactionRequest({
+    const req = await this.wallet.prepareTransactionRequest({
       ...rest,
       to: request.address,
       data,
@@ -162,13 +196,13 @@ export default class ExecutorService {
         `increase gas fees`,
       );
     }
-    const serializedTransaction = await this.walletClient.signTransaction(req);
-    const hash = await this.walletClient.sendRawTransaction({
+    const serializedTransaction = await this.wallet.signTransaction(req);
+    const hash = await this.wallet.sendRawTransaction({
       serializedTransaction,
     });
 
     logger.debug(`sent transaction ${hash}`);
-    const result = await this.publicClient.waitForTransactionReceipt({
+    const result = await this.pub.waitForTransactionReceipt({
       hash,
       timeout: 120_000,
     });
@@ -183,38 +217,24 @@ export default class ExecutorService {
   }
 
   async #checkBalance(): Promise<void> {
-    const balance = await this.provider.getBalance(this.wallet.address);
+    const balance = await this.provider.getBalance(this.address);
     this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
-        new LowBalanceMessage(this.wallet, balance, this.config.minBalance),
+        new LowBalanceMessage(this.address, balance, this.config.minBalance),
       );
     }
   }
 
-  // private async getFlashbots(): Promise<FlashbotsBundleProvider> {
-  //   if (!config.flashbotsRpc) {
-  //     throw new Error(`flashbots rpc not enabled`);
-  //   }
+  public get pub(): PublicClient {
+    if (!this.#publicClient) {
+      throw new Error("public client not initialized");
+    }
+    return this.#publicClient;
+  }
 
-  //   if (!this.#flashbots) {
-  //     // TODO: set env variable
-  //     // `authSigner` is an Ethereum private key that does NOT store funds and is NOT your bot's primary key.
-  //     // This is an identifying key for signing payloads to establish reputation and whitelisting
-  //     // In production, this should be used across multiple bundles to build relationship. In this example, we generate a new wallet each time
-  //     const authSigner = Wallet.createRandom();
-
-  //     this.#flashbots = await FlashbotsBundleProvider.create(
-  //       this.provider,
-  //       authSigner,
-  //     );
-  //   }
-
-  //   return this.#flashbots;
-  // }
-
-  public get walletClient(): WalletClient<
-    CustomTransport,
+  public get wallet(): WalletClient<
+    Transport,
     Chain,
     PrivateKeyAccount,
     undefined
@@ -225,12 +245,29 @@ export default class ExecutorService {
     return this.#walletClient;
   }
 
-  public get address(): Address {
-    return this.wallet.address as Address;
+  public get anvil(): TestClient<
+    "anvil",
+    Transport,
+    Chain,
+    undefined,
+    true,
+    AnvilRPCSchema
+  > {
+    if (!this.config.optimistic) {
+      throw new Error("test config is only available in optimistic mode");
+    }
+    if (!this.#testClient) {
+      throw new Error("test client not initialized");
+    }
+    return this.#testClient;
   }
 
   public get account(): PrivateKeyAccount {
-    return this.walletClient.account;
+    return this.wallet.account;
+  }
+
+  public get address(): Address {
+    return this.wallet.account.address;
   }
 
   public get anvilForkBlock(): bigint {

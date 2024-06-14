@@ -10,13 +10,12 @@ import {
   iDataCompressorV3Abi,
 } from "@gearbox-protocol/types/abi";
 import { Inject, Service } from "typedi";
-import { getContract, PublicClient } from "viem";
+import { getContract } from "viem";
 
 import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
-import { VIEM_PUBLIC_CLIENT } from "../../utils/index.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
 import { LiquidatorService } from "../liquidate/index.js";
 import OracleServiceV3 from "../OracleServiceV3.js";
@@ -47,14 +46,11 @@ export class ScanServiceV3 extends AbstractScanService {
   @Inject()
   redstone: RedstoneServiceV3;
 
-  @Inject(VIEM_PUBLIC_CLIENT)
-  publicClient: PublicClient;
-
   @Inject()
   _liquidatorService: LiquidatorService;
 
   #dataCompressor?: IDataCompressorContract;
-  #processing: number | null = null;
+  #processing: bigint | null = null;
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
 
@@ -69,17 +65,17 @@ export class ScanServiceV3 extends AbstractScanService {
     this.#dataCompressor = getContract({
       abi: iDataCompressorV3Abi,
       address: dcAddr,
-      client: this.publicClient,
+      client: this.client.pub,
     });
 
-    const block = await this.provider.getBlockNumber();
+    const block = await this.client.pub.getBlockNumber();
     await this.oracle.launch(block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.updateAccounts(this.config.optimistic ? undefined : block);
   }
 
-  protected override async onBlock(blockNumber: number): Promise<void> {
+  protected override async onBlock(blockNumber: bigint): Promise<void> {
     if (this.#processing) {
       this.log.debug(
         `skipping block ${blockNumber}, still processing block ${this.#processing}`,
@@ -96,7 +92,7 @@ export class ScanServiceV3 extends AbstractScanService {
    * Loads new data and recompute all health factors
    * @param atBlock Fiex block for archive node which is needed to get data
    */
-  protected async updateAccounts(atBlock?: number): Promise<void> {
+  protected async updateAccounts(atBlock?: bigint): Promise<void> {
     const start = new Date().getTime();
     const blockS = atBlock ? ` in ${atBlock}` : "";
     let [accounts, failedTokens] = await this.#potentialLiquidations(
@@ -155,7 +151,7 @@ export class ScanServiceV3 extends AbstractScanService {
    */
   async #potentialLiquidations(
     priceUpdates: PriceOnDemand[],
-    blockNumber?: number,
+    blockNumber?: bigint,
   ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
     const {
       optimistic,
@@ -327,7 +323,7 @@ export class ScanServiceV3 extends AbstractScanService {
       const cm = getContract({
         abi: iCreditManagerV3Abi,
         address: this.#restakingCMAddr,
-        client: this.publicClient,
+        client: this.client.pub,
       });
       const [[, , liquidationDiscount], ezETHLT] = await Promise.all([
         cm.read.fees(),

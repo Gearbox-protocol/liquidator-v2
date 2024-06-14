@@ -2,9 +2,8 @@ import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import type { Wallet } from "ethers";
 import { Container } from "typedi";
-import type { TransactionReceipt } from "viem";
+import type { Address, TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
 import { CONFIG } from "../../config/index.js";
@@ -73,11 +72,11 @@ class BaseMessage {
 }
 
 export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
-  #wallet: Wallet;
+  #wallet: Address;
   #balance: bigint;
   #minBalance: bigint;
 
-  constructor(wallet: Wallet, balance: bigint, minBalance: bigint) {
+  constructor(wallet: Address, balance: bigint, minBalance: bigint) {
     super();
     this.#wallet = wallet;
     this.#balance = balance;
@@ -85,12 +84,12 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
   }
 
   public get plain(): string {
-    return `[${this.network}] balance of liquidator ${this.#wallet.address} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
+    return `[${this.network}] balance of liquidator ${this.#wallet} is ${formatBN(this.#balance, 18)} ETH is below minumum of ${formatBN(this.#minBalance, 18)} ETH`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`[${this.network}] balance of liquidator ${md.link(this.#wallet.address, etherscanUrl(this.#wallet, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
+      md`[${this.network}] balance of liquidator ${md.link(this.#wallet, etherscanUrl({ address: this.#wallet }, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
     );
   }
 }

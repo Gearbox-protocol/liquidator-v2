@@ -2,13 +2,13 @@ import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
 import { ADDRESS_PROVIDER } from "@gearbox-protocol/sdk-gov";
 import { iAddressProviderV3Abi } from "@gearbox-protocol/types/abi";
 import { Inject, Service } from "typedi";
-import type { GetContractReturnType } from "viem";
-import { getContract, PublicClient, stringToHex } from "viem";
+import type { GetContractReturnType, PublicClient } from "viem";
+import { getContract, stringToHex } from "viem";
 
 import { CONFIG, type Config } from "../config/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { VIEM_PUBLIC_CLIENT } from "../utils/index.js";
+import Client from "./Client.js";
 
 type IAddressProviderV3Contract = GetContractReturnType<
   typeof iAddressProviderV3Abi,
@@ -27,11 +27,11 @@ export class AddressProviderService {
   @Logger("AddressProviderService")
   log: LoggerInterface;
 
-  @Inject(VIEM_PUBLIC_CLIENT)
-  publicClient: PublicClient;
-
   @Inject(CONFIG)
   config: Config;
+
+  @Inject()
+  client: Client;
 
   #address?: Address;
   #contract?: IAddressProviderV3Contract;
@@ -48,7 +48,7 @@ export class AddressProviderService {
       address: this.#address,
       abi: iAddressProviderV3Abi,
       // 1a. Insert a single client
-      client: this.publicClient,
+      client: this.client.pub,
     });
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this

@@ -25,10 +25,9 @@ import {
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
 } from "@gearbox-protocol/types/abi";
-import type { JsonRpcProvider } from "ethers";
 import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
-import { createTestClient, custom, getContract, parseEther } from "viem";
+import { getContract, parseEther } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
@@ -107,10 +106,7 @@ export default class LiquidationStrategyV3Partial
     const cm = await this.getCreditManagerData(ca.creditManager);
 
     const ltChanges = await this.#calcNewLTs(ca);
-    const snapshotId = await (this.executor.provider as JsonRpcProvider).send(
-      "evm_snapshot",
-      [],
-    );
+    const snapshotId = await this.client.anvil.snapshot();
 
     await this.#setNewLTs(ca, cm, ltChanges);
     const updCa = await this.updateCreditAccountData(ca);
@@ -142,8 +138,8 @@ export default class LiquidationStrategyV3Partial
         flashLoanAmount,
         isOptimalRepayable,
       ],
-    } = await this.publicClient.simulateContract({
-      account: this.executor.account,
+    } = await this.client.pub.simulateContract({
+      account: this.client.account,
       abi: iLiquidatorAbi,
       address: this.partialLiquidator,
       functionName: "getOptimalLiquidation",
@@ -170,8 +166,8 @@ export default class LiquidationStrategyV3Partial
     );
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
 
-    const { result: preview } = await this.publicClient.simulateContract({
-      account: this.executor.account,
+    const { result: preview } = await this.client.pub.simulateContract({
+      account: this.client.account,
       address: this.partialLiquidator,
       abi: iLiquidatorAbi,
       functionName: "previewPartialLiquidation",
@@ -212,8 +208,8 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
-    return this.publicClient.simulateContract({
-      account: this.executor.account,
+    return this.client.pub.simulateContract({
+      account: this.client.account,
       address: this.partialLiquidator,
       abi: iLiquidatorAbi,
       functionName: "partialLiquidateAndConvert",
@@ -321,27 +317,24 @@ export default class LiquidationStrategyV3Partial
     ltChanges: Record<Address, [bigint, bigint]>,
   ): Promise<void> {
     const logger = this.#caLogger(ca);
-    const anvilClient = createTestClient({
-      transport: custom(this.publicClient.transport),
-      mode: "anvil",
-      chain: this.publicClient.chain,
-    });
     const configuratorAddr = await this.getConfiguratorAddr();
-    await anvilClient.impersonateAccount({ address: configuratorAddr });
-    await anvilClient.setBalance({
+    await this.client.anvil.impersonateAccount({
+      address: configuratorAddr,
+    });
+    await this.client.anvil.setBalance({
       address: configuratorAddr,
       value: parseEther("100"),
     });
     for (const [t, [_, lt]] of Object.entries(ltChanges)) {
-      const hash = await this.executor.walletClient.writeContract({
+      const hash = await this.client.wallet.writeContract({
         address: cm.creditConfigurator,
         account: configuratorAddr,
         abi: iCreditConfiguratorV3Abi,
         functionName: "setLiquidationThreshold",
         args: [t as Address, Number(lt)],
       });
-      await this.publicClient.waitForTransactionReceipt({ hash });
-      const newLT = await this.publicClient.readContract({
+      await this.client.pub.waitForTransactionReceipt({ hash });
+      const newLT = await this.client.pub.readContract({
         address: cm.address,
         abi: iCreditManagerV3Abi,
         functionName: "liquidationThresholds",
@@ -349,7 +342,9 @@ export default class LiquidationStrategyV3Partial
       });
       logger.debug(`set LT of ${tokenSymbolByAddress[t]} to ${lt}: ${newLT}`);
     }
-    await anvilClient.stopImpersonatingAccount({ address: configuratorAddr });
+    await this.client.anvil.stopImpersonatingAccount({
+      address: configuratorAddr,
+    });
   }
 
   async #deployPartialLiquidator(
@@ -361,18 +356,18 @@ export default class LiquidationStrategyV3Partial
     if (!partialLiquidatorAddress) {
       this.logger.debug("deploying partial liquidator");
 
-      let hash = await this.executor.walletClient.deployContract({
+      let hash = await this.client.wallet.deployContract({
         abi: aaveFlTakerAbi,
         bytecode: AaveFLTaker_bytecode,
         args: [aavePool],
       });
       this.logger.debug(`waiting for AaveFLTaker to deploy, tx hash: ${hash}`);
       const { contractAddress: aaveFlTakerAddr } =
-        await this.publicClient.waitForTransactionReceipt({ hash });
+        await this.client.pub.waitForTransactionReceipt({ hash });
       if (!aaveFlTakerAddr) {
         throw new Error(`AaveFLTaker was not deployed, tx hash: ${hash}`);
       }
-      let owner = await this.publicClient.readContract({
+      let owner = await this.client.pub.readContract({
         abi: aaveFlTakerAbi,
         functionName: "owner",
         address: aaveFlTakerAddr,
@@ -381,18 +376,18 @@ export default class LiquidationStrategyV3Partial
         `deployed AaveFLTaker at ${aaveFlTakerAddr} owned by ${owner} in tx ${hash}`,
       );
 
-      hash = await this.executor.walletClient.deployContract({
+      hash = await this.client.wallet.deployContract({
         abi: liquidatorAbi,
         bytecode: Liquidator_bytecode,
         args: [router, bot, aavePool, aaveFlTakerAddr],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
       const { contractAddress: liquidatorAddr } =
-        await this.publicClient.waitForTransactionReceipt({ hash });
+        await this.client.pub.waitForTransactionReceipt({ hash });
       if (!liquidatorAddr) {
         throw new Error(`Liquidator was not deployed, tx hash: ${hash}`);
       }
-      owner = await this.publicClient.readContract({
+      owner = await this.client.pub.readContract({
         abi: liquidatorAbi,
         address: liquidatorAddr,
         functionName: "owner",
@@ -401,15 +396,15 @@ export default class LiquidationStrategyV3Partial
         `deployed Liquidator at ${liquidatorAddr} owned by ${owner} in tx ${hash}`,
       );
 
-      const { request } = await this.publicClient.simulateContract({
-        account: this.executor.account,
+      const { request } = await this.client.pub.simulateContract({
+        account: this.client.account,
         address: aaveFlTakerAddr,
         abi: aaveFlTakerAbi,
         functionName: "setAllowedFLReceiver",
         args: [liquidatorAddr, true],
       });
-      hash = await this.executor.walletClient.writeContract(request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({
+      hash = await this.client.wallet.writeContract(request);
+      const receipt = await this.client.pub.waitForTransactionReceipt({
         hash,
       });
       if (receipt.status === "reverted") {
@@ -435,14 +430,14 @@ export default class LiquidationStrategyV3Partial
     }
     this.logger.debug("deploying price helper");
 
-    const hash = await this.executor.walletClient.deployContract({
+    const hash = await this.client.wallet.deployContract({
       abi: priceHelperAbi,
       bytecode: PriceHelper_bytecode,
       args: [],
     });
     this.logger.debug(`waiting for PriceHelper to deploy, tx hash: ${hash}`);
     const { contractAddress: priceHelperAddr } =
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      await this.client.pub.waitForTransactionReceipt({ hash });
     if (!priceHelperAddr) {
       throw new Error(`PriceHelper was not deployed, tx hash: ${hash}`);
     }
@@ -453,7 +448,7 @@ export default class LiquidationStrategyV3Partial
     return getContract({
       abi: iPriceHelperAbi,
       address: priceHelperAddr,
-      client: this.publicClient,
+      client: this.client.pub,
     });
   }
 
@@ -462,12 +457,12 @@ export default class LiquidationStrategyV3Partial
     bot: Address,
   ): Promise<void> {
     const [currentRouter, currentBot, cms] = await Promise.all([
-      this.publicClient.readContract({
+      this.client.pub.readContract({
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "router",
       }),
-      this.publicClient.readContract({
+      this.client.pub.readContract({
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "partialLiquidationBot",
@@ -479,15 +474,15 @@ export default class LiquidationStrategyV3Partial
       this.logger.warn(
         `need to update router from ${currentRouter} to ${router}`,
       );
-      const { request } = await this.publicClient.simulateContract({
-        account: this.executor.account,
+      const { request } = await this.client.pub.simulateContract({
+        account: this.client.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setRouter",
         args: [router],
       });
-      const hash = await this.executor.walletClient.writeContract(request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({
+      const hash = await this.client.wallet.writeContract(request);
+      const receipt = await this.client.pub.waitForTransactionReceipt({
         hash,
       });
       if (receipt.status === "reverted") {
@@ -500,15 +495,15 @@ export default class LiquidationStrategyV3Partial
 
     if (bot.toLowerCase() !== currentBot.toLowerCase()) {
       this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
-      const { request } = await this.publicClient.simulateContract({
-        account: this.executor.account,
+      const { request } = await this.client.pub.simulateContract({
+        account: this.client.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setPartialLiquidationBot",
         args: [bot],
       });
-      const hash = await this.executor.walletClient.writeContract(request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({
+      const hash = await this.client.wallet.writeContract(request);
+      const receipt = await this.client.pub.waitForTransactionReceipt({
         hash,
       });
       if (receipt.status === "reverted") {
@@ -538,7 +533,7 @@ export default class LiquidationStrategyV3Partial
   async #getLiquidatorAccounts(
     cms: CreditManagerData[],
   ): Promise<Record<Address, Address>> {
-    const results = await this.publicClient.multicall({
+    const results = await this.client.pub.multicall({
       allowFailure: false,
       contracts: cms.map(cm => ({
         abi: iLiquidatorAbi,
@@ -555,15 +550,15 @@ export default class LiquidationStrategyV3Partial
     const { address, name } = cm;
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);
-      const { request } = await this.publicClient.simulateContract({
-        account: this.executor.account,
+      const { request } = await this.client.pub.simulateContract({
+        account: this.client.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "registerCM",
         args: [address],
       });
-      const hash = await this.executor.walletClient.writeContract(request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({
+      const hash = await this.client.wallet.writeContract(request);
+      const receipt = await this.client.pub.waitForTransactionReceipt({
         hash,
       });
       if (receipt.status === "reverted") {
@@ -610,7 +605,7 @@ export default class LiquidationStrategyV3Partial
   private async getConfiguratorAddr(): Promise<Address> {
     if (!this.#configuratorAddr) {
       const aclAddr = await this.addressProvider.findService("ACL", 0);
-      this.#configuratorAddr = await this.publicClient.readContract({
+      this.#configuratorAddr = await this.client.pub.readContract({
         address: aclAddr,
         abi: iaclAbi,
         functionName: "owner",
