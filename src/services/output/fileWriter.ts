@@ -9,7 +9,10 @@ export default class FileWriter
   extends BaseWriter
   implements IOptimisticOutputWriter
 {
-  public async write(prefix: number | string, result: unknown): Promise<void> {
+  public async write(
+    prefix: string | bigint | number,
+    result: unknown,
+  ): Promise<void> {
     const filename = join(this.config.outDir, this.getFilename(prefix));
     try {
       await writeFile(filename, json_stringify(result), "utf-8");

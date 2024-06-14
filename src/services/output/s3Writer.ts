@@ -10,7 +10,10 @@ export default class S3Writer
   extends BaseWriter
   implements IOptimisticOutputWriter
 {
-  public async write(prefix: number | string, result: unknown): Promise<void> {
+  public async write(
+    prefix: string | bigint | number,
+    result: unknown,
+  ): Promise<void> {
     const key = join(this.config.outS3Prefix, this.getFilename(prefix));
     const client = new S3Client({});
     try {

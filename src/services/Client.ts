@@ -2,7 +2,6 @@ import { nextTick } from "node:process";
 
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
-import { formatUnits, Provider } from "ethers";
 import { Inject, Service } from "typedi";
 import type {
   Address,
@@ -24,6 +23,7 @@ import {
   defineChain,
   encodeFunctionData,
   fallback,
+  formatEther,
   http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -32,7 +32,6 @@ import { arbitrum, base, mainnet, optimism } from "viem/chains";
 import { CONFIG, Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
-import { PROVIDER } from "../utils/index.js";
 import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
@@ -76,9 +75,6 @@ const CHAINS: Record<NetworkType, Chain> = {
 export default class Client {
   @Inject(CONFIG)
   config: Config;
-
-  @Inject(PROVIDER)
-  public provider: Provider;
 
   @Inject(NOTIFIER)
   notifier: INotifier;
@@ -206,8 +202,8 @@ export default class Client {
   }
 
   async #checkBalance(): Promise<void> {
-    const balance = await this.provider.getBalance(this.address);
-    this.logger.debug(`liquidator balance is ${formatUnits(balance, "ether")}`);
+    const balance = await this.pub.getBalance({ address: this.address });
+    this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
         new LowBalanceMessage(this.address, balance, this.config.minBalance),

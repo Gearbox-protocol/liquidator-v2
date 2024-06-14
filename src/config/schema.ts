@@ -77,5 +77,5 @@ export type ConfigSchema = z.infer<typeof ConfigSchema>;
 export type Config = ConfigSchema & {
   network: NetworkType;
   chainId: number;
-  startBlock: number;
+  startBlock: bigint;
 };

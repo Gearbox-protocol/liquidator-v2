@@ -7,7 +7,7 @@ export default class BaseWriter {
     this.config = config;
   }
 
-  protected getFilename(prefix: number | string): string {
+  protected getFilename(prefix: number | bigint | string): string {
     return (
       [
         prefix,

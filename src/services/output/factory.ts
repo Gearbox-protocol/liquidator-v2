@@ -23,5 +23,5 @@ function createOutputWriter(): IOptimisticOutputWriter {
 
 @Service({ factory: createOutputWriter, id: OUTPUT_WRITER })
 export class OutputWriter implements IOptimisticOutputWriter {
-  write: (prefix: number | string, result: unknown) => Promise<void>;
+  write: (prefix: string | bigint | number, result: unknown) => Promise<void>;
 }
