@@ -1,5 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { Address } from "abitype/zod";
+import { type Hex, isHex } from "viem";
 import { z } from "zod";
 
 const stringArrayLike = z
@@ -29,7 +30,12 @@ export const ConfigSchema = z.object({
     .optional()
     .pipe(z.array(z.string().url()).min(1)),
 
-  privateKey: z.string().min(1),
+  privateKey: z
+    .string()
+    .min(1)
+    .transform((s): Hex => {
+      return isHex(s) ? s : `0x${s}`;
+    }),
   /**
    * If balance drops before this value - we should send notification
    */

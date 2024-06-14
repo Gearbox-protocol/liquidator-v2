@@ -8,7 +8,6 @@ import type {
   Address,
   Chain,
   EncodeFunctionDataParameters,
-  Hex,
   PrivateKeyAccount,
   PublicClient,
   SimulateContractReturnType,
@@ -103,18 +102,8 @@ export default class Client {
   >;
 
   public async launch(): Promise<void> {
-    const {
-      ethProviderRpcs,
-      chainId,
-      network,
-      optimistic,
-      privateKey: pk,
-    } = this.config;
-    // TODO: move this manipulation to config
-    let privateKey: Hex = pk as Hex;
-    if (!pk.startsWith("0x")) {
-      privateKey = `0x${pk}`;
-    }
+    const { ethProviderRpcs, chainId, network, optimistic, privateKey } =
+      this.config;
     const rpcs = ethProviderRpcs.map(url => http(url, { timeout: 120_000 }));
     const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
     const chain = defineChain({
