@@ -229,6 +229,10 @@ export default class ExecutorService {
     return this.wallet.address as Address;
   }
 
+  public get account(): PrivateKeyAccount {
+    return this.walletClient.account;
+  }
+
   public get anvilForkBlock(): bigint {
     const n = this.#anvilInfo?.forkConfig.forkBlockNumber;
     if (!n) {

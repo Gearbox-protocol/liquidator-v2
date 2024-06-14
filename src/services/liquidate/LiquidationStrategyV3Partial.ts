@@ -143,7 +143,7 @@ export default class LiquidationStrategyV3Partial
         isOptimalRepayable,
       ],
     } = await this.publicClient.simulateContract({
-      account: this.executor.walletClient.account,
+      account: this.executor.account,
       abi: iLiquidatorAbi,
       address: this.partialLiquidator,
       functionName: "getOptimalLiquidation",
@@ -171,7 +171,7 @@ export default class LiquidationStrategyV3Partial
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
 
     const { result: preview } = await this.publicClient.simulateContract({
-      account: this.executor.walletClient.account,
+      account: this.executor.account,
       address: this.partialLiquidator,
       abi: iLiquidatorAbi,
       functionName: "previewPartialLiquidation",
@@ -213,7 +213,7 @@ export default class LiquidationStrategyV3Partial
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
     return this.publicClient.simulateContract({
-      account: this.executor.walletClient.account,
+      account: this.executor.account,
       address: this.partialLiquidator,
       abi: iLiquidatorAbi,
       functionName: "partialLiquidateAndConvert",
@@ -402,7 +402,7 @@ export default class LiquidationStrategyV3Partial
       );
 
       const { request } = await this.publicClient.simulateContract({
-        account: this.executor.walletClient.account,
+        account: this.executor.account,
         address: aaveFlTakerAddr,
         abi: aaveFlTakerAbi,
         functionName: "setAllowedFLReceiver",
@@ -480,7 +480,7 @@ export default class LiquidationStrategyV3Partial
         `need to update router from ${currentRouter} to ${router}`,
       );
       const { request } = await this.publicClient.simulateContract({
-        account: this.executor.publicClient.account,
+        account: this.executor.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setRouter",
@@ -501,7 +501,7 @@ export default class LiquidationStrategyV3Partial
     if (bot.toLowerCase() !== currentBot.toLowerCase()) {
       this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
       const { request } = await this.publicClient.simulateContract({
-        account: this.executor.publicClient.account,
+        account: this.executor.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setPartialLiquidationBot",
@@ -556,7 +556,7 @@ export default class LiquidationStrategyV3Partial
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);
       const { request } = await this.publicClient.simulateContract({
-        account: this.executor.publicClient.account,
+        account: this.executor.account,
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "registerCM",

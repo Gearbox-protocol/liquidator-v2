@@ -69,7 +69,7 @@ export default class LiquidationStrategyV3Full
     preview: PathFinderCloseResult,
   ): Promise<SimulateContractReturnType> {
     return this.publicClient.simulateContract({
-      account: this.executor.walletClient.account,
+      account: this.executor.account,
       abi: iCreditFacadeV3Abi,
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",

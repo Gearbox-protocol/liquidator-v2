@@ -21,8 +21,9 @@ import {
   tokenSymbolByAddress,
   yearnTokens,
 } from "@gearbox-protocol/sdk-gov";
-import type { TokenBalance } from "@gearbox-protocol/types/v3";
 import type { Address } from "viem";
+
+import type { TokenBalance } from "../../../data/index.js";
 
 export interface PathOption {
   target: Address;
