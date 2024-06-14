@@ -84,15 +84,12 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       this.log.debug(
         `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
+      await this.client.simulateAndWrite({
         abi: ierc20Abi,
         address: tokenAddr,
         functionName: "approve",
         args: [this.routerAddress, amount],
       });
-      const hash = await this.client.wallet.writeContract(request);
-      await this.client.pub.waitForTransactionReceipt({ hash });
 
       const swap = await this.apiClient.get("/swap", {
         params: {

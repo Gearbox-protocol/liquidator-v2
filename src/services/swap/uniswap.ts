@@ -107,15 +107,12 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
       tradeType: TradeType.EXACT_INPUT,
     });
 
-    const { request } = await this.client.pub.simulateContract({
-      account: this.client.account,
+    await this.client.simulateAndWrite({
       address: token.address as Address,
       abi: ierc20Abi,
       functionName: "approve",
       args: [SWAP_ROUTER_ADDRESS, amount],
     });
-    const hash = await this.client.wallet.writeContract(request);
-    await this.client.pub.waitForTransactionReceipt({ hash });
 
     const options: SwapOptions = {
       slippageTolerance: new Percent(50, 10_000), // 50 bips, or 0.50%

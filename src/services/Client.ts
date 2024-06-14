@@ -2,13 +2,17 @@ import { nextTick } from "node:process";
 
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
+import type { Abi } from "abitype";
 import { Inject, Service } from "typedi";
 import type {
   Address,
   Chain,
+  ContractFunctionArgs,
+  ContractFunctionName,
   EncodeFunctionDataParameters,
   PrivateKeyAccount,
   PublicClient,
+  SimulateContractParameters,
   SimulateContractReturnType,
   TestClient,
   TestRpcSchema,
@@ -199,6 +203,45 @@ export default class Client {
     this.logger.debug(`got receipt for tx ${hash}: ${result.status}`);
 
     return result;
+  }
+
+  public async simulateAndWrite<
+    const abi extends Abi | readonly unknown[],
+    functionName extends ContractFunctionName<abi, "nonpayable" | "payable">,
+    args extends ContractFunctionArgs<
+      abi,
+      "nonpayable" | "payable",
+      functionName
+    >,
+  >(
+    args: SimulateContractParameters<
+      abi,
+      functionName,
+      args,
+      undefined,
+      undefined,
+      Address | undefined
+    >,
+  ): Promise<TransactionReceipt> {
+    if (args.account && !this.config.optimistic) {
+      throw new Error(`not allowed to override account in non-optimistic mode`);
+    }
+    const account = args.account && this.account.address;
+    const { request } = await this.pub.simulateContract<
+      abi,
+      functionName,
+      args,
+      undefined,
+      Address
+    >({
+      ...args,
+      account,
+    });
+    const hash = await this.wallet.writeContract(request as any);
+    return this.pub.waitForTransactionReceipt({
+      hash,
+      timeout: 120_000,
+    });
   }
 
   async #checkBalance(): Promise<void> {

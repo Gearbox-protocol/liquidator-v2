@@ -326,14 +326,13 @@ export default class LiquidationStrategyV3Partial
       value: parseEther("100"),
     });
     for (const [t, [_, lt]] of Object.entries(ltChanges)) {
-      const hash = await this.client.wallet.writeContract({
+      await this.client.simulateAndWrite({
         address: cm.creditConfigurator,
         account: configuratorAddr,
         abi: iCreditConfiguratorV3Abi,
         functionName: "setLiquidationThreshold",
         args: [t as Address, Number(lt)],
       });
-      await this.client.pub.waitForTransactionReceipt({ hash });
       const newLT = await this.client.pub.readContract({
         address: cm.address,
         abi: iCreditManagerV3Abi,
@@ -396,24 +395,19 @@ export default class LiquidationStrategyV3Partial
         `deployed Liquidator at ${liquidatorAddr} owned by ${owner} in tx ${hash}`,
       );
 
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
+      const receipt = await this.client.simulateAndWrite({
         address: aaveFlTakerAddr,
         abi: aaveFlTakerAbi,
         functionName: "setAllowedFLReceiver",
         args: [liquidatorAddr, true],
       });
-      hash = await this.client.wallet.writeContract(request);
-      const receipt = await this.client.pub.waitForTransactionReceipt({
-        hash,
-      });
       if (receipt.status === "reverted") {
         throw new Error(
-          `AaveFLTaker.setAllowedFLReceiver reverted, tx hash: ${hash}`,
+          `AaveFLTaker.setAllowedFLReceiver reverted, tx hash: ${receipt.transactionHash}`,
         );
       }
       this.logger.debug(
-        `set allowed flashloan receiver on FLTaker ${aaveFlTakerAddr} to ${liquidatorAddr} in tx ${hash}`,
+        `set allowed flashloan receiver on FLTaker ${aaveFlTakerAddr} to ${liquidatorAddr} in tx ${receipt.transactionHash}`,
       );
 
       partialLiquidatorAddress = liquidatorAddr;
@@ -474,44 +468,36 @@ export default class LiquidationStrategyV3Partial
       this.logger.warn(
         `need to update router from ${currentRouter} to ${router}`,
       );
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
+      const receipt = await this.client.simulateAndWrite({
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setRouter",
         args: [router],
       });
-      const hash = await this.client.wallet.writeContract(request);
-      const receipt = await this.client.pub.waitForTransactionReceipt({
-        hash,
-      });
       if (receipt.status === "reverted") {
         throw new Error(
-          `PartialLiquidator.setRouter(${router}) tx ${hash} reverted`,
+          `PartialLiquidator.setRouter(${router}) tx ${receipt.transactionHash} reverted`,
         );
       }
-      this.logger.info(`set router to ${router} in tx ${hash}`);
+      this.logger.info(
+        `set router to ${router} in tx ${receipt.transactionHash}`,
+      );
     }
 
     if (bot.toLowerCase() !== currentBot.toLowerCase()) {
       this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
+      const receipt = await this.client.simulateAndWrite({
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "setPartialLiquidationBot",
         args: [bot],
       });
-      const hash = await this.client.wallet.writeContract(request);
-      const receipt = await this.client.pub.waitForTransactionReceipt({
-        hash,
-      });
       if (receipt.status === "reverted") {
         throw new Error(
-          `PartialLiquidator.setPartialLiquidationBot(${bot}) tx ${hash} reverted`,
+          `PartialLiquidator.setPartialLiquidationBot(${bot}) tx ${receipt.transactionHash} reverted`,
         );
       }
-      this.logger.info(`set bot to ${bot} in tx ${hash}`);
+      this.logger.info(`set bot to ${bot} in tx ${receipt.transactionHash}`);
     }
     const cmToCa = await this.#getLiquidatorAccounts(cms);
     // TODO: count required number of DefenNFT tokens to transfer from owner to liquidator
@@ -550,22 +536,19 @@ export default class LiquidationStrategyV3Partial
     const { address, name } = cm;
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
+      const receipt = await this.client.simulateAndWrite({
         abi: iLiquidatorAbi,
         address: this.partialLiquidator,
         functionName: "registerCM",
         args: [address],
       });
-      const hash = await this.client.wallet.writeContract(request);
-      const receipt = await this.client.pub.waitForTransactionReceipt({
-        hash,
-      });
       if (receipt.status === "reverted") {
-        throw new Error(`Liquidator.registerCM(${address}) reverted`);
+        throw new Error(
+          `Liquidator.registerCM(${address}) reverted: ${receipt.transactionHash}`,
+        );
       }
       this.logger.info(
-        `registered credit manager ${name} (${address}) in tx ${hash}`,
+        `registered credit manager ${name} (${address}) in tx ${receipt.transactionHash}`,
       );
       this.#registeredCMs[address.toLowerCase() as Address] = true;
     } catch (e) {
