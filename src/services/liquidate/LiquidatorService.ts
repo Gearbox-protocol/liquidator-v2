@@ -1,25 +1,6 @@
-import events from "node:events";
-import { createWriteStream } from "node:fs";
-import path from "node:path";
-
-import {
-  ILiquidator__factory,
-  SafeERC20__factory,
-} from "@gearbox-protocol/liquidator-v2-contracts/types";
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
-import {
-  ICreditFacadeV3__factory,
-  ICreditManagerV3__factory,
-  IExceptions__factory,
-  IPriceOracleV3__factory,
-  IRouterV3__factory,
-} from "@gearbox-protocol/types/v3";
-import { isError } from "ethers";
-import { ErrorDecoder } from "ethers-decode-error";
-import { nanoid } from "nanoid";
-import { spawn } from "node-pty";
 import { Container, Inject, Service } from "typedi";
 import type { Address, Hex } from "viem";
 
@@ -27,7 +8,7 @@ import { CONFIG, type Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
 import { Logger, LoggerInterface } from "../../log/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
-import { formatTs } from "../../utils/index.js";
+import { ErrorHandler } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
 import Client from "../Client.js";
 import {
@@ -88,23 +69,11 @@ export class LiquidatorService implements ILiquidatorService {
   client: Client;
 
   protected strategy: ILiquidationStrategy<StrategyPreview>;
-
-  #errorDecoder = ErrorDecoder.create();
-
+  #erroHandler = new ErrorHandler();
   /**
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
-    // ethers-decode-error is wrongly detected as CJS module
-    this.#errorDecoder = ErrorDecoder.create([
-      Array.from(IPriceOracleV3__factory.createInterface().fragments) as any,
-      Array.from(ICreditFacadeV3__factory.createInterface().fragments) as any,
-      Array.from(ICreditManagerV3__factory.createInterface().fragments) as any,
-      Array.from(ILiquidator__factory.createInterface().fragments) as any,
-      Array.from(IRouterV3__factory.createInterface().fragments) as any,
-      Array.from(IExceptions__factory.createInterface().fragments) as any,
-      Array.from(SafeERC20__factory.createInterface().fragments) as any,
-    ]);
     const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
       this.config;
     this.strategy =
@@ -143,11 +112,15 @@ export class LiquidatorService implements ILiquidatorService {
         ),
       );
     } catch (e) {
-      const decoded = await this.#errorDecoder.decode(e);
-      const error = `cant liquidate: ${decoded.type}: ${decoded.reason}`;
-      logger.error({ decoded, original: e }, "cant liquidate");
+      const decoded = await this.#erroHandler.explain(e);
+      logger.error(decoded, "cant liquidate");
       this.notifier.alert(
-        new LiquidationErrorMessage(ca, this.strategy.adverb, error, pathHuman),
+        new LiquidationErrorMessage(
+          ca,
+          this.strategy.adverb,
+          decoded.shortMessage,
+          pathHuman,
+        ),
       );
     }
   }
@@ -180,10 +153,6 @@ export class LiquidatorService implements ILiquidatorService {
       liquidatorProfit: "0",
     };
     const start = Date.now();
-    // On anvil fork of L2, block.number is anvil block
-    const startBlock = await this.client.pub
-      .getBlock({ blockTag: "latest" })
-      .catch(() => null);
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
       const mlRes = await this.strategy.makeLiquidatable(acc);
@@ -208,55 +177,37 @@ export class LiquidatorService implements ILiquidatorService {
       if (!snapshotId) {
         snapshotId = await this.client.anvil.snapshot();
       }
-      // Actual liquidation (write requests start here)
-      try {
-        // send profit to executor address because we're going to use swapper later
-        const receipt = await this.client.liquidate(acc, request);
-        logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
-        optimisticResult.isError = receipt.status === "reverted";
-        logger.debug(
-          `Liquidation tx receipt: status=${receipt.status}, gas=${receipt.cumulativeGasUsed.toString()}`,
-        );
-        acc = await this.strategy.updateCreditAccountData(acc);
-        optimisticResult.balancesAfter = ca.filterDust();
-        optimisticResult.hfAfter = acc.healthFactor;
+      // ------ Actual liquidation (write request start here) -----
+      const receipt = await this.client.liquidate(acc, request);
+      logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
+      optimisticResult.isError = receipt.status === "reverted";
+      logger.debug(
+        `Liquidation tx receipt: status=${receipt.status}, gas=${receipt.cumulativeGasUsed.toString()}`,
+      );
+      // ------ End of actual liquidation
+      acc = await this.strategy.updateCreditAccountData(acc);
+      optimisticResult.balancesAfter = ca.filterDust();
+      optimisticResult.hfAfter = acc.healthFactor;
 
-        let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
-        optimisticResult.gasUsed = Number(receipt.gasUsed);
-        optimisticResult.liquidatorPremium = (
-          balanceAfter.underlying - balanceBefore.underlying
-        ).toString(10);
-        // swap underlying back to ETH
-        await this.swapper.swap(acc.underlyingToken, balanceAfter.underlying);
-        balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
-        optimisticResult.liquidatorProfit = (
-          balanceAfter.eth - balanceBefore.eth
-        ).toString(10);
-      } catch (e: any) {
-        const decoded = await this.#errorDecoder.decode(e);
-        optimisticResult.traceFile = await this.saveErrorTrace(e);
-        // there's some decoder error that returns nonce error instead of revert error
-        // in such cases, estimate gas error is reliably parsed
-        optimisticResult.error ||= `cant liquidate: ${decoded.type}: ${decoded.reason}`;
-        logger.error({ decoded, original: e }, "cant liquidate");
-      }
+      let balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
+      optimisticResult.gasUsed = Number(receipt.gasUsed);
+      optimisticResult.liquidatorPremium = (
+        balanceAfter.underlying - balanceBefore.underlying
+      ).toString(10);
+      // swap underlying back to ETH
+      await this.swapper.swap(acc.underlyingToken, balanceAfter.underlying);
+      balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
+      optimisticResult.liquidatorProfit = (
+        balanceAfter.eth - balanceBefore.eth
+      ).toString(10);
     } catch (e: any) {
-      const decoded = await this.#errorDecoder.decode(e);
-      optimisticResult.traceFile = await this.saveErrorTrace(e);
-      optimisticResult.error = `cannot liquidate: ${decoded.type}: ${decoded.reason}`;
+      const decoded = await this.#erroHandler.explain(e);
+      optimisticResult.traceFile = decoded.traceFile;
+      optimisticResult.error = `cannot liquidate: ${decoded.shortMessage}`;
       logger.error({ decoded, original: e }, "cannot liquidate");
     }
 
     optimisticResult.duration = Date.now() - start;
-    const endBlock = await this.client.pub
-      .getBlock({ blockTag: "latest" })
-      .catch(() => null);
-    if (startBlock && endBlock) {
-      logger.debug(
-        { tag: "timing" },
-        `liquidation blocktime = ${endBlock.timestamp - startBlock.timestamp} (${formatTs(startBlock)} to ${formatTs(endBlock)})`,
-      );
-    }
     this.optimistic.push(optimisticResult);
 
     if (snapshotId) {
@@ -283,46 +234,5 @@ export class LiquidatorService implements ILiquidatorService {
           args: [this.client.address],
         });
     return { eth, underlying };
-  }
-
-  /**
-   * Safely tries to save trace of failed transaction to configured output
-   * @param error
-   * @returns
-   */
-  protected async saveErrorTrace(e: any): Promise<string | undefined> {
-    if (!this.config.castBin || !this.config.outDir) {
-      return undefined;
-    }
-
-    if (isError(e, "CALL_EXCEPTION") && e.transaction?.to) {
-      try {
-        const traceId = `${nanoid()}.trace`;
-        const traceFile = path.resolve(this.config.outDir, traceId);
-        const out = createWriteStream(traceFile, "utf-8");
-        await events.once(out, "open");
-        // use node-pty instead of node:child_process to have colored output
-        const pty = spawn(
-          this.config.castBin,
-          [
-            "call",
-            "--trace",
-            "--rpc-url",
-            this.config.ethProviderRpcs[0],
-            e.transaction.to,
-            e.transaction.data,
-          ],
-          { cols: 1024 },
-        );
-        pty.onData(data => out.write(data));
-        await new Promise(resolve => {
-          pty.onExit(() => resolve(undefined));
-        });
-        this.log.debug(`saved trace file: ${traceFile}`);
-        return traceId;
-      } catch (e) {
-        this.log.warn(`failed to save trace: ${e}`);
-      }
-    }
   }
 }
