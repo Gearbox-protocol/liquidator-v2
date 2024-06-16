@@ -7,8 +7,8 @@ import type { Address, Hex } from "viem";
 import { CONFIG, type Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
 import { Logger, LoggerInterface } from "../../log/index.js";
+import { ErrorHandler } from "../../utils/ErrorHandler.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
-import { ErrorHandler } from "../../utils/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
 import Client from "../Client.js";
 import {
@@ -68,8 +68,11 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   client: Client;
 
+  @Inject()
+  erroHandler: ErrorHandler;
+
   protected strategy: ILiquidationStrategy<StrategyPreview>;
-  #erroHandler = new ErrorHandler();
+
   /**
    * Launch LiquidatorService
    */
@@ -112,7 +115,7 @@ export class LiquidatorService implements ILiquidatorService {
         ),
       );
     } catch (e) {
-      const decoded = await this.#erroHandler.explain(e);
+      const decoded = await this.erroHandler.explain(e);
       logger.error(decoded, "cant liquidate");
       this.notifier.alert(
         new LiquidationErrorMessage(
@@ -201,7 +204,7 @@ export class LiquidatorService implements ILiquidatorService {
         balanceAfter.eth - balanceBefore.eth
       ).toString(10);
     } catch (e: any) {
-      const decoded = await this.#erroHandler.explain(e);
+      const decoded = await this.erroHandler.explain(e);
       optimisticResult.traceFile = decoded.traceFile;
       optimisticResult.error = `cannot liquidate: ${decoded.shortMessage}`;
       logger.error({ decoded, original: e }, "cannot liquidate");

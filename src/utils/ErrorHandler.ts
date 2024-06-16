@@ -5,7 +5,7 @@ import path from "node:path";
 import { isError } from "ethers";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
-import { Inject } from "typedi";
+import { Inject, Service } from "typedi";
 import { BaseError } from "viem";
 
 import { CONFIG, Config } from "../config/index.js";
@@ -18,6 +18,7 @@ export interface ExplainedError {
   traceFile?: string;
 }
 
+@Service()
 export class ErrorHandler {
   @Logger("ErrorHandler")
   log: LoggerInterface;
