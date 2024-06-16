@@ -8,7 +8,7 @@ import { spawn } from "node-pty";
 import { Inject, Service } from "typedi";
 import { BaseError } from "viem";
 
-import { CONFIG, Config } from "../config/index.js";
+import { CONFIG, type Config } from "../config/index.js";
 import { Logger, LoggerInterface } from "../log/index.js";
 
 export interface ExplainedError {
