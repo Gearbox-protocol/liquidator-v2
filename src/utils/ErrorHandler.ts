@@ -5,11 +5,10 @@ import path from "node:path";
 import { isError } from "ethers";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
-import { Inject, Service } from "typedi";
 import { BaseError } from "viem";
 
-import { CONFIG, type Config } from "../config/index.js";
-import { Logger, LoggerInterface } from "../log/index.js";
+import type { Config } from "../config/index.js";
+import type { LoggerInterface } from "../log/index.js";
 
 export interface ExplainedError {
   original: any;
@@ -18,15 +17,13 @@ export interface ExplainedError {
   traceFile?: string;
 }
 
-@Service()
 export class ErrorHandler {
-  @Logger("ErrorHandler")
   log: LoggerInterface;
-
-  @Inject(CONFIG)
   config: Config;
 
-  constructor() {
+  constructor(config: Config, log: LoggerInterface) {
+    this.config = config;
+    this.log = log;
     this.#minify.bind(this);
   }
 

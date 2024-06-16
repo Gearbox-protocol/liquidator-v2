@@ -68,8 +68,7 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   client: Client;
 
-  @Inject()
-  erroHandler: ErrorHandler;
+  #erroHandler!: ErrorHandler;
 
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
@@ -77,6 +76,7 @@ export class LiquidatorService implements ILiquidatorService {
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
+    this.#erroHandler = new ErrorHandler(this.config, this.log);
     const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
       this.config;
     this.strategy =
@@ -115,7 +115,7 @@ export class LiquidatorService implements ILiquidatorService {
         ),
       );
     } catch (e) {
-      const decoded = await this.erroHandler.explain(e);
+      const decoded = await this.#erroHandler.explain(e);
       logger.error(decoded, "cant liquidate");
       this.notifier.alert(
         new LiquidationErrorMessage(
@@ -204,7 +204,7 @@ export class LiquidatorService implements ILiquidatorService {
         balanceAfter.eth - balanceBefore.eth
       ).toString(10);
     } catch (e: any) {
-      const decoded = await this.erroHandler.explain(e);
+      const decoded = await this.#erroHandler.explain(e);
       optimisticResult.traceFile = decoded.traceFile;
       optimisticResult.error = `cannot liquidate: ${decoded.shortMessage}`;
       logger.error({ decoded, original: e }, "cannot liquidate");
