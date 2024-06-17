@@ -25,7 +25,6 @@ export class ErrorHandler {
   constructor(config: Config, log: LoggerInterface) {
     this.config = config;
     this.log = log;
-    this.#minify.bind(this);
   }
 
   public async explain(
