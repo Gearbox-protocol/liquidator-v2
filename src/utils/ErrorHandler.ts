@@ -1,5 +1,5 @@
 import events from "node:events";
-import { createWriteStream, writeFileSync } from "node:fs";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
 
 import { isError } from "ethers";
@@ -9,7 +9,6 @@ import { BaseError } from "viem";
 
 import type { Config } from "../config/index.js";
 import type { LoggerInterface } from "../log/index.js";
-import { json_stringify } from "./bigint-serializer.js";
 
 export interface ExplainedError {
   original: any;
@@ -32,18 +31,11 @@ export class ErrorHandler {
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
     if (e instanceof BaseError) {
-      // const revertError = e.walk(
-      //   err => err instanceof ContractFunctionRevertedError,
-      // );
-      // if (revertError instanceof ContractFunctionRevertedError) {
-      //   const errorName = revertError.data?.errorName ?? "";
-      //   // do something with `errorName`
-      // }
-      const originalId = `${nanoid()}.json`;
-      const traceFile = path.resolve(this.config.outDir, originalId);
-      const asStr = json_stringify(e);
-      writeFileSync(traceFile, asStr, "utf-8");
-      this.log.debug(`saved original error to ${traceFile}`);
+      // const originalId = `${nanoid()}.json`;
+      // const traceFile = path.resolve(this.config.outDir, originalId);
+      // const asStr = json_stringify(e);
+      // writeFileSync(traceFile, asStr, "utf-8");
+      // this.log.debug(`saved original error to ${traceFile}`);
 
       return {
         original: e,
@@ -100,4 +92,17 @@ export class ErrorHandler {
       }
     }
   }
+
+  // #tryDecodeAbiError(err: BaseError): Promise<BaseError> {
+  //   if (!(err instanceof ContractFunctionExecutionError)) {
+  //     return err;
+  //   }
+  //   const revert = err.walk(e => e instanceof ContractFunctionRevertedError);
+  //   if (
+  //     revert instanceof ContractFunctionRevertedError &&
+  //     revert.cause instanceof AbiErrorSignatureNotFoundError
+  //   ) {
+  //     err.
+  //   }
+  // }
 }

@@ -2,6 +2,7 @@ import { nextTick } from "node:process";
 
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
+import { iExceptionsAbi } from "@gearbox-protocol/types/abi";
 import type { Abi } from "abitype";
 import { Inject, Service } from "typedi";
 import type {
@@ -235,6 +236,7 @@ export default class Client {
       Address
     >({
       ...args,
+      abi: [...args.abi, ...iExceptionsAbi],
       account,
     });
     const hash = await this.wallet.writeContract(request as any);
