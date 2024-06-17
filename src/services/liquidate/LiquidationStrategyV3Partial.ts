@@ -218,7 +218,7 @@ export default class LiquidationStrategyV3Partial
         account.addr,
         preview.assetOut,
         preview.amountOut,
-        preview.flashLoanAmount,
+        preview.flashLoanAmount / 4n, // TODO: this is temporary to see how errors look like
         preview.priceUpdates,
         preview.calls,
       ],
