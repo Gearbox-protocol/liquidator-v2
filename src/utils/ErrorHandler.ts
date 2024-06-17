@@ -1,5 +1,5 @@
 import events from "node:events";
-import { createWriteStream } from "node:fs";
+import { createWriteStream, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { isError } from "ethers";
@@ -40,9 +40,14 @@ export class ErrorHandler {
       //   const errorName = revertError.data?.errorName ?? "";
       //   // do something with `errorName`
       // }
-      const asStr = json_stringify(this.#minify(e)).replaceAll("\n", "\\n");
+      const originalId = `${nanoid()}.json`;
+      const traceFile = path.resolve(this.config.outDir, originalId);
+      const asStr = json_stringify(e);
+      writeFileSync(traceFile, asStr, "utf-8");
+      this.log.debug(`saved original error to ${traceFile}`);
+
       return {
-        original: asStr,
+        original: e,
         shortMessage: e.shortMessage,
         longMessage: e.message,
       };
@@ -95,16 +100,5 @@ export class ErrorHandler {
         this.log.warn(`failed to save trace: ${e}`);
       }
     }
-  }
-
-  #minify(e: BaseError): any {
-    e.message = e.shortMessage;
-    if ("abi" in e) {
-      e.abi = undefined;
-    }
-    if (e.cause instanceof BaseError) {
-      e.cause = this.#minify(e.cause);
-    }
-    return e;
   }
 }
