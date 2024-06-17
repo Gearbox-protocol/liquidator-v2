@@ -1,5 +1,8 @@
 import { getDecimals } from "@gearbox-protocol/sdk-gov";
-import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
+import {
+  iCreditFacadeV3Abi,
+  iExceptionsAbi,
+} from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
 import type { SimulateContractReturnType } from "viem";
 
@@ -70,7 +73,7 @@ export default class LiquidationStrategyV3Full
   ): Promise<SimulateContractReturnType> {
     return this.client.pub.simulateContract({
       account: this.client.account,
-      abi: iCreditFacadeV3Abi,
+      abi: [...iCreditFacadeV3Abi, ...iExceptionsAbi],
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",
       args: [account.addr, this.client.address, preview.calls],

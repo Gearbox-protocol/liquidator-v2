@@ -24,6 +24,7 @@ import {
   iaclAbi,
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
+  iExceptionsAbi,
 } from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -140,7 +141,7 @@ export default class LiquidationStrategyV3Partial
       ],
     } = await this.client.pub.simulateContract({
       account: this.client.account,
-      abi: iLiquidatorAbi,
+      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
       address: this.partialLiquidator,
       functionName: "getOptimalLiquidation",
       args: [ca.addr, 10100n, priceUpdates as any],
@@ -169,7 +170,7 @@ export default class LiquidationStrategyV3Partial
     const { result: preview } = await this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
-      abi: iLiquidatorAbi,
+      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
       functionName: "previewPartialLiquidation",
       args: [
         ca.creditManager,
@@ -211,7 +212,7 @@ export default class LiquidationStrategyV3Partial
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
-      abi: iLiquidatorAbi,
+      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,
