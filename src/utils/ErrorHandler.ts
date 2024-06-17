@@ -1,5 +1,6 @@
+/* eslint-disable no-unused-private-class-members */
 import events from "node:events";
-import { createWriteStream } from "node:fs";
+import { createWriteStream, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { isError } from "ethers";
@@ -9,9 +10,10 @@ import { BaseError } from "viem";
 
 import type { Config } from "../config/index.js";
 import type { LoggerInterface } from "../log/index.js";
+import { json_stringify } from "./bigint-serializer.js";
 
 export interface ExplainedError {
-  original: any;
+  errorJson?: string;
   shortMessage: string;
   longMessage: string;
   traceFile?: string;
@@ -31,14 +33,14 @@ export class ErrorHandler {
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
     if (e instanceof BaseError) {
-      // const originalId = `${nanoid()}.json`;
-      // const traceFile = path.resolve(this.config.outDir, originalId);
-      // const asStr = json_stringify(e);
-      // writeFileSync(traceFile, asStr, "utf-8");
-      // this.log.debug(`saved original error to ${traceFile}`);
+      const errorJson = `${nanoid()}.json`;
+      const traceFile = path.resolve(this.config.outDir, errorJson);
+      const asStr = json_stringify(e);
+      writeFileSync(traceFile, asStr, "utf-8");
+      this.log.debug(`saved original error to ${traceFile}`);
 
       return {
-        original: e,
+        errorJson,
         shortMessage: e.shortMessage,
         longMessage: e.message,
       };
@@ -46,7 +48,6 @@ export class ErrorHandler {
     const longMessage = e instanceof Error ? e.message : `${e}`;
     const shortMessage = longMessage.split("\n")[0].slice(0, 128);
     return {
-      original: e,
       longMessage,
       shortMessage,
     };

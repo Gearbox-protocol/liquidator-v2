@@ -204,10 +204,11 @@ export class LiquidatorService implements ILiquidatorService {
         balanceAfter.eth - balanceBefore.eth
       ).toString(10);
     } catch (e: any) {
-      const decoded = await this.#erroHandler.explain(e);
+      const decoded = await this.#erroHandler.explain(e, true);
       optimisticResult.traceFile = decoded.traceFile;
-      optimisticResult.error = `cannot liquidate: ${decoded.shortMessage}`;
-      logger.error({ decoded, original: e }, "cannot liquidate");
+      optimisticResult.error =
+        `cannot liquidate: ${decoded.longMessage}`.replaceAll("\n", "\\n");
+      logger.error({ decoded }, "cannot liquidate");
     }
 
     optimisticResult.duration = Date.now() - start;
