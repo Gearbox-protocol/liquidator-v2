@@ -9,6 +9,7 @@ import { BaseError } from "viem";
 
 import type { Config } from "../config/index.js";
 import type { LoggerInterface } from "../log/index.js";
+import { json_parse, json_stringify } from "./bigint-serializer.js";
 
 export interface ExplainedError {
   original: any;
@@ -95,7 +96,7 @@ export class ErrorHandler {
     }
   }
 
-  #minify(e: BaseError): BaseError {
+  #minify(e: BaseError): any {
     e.message = e.shortMessage;
     if ("abi" in e) {
       e.abi = undefined;
@@ -103,6 +104,7 @@ export class ErrorHandler {
     if (e.cause instanceof BaseError) {
       e.cause = this.#minify(e.cause);
     }
-    return e;
+    const asStr = json_stringify(e).replaceAll("\n", "\\n");
+    return json_parse(asStr);
   }
 }
