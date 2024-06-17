@@ -9,7 +9,7 @@ import { BaseError } from "viem";
 
 import type { Config } from "../config/index.js";
 import type { LoggerInterface } from "../log/index.js";
-import { json_parse, json_stringify } from "./bigint-serializer.js";
+import { json_stringify } from "./bigint-serializer.js";
 
 export interface ExplainedError {
   original: any;
@@ -42,7 +42,7 @@ export class ErrorHandler {
       // }
       const asStr = json_stringify(this.#minify(e)).replaceAll("\n", "\\n");
       return {
-        original: json_parse(asStr),
+        original: asStr,
         shortMessage: e.shortMessage,
         longMessage: e.message,
       };
