@@ -40,8 +40,9 @@ export class ErrorHandler {
       //   const errorName = revertError.data?.errorName ?? "";
       //   // do something with `errorName`
       // }
+      const asStr = json_stringify(this.#minify(e)).replaceAll("\n", "\\n");
       return {
-        original: this.#minify(e),
+        original: json_parse(asStr),
         shortMessage: e.shortMessage,
         longMessage: e.message,
       };
@@ -104,7 +105,5 @@ export class ErrorHandler {
     if (e.cause instanceof BaseError) {
       e.cause = this.#minify(e.cause);
     }
-    const asStr = json_stringify(e).replaceAll("\n", "\\n");
-    return json_parse(asStr);
   }
 }
