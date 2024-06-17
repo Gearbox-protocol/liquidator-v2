@@ -105,5 +105,6 @@ export class ErrorHandler {
     if (e.cause instanceof BaseError) {
       e.cause = this.#minify(e.cause);
     }
+    return e;
   }
 }
