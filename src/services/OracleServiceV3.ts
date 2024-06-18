@@ -1,6 +1,7 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { ADDRESS_0X0 } from "@gearbox-protocol/sdk-gov";
 import {
+  iPriceFeedAbi,
   iPriceOracleV3EventsAbi,
   iRedstonePriceFeedAbi,
 } from "@gearbox-protocol/types/abi";
@@ -75,6 +76,16 @@ export default class OracleServiceV3 {
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
+
+    // TODO: this is for debug, remove
+    const pft = await this.client.pub.readContract({
+      abi: iPriceFeedAbi,
+      address: "0xE36E70a5c70415AD268b598568aB4A24F5A8BCDd",
+      functionName: "priceFeedType",
+    });
+    this.log.debug(
+      `price feed type of "0xE36E70a5c70415AD268b598568aB4A24F5A8BCDd": ${pft}`,
+    );
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
     TxParser.addTokens(this.config.network);
