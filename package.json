@@ -22,7 +22,7 @@
     "@flashbots/ethers-provider-bundle": "^1.0.0",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.17",
     "@gearbox-protocol/sdk-gov": "^2.8.0",
-    "@gearbox-protocol/types": "^1.9.1",
+    "@gearbox-protocol/types": "^1.9.2",
     "@redstone-finance/evm-connector": "^0.5.4",
     "@uniswap/sdk-core": "^5.3.0",
     "@uniswap/v3-sdk": "^3.13.0",
