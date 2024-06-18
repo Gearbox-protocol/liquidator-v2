@@ -28,7 +28,7 @@ import {
 } from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
-import { getContract, parseEther } from "viem";
+import { encodeFunctionData, getContract, parseEther } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
@@ -209,6 +209,24 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
+    const data = encodeFunctionData({
+      abi: iLiquidatorAbi,
+      functionName: "partialLiquidateAndConvert",
+      args: [
+        account.creditManager,
+        account.addr,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
+        preview.priceUpdates as any,
+        preview.calls as any,
+      ],
+    });
+    const gas = await this.client.pub.estimateGas({
+      account: this.client.account,
+      data,
+      to: this.partialLiquidator,
+    });
     // TODO: this is just temporary, to throw error
     await this.client.wallet.writeContract({
       account: this.client.account,
@@ -224,6 +242,7 @@ export default class LiquidationStrategyV3Partial
         preview.priceUpdates as any,
         preview.calls as any,
       ],
+      gas,
     });
     return this.client.pub.simulateContract({
       account: this.client.account,
