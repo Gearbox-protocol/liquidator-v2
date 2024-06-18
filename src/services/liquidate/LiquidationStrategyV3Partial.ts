@@ -209,7 +209,8 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
-    return this.client.pub.simulateContract({
+    // TODO: this is just temporary, to throw error
+    await this.client.wallet.writeContract({
       account: this.client.account,
       address: this.partialLiquidator,
       abi: [...iLiquidatorAbi, ...iExceptionsAbi],
@@ -220,6 +221,21 @@ export default class LiquidationStrategyV3Partial
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount / 4n, // TODO: this is temporary to see how errors look like
+        preview.priceUpdates as any,
+        preview.calls as any,
+      ],
+    });
+    return this.client.pub.simulateContract({
+      account: this.client.account,
+      address: this.partialLiquidator,
+      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
+      functionName: "partialLiquidateAndConvert",
+      args: [
+        account.creditManager,
+        account.addr,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
         preview.priceUpdates,
         preview.calls,
       ],
