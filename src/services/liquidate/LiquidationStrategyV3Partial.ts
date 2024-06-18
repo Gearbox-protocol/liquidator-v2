@@ -238,13 +238,17 @@ export default class LiquidationStrategyV3Partial
         account.addr,
         preview.assetOut,
         preview.amountOut,
-        preview.flashLoanAmount / 4n, // TODO: this is temporary to see how errors look like
+        0n, // TODO: this is temporary to see how errors look like
         preview.priceUpdates as any,
         preview.calls as any,
       ],
       gas,
     });
-    await this.client.pub.waitForTransactionReceipt({ hash });
+    this.logger.debug(`fake tx hash: ${hash}`);
+    const rcp = await this.client.pub.waitForTransactionReceipt({ hash });
+    this.logger.debug(
+      `fake tx receipt: ${rcp.transactionHash}, status: ${rcp.status}`,
+    );
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
