@@ -188,6 +188,11 @@ export default class Client {
         `increase gas fees`,
       );
     }
+    if (req.gas) {
+      req.gas =
+        (req.gas * (GAS_TIP_MULTIPLIER + PERCENTAGE_FACTOR)) /
+        PERCENTAGE_FACTOR;
+    }
     const serializedTransaction = await this.wallet.signTransaction(req);
     const hash = await this.wallet.sendRawTransaction({
       serializedTransaction,
