@@ -30,6 +30,7 @@ import {
   fallback,
   formatEther,
   http,
+  WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { arbitrum, base, mainnet, optimism } from "viem/chains";
@@ -193,14 +194,7 @@ export default class Client {
     });
 
     logger.debug(`sent transaction ${hash}`);
-    const receipt = await this.pub.waitForTransactionReceipt({
-      hash,
-      timeout: 120_000,
-    });
-    this.logger.debug(`got receipt for tx ${hash}: ${receipt.status}`);
-    if (receipt.status === "reverted") {
-      throw new TransactionRevertedError(receipt);
-    }
+    const receipt = await this.#waitForTransactionReceipt(hash);
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});
@@ -243,10 +237,42 @@ export default class Client {
       account,
     });
     const hash = await this.wallet.writeContract(request as any);
-    const receipt = await this.pub.waitForTransactionReceipt({
-      hash,
-      timeout: 120_000,
-    });
+    return this.#waitForTransactionReceipt(hash);
+  }
+
+  async #waitForTransactionReceipt(
+    hash: `0x${string}`,
+  ): Promise<TransactionReceipt> {
+    let receipt: TransactionReceipt | undefined;
+    // sometimes on anvil, transactions gets stuck for unknown reasons
+    if (this.#anvilInfo) {
+      try {
+        await this.anvil.mine({ blocks: 1 });
+      } catch {}
+      let error: Error | undefined;
+      for (let i = 0; i < 3; i++) {
+        try {
+          receipt = await this.pub.waitForTransactionReceipt({
+            hash,
+            timeout: 12_000,
+          });
+        } catch (e: any) {
+          error = e;
+        }
+      }
+      if (error) {
+        throw error;
+      }
+    } else {
+      // non-anvil case
+      receipt = await this.pub.waitForTransactionReceipt({
+        hash,
+        timeout: 120_000,
+      });
+    }
+    if (!receipt) {
+      throw new WaitForTransactionReceiptTimeoutError({ hash });
+    }
     if (receipt.status === "reverted") {
       throw new TransactionRevertedError(receipt);
     }
