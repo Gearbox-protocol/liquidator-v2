@@ -192,8 +192,8 @@ export default class Client {
     const hash = await this.wallet.sendRawTransaction({
       serializedTransaction,
     });
-
-    logger.debug(`sent transaction ${hash}`);
+    const { data: _data, to, value, account, ...params } = req;
+    logger.debug({ hash, ...params }, "sent transaction");
     const receipt = await this.#waitForTransactionReceipt(hash);
     if (!this.config.optimistic) {
       nextTick(() => {

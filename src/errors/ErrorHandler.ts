@@ -11,6 +11,7 @@ import {
 } from "viem";
 
 import type { Config } from "../config/index.js";
+import type { CreditAccountData } from "../data/index.js";
 import type { LoggerInterface } from "../log/index.js";
 import { json_stringify } from "../utils/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
@@ -32,29 +33,32 @@ export class ErrorHandler {
   }
 
   public async explain(
-    e: unknown,
+    error: unknown,
+    context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
-    if (e instanceof BaseError) {
+    const logger = this.#caLogger(context);
+
+    if (error instanceof BaseError) {
       const errorJson = `${nanoid()}.json`;
       const errorFile = path.resolve(this.config.outDir, errorJson);
-      const asStr = json_stringify(e);
+      const asStr = json_stringify(error);
       writeFileSync(errorFile, asStr, "utf-8");
-      this.log.debug(`saved original error to ${errorFile}`);
+      logger.debug(`saved original error to ${errorFile}`);
 
       let traceFile: string | undefined;
       if (saveTrace) {
-        traceFile = await this.#saveErrorTrace(e);
+        traceFile = await this.#saveErrorTrace(error, context);
       }
 
       return {
         errorJson,
         traceFile,
-        shortMessage: e.shortMessage,
-        longMessage: e.message,
+        shortMessage: error.shortMessage,
+        longMessage: error.message,
       };
     }
-    const longMessage = e instanceof Error ? e.message : `${e}`;
+    const longMessage = error instanceof Error ? error.message : `${error}`;
     const shortMessage = longMessage.split("\n")[0].slice(0, 128);
     return {
       longMessage,
@@ -67,7 +71,11 @@ export class ErrorHandler {
    * @param error
    * @returns
    */
-  async #saveErrorTrace(e: BaseError): Promise<string | undefined> {
+  async #saveErrorTrace(
+    e: BaseError,
+    context?: CreditAccountData,
+  ): Promise<string | undefined> {
+    const logger = this.#caLogger(context);
     if (!this.config.castBin || !this.config.outDir) {
       return undefined;
     }
@@ -117,23 +125,19 @@ export class ErrorHandler {
       await new Promise(resolve => {
         pty.onExit(() => resolve(undefined));
       });
-      this.log.debug(`saved trace file: ${traceFile}`);
+      logger.debug(`saved trace file: ${traceFile}`);
       return traceId;
     } catch (e) {
-      this.log.warn(`failed to save trace: ${e}`);
+      logger.warn(`failed to save trace: ${e}`);
     }
   }
 
-  // #tryDecodeAbiError(err: BaseError): Promise<BaseError> {
-  //   if (!(err instanceof ContractFunctionExecutionError)) {
-  //     return err;
-  //   }
-  //   const revert = err.walk(e => e instanceof ContractFunctionRevertedError);
-  //   if (
-  //     revert instanceof ContractFunctionRevertedError &&
-  //     revert.cause instanceof AbiErrorSignatureNotFoundError
-  //   ) {
-  //     err.
-  //   }
-  // }
+  #caLogger(ca?: CreditAccountData): LoggerInterface {
+    return ca
+      ? this.log.child({
+          account: ca.addr,
+          manager: ca.managerName,
+        })
+      : this.log;
+  }
 }

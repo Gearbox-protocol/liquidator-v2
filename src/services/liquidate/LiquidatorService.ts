@@ -115,7 +115,7 @@ export class LiquidatorService implements ILiquidatorService {
         ),
       );
     } catch (e) {
-      const decoded = await this.#errorHandler.explain(e);
+      const decoded = await this.#errorHandler.explain(e, ca);
       logger.error(decoded, "cant liquidate");
       this.notifier.alert(
         new LiquidationErrorMessage(
@@ -204,7 +204,7 @@ export class LiquidatorService implements ILiquidatorService {
         balanceAfter.eth - balanceBefore.eth
       ).toString(10);
     } catch (e: any) {
-      const decoded = await this.#errorHandler.explain(e, true);
+      const decoded = await this.#errorHandler.explain(e, acc, true);
       optimisticResult.traceFile = decoded.traceFile;
       optimisticResult.error =
         `cannot liquidate: ${decoded.longMessage}`.replaceAll("\n", "\\n");
