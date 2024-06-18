@@ -6,8 +6,8 @@ import type { Address, Hex } from "viem";
 
 import { CONFIG, type Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
+import { ErrorHandler } from "../../errors/index.js";
 import { Logger, LoggerInterface } from "../../log/index.js";
-import { ErrorHandler } from "../../utils/ErrorHandler.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import { AddressProviderService } from "../AddressProviderService.js";
 import Client from "../Client.js";
@@ -68,7 +68,7 @@ export class LiquidatorService implements ILiquidatorService {
   @Inject()
   client: Client;
 
-  #erroHandler!: ErrorHandler;
+  #errorHandler!: ErrorHandler;
 
   protected strategy: ILiquidationStrategy<StrategyPreview>;
 
@@ -76,7 +76,7 @@ export class LiquidatorService implements ILiquidatorService {
    * Launch LiquidatorService
    */
   public async launch(): Promise<void> {
-    this.#erroHandler = new ErrorHandler(this.config, this.log);
+    this.#errorHandler = new ErrorHandler(this.config, this.log);
     const { partialLiquidatorAddress, deployPartialLiquidatorContracts } =
       this.config;
     this.strategy =
@@ -115,7 +115,7 @@ export class LiquidatorService implements ILiquidatorService {
         ),
       );
     } catch (e) {
-      const decoded = await this.#erroHandler.explain(e);
+      const decoded = await this.#errorHandler.explain(e);
       logger.error(decoded, "cant liquidate");
       this.notifier.alert(
         new LiquidationErrorMessage(
@@ -204,7 +204,7 @@ export class LiquidatorService implements ILiquidatorService {
         balanceAfter.eth - balanceBefore.eth
       ).toString(10);
     } catch (e: any) {
-      const decoded = await this.#erroHandler.explain(e, true);
+      const decoded = await this.#errorHandler.explain(e, true);
       optimisticResult.traceFile = decoded.traceFile;
       optimisticResult.error =
         `cannot liquidate: ${decoded.longMessage}`.replaceAll("\n", "\\n");

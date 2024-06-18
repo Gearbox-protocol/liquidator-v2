@@ -36,6 +36,7 @@ import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 import { CONFIG, Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
+import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { Logger, type LoggerInterface } from "../log/index.js";
 import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
 
@@ -192,18 +193,20 @@ export default class Client {
     });
 
     logger.debug(`sent transaction ${hash}`);
-    const result = await this.pub.waitForTransactionReceipt({
+    const receipt = await this.pub.waitForTransactionReceipt({
       hash,
       timeout: 120_000,
     });
+    this.logger.debug(`got receipt for tx ${hash}: ${receipt.status}`);
+    if (receipt.status === "reverted") {
+      throw new TransactionRevertedError(receipt);
+    }
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});
       });
     }
-    this.logger.debug(`got receipt for tx ${hash}: ${result.status}`);
-
-    return result;
+    return receipt;
   }
 
   public async simulateAndWrite<
@@ -240,10 +243,14 @@ export default class Client {
       account,
     });
     const hash = await this.wallet.writeContract(request as any);
-    return this.pub.waitForTransactionReceipt({
+    const receipt = await this.pub.waitForTransactionReceipt({
       hash,
       timeout: 120_000,
     });
+    if (receipt.status === "reverted") {
+      throw new TransactionRevertedError(receipt);
+    }
+    return receipt;
   }
 
   async #checkBalance(): Promise<void> {

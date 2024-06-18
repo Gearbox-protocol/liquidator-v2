@@ -28,7 +28,7 @@ import {
 } from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
-import { encodeFunctionData, getContract, parseEther } from "viem";
+import { getContract, parseEther } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import { Logger, type LoggerInterface } from "../../log/index.js";
@@ -209,46 +209,6 @@ export default class LiquidationStrategyV3Partial
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
-    const data = encodeFunctionData({
-      abi: iLiquidatorAbi,
-      functionName: "partialLiquidateAndConvert",
-      args: [
-        account.creditManager,
-        account.addr,
-        preview.assetOut,
-        preview.amountOut,
-        preview.flashLoanAmount,
-        preview.priceUpdates as any,
-        preview.calls as any,
-      ],
-    });
-    const gas = await this.client.pub.estimateGas({
-      account: this.client.account,
-      data,
-      to: this.partialLiquidator,
-    });
-    // TODO: this is just temporary, to throw error
-    const hash = await this.client.wallet.writeContract({
-      account: this.client.account,
-      address: this.partialLiquidator,
-      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
-      functionName: "partialLiquidateAndConvert",
-      args: [
-        account.creditManager,
-        account.addr,
-        preview.assetOut,
-        preview.amountOut,
-        0n, // TODO: this is temporary to see how errors look like
-        preview.priceUpdates as any,
-        preview.calls as any,
-      ],
-      gas,
-    });
-    this.logger.debug(`fake tx hash: ${hash}`);
-    const rcp = await this.client.pub.waitForTransactionReceipt({ hash });
-    this.logger.debug(
-      `fake tx receipt: ${rcp.transactionHash}, status: ${rcp.status}`,
-    );
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
@@ -403,7 +363,10 @@ export default class LiquidationStrategyV3Partial
       });
       this.logger.debug(`waiting for AaveFLTaker to deploy, tx hash: ${hash}`);
       const { contractAddress: aaveFlTakerAddr } =
-        await this.client.pub.waitForTransactionReceipt({ hash });
+        await this.client.pub.waitForTransactionReceipt({
+          hash,
+          timeout: 120_000,
+        });
       if (!aaveFlTakerAddr) {
         throw new Error(`AaveFLTaker was not deployed, tx hash: ${hash}`);
       }
@@ -423,7 +386,10 @@ export default class LiquidationStrategyV3Partial
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
       const { contractAddress: liquidatorAddr } =
-        await this.client.pub.waitForTransactionReceipt({ hash });
+        await this.client.pub.waitForTransactionReceipt({
+          hash,
+          timeout: 120_000,
+        });
       if (!liquidatorAddr) {
         throw new Error(`Liquidator was not deployed, tx hash: ${hash}`);
       }
@@ -472,7 +438,10 @@ export default class LiquidationStrategyV3Partial
     });
     this.logger.debug(`waiting for PriceHelper to deploy, tx hash: ${hash}`);
     const { contractAddress: priceHelperAddr } =
-      await this.client.pub.waitForTransactionReceipt({ hash });
+      await this.client.pub.waitForTransactionReceipt({
+        hash,
+        timeout: 120_000,
+      });
     if (!priceHelperAddr) {
       throw new Error(`PriceHelper was not deployed, tx hash: ${hash}`);
     }

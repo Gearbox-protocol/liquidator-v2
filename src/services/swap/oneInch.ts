@@ -112,6 +112,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       const transactionHash = await this.client.wallet.sendTransaction(tx);
       await this.client.pub.waitForTransactionReceipt({
         hash: transactionHash,
+        timeout: 120_000,
       });
       this.log.debug(
         `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
