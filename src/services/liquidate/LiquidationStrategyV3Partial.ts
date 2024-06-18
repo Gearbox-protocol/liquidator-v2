@@ -228,7 +228,7 @@ export default class LiquidationStrategyV3Partial
       to: this.partialLiquidator,
     });
     // TODO: this is just temporary, to throw error
-    await this.client.wallet.writeContract({
+    const hash = await this.client.wallet.writeContract({
       account: this.client.account,
       address: this.partialLiquidator,
       abi: [...iLiquidatorAbi, ...iExceptionsAbi],
@@ -244,6 +244,7 @@ export default class LiquidationStrategyV3Partial
       ],
       gas,
     });
+    await this.client.pub.waitForTransactionReceipt({ hash });
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
