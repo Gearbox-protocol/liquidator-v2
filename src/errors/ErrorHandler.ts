@@ -4,7 +4,11 @@ import path from "node:path";
 
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
-import { BaseError } from "viem";
+import {
+  BaseError,
+  ContractFunctionExecutionError,
+  encodeFunctionData,
+} from "viem";
 
 import type { Config } from "../config/index.js";
 import type { LoggerInterface } from "../log/index.js";
@@ -33,17 +37,19 @@ export class ErrorHandler {
   ): Promise<ExplainedError> {
     if (e instanceof BaseError) {
       const errorJson = `${nanoid()}.json`;
-      const traceFile = path.resolve(this.config.outDir, errorJson);
+      const errorFile = path.resolve(this.config.outDir, errorJson);
       const asStr = json_stringify(e);
-      writeFileSync(traceFile, asStr, "utf-8");
-      this.log.debug(`saved original error to ${traceFile}`);
+      writeFileSync(errorFile, asStr, "utf-8");
+      this.log.debug(`saved original error to ${errorFile}`);
 
-      if (e instanceof TransactionRevertedError && saveTrace) {
-        await this.#saveErrorTrace(e);
+      let traceFile: string | undefined;
+      if (saveTrace) {
+        traceFile = await this.#saveErrorTrace(e);
       }
 
       return {
         errorJson,
+        traceFile,
         shortMessage: e.shortMessage,
         longMessage: e.message,
       };
@@ -61,37 +67,52 @@ export class ErrorHandler {
    * @param error
    * @returns
    */
-  async #saveErrorTrace(
-    e: TransactionRevertedError,
-  ): Promise<string | undefined> {
+  async #saveErrorTrace(e: BaseError): Promise<string | undefined> {
     if (!this.config.castBin || !this.config.outDir) {
       return undefined;
     }
-
     try {
+      let cast: string[] = [];
+      if (e instanceof TransactionRevertedError) {
+        cast = [
+          "run",
+          "--rpc-url",
+          this.config.ethProviderRpcs[0],
+          e.receipt.transactionHash,
+        ];
+      } else {
+        const exErr = e.walk(
+          err => err instanceof ContractFunctionExecutionError,
+        );
+        if (
+          exErr instanceof ContractFunctionExecutionError &&
+          exErr.contractAddress
+        ) {
+          const data = encodeFunctionData({
+            abi: exErr.abi,
+            args: exErr.args,
+            functionName: exErr.functionName,
+          });
+          cast = [
+            "call",
+            "--trace",
+            "--rpc-url",
+            this.config.ethProviderRpcs[0],
+            exErr.contractAddress,
+            data,
+          ];
+        }
+      }
+      if (!cast.length) {
+        return undefined;
+      }
+
       const traceId = `${nanoid()}.trace`;
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
       // use node-pty instead of node:child_process to have colored output
-      const pty = spawn(
-        this.config.castBin,
-        // [
-        //   "call",
-        //   "--trace",
-        //   "--rpc-url",
-        //   this.config.ethProviderRpcs[0],
-        //   e.receipt.to,
-        //   e.receipt.data,
-        // ],
-        [
-          "run",
-          "--rpc-url",
-          this.config.ethProviderRpcs[0],
-          e.receipt.transactionHash,
-        ],
-        { cols: 1024 },
-      );
+      const pty = spawn(this.config.castBin, cast, { cols: 1024 });
       pty.onData(data => out.write(data));
       await new Promise(resolve => {
         pty.onExit(() => resolve(undefined));
