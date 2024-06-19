@@ -24,7 +24,6 @@ import {
   iaclAbi,
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
-  iDegenNftv2Abi,
   iExceptionsAbi,
 } from "@gearbox-protocol/types/abi";
 import { Service } from "typedi";
@@ -511,8 +510,6 @@ export default class LiquidationStrategyV3Partial
       this.logger.info(`set bot to ${bot} in tx ${receipt.transactionHash}`);
     }
     const cmToCa = await this.#getLiquidatorAccounts(cms);
-    await this.#approveDegenNfts(cmToCa, cms);
-
     for (const cm of cms) {
       const { address, name } = cm;
       const ca = cmToCa[address];
@@ -541,44 +538,6 @@ export default class LiquidationStrategyV3Partial
     });
     this.logger.debug(`loaded ${cms.length} liquidator credit accounts`);
     return Object.fromEntries(cms.map((cm, i) => [cm.address, results[i]]));
-  }
-
-  async #approveDegenNfts(
-    cmToCa: Record<Address, Address>,
-    cms: CreditManagerData[],
-  ): Promise<void> {
-    const dnfts = new Set<Address>(
-      cms
-        .filter(
-          cm =>
-            cmToCa[cm.address] === ADDRESS_0X0 &&
-            !!cm.degenNFT &&
-            cm.degenNFT !== ADDRESS_0X0,
-        )
-        .map(cm => cm.degenNFT),
-    );
-    for (const dnft of dnfts.values()) {
-      const isApproved = await this.client.pub.readContract({
-        abi: iDegenNftv2Abi,
-        address: dnft,
-        functionName: "isApprovedForAll",
-        args: [this.client.address, this.partialLiquidator],
-      });
-      if (!isApproved) {
-        this.logger.debug(
-          `need to approve Degen NFT ${dnft} for partial liquidator ${this.partialLiquidator}`,
-        );
-        const receipt = await this.client.simulateAndWrite({
-          abi: iDegenNftv2Abi,
-          address: dnft,
-          functionName: "setApprovalForAll",
-          args: [this.partialLiquidator, true],
-        });
-        this.logger.debug(
-          `approved Degen NFT ${dnft} for partial liquidator ${this.partialLiquidator} in tx ${receipt.transactionHash}`,
-        );
-      }
-    }
   }
 
   async #registerCM(cm: CreditManagerData): Promise<void> {
