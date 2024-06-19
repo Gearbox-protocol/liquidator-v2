@@ -1,1 +1,0 @@
-export const OUTPUT_WRITER = "OUTPUT_WRITER";

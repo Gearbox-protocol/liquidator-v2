@@ -3,16 +3,14 @@ import {
   iCreditFacadeV3Abi,
   iExceptionsAbi,
 } from "@gearbox-protocol/types/abi";
-import { Service } from "typedi";
 import type { SimulateContractReturnType } from "viem";
 
 import type { Balance, CreditAccountData } from "../../data/index.js";
-import { Logger, type LoggerInterface } from "../../log/index.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
 
-@Service()
 export default class LiquidationStrategyV3Full
   extends AbstractLiquidationStrategyV3
   implements ILiquidationStrategy<PathFinderCloseResult>
@@ -21,7 +19,7 @@ export default class LiquidationStrategyV3Full
   public readonly adverb = "fully";
 
   @Logger("LiquidationStrategyV3Full")
-  logger: LoggerInterface;
+  logger!: ILogger;
 
   public async makeLiquidatable(
     ca: CreditAccountData,

@@ -19,7 +19,6 @@ import {
   SwapRouter,
   Trade,
 } from "@uniswap/v3-sdk";
-import { Service } from "typedi";
 import type { Address, Hex } from "viem";
 import {
   decodeAbiParameters,
@@ -28,7 +27,8 @@ import {
   parseAbiParameters,
 } from "viem";
 
-import { Logger, type LoggerInterface } from "../../log/index.js";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
 import BaseSwapper from "./base.js";
 import type { ISwapper } from "./types.js";
 
@@ -39,12 +39,11 @@ const POOL_FACTORY_CONTRACT_ADDRESS: Address =
 const SWAP_ROUTER_ADDRESS: Address =
   "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
-@Service()
 export default class Uniswap extends BaseSwapper implements ISwapper {
   @Logger("uniswap")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  private WETH: Token;
+  private WETH!: Token;
 
   // TODO: this was not tested after View rewrite
   public async launch(network: NetworkType): Promise<void> {

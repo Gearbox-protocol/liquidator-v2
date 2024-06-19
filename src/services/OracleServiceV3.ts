@@ -5,16 +5,17 @@ import {
   iRedstonePriceFeedAbi,
 } from "@gearbox-protocol/types/abi";
 import type { ExtractAbiEvent } from "abitype";
-import { Inject, Service } from "typedi";
 import type { Address, Log } from "viem";
 import { bytesToString, hexToBytes } from "viem";
 
-import { CONFIG, type Config } from "../config/index.js";
+import type { Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
-import { Logger, type LoggerInterface } from "../log/index.js";
+import { DI } from "../di.js";
+import type { ILogger } from "../log/index.js";
+import { Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { AddressProviderService } from "./AddressProviderService.js";
-import Client from "./Client.js";
+import type { AddressProviderService } from "./AddressProviderService.js";
+import type Client from "./Client.js";
 
 interface DataFeedMulticall {
   abi: typeof iRedstonePriceFeedAbi;
@@ -50,19 +51,19 @@ const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
   Base: 12299805n, // not deployed yet, arbitrary block here
 };
 
-@Service()
+@DI.Injectable(DI.Oracle)
 export default class OracleServiceV3 {
-  @Logger("ScanServiceV3")
-  log: LoggerInterface;
+  @Logger("Oracle")
+  log!: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
   #oracle?: Address;
   #lastBlock = 0n;

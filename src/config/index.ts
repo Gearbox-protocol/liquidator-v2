@@ -1,12 +1,9 @@
-import { Token } from "typedi";
 import { createPublicClient, http } from "viem";
 
 import { detectNetwork } from "../utils/index.js";
 import { envConfig } from "./env.js";
 import type { Config } from "./schema.js";
 import { ConfigSchema } from "./schema.js";
-
-export const CONFIG = new Token("config");
 
 export async function loadConfig(): Promise<Config> {
   const schema = ConfigSchema.parse(envConfig);

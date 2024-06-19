@@ -9,17 +9,10 @@
     "sourceMap": true,
     "outDir": "./build",
     "strict": true,
-    "noErrorTruncation": true,
-    "strictFunctionTypes": false,
-    "strictPropertyInitialization": false,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "useDefineForClassFields": false
-  },
-  "include": ["src"]
+    "resolveJsonModule": true
+  }
 }

@@ -1,22 +1,22 @@
 import { createServer } from "node:http";
 
-import { Inject, Service } from "typedi";
-
-import { CONFIG, type Config } from "../config/index.js";
-import { Logger, type LoggerInterface } from "../log/index.js";
+import type { Config } from "../config/index.js";
+import { DI } from "../di.js";
+import type { ILogger } from "../log/index.js";
+import { Logger } from "../log/index.js";
 import version from "../version.js";
-import { ScanServiceV3 } from "./scan/index.js";
+import type { ScanServiceV3 } from "./scan/index.js";
 
-@Service()
+@DI.Injectable(DI.HealthChecker)
 export default class HealthCheckerService {
   @Logger("HealthChecker")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  @Inject()
-  scanServiceV3: ScanServiceV3;
+  @DI.Inject(DI.Scanner)
+  scanServiceV3!: ScanServiceV3;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
   #start = Math.round(new Date().valueOf() / 1000);
 

@@ -12,7 +12,7 @@ import {
 
 import type { Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
-import type { LoggerInterface } from "../log/index.js";
+import type { ILogger } from "../log/index.js";
 import { json_stringify } from "../utils/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
@@ -24,10 +24,10 @@ export interface ExplainedError {
 }
 
 export class ErrorHandler {
-  log: LoggerInterface;
+  log: ILogger;
   config: Config;
 
-  constructor(config: Config, log: LoggerInterface) {
+  constructor(config: Config, log: ILogger) {
     this.config = config;
     this.log = log;
   }
@@ -132,7 +132,7 @@ export class ErrorHandler {
     }
   }
 
-  #caLogger(ca?: CreditAccountData): LoggerInterface {
+  #caLogger(ca?: CreditAccountData): ILogger {
     return ca
       ? this.log.child({
           account: ca.addr,

@@ -1,45 +1,43 @@
-import type { Logger } from "pino";
+import type { IFactory } from "di-at-home";
+import type { DestinationStream, Logger as ILogger, LoggerOptions } from "pino";
 import { pino } from "pino";
-import { Container } from "typedi";
+import { build as pinoPretty } from "pino-pretty";
 
-const DEV = process.env.NODE_ENV !== "production";
-const underlying = process.env.UNDERLYING;
-const executionId = process.env.EXECUTION_ID?.split(":").pop();
+import { DI } from "../di.js";
 
-function getLogger(name?: string): LoggerInterface {
-  return pino({
-    name,
-    transport: DEV
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-          },
-        }
-      : undefined,
-    level: process.env.LOG_LEVEL ?? "debug",
-    base: { underlying, executionId },
-    formatters: {
-      level: label => {
-        return {
-          level: label,
-        };
+@DI.Factory(DI.Logger)
+class LoggerFactory implements IFactory<ILogger, [string]> {
+  #logger: ILogger;
+
+  constructor() {
+    const executionId = process.env.EXECUTION_ID?.split(":").pop();
+    const options: LoggerOptions = {
+      level: process.env.LOG_LEVEL ?? "debug",
+      base: { executionId },
+      formatters: {
+        level: label => {
+          return {
+            level: label,
+          };
+        },
       },
-    },
-    // fluent-bit (which is used in our ecs setup with loki) cannot handle unix epoch in millis out of the box
-    timestamp: () => `,"time":${Date.now() / 1000.0}`,
-  });
-}
-
-export function Logger(label?: string): PropertyDecorator {
-  return (target: any, propertyKey): any => {
-    const propertyName = propertyKey ? propertyKey.toString() : "";
-    Container.registerHandler({
-      object: target,
-      propertyName,
-      value: () => getLogger(label),
+      // fluent-bit (which is used in our ecs setup with loki) cannot handle unix epoch in millis out of the box
+      timestamp: () => `,"time":${Date.now() / 1000.0}`,
+    };
+    let stream: DestinationStream | undefined;
+    // this label will be dropped by esbuild during production build
+    // eslint-disable-next-line no-labels
+    DEV: stream = pinoPretty({
+      colorize: true,
     });
-  };
+    this.#logger = pino(options, stream);
+  }
+
+  public produce(name: string): ILogger {
+    return this.#logger.child({ name });
+  }
 }
 
-export type LoggerInterface = Logger;
+export const Logger = (name: string) => DI.Transient(DI.Logger, name);
+
+export type { Logger as ILogger } from "pino";

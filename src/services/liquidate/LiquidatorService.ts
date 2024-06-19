@@ -1,33 +1,29 @@
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
-import { Container, Inject, Service } from "typedi";
 import type { Address, Hex } from "viem";
 
-import { CONFIG, type Config } from "../../config/index.js";
+import type { Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
+import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
-import { Logger, LoggerInterface } from "../../log/index.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
-import { AddressProviderService } from "../AddressProviderService.js";
-import Client from "../Client.js";
+import type { AddressProviderService } from "../AddressProviderService.js";
+import type Client from "../Client.js";
+import type { INotifier } from "../notifier/index.js";
 import {
-  INotifier,
   LiquidationErrorMessage,
   LiquidationStartMessage,
   LiquidationSuccessMessage,
-  NOTIFIER,
   StartedMessage,
 } from "../notifier/index.js";
-import {
-  type IOptimisticOutputWriter,
-  OUTPUT_WRITER,
-} from "../output/index.js";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
-import { type ISwapper, SWAPPER } from "../swap/index.js";
+import type { IOptimisticOutputWriter } from "../output/index.js";
+import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
+import type { ISwapper } from "../swap/index.js";
 import LiquidationStrategyV3Full from "./LiquidationStrategyV3Full.js";
 import LiquidationStrategyV3Partial from "./LiquidationStrategyV3Partial.js";
-import { OptimisticResults } from "./OptimisiticResults.js";
+import type { OptimisticResults } from "./OptimisiticResults.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
@@ -39,38 +35,38 @@ export interface Balance {
   eth: bigint;
 }
 
-@Service()
+@DI.Injectable(DI.Liquidator)
 export class LiquidatorService implements ILiquidatorService {
-  @Logger("LiquidatorService")
-  log: LoggerInterface;
+  @Logger("Liquidator")
+  log!: ILogger;
 
-  @Inject()
-  redstone: RedstoneServiceV3;
+  @DI.Inject(DI.Redstone)
+  redstone!: RedstoneServiceV3;
 
-  @Inject(NOTIFIER)
-  notifier: INotifier;
+  @DI.Inject(DI.Notifier)
+  notifier!: INotifier;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  @Inject(OUTPUT_WRITER)
-  outputWriter: IOptimisticOutputWriter;
+  @DI.Inject(DI.Output)
+  outputWriter!: IOptimisticOutputWriter;
 
-  @Inject(SWAPPER)
-  swapper: ISwapper;
+  @DI.Inject(DI.Swapper)
+  swapper!: ISwapper;
 
-  @Inject()
-  optimistic: OptimisticResults;
+  @DI.Inject(DI.OptimisticResults)
+  optimistic!: OptimisticResults;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   #errorHandler!: ErrorHandler;
 
-  protected strategy: ILiquidationStrategy<StrategyPreview>;
+  protected strategy!: ILiquidationStrategy<StrategyPreview>;
 
   /**
    * Launch LiquidatorService
@@ -81,8 +77,8 @@ export class LiquidatorService implements ILiquidatorService {
       this.config;
     this.strategy =
       partialLiquidatorAddress || deployPartialLiquidatorContracts
-        ? Container.get(LiquidationStrategyV3Partial)
-        : Container.get(LiquidationStrategyV3Full);
+        ? (new LiquidationStrategyV3Partial() as any)
+        : (new LiquidationStrategyV3Full() as any);
     await this.strategy.launch();
     this.notifier.notify(new StartedMessage());
   }

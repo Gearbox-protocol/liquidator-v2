@@ -1,25 +1,37 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
-import { Inject } from "typedi";
+import type { Address } from "viem";
 
-import { CONFIG, Config } from "../../config/index.js";
-import type { LoggerInterface } from "../../log/index.js";
-import Client from "../Client.js";
+import type { Config } from "../../config/index.js";
+import { DI } from "../../di.js";
+import type Client from "../Client.js";
 
-export default class BaseSwapper {
-  @Inject(CONFIG)
-  config: Config;
+export default abstract class BaseSwapper {
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
-  public log: LoggerInterface;
-
-  protected network: NetworkType;
-  protected wethAddr: string;
+  #network?: NetworkType;
+  #wethAddr?: Address;
 
   protected async launch(network: NetworkType): Promise<void> {
-    this.network = network;
-    this.wethAddr = tokenDataByNetwork[network].WETH;
+    this.#network = network;
+    this.#wethAddr = tokenDataByNetwork[network].WETH;
+  }
+
+  protected get network(): NetworkType {
+    if (!this.#network) {
+      throw new Error("network not initialized");
+    }
+    return this.#network;
+  }
+
+  protected get wethAddr(): Address {
+    if (!this.#wethAddr) {
+      throw new Error("weth address not initialized");
+    }
+    return this.#wethAddr;
   }
 }

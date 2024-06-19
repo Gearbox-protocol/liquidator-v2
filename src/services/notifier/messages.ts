@@ -2,12 +2,11 @@ import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import { Container } from "typedi";
 import type { Address, TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
-import { CONFIG } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
+import { DI } from "../../di.js";
 import { etherscanUrl } from "../../utils/index.js";
 import version from "../../version.js";
 import type { INotifierMessage } from "./types.js";
@@ -23,7 +22,7 @@ class BaseMessage {
   protected readonly receipt?: TransactionReceipt;
 
   constructor(opts: BaseMessageOptions = {}) {
-    this.network = (Container.get(CONFIG) as Config).network;
+    this.network = (DI.get(DI.Config) as Config).network;
     this.ca = opts.ca;
     this.receipt = opts.receipt;
   }
@@ -101,7 +100,7 @@ export class StartedMessage extends BaseMessage implements INotifierMessage {
 
   constructor() {
     super();
-    const cfg = Container.get(CONFIG) as Config;
+    const cfg = DI.get(DI.Config) as Config;
     this.#name = cfg.appName;
     this.#hfThreshold = cfg.hfThreshold;
     this.#restakingWA = !!cfg.restakingWorkaround;

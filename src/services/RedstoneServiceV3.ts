@@ -9,7 +9,6 @@ import {
 import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import { RedstonePayload } from "redstone-protocol";
-import { Inject, Service } from "typedi";
 import type { Address } from "viem";
 import {
   bytesToString,
@@ -19,41 +18,42 @@ import {
   toBytes,
 } from "viem";
 
-import { CONFIG, type Config } from "../config/index.js";
+import type { Config } from "../config/index.js";
 import type {
   CreditAccountData,
   MultiCall,
   PriceOnDemand,
 } from "../data/index.js";
-import { Logger, type LoggerInterface } from "../log/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
 import { formatTs } from "../utils/index.js";
-import { AddressProviderService } from "./AddressProviderService.js";
-import Client from "./Client.js";
+import type { AddressProviderService } from "./AddressProviderService.js";
+import type Client from "./Client.js";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
 import type { RedstoneFeed } from "./OracleServiceV3.js";
-import OracleServiceV3 from "./OracleServiceV3.js";
+import type OracleServiceV3 from "./OracleServiceV3.js";
 
 export type RedstonePriceFeed = Extract<
   PriceFeedData,
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
-@Service()
+@DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
-  @Logger("RedstoneServiceV3")
-  log: LoggerInterface;
+  @Logger("Redstone")
+  log!: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  oracle: OracleServiceV3;
+  @DI.Inject(DI.Oracle)
+  oracle!: OracleServiceV3;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   /**
    * Timestamp to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations

@@ -1,36 +1,36 @@
 import { iDataCompressorV3Abi } from "@gearbox-protocol/types/abi";
-import { Inject } from "typedi";
 import type { Address } from "viem";
 import { getContract } from "viem";
 
-import { CONFIG, type Config } from "../../config/index.js";
+import type { Config } from "../../config/index.js";
 import { CreditAccountData, CreditManagerData } from "../../data/index.js";
-import type { LoggerInterface } from "../../log/index.js";
+import { DI } from "../../di.js";
+import type { ILogger } from "../../log/index.js";
 import { PathFinder } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
-import { AddressProviderService } from "../AddressProviderService.js";
-import Client from "../Client.js";
-import OracleServiceV3 from "../OracleServiceV3.js";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
+import type { AddressProviderService } from "../AddressProviderService.js";
+import type Client from "../Client.js";
+import type OracleServiceV3 from "../OracleServiceV3.js";
+import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 
 export default abstract class AbstractLiquidationStrategyV3 {
-  logger: LoggerInterface;
+  abstract logger: ILogger;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  redstone: RedstoneServiceV3;
+  @DI.Inject(DI.Redstone)
+  redstone!: RedstoneServiceV3;
 
-  @Inject()
-  oracle: OracleServiceV3;
+  @DI.Inject(DI.Oracle)
+  oracle!: OracleServiceV3;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   #compressor?: IDataCompressorContract;
   #pathFinder?: PathFinder;

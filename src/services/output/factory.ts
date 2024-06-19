@@ -1,27 +1,28 @@
-import { Container, Service } from "typedi";
+import type { IFactory } from "di-at-home";
 
 import type { Config } from "../../config/index.js";
-import { CONFIG } from "../../config/index.js";
+import { DI } from "../../di.js";
 import ConsoleWriter from "./consoleWriter.js";
-import { OUTPUT_WRITER } from "./constants.js";
 import FileWriter from "./fileWriter.js";
 import RestWriter from "./restWriter.js";
 import S3Writer from "./s3Writer.js";
 import type { IOptimisticOutputWriter } from "./types.js";
 
-function createOutputWriter(): IOptimisticOutputWriter {
-  const config = Container.get(CONFIG) as Config;
-  if (config.outS3Bucket) {
-    return new S3Writer(config);
-  } else if (config.outEndpoint) {
-    return new RestWriter(config);
-  } else if (config.outDir) {
-    return new FileWriter(config);
-  }
-  return new ConsoleWriter();
-}
+@DI.Factory(DI.Output)
+export class OutputWriterFactory
+  implements IFactory<IOptimisticOutputWriter, []>
+{
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-@Service({ factory: createOutputWriter, id: OUTPUT_WRITER })
-export class OutputWriter implements IOptimisticOutputWriter {
-  write: (prefix: string | bigint | number, result: unknown) => Promise<void>;
+  produce(): IOptimisticOutputWriter {
+    if (this.config.outS3Bucket) {
+      return new S3Writer(this.config);
+    } else if (this.config.outEndpoint) {
+      return new RestWriter(this.config);
+    } else if (this.config.outDir) {
+      return new FileWriter(this.config);
+    }
+    return new ConsoleWriter();
+  }
 }

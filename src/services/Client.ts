@@ -4,7 +4,6 @@ import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import { iExceptionsAbi } from "@gearbox-protocol/types/abi";
 import type { Abi } from "abitype";
-import { Inject, Service } from "typedi";
 import type {
   Address,
   Chain,
@@ -35,11 +34,13 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
-import { CONFIG, Config } from "../config/index.js";
+import type { Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
+import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
-import { Logger, type LoggerInterface } from "../log/index.js";
-import { INotifier, LowBalanceMessage, NOTIFIER } from "./notifier/index.js";
+import { type ILogger, Logger } from "../log/index.js";
+import type { INotifier } from "./notifier/index.js";
+import { LowBalanceMessage } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
 
@@ -78,16 +79,16 @@ const CHAINS: Record<NetworkType, Chain> = {
   Base: base,
 };
 
-@Service()
+@DI.Injectable(DI.Client)
 export default class Client {
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject(NOTIFIER)
-  notifier: INotifier;
+  @DI.Inject(DI.Notifier)
+  notifier!: INotifier;
 
-  @Logger("ExecutorService")
-  public logger: LoggerInterface;
+  @Logger("Client")
+  public logger!: ILogger;
 
   #anvilInfo: AnvilNodeInfo | null = null;
 

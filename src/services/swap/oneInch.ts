@@ -9,10 +9,10 @@ import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { Service } from "typedi";
 import type { Address } from "viem";
 
-import { Logger, type LoggerInterface } from "../../log/index.js";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
 import BaseSwapper from "./base.js";
 import type { ISwapper } from "./types.js";
 
@@ -22,12 +22,11 @@ class OneInchError extends Error {
   transactionHash?: string;
 }
 
-@Service()
 export default class OneInch extends BaseSwapper implements ISwapper {
   @Logger("one_inch")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  private apiClient: AxiosInstance;
+  private apiClient!: AxiosInstance;
   private readonly slippage: number;
   private routerAddress: Address = "0x111111125421cA6dc452d289314280a0f8842A65";
 

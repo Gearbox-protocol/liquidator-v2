@@ -1,19 +1,19 @@
 import type { AxiosInstance } from "axios";
 import axios, { isAxiosError } from "axios";
 import axiosRetry, { isNetworkError, isRetryableError } from "axios-retry";
-import { Inject, Service } from "typedi";
 
-import { CONFIG, Config } from "../../config/index.js";
-import { Logger, LoggerInterface } from "../../log/index.js";
+import type { Config } from "../../config/index.js";
+import { DI } from "../../di.js";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
 import type { INotifier, INotifierMessage } from "./types.js";
 
-@Service()
 export default class TelegramNotifier implements INotifier {
   @Logger("TelegramNotifier")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
   #messageOptions: Record<string, any> = {
     parse_mode: "MarkdownV2",

@@ -9,17 +9,19 @@ import {
   iCreditManagerV3Abi,
   iDataCompressorV3Abi,
 } from "@gearbox-protocol/types/abi";
-import { Inject, Service } from "typedi";
 import { getContract } from "viem";
 
 import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
-import { Logger, type LoggerInterface } from "../../log/index.js";
+import { DI } from "../../di.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
-import type { ILiquidatorService } from "../liquidate/index.js";
-import { LiquidatorService } from "../liquidate/index.js";
-import OracleServiceV3 from "../OracleServiceV3.js";
-import { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
+import type {
+  ILiquidatorService,
+  LiquidatorService,
+} from "../liquidate/index.js";
+import type OracleServiceV3 from "../OracleServiceV3.js";
+import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 import AbstractScanService from "./AbstractScanService.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
@@ -35,19 +37,19 @@ interface AccountSelection {
   blockNumber?: bigint;
 }
 
-@Service()
+@DI.Injectable(DI.Scanner)
 export class ScanServiceV3 extends AbstractScanService {
-  @Logger("ScanServiceV3")
-  log: LoggerInterface;
+  @Logger("Scanner")
+  log!: ILogger;
 
-  @Inject()
-  oracle: OracleServiceV3;
+  @DI.Inject(DI.Oracle)
+  oracle!: OracleServiceV3;
 
-  @Inject()
-  redstone: RedstoneServiceV3;
+  @DI.Inject(DI.Redstone)
+  redstone!: RedstoneServiceV3;
 
-  @Inject()
-  _liquidatorService: LiquidatorService;
+  @DI.Inject(DI.Liquidator)
+  _liquidatorService!: LiquidatorService;
 
   #dataCompressor?: IDataCompressorContract;
   #processing: bigint | null = null;
@@ -152,7 +154,7 @@ export class ScanServiceV3 extends AbstractScanService {
   async #potentialLiquidations(
     priceUpdates: PriceOnDemand[],
     blockNumber?: bigint,
-  ): Promise<[accounts: CreditAccountData[], failedTokens: string[]]> {
+  ): Promise<[accounts: CreditAccountData[], failedTokens: Address[]]> {
     const {
       optimistic,
       debugAccounts,
@@ -207,7 +209,7 @@ export class ScanServiceV3 extends AbstractScanService {
       });
     }
 
-    const failedTokens = new Set<string>();
+    const failedTokens = new Set<Address>();
     for (const acc of accounts) {
       acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
     }
@@ -404,6 +406,6 @@ export class ScanServiceV3 extends AbstractScanService {
   }
 }
 
-function printTokens(tokens: string[]): string {
+function printTokens(tokens: Address[]): string {
   return tokens.map(getTokenSymbolOrTicker).join(", ");
 }

@@ -1,27 +1,28 @@
-import { Inject } from "typedi";
-
-import { CONFIG, type Config } from "../../config/index.js";
+import type { Config } from "../../config/index.js";
 import type { CreditAccountData } from "../../data/index.js";
-import type { LoggerInterface } from "../../log/index.js";
-import { AddressProviderService } from "../AddressProviderService.js";
-import Client from "../Client.js";
-import type { ILiquidatorService } from "../liquidate/index.js";
-import { OptimisticResults } from "../liquidate/index.js";
+import { DI } from "../../di.js";
+import type { ILogger } from "../../log/index.js";
+import type { AddressProviderService } from "../AddressProviderService.js";
+import type Client from "../Client.js";
+import type {
+  ILiquidatorService,
+  OptimisticResults,
+} from "../liquidate/index.js";
 
 export default abstract class AbstractScanService {
-  log: LoggerInterface;
+  abstract log: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  @Inject()
-  optimistic: OptimisticResults;
+  @DI.Inject(DI.OptimisticResults)
+  optimistic!: OptimisticResults;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   protected _lastUpdated = 0n;
 

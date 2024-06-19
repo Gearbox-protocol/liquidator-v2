@@ -26,12 +26,11 @@ import {
   iCreditManagerV3Abi,
   iExceptionsAbi,
 } from "@gearbox-protocol/types/abi";
-import { Service } from "typedi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { getContract, parseEther } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
-import { Logger, type LoggerInterface } from "../../log/index.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
   ILiquidationStrategy,
@@ -47,7 +46,6 @@ interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   weightedBalance: bigint;
 }
 
-@Service()
 export default class LiquidationStrategyV3Partial
   extends AbstractLiquidationStrategyV3
   implements ILiquidationStrategy<PartialLiquidationPreview>
@@ -56,7 +54,7 @@ export default class LiquidationStrategyV3Partial
   public readonly adverb = "partially";
 
   @Logger("LiquidationStrategyV3Partial")
-  logger: LoggerInterface;
+  logger!: ILogger;
 
   #partialLiquidator?: Address;
   #priceHelper?: IPriceHelperContract;
@@ -567,7 +565,7 @@ export default class LiquidationStrategyV3Partial
     }
   }
 
-  #caLogger(ca: CreditAccountData): LoggerInterface {
+  #caLogger(ca: CreditAccountData): ILogger {
     return this.logger.child({
       account: ca.addr,
       borrower: ca.borrower,

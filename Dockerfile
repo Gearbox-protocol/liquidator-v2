@@ -1,4 +1,4 @@
-FROM node:20.11 as dev
+FROM node:20.14 as dev
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 
 # Production npm modules
 
-FROM node:20.11 as prod
+FROM node:20.14 as prod
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -40,4 +40,4 @@ LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 WORKDIR /app
 COPY --from=prod /app /app
 COPY --from=prod /root/.foundry/bin/cast /app
-CMD ["--enable-source-maps", "/app/build/index.js"]
+CMD ["--enable-source-maps", "/app/build/index.mjs"]

@@ -1,51 +1,47 @@
-import { Container, Inject, Service } from "typedi";
-
-import { CONFIG, Config, loadConfig } from "./config/index.js";
-import { Logger, type LoggerInterface } from "./log/index.js";
-import { AddressProviderService } from "./services/AddressProviderService.js";
-import Client from "./services/Client.js";
-import HealthCheckerService from "./services/HealthCheckerService.js";
-import { OptimisticResults } from "./services/liquidate/index.js";
-import {
-  type IOptimisticOutputWriter,
-  OUTPUT_WRITER,
-} from "./services/output/index.js";
-import { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
-import { ScanServiceV3 } from "./services/scan/index.js";
-import { type ISwapper, SWAPPER } from "./services/swap/index.js";
+import type { Config } from "./config/index.js";
+import { loadConfig } from "./config/index.js";
+import { DI } from "./di.js";
+import { type ILogger, Logger } from "./log/index.js";
+import type { AddressProviderService } from "./services/AddressProviderService.js";
+import type Client from "./services/Client.js";
+import type HealthCheckerService from "./services/HealthCheckerService.js";
+import type { OptimisticResults } from "./services/liquidate/index.js";
+import type { IOptimisticOutputWriter } from "./services/output/index.js";
+import type { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
+import type { ScanServiceV3 } from "./services/scan/index.js";
+import type { ISwapper } from "./services/swap/index.js";
 import version from "./version.js";
 
-@Service()
 class App {
   @Logger("App")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  @Inject()
-  scanServiceV3: ScanServiceV3;
+  @DI.Inject(DI.Scanner)
+  scanServiceV3!: ScanServiceV3;
 
-  @Inject()
-  healthChecker: HealthCheckerService;
+  @DI.Inject(DI.HealthChecker)
+  healthChecker!: HealthCheckerService;
 
-  @Inject()
-  optimistic: OptimisticResults;
+  @DI.Inject(DI.OptimisticResults)
+  optimistic!: OptimisticResults;
 
-  @Inject()
-  redstone: RedstoneServiceV3;
+  @DI.Inject(DI.Redstone)
+  redstone!: RedstoneServiceV3;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
-  @Inject(OUTPUT_WRITER)
-  outputWriter: IOptimisticOutputWriter;
+  @DI.Inject(DI.Output)
+  outputWriter!: IOptimisticOutputWriter;
 
-  @Inject(SWAPPER)
-  swapper: ISwapper;
+  @DI.Inject(DI.Swapper)
+  swapper!: ISwapper;
 
   public async launch(): Promise<void> {
     const msg = [
@@ -81,6 +77,7 @@ class App {
 
 export async function launchApp(): Promise<void> {
   const config = await loadConfig();
-  Container.set(CONFIG, config);
-  await Container.get(App).launch();
+  DI.set(DI.Config, config);
+  const app = new App();
+  await app.launch();
 }

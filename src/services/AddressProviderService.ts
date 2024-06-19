@@ -1,14 +1,14 @@
 import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
 import { ADDRESS_PROVIDER } from "@gearbox-protocol/sdk-gov";
 import { iAddressProviderV3Abi } from "@gearbox-protocol/types/abi";
-import { Inject, Service } from "typedi";
 import type { GetContractReturnType, PublicClient } from "viem";
 import { getContract, stringToHex } from "viem";
 
-import { CONFIG, type Config } from "../config/index.js";
-import { Logger, type LoggerInterface } from "../log/index.js";
+import type { Config } from "../config/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import Client from "./Client.js";
+import type Client from "./Client.js";
 
 type IAddressProviderV3Contract = GetContractReturnType<
   typeof iAddressProviderV3Abi,
@@ -22,16 +22,16 @@ const AP_BLOCK_BY_NETWORK: Record<NetworkType, bigint> = {
   Base: 12299805n, // arbitrary block, NOT_DEPLOYED yet
 };
 
-@Service()
+@DI.Injectable(DI.AddressProvider)
 export class AddressProviderService {
-  @Logger("AddressProviderService")
-  log: LoggerInterface;
+  @Logger("AddressProvider")
+  log!: ILogger;
 
-  @Inject(CONFIG)
-  config: Config;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  client: Client;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   #address?: Address;
   #contract?: IAddressProviderV3Contract;
@@ -47,7 +47,6 @@ export class AddressProviderService {
     this.#contract = getContract({
       address: this.#address,
       abi: iAddressProviderV3Abi,
-      // 1a. Insert a single client
       client: this.client.pub,
     });
 
