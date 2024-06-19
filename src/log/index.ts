@@ -1,7 +1,6 @@
 import type { IFactory } from "di-at-home";
 import type { DestinationStream, Logger as ILogger, LoggerOptions } from "pino";
 import { pino } from "pino";
-import { build as pinoPretty } from "pino-pretty";
 
 import { DI } from "../di.js";
 
@@ -27,9 +26,13 @@ class LoggerFactory implements IFactory<ILogger, [string]> {
     let stream: DestinationStream | undefined;
     // this label will be dropped by esbuild during production build
     // eslint-disable-next-line no-labels
-    DEV: stream = pinoPretty({
-      colorize: true,
-    });
+    DEV: {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pinoPretty = require("pino-pretty");
+      stream = pinoPretty({
+        colorize: true,
+      });
+    }
     this.#logger = pino(options, stream);
   }
 
