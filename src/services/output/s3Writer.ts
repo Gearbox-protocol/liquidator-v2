@@ -2,19 +2,24 @@ import { join } from "node:path";
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-import config from "../../config";
-import { json_stringify } from "../utils";
-import getFilename from "./filename";
-import type { IOptimisticOutputWriter } from "./types";
+import { json_stringify } from "../../utils/index.js";
+import BaseWriter from "./BaseWriter.js";
+import type { IOptimisticOutputWriter } from "./types.js";
 
-export default class S3Writer implements IOptimisticOutputWriter {
-  public async write(prefix: number | string, result: unknown): Promise<void> {
-    const key = join(config.outS3Prefix ?? "", getFilename(prefix));
+export default class S3Writer
+  extends BaseWriter
+  implements IOptimisticOutputWriter
+{
+  public async write(
+    prefix: string | bigint | number,
+    result: unknown,
+  ): Promise<void> {
+    const key = join(this.config.outS3Prefix, this.getFilename(prefix));
     const client = new S3Client({});
     try {
       await client.send(
         new PutObjectCommand({
-          Bucket: config.outS3Bucket,
+          Bucket: this.config.outS3Bucket,
           Key: key,
           ContentType: "application/json",
           Body: json_stringify(result),

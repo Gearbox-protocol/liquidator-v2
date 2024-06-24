@@ -1,14 +1,14 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
   CHAINS,
   decimals,
   getDecimals,
-  IERC20__factory,
   tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk-gov";
+import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
-import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json";
+import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json" assert { type: "json" };
 import type { SwapOptions } from "@uniswap/v3-sdk";
 import {
   computePoolAddress,
@@ -19,26 +19,33 @@ import {
   SwapRouter,
   Trade,
 } from "@uniswap/v3-sdk";
-import type { BigNumberish, Wallet } from "ethers";
-import { BigNumber, ethers } from "ethers";
-import { Service } from "typedi";
+import type { Address, Hex } from "viem";
+import {
+  decodeAbiParameters,
+  fromHex,
+  getContract,
+  parseAbiParameters,
+} from "viem";
 
-import { Logger, LoggerInterface } from "../../log";
-import BaseSwapper from "./base";
-import type { ISwapper } from "./types";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
+import BaseSwapper from "./base.js";
+import type { ISwapper } from "./types.js";
 
-const QUOTER_CONTRACT_ADDRESS = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
-const POOL_FACTORY_CONTRACT_ADDRESS =
+const QUOTER_CONTRACT_ADDRESS: Address =
+  "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
+const POOL_FACTORY_CONTRACT_ADDRESS: Address =
   "0x1F98431c8aD98523631AE4a59f267346ea31F984";
-const SWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+const SWAP_ROUTER_ADDRESS: Address =
+  "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
-@Service()
 export default class Uniswap extends BaseSwapper implements ISwapper {
   @Logger("uniswap")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  private WETH: Token;
+  private WETH!: Token;
 
+  // TODO: this was not tested after View rewrite
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
     this.WETH = new Token(
@@ -50,15 +57,10 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     );
   }
 
-  public async swap(
-    executor: Wallet,
-    tokenAddr: string,
-    amount: BigNumberish,
-    recipient?: string,
-  ): Promise<void> {
-    if (BigNumber.from(amount).lte(10)) {
+  public async swap(tokenAddr: Address, amount: bigint): Promise<void> {
+    if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
       );
       return;
     }
@@ -67,7 +69,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
         this.log.debug(
           `swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
         );
-        await this.executeTrade(executor, tokenAddr, amount);
+        await this.executeTrade(tokenAddr, amount);
         this.log.debug(`swapped ${tokenSymbolByAddress[tokenAddr]} to WETH`);
       }
       this.log.debug("unwrapped ETH");
@@ -79,10 +81,8 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
   }
 
   private async executeTrade(
-    executor: Wallet,
-    tokenAddr: string,
-    amount: BigNumberish,
-    recipient?: string,
+    tokenAddr: Address,
+    amount: bigint,
   ): Promise<void> {
     const token = new Token(
       CHAINS[this.network],
@@ -92,14 +92,9 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
       tokenSymbolByAddress[tokenAddr],
     );
 
-    const pool = await this.getPool(executor, token);
+    const pool = await this.getPool(token);
     const swapRoute = new Route([pool], token, this.WETH);
-    const amountOut = await this.getOutputQuote(
-      executor,
-      token,
-      amount,
-      swapRoute,
-    );
+    const amountOut = await this.getOutputQuote(token, amount, swapRoute);
 
     const trade = Trade.createUncheckedTrade({
       route: swapRoute,
@@ -111,45 +106,47 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
       tradeType: TradeType.EXACT_INPUT,
     });
 
-    const erc20 = IERC20__factory.connect(token.address, executor);
-    await erc20.approve(SWAP_ROUTER_ADDRESS, amount);
+    await this.client.simulateAndWrite({
+      address: token.address as Address,
+      abi: ierc20Abi,
+      functionName: "approve",
+      args: [SWAP_ROUTER_ADDRESS, amount],
+    });
 
     const options: SwapOptions = {
       slippageTolerance: new Percent(50, 10_000), // 50 bips, or 0.50%
       deadline: Math.floor(Date.now() / 1000) + 60 * 20, // 20 minutes from the current Unix time
-      recipient: recipient ?? executor.address,
+      recipient: this.client.address,
     };
 
     const methodParameters = SwapRouter.swapCallParameters([trade], options);
 
-    const tx = {
-      data: methodParameters.calldata,
+    await this.client.wallet.sendTransaction({
+      data: methodParameters.calldata as Hex,
       to: SWAP_ROUTER_ADDRESS,
-      value: methodParameters.value,
-      from: executor.address,
-    };
-
-    await executor.sendTransaction(tx);
+      value: fromHex(methodParameters.value as Hex, "bigint"),
+      from: this.client.address,
+    });
   }
 
-  private async getPool(executor: Wallet, token: Token): Promise<Pool> {
+  private async getPool(token: Token): Promise<Pool> {
     const currentPoolAddress = computePoolAddress({
       factoryAddress: POOL_FACTORY_CONTRACT_ADDRESS,
       tokenA: token,
       tokenB: this.WETH,
       fee: FeeAmount.MEDIUM,
+    }) as Address;
+
+    const poolContract = getContract({
+      abi: IUniswapV3PoolABI.abi,
+      address: currentPoolAddress,
+      client: this.client.pub,
     });
 
-    const poolContract = new ethers.Contract(
-      currentPoolAddress,
-      IUniswapV3PoolABI.abi,
-      executor,
-    );
-
-    const [liquidity, slot0] = await Promise.all([
-      poolContract.liquidity(),
-      poolContract.slot0(),
-    ]);
+    const [liquidity, slot0] = (await Promise.all([
+      poolContract.read.liquidity(),
+      poolContract.read.slot0(),
+    ])) as [any, any];
 
     return new Pool(
       token,
@@ -162,11 +159,10 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
   }
 
   private async getOutputQuote(
-    executor: Wallet,
     token: Token,
-    amount: BigNumberish,
+    amount: bigint,
     route: Route<Currency, Currency>,
-  ): Promise<BigNumberish> {
+  ): Promise<bigint> {
     const { calldata } = SwapQuoter.quoteCallParameters(
       route,
       CurrencyAmount.fromRawAmount(token, amount.toString()),
@@ -175,15 +171,14 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
         useQuoterV2: true,
       },
     );
-
-    const quoteCallReturnData = await executor.call({
+    const { data: quoteCallReturnData } = await this.client.pub.call({
       to: QUOTER_CONTRACT_ADDRESS,
-      data: calldata,
+      data: calldata as Hex,
     });
 
-    const [amountOut] = ethers.utils.defaultAbiCoder.decode(
-      ["uint256"],
-      quoteCallReturnData,
+    const [amountOut] = decodeAbiParameters(
+      parseAbiParameters("uint256"),
+      quoteCallReturnData!,
     );
 
     return amountOut;

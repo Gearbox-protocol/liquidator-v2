@@ -1,22 +1,20 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import {
   CHAINS,
   formatBN,
   getDecimals,
-  IERC20__factory,
   tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk-gov";
+import { ierc20Abi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { BigNumber, type BigNumberish, type ethers, type Wallet } from "ethers";
-import { Service } from "typedi";
+import type { Address } from "viem";
 
-import config from "../../config";
-import { Logger, LoggerInterface } from "../../log";
-import { mine } from "../utils";
-import BaseSwapper from "./base";
-import type { ISwapper } from "./types";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
+import BaseSwapper from "./base.js";
+import type { ISwapper } from "./types.js";
 
 const ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
@@ -24,14 +22,13 @@ class OneInchError extends Error {
   transactionHash?: string;
 }
 
-@Service()
 export default class OneInch extends BaseSwapper implements ISwapper {
   @Logger("one_inch")
-  log: LoggerInterface;
+  log!: ILogger;
 
-  private apiClient: AxiosInstance;
+  private apiClient!: AxiosInstance;
   private readonly slippage: number;
-  private routerAddress = "0x111111125421cA6dc452d289314280a0f8842A65";
+  private routerAddress: Address = "0x111111125421cA6dc452d289314280a0f8842A65";
 
   constructor(slippage = 2) {
     super();
@@ -40,14 +37,14 @@ export default class OneInch extends BaseSwapper implements ISwapper {
 
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
-    if (!config.oneInchApiKey) {
+    if (!this.config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
     const baseURL = `https://api.1inch.dev/swap/v6.0/${CHAINS[network]}`;
     this.apiClient = axios.create({
       baseURL,
       headers: {
-        Authorization: `Bearer ${config.oneInchApiKey}`,
+        Authorization: `Bearer ${this.config.oneInchApiKey}`,
         accept: "application/json",
       },
     });
@@ -55,6 +52,9 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       retries: 5,
       retryCondition: e => e.response?.status === 429,
       retryDelay: axiosRetry.exponentialDelay,
+      onRetry: (_, e) => {
+        this.log.debug({ statusCode: e.status, data: e.response?.data });
+      },
     });
     this.log.debug(`API URL: ${baseURL}`);
     try {
@@ -66,17 +66,12 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     }
   }
 
-  public async swap(
-    executor: Wallet,
-    tokenAddr: string,
-    amount: BigNumberish,
-    recipient?: string,
-  ): Promise<void> {
+  public async swap(tokenAddr: Address, amount: bigint): Promise<void> {
     const amnt = formatBN(amount, getDecimals(tokenAddr));
     let transactionHash: string | undefined;
-    if (BigNumber.from(amount).lte(10)) {
+    if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${BigNumber.from(amount).toString()} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
       );
       return;
     }
@@ -88,34 +83,36 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       this.log.debug(
         `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
-      const erc20 = IERC20__factory.connect(tokenAddr, executor);
-      const approveTx = await erc20.approve(this.routerAddress, amount);
-      await mine(
-        executor.provider as ethers.providers.JsonRpcProvider,
-        approveTx,
-      );
+      await this.client.simulateAndWrite({
+        abi: ierc20Abi,
+        address: tokenAddr,
+        functionName: "approve",
+        args: [this.routerAddress, amount],
+      });
 
       const swap = await this.apiClient.get("/swap", {
         params: {
           src: tokenAddr,
           dst: ETH,
           amount: amount.toString(),
-          from: executor.address,
+          from: this.client.address,
           slippage: this.slippage,
           disableEstimate: true,
           allowPartialFill: false,
-          receiver: recipient ?? executor.address,
+          receiver: this.client.address,
         },
       });
 
+      // TODO: this was not tested after viem rewrite
       const {
         tx: { gas, gasPrice, ...tx },
         // ...rest
       } = swap.data;
-
-      const txR = await executor.sendTransaction({ ...tx, gasLimit: 29e6 });
-      transactionHash = txR.hash;
-      await mine(executor.provider as ethers.providers.JsonRpcProvider, txR);
+      const transactionHash = await this.client.wallet.sendTransaction(tx);
+      await this.client.pub.waitForTransactionReceipt({
+        hash: transactionHash,
+        timeout: 120_000,
+      });
       this.log.debug(
         `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );

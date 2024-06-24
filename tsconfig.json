@@ -1,24 +1,18 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["esnext"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./build",
     "strict": true,
-    "noErrorTruncation": true,
-    "strictPropertyInitialization": false,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "useDefineForClassFields": false
-  },
-  "include": ["src"]
+    "resolveJsonModule": true
+  }
 }

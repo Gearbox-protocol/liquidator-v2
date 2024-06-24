@@ -14,36 +14,35 @@ This mode increases protocol security showing potential problems with liquidatio
 
 Use environment variables to configure bot
 
-| Variable                | Required | Example                                      | Description                                                                                                                                                                       |
-| ----------------------- | -------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| APP_NAME                |          | `Terminator2`                                | App name to use in logs                                                                                                                                                           |
-| PORT                    |          | `4000`                                       | Healthcheck endpoint port                                                                                                                                                         |
-| ADDRESS_PROVIDER        | ✅       | `0x95f4cea53121b8A2Cb783C6BFB0915cEc44827D3` | Override address provider address (defaults to address from SDK)                                                                                                                  |
-| JSON_RPC_PROVIDERS      | ✅       | `https://goerli.infura.io/v3/<key>`          | Comma-separated list of ethereum JSON RPC endpoints                                                                                                                               |
-| FLASHBOTS_RPC           |          | `https://rpc.flashbots.net`                  | Optional flashbots RPC endpoint for frontrunning protection (https://docs.flashbots.net/flashbots-protect/overview)                                                               |
-| JSON_RPC_TIMEOUT        |          | `240000`                                     | JSONRPC calls timeout With freshly started fork first requests often fail with default ethers.js timeout of 120 seconds. In this case, increase this timeout (the value is in ms) |
-| PRIVATE_KEY             | ✅       | `<private_key>`                              | Private key for core wallet                                                                                                                                                       |
-| WALLET_PASSWORD         | ✅       | `<password>`                                 | Password for keys storage                                                                                                                                                         |
-| HF_TRESHOLD             |          | `9950`                                       | Health factor threshold for liquidations                                                                                                                                          |
-| UNDERLYING              |          | `DAI`                                        | If set, liquidator will only work with credit manager for this underlying token symbol                                                                                            |
-| CLOUDAMQP_URL           |          | `amqps://host:port`                          | AMQP instance to send logs to                                                                                                                                                     |
-| AMPQ_EXCHANGE           |          | `GOERLI`                                     | AMQP exchange to send logs to                                                                                                                                                     |
-| SKIP_BLOCKS             |          | `3`                                          | How many block should be skipped before next check in normal mode                                                                                                                 |
-| MULTICALL_CHUNK         |          | `30`                                         | Multicall chunk size used when getting accounts data                                                                                                                              |
-| KEY_PATH                | ✅       | `/foo/bar`                                   | Directory with wallet keys. Either this or `KEY_SECRET` is required.                                                                                                              |
-| KEY_SECRET              |          | `<secret-id>`                                | AWS Secrets Manager secret id for wallet keys                                                                                                                                     |
-| OPTIMISTIC_LIQUIDATIONS |          | `true`                                       | Set to `true` to enable optimistic mode                                                                                                                                           |
-| EXECUTORS_QTY           |          | `3`                                          | How many executors who send liquidation transactions in parallel                                                                                                                  |
-| SWAP_TO_ETH             |          | `uniswap`/`1inch`                            | If set, will try to swap underlying token to ETH after liquidation (only in optimistic mode)                                                                                      |
-| BALANCE_TO_NOTIFY       |          | `0`                                          | Minimum balance (in wei), when signer has less, it will send notifications in AMPQ                                                                                                |
-| SLIPPAGE                |          | `0`                                          | Slippage for finding path [0;1] represents 0-100%                                                                                                                                 |
-| LOG_LEVEL               |          | `debug`                                      | Min log level                                                                                                                                                                     |
-| OUT_SUFFIX              |          | `ts`                                         | Output suffix to distinguish outputs of different liquidators                                                                                                                     |
-| OUT_DIR                 |          | `/foo/bar`                                   | Directory to output logs, leave empty if you don't need file output. Only one of `OUT_DIR`, `OUT_ENDPOINT`, `OUT_S3_BUCKET` will be used                                          |
-| OUT_ENDPOINT            |          | `https://dump.logs.io/here`                  | Endpoint to send POST-request with output                                                                                                                                         |
-| OUT_HEADERS             |          | `{"Authorization": "Bearer XXX"}`            | HTTP headers to send with POST request. Serialized as JSON: `{"header1": "value1", "header2": "value2"}`                                                                          |
-| OUT_S3_BUCKET           |          | `my_bucket`                                  | S3 bucket to upload result to                                                                                                                                                     |
-| OUT_S3_PREFIX           |          | `optimistc`                                  | S3 path prefix                                                                                                                                                                    |
+| Environment Variable Name              | Description                                                                 |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| ADDRESS_PROVIDER                       | Address provider address override (optional)                                |
+| APP_NAME                               | Application name, for logging                                               |
+| DEBUG_ACCOUNTS                         | Debug accounts (optional)                                                   |
+| DEBUG_MANAGERS                         | Debug managers (optional)                                                   |
+| CAST_BIN                               | Path to foundry/cast binary (optional)                                      |
+| DEPLOY_PARTIAL_LIQUIDATOR              | Deploy partial liquidator contracts (optional)                              |
+| JSON_RPC_PROVIDERS / JSON_RPC_PROVIDER | Ethereum provider RPCs (optional)                                           |
+| HF_TRESHOLD                            | HF threshold, default is 65536                                              |
+| RESTAKING_WORKAROUND                   | Restaking workaround (optional)                                             |
+| MIN_BALANCE                            | Minimum balance for notification, default is 500000000000000000n (optional) |
+| ONE_INCH_API_KEY                       | 1inch API key (optional)                                                    |
+| OPTIMISTIC                             | Optimistic liquidations (optional)                                          |
+| OUT_DIR                                | Output directory, default is "."                                            |
+| OUT_ENDPOINT                           | Output endpoint URL (optional)                                              |
+| OUT_HEADERS                            | Output headers, default is "{}"                                             |
+| OUT_SUFFIX                             | Output suffix, default is "ts"                                              |
+| OUT_S3_BUCKET                          | Output S3 bucket (optional)                                                 |
+| OUT_S3_PREFIX                          | Output S3 prefix, default is ""                                             |
+| PARTIAL_LIQUIDATOR_ADDRESS             | Partial liquidator address (optional)                                       |
+| PRIVATE_KEY                            | Private key                                                                 |
+| PORT                                   | Port number, default is 4000                                                |
+| SLIPPAGE                               | Slippage, default is 50                                                     |
+| SWAP_TO_ETH                            | Swap to ETH method, can be "1inch" or "uniswap" (optional)                  |
+| UNDERLYING                             | Underlying asset (optional)                                                 |
+| TELEGRAM_BOT_TOKEN                     | Telegram bot token (optional)                                               |
+| TELEGRAM_NOTIFICATIONS_CHANNEL         | Telegram notifications channel, must start with "-" (optional)              |
+| TELEGRAM_ALERTS_CHANNEL                | Telegram alerts channel, must start with "-" (optional)                     |
 
 ## How to launch
 

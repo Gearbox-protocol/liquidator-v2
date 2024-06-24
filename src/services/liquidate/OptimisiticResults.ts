@@ -1,8 +1,8 @@
-import { Service } from "typedi";
+import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 
-import type { OptimisticResultV2 } from "../../core/optimistic";
+import { DI } from "../../di.js";
 
-@Service()
+@DI.Injectable(DI.OptimisticResults)
 export class OptimisticResults {
   #results: OptimisticResultV2[] = [];
 

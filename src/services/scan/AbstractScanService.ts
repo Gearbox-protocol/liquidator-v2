@@ -1,27 +1,32 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { providers } from "ethers";
-import { Inject } from "typedi";
-
-import config from "../../config";
-import type { LoggerInterface } from "../../log";
-import { AddressProviderService } from "../AddressProviderService";
-import { KeyService } from "../keyService";
-import type { ILiquidatorService } from "../liquidate";
+import type { Config } from "../../config/index.js";
+import type { CreditAccountData } from "../../data/index.js";
+import { DI } from "../../di.js";
+import type { ILogger } from "../../log/index.js";
+import type { AddressProviderService } from "../AddressProviderService.js";
+import type Client from "../Client.js";
+import type {
+  ILiquidatorService,
+  OptimisticResults,
+} from "../liquidate/index.js";
 
 export default abstract class AbstractScanService {
-  log: LoggerInterface;
+  abstract log: ILogger;
 
-  @Inject()
-  executorService: KeyService;
+  @DI.Inject(DI.Config)
+  config!: Config;
 
-  @Inject()
-  addressProvider: AddressProviderService;
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
 
-  protected provider: providers.Provider;
+  @DI.Inject(DI.OptimisticResults)
+  optimistic!: OptimisticResults;
 
-  protected _lastUpdated = 0;
+  @DI.Inject(DI.Client)
+  client!: Client;
 
-  public get lastUpdated(): number {
+  protected _lastUpdated = 0n;
+
+  public get lastUpdated(): bigint {
     return this._lastUpdated;
   }
 
@@ -30,34 +35,25 @@ export default abstract class AbstractScanService {
   /**
    * Launches ScanService
    * @param dataCompressor Address of DataCompressor
-   * @param provider Ethers provider or signer
    * @param liquidatorService Liquidation service
    */
-  public async launch(provider: providers.Provider): Promise<void> {
-    this.provider = provider;
-    await this.liquidatorService.launch(provider);
-    await this._launch(provider);
+  public async launch(): Promise<void> {
+    await this.liquidatorService.launch();
+    await this._launch();
     this.subscribeToUpdates();
   }
 
   protected subscribeToUpdates(): void {
-    if (config.optimisticLiquidations) {
+    if (this.config.optimistic) {
       return;
     }
-    this.log.debug(`scan interval is ${config.scanInterval}`);
-    if (config.scanInterval === 0) {
-      this.provider.on("block", async num => await this.onBlock(num));
-    } else {
-      // on L2 blocks are too frequent
-      setInterval(async () => {
-        const block = await this.provider.getBlockNumber();
-        await this.onBlock(block);
-      }, config.scanInterval);
-    }
+    this.client.pub.watchBlockNumber({
+      onBlockNumber: n => this.onBlock(n),
+    });
   }
 
-  protected abstract _launch(provider: providers.Provider): Promise<void>;
-  protected abstract onBlock(block: number): Promise<void>;
+  protected abstract _launch(): Promise<void>;
+  protected abstract onBlock(block: bigint): Promise<void>;
 
   /**
    * Liquidate accounts using NORMAL flow
@@ -70,21 +66,7 @@ export default abstract class AbstractScanService {
       return;
     }
     this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts`);
-    const vacantExecutors = this.executorService.vacantQty();
-
-    if (vacantExecutors === 0) {
-      this.log.warn("No vacant executors at the moment!");
-    }
-
-    const itemsToProceed =
-      accountsToLiquidate.length < vacantExecutors
-        ? accountsToLiquidate.length
-        : vacantExecutors;
-
-    for (let i = 0; i < itemsToProceed; i++) {
-      const ca = accountsToLiquidate[i];
-
-      ca.isDeleting = true;
+    for (const ca of accountsToLiquidate) {
       await this.liquidatorService.liquidate(ca);
     }
   }
@@ -94,28 +76,26 @@ export default abstract class AbstractScanService {
    * @param accountsToLiquidate
    */
   protected async liquidateOptimistically(
-    accountsToLiquidate: CreditAccountData[],
+    accounts: CreditAccountData[],
   ): Promise<void> {
-    const accounts = config.debugAccounts
-      ? accountsToLiquidate.filter(({ addr }) =>
-          config.debugAccounts?.includes(addr),
-        )
-      : accountsToLiquidate;
-
     const total = accounts.length;
-    const debugS = config.debugAccounts ? "selective " : " ";
+    const debugS = this.config.debugAccounts ? "selective " : " ";
     this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
-      const success = await this.liquidatorService.liquidateOptimistic(acc);
-      const status = success ? "OK" : "FAIL";
+      const result = await this.liquidatorService.liquidateOptimistic(acc);
+      const status = result.isError ? "FAIL" : "OK";
       const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
-      if (success) {
-        this.log.info(msg);
-      } else {
+      if (result.isError) {
         this.log.warn(msg);
+      } else {
+        this.log.info(msg);
       }
     }
+    const success = this.optimistic.get().filter(r => !r.isError).length;
+    this.log.info(
+      `optimistic liquidation finished: ${success}/${total} accounts liquidated`,
+    );
   }
 }

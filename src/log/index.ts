@@ -1,60 +1,46 @@
+import type { IFactory } from "di-at-home";
+import type { DestinationStream, Logger as ILogger, LoggerOptions } from "pino";
 import { pino } from "pino";
-import { Logger as TSLogger } from "tslog";
-import { Container } from "typedi";
 
-const DEV = process.env.NODE_ENV !== "production";
-const underlying = process.env.UNDERLYING;
-// For optimistic liquidators in AWS StepFunctions
-const executionId = process.env.EXECUTION_ID?.split(":").pop();
+import { DI } from "../di.js";
 
-const TS_LOG_LEVELS: Record<string, number> = {
-  silly: 0,
-  trace: 1,
-  debug: 2,
-  info: 3,
-  warn: 4,
-  error: 5,
-  fata: 6,
-};
+@DI.Factory(DI.Logger)
+class LoggerFactory implements IFactory<ILogger, [string]> {
+  #logger: ILogger;
 
-export function getLogger(label?: string): LoggerInterface {
-  return DEV
-    ? new TSLogger({
-        type: "pretty",
-        name: label,
-        minLevel:
-          TS_LOG_LEVELS[process.env.LOG_LEVEL?.toLowerCase() ?? "debug"] ?? 3,
-        prefix: underlying ? [underlying] : undefined,
-        prettyLogTemplate:
-          "{{logLevelName}}\t{{nameWithDelimiterPrefix}}\t{{filePathWithLine}}\t",
-      })
-    : pino({
-        level: process.env.LOG_LEVEL ?? "debug",
-        base: { underlying, executionId },
-        formatters: {
-          level: label => {
-            return {
-              level: label,
-            };
-          },
+  constructor() {
+    const executionId = process.env.EXECUTION_ID?.split(":").pop();
+    const options: LoggerOptions = {
+      level: process.env.LOG_LEVEL ?? "debug",
+      base: { executionId },
+      formatters: {
+        level: label => {
+          return {
+            level: label,
+          };
         },
-        // fluent-bit (which is used in our ecs setup with loki) cannot handle unix epoch in millis out of the box
-        timestamp: () => `,"time":${Date.now() / 1000.0}`,
+      },
+      // fluent-bit (which is used in our ecs setup with loki) cannot handle unix epoch in millis out of the box
+      timestamp: () => `,"time":${Date.now() / 1000.0}`,
+    };
+    let stream: DestinationStream | undefined;
+    // this label will be dropped by esbuild during production build
+    // eslint-disable-next-line no-labels
+    DEV: {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pinoPretty = require("pino-pretty");
+      stream = pinoPretty({
+        colorize: true,
       });
+    }
+    this.#logger = pino(options, stream);
+  }
+
+  public produce(name: string): ILogger {
+    return this.#logger.child({ name });
+  }
 }
 
-export function Logger(label?: string): PropertyDecorator {
-  return (target: any, propertyKey): any => {
-    const propertyName = propertyKey ? propertyKey.toString() : "";
-    Container.registerHandler({
-      object: target,
-      propertyName,
-      value: () => getLogger(label),
-    });
-  };
-}
+export const Logger = (name: string) => DI.Transient(DI.Logger, name);
 
-export type LoggerInterface = Pick<
-  TSLogger<any>,
-  "debug" | "info" | "warn" | "error"
->;
+export type { Logger as ILogger } from "pino";

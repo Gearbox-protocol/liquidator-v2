@@ -1,56 +1,60 @@
-import type { IAddressProviderV3, NetworkType } from "@gearbox-protocol/sdk";
-import {
-  ADDRESS_PROVIDER,
-  detectNetwork,
-  IAddressProviderV3__factory,
-} from "@gearbox-protocol/sdk";
-import { ethers } from "ethers";
-import { Service } from "typedi";
+import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
+import { ADDRESS_PROVIDER } from "@gearbox-protocol/sdk-gov";
+import { iAddressProviderV3Abi } from "@gearbox-protocol/types/abi";
+import type { GetContractReturnType, PublicClient } from "viem";
+import { getContract, stringToHex } from "viem";
 
-import config from "../config";
-import { Logger, LoggerInterface } from "../log";
-import { getProvider } from "./utils";
+import type { Config } from "../config/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
+import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
+import type Client from "./Client.js";
 
-const AP_BLOCK_BY_NETWORK: Record<NetworkType, number> = {
-  Mainnet: 18433056,
-  Arbitrum: 184650310,
-  Optimism: 117197176, // arbitrary block, NOT_DEPLOYED yet
-  Base: 12299805, // arbitrary block, NOT_DEPLOYED yet
+type IAddressProviderV3Contract = GetContractReturnType<
+  typeof iAddressProviderV3Abi,
+  PublicClient
+>;
+
+const AP_BLOCK_BY_NETWORK: Record<NetworkType, bigint> = {
+  Mainnet: 18433056n,
+  Arbitrum: 184650310n,
+  Optimism: 117197176n, // arbitrary block, NOT_DEPLOYED yet
+  Base: 12299805n, // arbitrary block, NOT_DEPLOYED yet
 };
 
-@Service()
+@DI.Injectable(DI.AddressProvider)
 export class AddressProviderService {
-  @Logger("AddressProviderService")
-  log: LoggerInterface;
+  @Logger("AddressProvider")
+  log!: ILogger;
 
-  #startBlock?: number;
-  #chainId?: number;
-  #network?: NetworkType;
-  #address?: string;
-  #contract?: IAddressProviderV3;
+  @DI.Inject(DI.Config)
+  config!: Config;
+
+  @DI.Inject(DI.Client)
+  client!: Client;
+
+  #address?: Address;
+  #contract?: IAddressProviderV3Contract;
 
   public async launch(): Promise<void> {
-    const provider = getProvider(false, this.log);
-    const [startBlock, { chainId }] = await Promise.all([
-      provider.getBlockNumber(),
-      provider.getNetwork(),
-    ]);
-    this.#network = await detectNetwork(provider);
-    this.#chainId = chainId;
-    this.#startBlock = startBlock;
     this.#address =
-      config.addressProviderOverride ?? ADDRESS_PROVIDER[this.#network];
-    const overrideS = config.addressProviderOverride
-      ? ` (overrides default ${ADDRESS_PROVIDER[this.#network]})`
+      this.config.addressProviderOverride ??
+      ADDRESS_PROVIDER[this.config.network];
+    const overrideS = this.config.addressProviderOverride
+      ? ` (overrides default ${ADDRESS_PROVIDER[this.config.network]})`
       : "";
 
-    this.#contract = IAddressProviderV3__factory.connect(
-      this.#address,
-      provider,
-    );
+    this.#contract = getContract({
+      address: this.#address,
+      abi: iAddressProviderV3Abi,
+      client: this.client.pub,
+    });
+
+    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
+    TxParser.addAddressProvider(this.#address);
 
     this.log.info(
-      `Launched on ${this.#network} (${chainId}) using address provider ${this.#address}${overrideS}`,
+      `Launched on ${this.config.network} (${this.config.chainId}) using address provider ${this.#address}${overrideS}`,
     );
   }
 
@@ -58,7 +62,7 @@ export class AddressProviderService {
     service: string,
     minVersion: number,
     maxVersion_?: number,
-  ): Promise<string> {
+  ): Promise<Address> {
     // defaults to same version for single-digit versions
     // or to same major version for 3-digit versions
     const maxVersion =
@@ -68,20 +72,20 @@ export class AddressProviderService {
       `looking for ${service} in version range [${minVersion}, ${maxVersion}]`,
     );
 
-    const logs = await this.contract.provider.getLogs({
-      ...this.contract.filters.SetAddress(
-        ethers.utils.formatBytes32String(service),
-      ),
-      fromBlock: AP_BLOCK_BY_NETWORK[this.network],
-    });
+    const logs = await this.contract.getEvents.SetAddress(
+      {
+        key: stringToHex(service, { size: 32 }),
+      },
+      { fromBlock: AP_BLOCK_BY_NETWORK[this.config.network] },
+    );
+
     let version = minVersion;
-    let address = "";
+    let address: Address | undefined;
     for (const l of logs) {
-      const e = this.contract.interface.parseLog(l);
-      const v = e.args.version.toNumber();
+      const v = Number(l.args.version);
       if (v >= version && v <= maxVersion) {
         version = v;
-        address = e.args.value;
+        address = l.args.value;
       }
     }
 
@@ -90,28 +94,7 @@ export class AddressProviderService {
     }
     this.log.debug(`latest version of ${service}: v${version} at ${address}`);
 
-    return address;
-  }
-
-  public get startBlock(): number {
-    if (!this.#startBlock) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#startBlock;
-  }
-
-  public get chainId(): number {
-    if (!this.#chainId) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#chainId;
-  }
-
-  public get network(): NetworkType {
-    if (!this.#network) {
-      throw new Error("address provider service not launched");
-    }
-    return this.#network;
+    return address as Address;
   }
 
   public get address(): string {
@@ -121,7 +104,7 @@ export class AddressProviderService {
     return this.#address;
   }
 
-  public get contract(): IAddressProviderV3 {
+  public get contract(): IAddressProviderV3Contract {
     if (!this.#contract) {
       throw new Error("address provider service not launched");
     }
