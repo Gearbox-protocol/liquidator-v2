@@ -1,6 +1,11 @@
 import type { AxiosInstance } from "axios";
 import axios, { isAxiosError } from "axios";
-import axiosRetry, { isNetworkError, isRetryableError } from "axios-retry";
+import axiosRetry, {
+  exponentialDelay,
+  isNetworkError,
+  isRetryableError,
+} from "axios-retry";
+import { nanoid } from "nanoid";
 
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
@@ -41,18 +46,28 @@ export default class TelegramNotifier implements INotifier {
     channelId: string,
     severity = "notification",
   ): Promise<void> {
+    const id = nanoid();
     this.log.debug(`sending telegram ${severity} to channel ${channelId}...`);
     try {
-      await this.client.post("", {
-        ...this.#messageOptions,
-        chat_id: channelId,
-        text,
-      });
+      await this.client.post(
+        "",
+        {
+          ...this.#messageOptions,
+          chat_id: channelId,
+          text,
+        },
+        { headers: { "X-Notification-ID": id } },
+      );
       this.log.info(`telegram ${severity} sent successfully`);
     } catch (e) {
       if (isAxiosError(e)) {
         this.log.error(
-          { status: e.status, data: e.response?.data, code: e.code },
+          {
+            status: e.status,
+            data: e.response?.data,
+            code: e.code,
+            notificationId: e.request?.headers?.["X-Notification-ID"],
+          },
           `cannot send telegram ${severity}: ${e.message}`,
         );
       } else {
@@ -71,7 +86,7 @@ export default class TelegramNotifier implements INotifier {
       });
       axiosRetry(this.#client, {
         retries: 10,
-        retryDelay: cnt => 5000 + cnt * 500,
+        retryDelay: exponentialDelay,
         retryCondition: e => {
           return (
             isNetworkError(e) ||
@@ -79,13 +94,28 @@ export default class TelegramNotifier implements INotifier {
             (e.response?.data as any)?.error_code === 429
           );
         },
-        onMaxRetryTimesExceeded: e => {
+        onRetry: (count, e) => {
           this.log.debug(
             {
               status: e.response?.status,
               code: e.code,
               data: e.response?.data,
               headers: e.response?.headers,
+              count,
+              notificationId: e.request?.headers?.["X-Notification-ID"],
+            },
+            `retry: ${e.message}`,
+          );
+        },
+        onMaxRetryTimesExceeded: (e, count) => {
+          this.log.debug(
+            {
+              status: e.response?.status,
+              code: e.code,
+              data: e.response?.data,
+              headers: e.response?.headers,
+              count,
+              notificationId: e.request?.headers?.["X-Notification-ID"],
             },
             `last retry: ${e.message}`,
           );
