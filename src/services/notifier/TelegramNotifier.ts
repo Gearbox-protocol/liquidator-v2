@@ -70,19 +70,25 @@ export default class TelegramNotifier implements INotifier {
         },
       });
       axiosRetry(this.#client, {
-        retries: 5,
+        retries: 10,
         retryDelay: cnt => 5000 + cnt * 500,
         retryCondition: e => {
-          this.log.error(
-            {
-              data: e.response?.data,
-              code: e.code,
-              status: e.status,
-              condition: isNetworkError(e) || isRetryableError(e),
-            },
-            `axios retry: ${e.message}`,
+          return (
+            isNetworkError(e) ||
+            isRetryableError(e) ||
+            (e.response?.data as any)?.error_code === 429
           );
-          return isNetworkError(e) || isRetryableError(e);
+        },
+        onMaxRetryTimesExceeded: e => {
+          this.log.debug(
+            {
+              status: e.response?.status,
+              code: e.code,
+              data: e.response?.data,
+              headers: e.response?.headers,
+            },
+            `last retry: ${e.message}`,
+          );
         },
       });
     }
