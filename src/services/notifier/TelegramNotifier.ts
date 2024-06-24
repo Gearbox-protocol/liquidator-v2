@@ -52,8 +52,8 @@ export default class TelegramNotifier implements INotifier {
     } catch (e) {
       if (isAxiosError(e)) {
         this.log.error(
-          { status: e.status, data: e.response?.data },
-          `cannot send telegram ${severity}`,
+          { status: e.status, data: e.response?.data, code: e.code },
+          `cannot send telegram ${severity}: ${e.message}`,
         );
       } else {
         this.log.error(`cannot send telegram ${severity}: ${e}`);
@@ -72,7 +72,18 @@ export default class TelegramNotifier implements INotifier {
       axiosRetry(this.#client, {
         retries: 5,
         retryDelay: cnt => 5000 + cnt * 500,
-        retryCondition: e => isNetworkError(e) || isRetryableError(e),
+        retryCondition: e => {
+          this.log.error(
+            {
+              data: e.response?.data,
+              code: e.code,
+              status: e.status,
+              condition: isNetworkError(e) || isRetryableError(e),
+            },
+            `axios retry: ${e.message}`,
+          );
+          return isNetworkError(e) || isRetryableError(e);
+        },
       });
     }
     return this.#client;
