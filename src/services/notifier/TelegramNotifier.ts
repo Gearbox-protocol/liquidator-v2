@@ -102,7 +102,7 @@ export default class TelegramNotifier implements INotifier {
               data: e.response?.data,
               headers: e.response?.headers,
               count,
-              notificationId: e.request?.headers?.["X-Notification-ID"],
+              requestHeaders: e.response?.request?.headers,
             },
             `retry: ${e.message}`,
           );
@@ -115,7 +115,7 @@ export default class TelegramNotifier implements INotifier {
               data: e.response?.data,
               headers: e.response?.headers,
               count,
-              notificationId: e.request?.headers?.["X-Notification-ID"],
+              requestHeaders: e.response?.request?.headers,
             },
             `last retry: ${e.message}`,
           );
