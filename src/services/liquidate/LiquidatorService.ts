@@ -92,7 +92,7 @@ export class LiquidatorService implements ILiquidatorService {
     logger.info(
       `begin ${this.strategy.name} liquidation: HF = ${ca.healthFactor}`,
     );
-    this.notifier.alert(new LiquidationStartMessage(ca, this.strategy.name));
+    this.notifier.notify(new LiquidationStartMessage(ca, this.strategy.name));
     let pathHuman: string[] | undefined;
     try {
       const preview = await this.strategy.preview(ca);

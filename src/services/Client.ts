@@ -201,6 +201,7 @@ export default class Client {
     const { data: _data, to, value, account, ...params } = req;
     logger.debug({ hash, ...params }, "sent transaction");
     const receipt = await this.#waitForTransactionReceipt(hash);
+    logger.debug({ hash, status: receipt.status }, "received receipt");
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});

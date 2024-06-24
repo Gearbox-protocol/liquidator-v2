@@ -2,7 +2,7 @@ import type { IFactory } from "di-at-home";
 
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
-import NoopNotifier from "./NoopNotifier.js";
+import ConsoleNotifier from "./ConsoleNotifier.js";
 import TelegramNotifier from "./TelegramNotifier.js";
 import type { INotifier } from "./types.js";
 
@@ -19,6 +19,6 @@ export class NotifierFactory implements IFactory<INotifier, []> {
     ) {
       return new TelegramNotifier();
     }
-    return new NoopNotifier();
+    return new ConsoleNotifier();
   }
 }
