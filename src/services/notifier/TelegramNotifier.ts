@@ -5,7 +5,6 @@ import axiosRetry, {
   isNetworkError,
   isRetryableError,
 } from "axios-retry";
-import { nanoid } from "nanoid";
 
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
@@ -46,27 +45,21 @@ export default class TelegramNotifier implements INotifier {
     channelId: string,
     severity = "notification",
   ): Promise<void> {
-    const id = nanoid();
     this.log.debug(`sending telegram ${severity} to channel ${channelId}...`);
     try {
-      await this.client.post(
-        "",
-        {
-          ...this.#messageOptions,
-          chat_id: channelId,
-          text,
-        },
-        { headers: { "X-Notification-ID": id } },
-      );
+      await this.client.post("", {
+        ...this.#messageOptions,
+        chat_id: channelId,
+        text,
+      });
       this.log.info(`telegram ${severity} sent successfully`);
     } catch (e) {
       if (isAxiosError(e)) {
         this.log.error(
           {
-            status: e.status,
+            status: e.response?.status,
             data: e.response?.data,
             code: e.code,
-            notificationId: e.request?.headers?.["X-Notification-ID"],
           },
           `cannot send telegram ${severity}: ${e.message}`,
         );
@@ -92,32 +85,6 @@ export default class TelegramNotifier implements INotifier {
             isNetworkError(e) ||
             isRetryableError(e) ||
             (e.response?.data as any)?.error_code === 429
-          );
-        },
-        onRetry: (count, e) => {
-          this.log.debug(
-            {
-              status: e.response?.status,
-              code: e.code,
-              data: e.response?.data,
-              headers: e.response?.headers,
-              count,
-              requestHeaders: e.response?.request?.headers,
-            },
-            `retry: ${e.message}`,
-          );
-        },
-        onMaxRetryTimesExceeded: (e, count) => {
-          this.log.debug(
-            {
-              status: e.response?.status,
-              code: e.code,
-              data: e.response?.data,
-              headers: e.response?.headers,
-              count,
-              requestHeaders: e.response?.request?.headers,
-            },
-            `last retry: ${e.message}`,
           );
         },
       });
