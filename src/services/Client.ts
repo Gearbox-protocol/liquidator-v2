@@ -2,7 +2,6 @@ import { nextTick } from "node:process";
 
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
-import { iExceptionsAbi } from "@gearbox-protocol/types/abi";
 import type { Abi } from "abitype";
 import type {
   Address,
@@ -36,6 +35,7 @@ import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 import type { Config } from "../config/index.js";
 import type { CreditAccountData } from "../data/index.js";
+import { exceptionsAbis } from "../data/index.js";
 import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -240,7 +240,7 @@ export default class Client {
       Address
     >({
       ...args,
-      abi: [...args.abi, ...iExceptionsAbi],
+      abi: [...args.abi, ...exceptionsAbis],
       account,
     });
     const hash = await this.wallet.writeContract(request as any);

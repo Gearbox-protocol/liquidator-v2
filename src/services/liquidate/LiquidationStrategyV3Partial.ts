@@ -24,12 +24,15 @@ import {
   iaclAbi,
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
-  iExceptionsAbi,
 } from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { getContract, parseEther } from "viem";
 
-import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
+import {
+  type CreditAccountData,
+  type CreditManagerData,
+  exceptionsAbis,
+} from "../../data/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
@@ -139,7 +142,7 @@ export default class LiquidationStrategyV3Partial
       ],
     } = await this.client.pub.simulateContract({
       account: this.client.account,
-      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
+      abi: [...iLiquidatorAbi, ...exceptionsAbis],
       address: this.partialLiquidator,
       functionName: "getOptimalLiquidation",
       args: [ca.addr, 10100n, priceUpdates as any],
@@ -168,7 +171,7 @@ export default class LiquidationStrategyV3Partial
     const { result: preview } = await this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
-      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
+      abi: [...iLiquidatorAbi, ...exceptionsAbis],
       functionName: "previewPartialLiquidation",
       args: [
         ca.creditManager,
@@ -210,7 +213,7 @@ export default class LiquidationStrategyV3Partial
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.partialLiquidator,
-      abi: [...iLiquidatorAbi, ...iExceptionsAbi],
+      abi: [...iLiquidatorAbi, ...exceptionsAbis],
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,

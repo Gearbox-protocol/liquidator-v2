@@ -1,11 +1,12 @@
 import { getDecimals } from "@gearbox-protocol/sdk-gov";
-import {
-  iCreditFacadeV3Abi,
-  iExceptionsAbi,
-} from "@gearbox-protocol/types/abi";
+import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import type { SimulateContractReturnType } from "viem";
 
-import type { Balance, CreditAccountData } from "../../data/index.js";
+import {
+  type Balance,
+  type CreditAccountData,
+  exceptionsAbis,
+} from "../../data/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
@@ -71,7 +72,7 @@ export default class LiquidationStrategyV3Full
   ): Promise<SimulateContractReturnType> {
     return this.client.pub.simulateContract({
       account: this.client.account,
-      abi: [...iCreditFacadeV3Abi, ...iExceptionsAbi],
+      abi: [...iCreditFacadeV3Abi, ...exceptionsAbis],
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",
       args: [account.addr, this.client.address, preview.calls],
