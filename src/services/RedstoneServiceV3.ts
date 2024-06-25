@@ -101,6 +101,7 @@ export class RedstoneServiceV3 {
       if (ticker) {
         if (this.oracle.hasFeed(ticker.address)) {
           this.log.debug(
+            ticker,
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
           redstoneUpdates.push({
