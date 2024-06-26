@@ -53,9 +53,14 @@ export default class HealthCheckerService {
       }
     });
 
-    server.listen(this.config.port, () => {
-      this.log.debug("listening");
+    const host = "0.0.0.0";
+    server.listen({ host, port: this.config.port }, () => {
+      this.log.debug(`listening on ${host}:${this.config.port}`);
     });
+    server.on("error", e => {
+      this.log.error(e);
+    });
+    server.unref();
 
     process.on("SIGTERM", () => {
       this.log.info("terminating");
