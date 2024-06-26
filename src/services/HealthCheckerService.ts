@@ -1,11 +1,14 @@
 import { createServer } from "node:http";
 
+import { customAlphabet } from "nanoid";
+
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import version from "../version.js";
 import type { ScanServiceV3 } from "./scan/index.js";
+const nanoid = customAlphabet("1234567890abcdef", 8);
 
 @DI.Injectable(DI.HealthChecker)
 export default class HealthCheckerService {
@@ -19,6 +22,7 @@ export default class HealthCheckerService {
   config!: Config;
 
   #start = Math.round(new Date().valueOf() / 1000);
+  #id = nanoid();
 
   /**
    * Launches health checker - simple web server
@@ -77,7 +81,7 @@ export default class HealthCheckerService {
   #metrics(): string {
     return `# HELP start_time Start time, in unixtime
 # TYPE start_time gauge
-start_time ${this.#start}
+start_time{id="${this.#id}"} ${this.#start}
 
 # HELP build_info Build info
 # TYPE build_info gauge
@@ -85,7 +89,7 @@ build_info{version="${version}"} 1
 
 # HELP block_number Latest processed block
 # TYPE block_number gauge
-block_number ${this.scanServiceV3.lastUpdated}
+block_number{betwork="${this.config.network}"} ${this.scanServiceV3.lastUpdated}
 
 `;
   }
