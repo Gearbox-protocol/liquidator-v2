@@ -28,6 +28,7 @@ export interface PartialLiquidationPreview {
   flashLoanAmount: bigint;
   underlyingBalance: bigint;
   priceUpdates: PriceUpdate[];
+  skipOnFailure?: boolean;
 }
 
 export interface ILiquidatorService {
@@ -58,6 +59,10 @@ export interface StrategyPreview {
    */
   flashLoanAmount?: bigint;
   priceUpdates?: PriceUpdate[];
+  /**
+   * If true, will not attempt to liquidate this account again
+   */
+  skipOnFailure?: boolean;
 }
 
 export interface ILiquidationStrategy<T extends StrategyPreview> {

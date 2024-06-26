@@ -203,24 +203,30 @@ export class LiquidationErrorMessage
   #error: string;
   #callsHuman?: string[];
   #strategyAdverb: string;
+  #skipOnFailure?: string;
 
   constructor(
     ca: CreditAccountData,
     strategyAdverb: string,
     error: string,
     callsHuman?: string[],
+    skipOnFailure?: boolean,
   ) {
     super({ ca });
     this.#strategyAdverb = strategyAdverb;
     this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
     this.#callsHuman = callsHuman;
+    this.#skipOnFailure = skipOnFailure
+      ? "Will skip further liquidation attempts"
+      : "";
   }
 
   public get plain(): string {
     return `❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
 Error: ${this.#error}
 Path used:
-${callsPlain(this.#callsHuman)}`;
+${callsPlain(this.#callsHuman)}
+${this.#skipOnFailure}`;
   }
 
   public get markdown(): string {
@@ -228,7 +234,8 @@ ${callsPlain(this.#callsHuman)}`;
       md`❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
 Error: ${md.inlineCode(this.#error)}
 Path used:
-${callsMd(this.#callsHuman)}`,
+${callsMd(this.#callsHuman)}
+${this.#skipOnFailure}`,
     );
   }
 }

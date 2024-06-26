@@ -203,6 +203,7 @@ export default class LiquidationStrategyV3Partial
         target: c.target,
       })),
       underlyingBalance: preview.profit,
+      skipOnFailure: !isOptimalRepayable,
     };
   }
 

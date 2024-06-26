@@ -65,6 +65,7 @@ export class LiquidatorService implements ILiquidatorService {
   client!: Client;
 
   #errorHandler!: ErrorHandler;
+  #skipList = new Set<Address>();
 
   protected strategy!: ILiquidationStrategy<StrategyPreview>;
 
@@ -89,13 +90,18 @@ export class LiquidatorService implements ILiquidatorService {
       borrower: ca.borrower,
       manager: ca.managerName,
     });
+    if (this.#skipList.has(ca.addr)) {
+      this.log.warn("skipping this account");
+      return;
+    }
     logger.info(
       `begin ${this.strategy.name} liquidation: HF = ${ca.healthFactor}`,
     );
     this.notifier.notify(new LiquidationStartMessage(ca, this.strategy.name));
     let pathHuman: string[] | undefined;
+    let preview: StrategyPreview | undefined;
     try {
-      const preview = await this.strategy.preview(ca);
+      preview = await this.strategy.preview(ca);
       pathHuman = TxParserHelper.parseMultiCall(preview);
       logger.debug({ pathHuman }, "path found");
 
@@ -113,12 +119,17 @@ export class LiquidatorService implements ILiquidatorService {
     } catch (e) {
       const decoded = await this.#errorHandler.explain(e, ca);
       logger.error(decoded, "cant liquidate");
+      if (preview?.skipOnFailure) {
+        this.#skipList.add(ca.addr);
+        this.log.warn("adding to skip list");
+      }
       this.notifier.alert(
         new LiquidationErrorMessage(
           ca,
           this.strategy.adverb,
           decoded.shortMessage,
           pathHuman,
+          preview?.skipOnFailure,
         ),
       );
     }
