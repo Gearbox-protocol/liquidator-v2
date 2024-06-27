@@ -8,6 +8,7 @@ import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import version from "../version.js";
 import type { ScanServiceV3 } from "./scan/index.js";
+
 const nanoid = customAlphabet("1234567890abcdef", 8);
 
 @DI.Injectable(DI.HealthChecker)
@@ -79,17 +80,24 @@ export default class HealthCheckerService {
    * https://prometheus.io/docs/concepts/data_model/
    */
   #metrics(): string {
-    return `# HELP start_time Start time, in unixtime
-# TYPE start_time gauge
-start_time{id="${this.#id}"} ${this.#start}
+    const labels = Object.entries({
+      instance_id: this.#id,
+      network: this.config.network.toLowerCase(),
+      version,
+    })
+      .map(([k, v]) => `${k}="${v}"`)
+      .join(", ");
+    return `# HELP service_up Simple binary flag to indicate being alive
+# TYPE service_up gauge
+service_up{${labels}} 1
 
-# HELP build_info Build info
-# TYPE build_info gauge
-build_info{version="${version}"} 1
+# HELP start_time Start time, in unixtime
+# TYPE start_time gauge
+start_time{${labels}} ${this.#start}
 
 # HELP block_number Latest processed block
 # TYPE block_number gauge
-block_number{betwork="${this.config.network}"} ${this.scanServiceV3.lastUpdated}
+block_number{${labels}} ${this.scanServiceV3.lastUpdated}
 
 `;
   }
