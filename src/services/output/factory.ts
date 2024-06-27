@@ -16,12 +16,12 @@ export class OutputWriterFactory
   config!: Config;
 
   produce(): IOptimisticOutputWriter {
-    if (this.config.outS3Bucket) {
-      return new S3Writer(this.config);
+    if (this.config.outS3Bucket && this.config.outFileName) {
+      return new S3Writer();
     } else if (this.config.outEndpoint) {
-      return new RestWriter(this.config);
-    } else if (this.config.outDir) {
-      return new FileWriter(this.config);
+      return new RestWriter();
+    } else if (this.config.outDir && this.config.outFileName) {
+      return new FileWriter();
     }
     return new ConsoleWriter();
   }

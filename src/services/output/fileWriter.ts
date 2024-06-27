@@ -1,7 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { json_stringify } from "../../utils/index.js";
 import BaseWriter from "./BaseWriter.js";
 import type { IOptimisticOutputWriter } from "./types.js";
 
@@ -9,13 +8,10 @@ export default class FileWriter
   extends BaseWriter
   implements IOptimisticOutputWriter
 {
-  public async write(
-    prefix: string | bigint | number,
-    result: unknown,
-  ): Promise<void> {
-    const filename = join(this.config.outDir, this.getFilename(prefix));
+  public async write(): Promise<void> {
+    const filename = join(this.config.outDir, this.filename);
     try {
-      await writeFile(filename, json_stringify(result), "utf-8");
+      await writeFile(filename, this.content, "utf-8");
     } catch (e) {
       console.error(e);
     }

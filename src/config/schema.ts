@@ -61,7 +61,7 @@ export const ConfigSchema = z.object({
   outHeaders: z.string().default("{}"),
   outS3Bucket: z.string().optional(),
   outS3Prefix: z.string().default(""),
-  outSuffix: z.string().default("ts"),
+  outFileName: z.string().optional(),
 
   telegramBotToken: z.string().optional(),
   telegramAlersChannel: z.string().startsWith("-").optional(),

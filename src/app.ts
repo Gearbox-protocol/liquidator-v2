@@ -5,7 +5,6 @@ import { type ILogger, Logger } from "./log/index.js";
 import type { AddressProviderService } from "./services/AddressProviderService.js";
 import type Client from "./services/Client.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
-import type { OptimisticResults } from "./services/liquidate/index.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
 import type { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
 import type { ScanServiceV3 } from "./services/scan/index.js";
@@ -27,9 +26,6 @@ class App {
 
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
-
-  @DI.Inject(DI.OptimisticResults)
-  optimistic!: OptimisticResults;
 
   @DI.Inject(DI.Redstone)
   redstone!: RedstoneServiceV3;
@@ -64,10 +60,7 @@ class App {
 
     if (this.config.optimistic) {
       this.log.debug("optimistic liquidation finished, writing output");
-      await this.outputWriter.write(this.config.startBlock, {
-        result: this.optimistic.get(),
-        startBlock: this.config.startBlock,
-      });
+      await this.outputWriter.write();
       this.log.debug("saved optimistic liquidation output, exiting");
       process.exit(0);
     }

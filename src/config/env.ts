@@ -16,7 +16,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   outDir: "OUT_DIR",
   outEndpoint: "OUT_ENDPOINT",
   outHeaders: "OUT_HEADERS",
-  outSuffix: "OUT_SUFFIX",
+  outFileName: "OUT_FILE_NAME",
   outS3Bucket: "OUT_S3_BUCKET",
   outS3Prefix: "OUT_S3_PREFIX",
   partialLiquidatorAddress: "PARTIAL_LIQUIDATOR_ADDRESS",

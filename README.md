@@ -31,7 +31,7 @@ Use environment variables to configure bot
 | OUT_DIR                                | Output directory, default is "."                                            |
 | OUT_ENDPOINT                           | Output endpoint URL (optional)                                              |
 | OUT_HEADERS                            | Output headers, default is "{}"                                             |
-| OUT_SUFFIX                             | Output suffix, default is "ts"                                              |
+| OUT_FILE_NAME                          | Output file name for optimistic liquidator                                  |
 | OUT_S3_BUCKET                          | Output S3 bucket (optional)                                                 |
 | OUT_S3_PREFIX                          | Output S3 prefix, default is ""                                             |
 | PARTIAL_LIQUIDATOR_ADDRESS             | Partial liquidator address (optional)                                       |

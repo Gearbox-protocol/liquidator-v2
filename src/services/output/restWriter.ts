@@ -7,14 +7,11 @@ export default class RestWriter
   extends BaseWriter
   implements IOptimisticOutputWriter
 {
-  public async write(
-    prefix: string | bigint | number,
-    result: unknown,
-  ): Promise<void> {
+  public async write(): Promise<void> {
     if (!this.config.outEndpoint) {
       throw new Error("rest endpoint is not set");
     }
-    await axios.post(this.config.outEndpoint, result, {
+    await axios.post(this.config.outEndpoint, this.content, {
       headers: {
         ...JSON.parse(this.config.outHeaders),
         "content-type": "application/json",
