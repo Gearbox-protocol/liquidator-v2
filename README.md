@@ -39,7 +39,6 @@ Use environment variables to configure bot
 | PORT                                   | Port number, default is 4000                                                |
 | SLIPPAGE                               | Slippage, default is 50                                                     |
 | SWAP_TO_ETH                            | Swap to ETH method, can be "1inch" or "uniswap" (optional)                  |
-| UNDERLYING                             | Underlying asset (optional)                                                 |
 | TELEGRAM_BOT_TOKEN                     | Telegram bot token (optional)                                               |
 | TELEGRAM_NOTIFICATIONS_CHANNEL         | Telegram notifications channel, must start with "-" (optional)              |
 | TELEGRAM_ALERTS_CHANNEL                | Telegram alerts channel, must start with "-" (optional)                     |

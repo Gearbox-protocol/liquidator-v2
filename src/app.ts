@@ -46,7 +46,6 @@ class App {
   public async launch(): Promise<void> {
     const msg = [
       `Launching liquidator v${version}`,
-      this.config.underlying ?? "",
       this.config.swapToEth ? `with swapping via ${this.config.swapToEth}` : "",
       this.config.optimistic ? "in OPTIMISTIC mode" : "",
     ]

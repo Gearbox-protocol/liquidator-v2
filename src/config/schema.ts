@@ -51,7 +51,6 @@ export const ConfigSchema = z.object({
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: Address.optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
-  underlying: z.string().optional(),
   restakingWorkaround: booleanLike.pipe(z.boolean().optional()),
 
   swapToEth: z.enum(["1inch", "uniswap"]).optional(),

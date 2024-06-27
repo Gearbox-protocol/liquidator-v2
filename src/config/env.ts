@@ -24,7 +24,6 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   port: "PORT",
   slippage: "SLIPPAGE",
   swapToEth: "SWAP_TO_ETH",
-  underlying: "UNDERLYING",
   telegramBotToken: "TELEGRAM_BOT_TOKEN",
   telegramNotificationsChannel: "TELEGRAM_NOTIFICATIONS_CHANNEL",
   telegramAlersChannel: "TELEGRAM_ALERTS_CHANNEL",

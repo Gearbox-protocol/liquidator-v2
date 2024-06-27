@@ -3,7 +3,6 @@ import {
   getTokenSymbolOrTicker,
   PERCENTAGE_FACTOR,
   tokenDataByNetwork,
-  tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
 import {
   iCreditManagerV3Abi,
@@ -161,7 +160,6 @@ export class ScanServiceV3 extends AbstractScanService {
       debugManagers,
       deployPartialLiquidatorContracts,
       partialLiquidatorAddress,
-      underlying,
     } = this.config;
     // during partial + optimistic liquidation, liquidation condition is not created externally.
     // it's created by liquidator itself before the liquidation.
@@ -199,16 +197,6 @@ export class ScanServiceV3 extends AbstractScanService {
       }
       return ok;
     });
-
-    // in optimistic mode, we can limit liquidations to all CM with provided underlying symbol
-    if (underlying) {
-      this.log.debug(`filtering accounts by underlying: ${underlying}`);
-      accounts = accounts.filter(a => {
-        const u = tokenSymbolByAddress[a.underlyingToken];
-        return underlying.toLowerCase() === u?.toLowerCase();
-      });
-    }
-
     const failedTokens = new Set<Address>();
     for (const acc of accounts) {
       acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
