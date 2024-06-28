@@ -168,43 +168,50 @@ export default class LiquidationStrategyV3Partial
     );
     const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
 
-    const { result: preview } = await this.client.pub.simulateContract({
-      account: this.client.account,
-      address: this.partialLiquidator,
-      abi: [...iLiquidatorAbi, ...exceptionsAbis],
-      functionName: "previewPartialLiquidation",
-      args: [
-        ca.creditManager,
-        ca.addr,
-        tokenOut,
-        optimalAmount,
-        flashLoanAmount,
-        priceUpdates as any,
-        connectors,
-        BigInt(this.config.slippage),
-      ],
-    });
-    if (preview.profit < 0n) {
-      if (isOptimalRepayable) {
-        throw new Error("optimal liquidation is not profitable or errored");
-      } else {
-        throw new Error(
-          "warning: cannot liquidate while remaining within borrowing limits",
-        );
+    try {
+      const { result: preview } = await this.client.pub.simulateContract({
+        account: this.client.account,
+        address: this.partialLiquidator,
+        abi: [...iLiquidatorAbi, ...exceptionsAbis],
+        functionName: "previewPartialLiquidation",
+        args: [
+          ca.creditManager,
+          ca.addr,
+          tokenOut,
+          optimalAmount,
+          flashLoanAmount,
+          priceUpdates as any,
+          connectors,
+          BigInt(this.config.slippage),
+        ],
+      });
+      if (preview.profit < 0n) {
+        if (isOptimalRepayable) {
+          throw new Error("optimal liquidation is not profitable or errored");
+        } else {
+          throw new Error(
+            "warning: cannot liquidate while remaining within borrowing limits",
+          );
+        }
       }
+      return {
+        assetOut: tokenOut as Address,
+        amountOut: optimalAmount,
+        flashLoanAmount,
+        priceUpdates,
+        calls: preview.calls.map(c => ({
+          callData: c.callData,
+          target: c.target,
+        })),
+        underlyingBalance: preview.profit,
+        skipOnFailure: !isOptimalRepayable,
+      };
+    } catch (e) {
+      if (!isOptimalRepayable) {
+        throw new Error(`warning: ${e}`);
+      }
+      throw e;
     }
-    return {
-      assetOut: tokenOut as Address,
-      amountOut: optimalAmount,
-      flashLoanAmount,
-      priceUpdates,
-      calls: preview.calls.map(c => ({
-        callData: c.callData,
-        target: c.target,
-      })),
-      underlyingBalance: preview.profit,
-      skipOnFailure: !isOptimalRepayable,
-    };
   }
 
   public async simulate(
