@@ -1,6 +1,9 @@
 import type { IFactory } from "di-at-home";
+import { createRequire } from "module";
 import type { DestinationStream, Logger as ILogger, LoggerOptions } from "pino";
 import { pino } from "pino";
+
+const require = createRequire(import.meta.url);
 
 import { DI } from "../di.js";
 

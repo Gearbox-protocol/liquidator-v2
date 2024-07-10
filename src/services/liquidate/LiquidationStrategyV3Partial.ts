@@ -24,6 +24,7 @@ import {
   iaclAbi,
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
+  iDegenDistributorV3Abi,
 } from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { getContract, parseEther } from "viem";
@@ -38,6 +39,7 @@ import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
 import type {
   ILiquidationStrategy,
   MakeLiquidatableResult,
+  MerkleDistributorInfo,
   PartialLiquidationPreview,
 } from "./types.js";
 import type { IPriceHelperContract, TokenPriceInfo } from "./viem-types.js";
@@ -519,6 +521,13 @@ export default class LiquidationStrategyV3Partial
       this.logger.info(`set bot to ${bot} in tx ${receipt.transactionHash}`);
     }
     const cmToCa = await this.#getLiquidatorAccounts(cms);
+
+    try {
+      await this.#claimDegenNFTs(cmToCa, cms);
+    } catch (e) {
+      this.logger.warn(`failed to obtain degen NFTs: ${e}`);
+    }
+
     for (const cm of cms) {
       const { address, name } = cm;
       const ca = cmToCa[address];
@@ -547,6 +556,92 @@ export default class LiquidationStrategyV3Partial
     });
     this.logger.debug(`loaded ${cms.length} liquidator credit accounts`);
     return Object.fromEntries(cms.map((cm, i) => [cm.address, results[i]]));
+  }
+
+  /**
+   * Claim NFT tokens as liquidator contract, so that the contract can open credit accounts in Degen NFT protected credit managers
+   * @param cmToCa
+   * @param cms
+   * @returns
+   */
+  async #claimDegenNFTs(
+    cmToCa: Record<string, string>,
+    cms: CreditManagerData[],
+  ): Promise<void> {
+    const account = this.partialLiquidator;
+
+    let nfts = 0;
+    for (const { address, name, degenNFT } of cms) {
+      if (cmToCa[address] === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
+        this.logger.debug(
+          `need degen NFT ${degenNFT} for credit manager ${name}`,
+        );
+        nfts++;
+      }
+    }
+    if (nfts === 0) {
+      return;
+    }
+
+    const distributor = await this.addressProvider.findService(
+      "DEGEN_DISTRIBUTOR",
+      0,
+      0,
+    );
+    this.logger.debug(`degen distributor: ${distributor}`);
+    const [distributorNFT, merkelRoot, claimed] =
+      await this.client.pub.multicall({
+        allowFailure: false,
+        contracts: [
+          {
+            address: distributor,
+            abi: iDegenDistributorV3Abi,
+            functionName: "degenNFT",
+          },
+          {
+            address: distributor,
+            abi: iDegenDistributorV3Abi,
+            functionName: "merkleRoot",
+          },
+          {
+            address: distributor,
+            abi: iDegenDistributorV3Abi,
+            functionName: "claimed",
+            args: [account],
+          },
+        ],
+      });
+    const merkleRootURL = `https://dm.gearbox.finance/${this.config.network.toLowerCase()}_${merkelRoot}.json`;
+    this.logger.debug(
+      `merkle root: ${merkleRootURL}, degen distributor NFT: ${distributorNFT}, claimed: ${claimed}`,
+    );
+
+    const resp = await fetch(merkleRootURL);
+    const merkle = (await resp.json()) as MerkleDistributorInfo;
+    const claims = merkle.claims[account];
+    if (!claims) {
+      throw new Error(`${account} is not eligible for degen NFT claim`);
+    }
+    this.logger.debug(claims, `claims`);
+    if (BigInt(claims.amount) <= claimed) {
+      throw new Error(`already claimed`);
+    }
+
+    const receipt = await this.client.simulateAndWrite({
+      address: distributor,
+      abi: iDegenDistributorV3Abi,
+      functionName: "claim",
+      args: [
+        BigInt(claims.index), // uint256 index,
+        account, // address account,
+        BigInt(claims.amount), // uint256 totalAmount,
+        claims.proof, // bytes32[] calldata merkleProof
+      ],
+    });
+    if (receipt.status === "reverted") {
+      throw new Error(`degenDistributor.claim reverted`);
+    }
+    this.logger.debug(`${account} claimed ${BigInt(claims.amount)} degenNFTs`);
   }
 
   async #registerCM(cm: CreditManagerData): Promise<void> {
