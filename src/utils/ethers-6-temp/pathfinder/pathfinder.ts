@@ -1,5 +1,5 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { getConnectors } from "@gearbox-protocol/sdk-gov";
+import { getConnectors, getDecimals } from "@gearbox-protocol/sdk-gov";
 import { iRouterV3Abi } from "@gearbox-protocol/types/abi";
 import { type Address, getContract, type PublicClient } from "viem";
 
@@ -8,12 +8,13 @@ import type {
   CreditAccountData,
   CreditManagerData,
 } from "../../../data/index.js";
-import type { PathFinderCloseResult } from "./core.js";
+import type { EstimateBatchInput, PathFinderCloseResult } from "./core.js";
 import { PathOptionFactory } from "./pathOptions.js";
 import type { IRouterV3Contract, RouterResult } from "./viem-types.js";
 
 const MAX_GAS_PER_ROUTE = 200_000_000n;
 const GAS_PER_BLOCK = 400_000_000n;
+const LOOPS_PER_TX = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
 
 interface FindBestClosePathProps {
   creditAccount: CreditAccountData;
@@ -54,10 +55,9 @@ export class PathFinder {
     leftoverBalances,
     slippage,
   }: FindBestClosePathProps): Promise<PathFinderCloseResult> {
-    const loopsPerTx = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
     const pathOptions = PathOptionFactory.generatePathOptions(
       creditAccount.allBalances,
-      loopsPerTx,
+      LOOPS_PER_TX,
       this.#network,
     );
 
@@ -88,7 +88,7 @@ export class PathFinder {
           connectors,
           BigInt(slippage),
           po,
-          BigInt(loopsPerTx),
+          BigInt(LOOPS_PER_TX),
           false,
         ],
         {
@@ -119,6 +119,40 @@ export class PathFinder {
         creditAccount.balances[
           creditAccount.underlyingToken.toLowerCase() as Address
         ],
+    };
+  }
+
+  // TODO: readme
+  getEstimateBatchInput(
+    ca: CreditAccountData,
+    slippage: number,
+  ): EstimateBatchInput {
+    const expectedBalances: Record<Address, Balance> = {};
+    const leftoverBalances: Record<Address, Balance> = {};
+    for (const { token, balance, isEnabled } of ca.allBalances) {
+      expectedBalances[token] = { token, balance };
+      // filter out dust, we don't want to swap it
+      const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
+      // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
+      if (balance < minBalance || !isEnabled) {
+        leftoverBalances[token] = { token, balance };
+      }
+    }
+    const connectors = this.getAvailableConnectors(ca.allBalances);
+    const pathOptions = PathOptionFactory.generatePathOptions(
+      ca.allBalances,
+      LOOPS_PER_TX,
+      this.#network,
+    );
+    return {
+      creditAccount: ca.addr,
+      expectedBalances: Object.values(expectedBalances),
+      leftoverBalances: Object.values(leftoverBalances),
+      connectors,
+      slippage: BigInt(slippage),
+      pathOptions: pathOptions[0] ?? [], // TODO: what to put here?
+      iterations: BigInt(LOOPS_PER_TX),
+      force: false,
     };
   }
 

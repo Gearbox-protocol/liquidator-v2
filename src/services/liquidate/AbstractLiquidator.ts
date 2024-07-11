@@ -15,7 +15,7 @@ import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
-import type { INotifier } from "../notifier/index.js";
+import { type INotifier, StartedMessage } from "../notifier/index.js";
 import type OracleServiceV3 from "../OracleServiceV3.js";
 import type { IOptimisticOutputWriter } from "../output/index.js";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
@@ -59,6 +59,7 @@ export default abstract class AbstractLiquidator {
   #errorHandler?: ErrorHandler;
   #compressor?: IDataCompressorContract;
   #pathFinder?: PathFinder;
+  #router?: Address;
   #cmCache: Record<string, CreditManagerData> = {};
 
   public async launch(): Promise<void> {
@@ -67,6 +68,7 @@ export default abstract class AbstractLiquidator {
       this.addressProvider.findService("ROUTER", 300),
       this.addressProvider.findService("DATA_COMPRESSOR", 300),
     ]);
+    this.#router = pfAddr;
     this.#compressor = getContract({
       abi: iDataCompressorV3Abi,
       address: dcAddr,
@@ -77,6 +79,7 @@ export default abstract class AbstractLiquidator {
       this.client.pub,
       this.config.network,
     );
+    this.notifier.notify(new StartedMessage());
   }
 
   protected newOptimisticResult(acc: CreditAccountData): OptimisticResultV2 {
@@ -225,5 +228,12 @@ export default abstract class AbstractLiquidator {
       throw new Error("liquidator not launched");
     }
     return this.#pathFinder;
+  }
+
+  protected get router(): Address {
+    if (!this.#router) {
+      throw new Error("liquidator not launched");
+    }
+    return this.#router;
   }
 }

@@ -1,6 +1,6 @@
 import { getDecimals } from "@gearbox-protocol/sdk-gov";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import type { SimulateContractReturnType } from "viem";
+import type { Address, SimulateContractReturnType } from "viem";
 
 import {
   type Balance,
@@ -25,8 +25,8 @@ export default class SingularFullLiquidator extends SingularLiquidator<PathFinde
   public async preview(ca: CreditAccountData): Promise<PathFinderCloseResult> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);
-      const expectedBalances: Record<string, Balance> = {};
-      const leftoverBalances: Record<string, Balance> = {};
+      const expectedBalances: Record<Address, Balance> = {};
+      const leftoverBalances: Record<Address, Balance> = {};
       for (const { token, balance, isEnabled } of ca.allBalances) {
         expectedBalances[token] = { token, balance };
         // filter out dust, we don't want to swap it

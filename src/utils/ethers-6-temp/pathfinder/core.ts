@@ -1,6 +1,8 @@
 import type { Address } from "viem";
 
+import type { Balance } from "../../../data/Balance.js";
 import type { MultiCall } from "../../../data/MultiCall.js";
+import type { PathOption } from "./pathOptions.js";
 
 export enum SwapOperation {
   EXACT_INPUT,
@@ -21,4 +23,18 @@ export interface PathFinderOpenStrategyResult extends PathFinderResult {
 
 export interface PathFinderCloseResult extends PathFinderResult {
   underlyingBalance: bigint;
+}
+
+/**
+ * RouterLiqParams in contract
+ */
+export interface EstimateBatchInput {
+  creditAccount: Address;
+  expectedBalances: Balance[];
+  leftoverBalances: Balance[];
+  connectors: Address[];
+  slippage: bigint;
+  pathOptions: PathOption[];
+  iterations: bigint;
+  force: boolean;
 }

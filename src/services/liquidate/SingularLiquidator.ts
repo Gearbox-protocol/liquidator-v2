@@ -7,7 +7,6 @@ import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
   LiquidationSuccessMessage,
-  StartedMessage,
 } from "../notifier/index.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
 import type {
@@ -23,21 +22,13 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   protected abstract readonly name: string;
   protected abstract readonly adverb: string;
 
-  /**
-   * Launch LiquidatorService
-   */
-  public async launch(): Promise<void> {
-    await super.launch();
-    this.notifier.notify(new StartedMessage());
-  }
-
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
     if (!accounts.length) {
       return;
     }
     this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
     for (const ca of accounts) {
-      await this._liquidate(ca);
+      await this.#liquidateOne(ca);
     }
   }
 
@@ -50,7 +41,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
-      const result = await this._liquidateOptimistic(acc);
+      const result = await this.#liquidateOneOptimistic(acc);
       const status = result.isError ? "FAIL" : "OK";
       const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
       if (result.isError) {
@@ -65,7 +56,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     );
   }
 
-  public async _liquidate(ca: CreditAccountData): Promise<void> {
+  async #liquidateOne(ca: CreditAccountData): Promise<void> {
     const logger = this.logger.child({
       account: ca.addr,
       borrower: ca.borrower,
@@ -85,7 +76,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);
-      const receipt = await this.client.liquidate(ca, request);
+      const receipt = await this.client.liquidate(request, logger);
 
       this.notifier.alert(
         new LiquidationSuccessMessage(ca, this.adverb, receipt, pathHuman),
@@ -109,7 +100,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     }
   }
 
-  public async _liquidateOptimistic(
+  async #liquidateOneOptimistic(
     acc: CreditAccountData,
   ): Promise<OptimisticResultV2> {
     const logger = this.logger.child({
@@ -138,7 +129,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         snapshotId = await this.client.anvil.snapshot();
       }
       // ------ Actual liquidation (write request start here) -----
-      const receipt = await this.client.liquidate(acc, request);
+      const receipt = await this.client.liquidate(request, logger);
       logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
       result.isError = receipt.status === "reverted";
       logger.debug(
