@@ -15,10 +15,7 @@ import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
-import type {
-  ILiquidatorService,
-  LiquidatorService,
-} from "../liquidate/index.js";
+import type { ILiquidatorService } from "../liquidate/index.js";
 import type OracleServiceV3 from "../OracleServiceV3.js";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 import AbstractScanService from "./AbstractScanService.js";
@@ -48,7 +45,7 @@ export class ScanServiceV3 extends AbstractScanService {
   redstone!: RedstoneServiceV3;
 
   @DI.Inject(DI.Liquidator)
-  _liquidatorService!: LiquidatorService;
+  liquidatorService!: ILiquidatorService;
 
   #dataCompressor?: IDataCompressorContract;
   #processing: bigint | null = null;
@@ -137,9 +134,9 @@ export class ScanServiceV3 extends AbstractScanService {
     }
 
     if (this.config.optimistic) {
-      await this.liquidateOptimistically(accounts);
+      await this.liquidatorService.liquidateOptimistic(accounts);
     } else {
-      await this.liquidateNormal(accounts);
+      await this.liquidatorService.liquidate(accounts);
     }
   }
 
@@ -380,10 +377,6 @@ export class ScanServiceV3 extends AbstractScanService {
       }
       return true;
     });
-  }
-
-  protected override get liquidatorService(): ILiquidatorService {
-    return this._liquidatorService;
   }
 
   private get dataCompressor(): IDataCompressorContract {

@@ -7,20 +7,13 @@ import {
   type CreditAccountData,
   exceptionsAbis,
 } from "../../data/index.js";
-import { type ILogger, Logger } from "../../log/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
-import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
+import SingularLiquidator from "./SingularLiquidator.js";
+import type { MakeLiquidatableResult } from "./types.js";
 
-export default class LiquidationStrategyV3Full
-  extends AbstractLiquidationStrategyV3
-  implements ILiquidationStrategy<PathFinderCloseResult>
-{
-  public readonly name = "full";
-  public readonly adverb = "fully";
-
-  @Logger("LiquidationStrategyV3Full")
-  logger!: ILogger;
+export default class SingularFullLiquidator extends SingularLiquidator<PathFinderCloseResult> {
+  protected readonly name = "full";
+  protected readonly adverb = "fully";
 
   public async makeLiquidatable(
     ca: CreditAccountData,

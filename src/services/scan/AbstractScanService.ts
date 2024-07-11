@@ -56,46 +56,10 @@ export default abstract class AbstractScanService {
   protected abstract onBlock(block: bigint): Promise<void>;
 
   /**
-   * Liquidate accounts using NORMAL flow
-   * @param accountsToLiquidate
-   */
-  protected async liquidateNormal(
-    accountsToLiquidate: CreditAccountData[],
-  ): Promise<void> {
-    if (!accountsToLiquidate.length) {
-      return;
-    }
-    this.log.warn(`Need to liquidate ${accountsToLiquidate.length} accounts`);
-    for (const ca of accountsToLiquidate) {
-      await this.liquidatorService.liquidate(ca);
-    }
-  }
-
-  /**
    * Liquidate accounts using OPTIMISTIC flow
    * @param accountsToLiquidate
    */
   protected async liquidateOptimistically(
     accounts: CreditAccountData[],
-  ): Promise<void> {
-    const total = accounts.length;
-    const debugS = this.config.debugAccounts ? "selective " : " ";
-    this.log.info(`${debugS}optimistic liquidation for ${total} accounts`);
-
-    for (let i = 0; i < total; i++) {
-      const acc = accounts[i];
-      const result = await this.liquidatorService.liquidateOptimistic(acc);
-      const status = result.isError ? "FAIL" : "OK";
-      const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
-      if (result.isError) {
-        this.log.warn(msg);
-      } else {
-        this.log.info(msg);
-      }
-    }
-    const success = this.optimistic.get().filter(r => !r.isError).length;
-    this.log.info(
-      `optimistic liquidation finished: ${success}/${total} accounts liquidated`,
-    );
-  }
+  ): Promise<void> {}
 }
