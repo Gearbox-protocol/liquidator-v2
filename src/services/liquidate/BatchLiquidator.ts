@@ -9,6 +9,7 @@ import type { Address, TransactionReceipt } from "viem";
 import { parseEventLogs } from "viem";
 
 import type { CreditAccountData } from "../../data/index.js";
+import type { EstimateBatchInput } from "../../utils/ethers-6-temp/pathfinder/viem-types.js";
 import {
   BatchLiquidationErrorMessage,
   BatchLiquidationFinishedMessage,
@@ -73,26 +74,36 @@ export default class BatchLiquidator
   async #liquidateBatch(
     accounts: CreditAccountData[],
   ): Promise<BatchLiquidationOutput> {
-    const input = accounts.map(ca =>
-      this.pathFinder.getEstimateBatchInput(ca, this.config.slippage),
-    );
+    const cms = await this.getCreditManagersV3List();
+    const inputs: EstimateBatchInput[] = [];
+    for (const ca of accounts) {
+      const cm = cms.find(m => ca.creditManager === m.address);
+      if (!cm) {
+        throw new Error(
+          `cannot find credit manager data for ${ca.creditManager}`,
+        );
+      }
+      inputs.push(
+        this.pathFinder.getEstimateBatchInput(ca, cm, this.config.slippage),
+      );
+    }
     const { result } = await this.client.pub.simulateContract({
       account: this.client.account,
       address: this.batchLiquidator,
       abi: iBatchLiquidatorAbi,
       functionName: "estimateBatch",
-      args: [input],
+      args: [inputs],
     });
     const batch: Record<Address, BatchLiquidationResult> = Object.fromEntries(
       result.map(r => [r.creditAccount.toLowerCase(), r]),
     );
     const liquidateBatchInput: LiquidateBatchInput[] = [];
     for (const r of result) {
-      const inp = input.find(
+      const input = inputs.find(
         i => i.creditAccount === r.creditAccount.toLowerCase(),
       );
       this.logger.debug(
-        { executed: r.executed, pathFound: r.pathFound, input: inp },
+        { executed: r.executed, pathFound: r.pathFound, input },
         `estimation for account ${r.creditAccount}`,
       );
       if (r.executed) {

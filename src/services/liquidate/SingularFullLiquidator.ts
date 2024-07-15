@@ -1,12 +1,7 @@
-import { getDecimals } from "@gearbox-protocol/sdk-gov";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import type { Address, SimulateContractReturnType } from "viem";
+import type { SimulateContractReturnType } from "viem";
 
-import {
-  type Balance,
-  type CreditAccountData,
-  exceptionsAbis,
-} from "../../data/index.js";
+import { type CreditAccountData, exceptionsAbis } from "../../data/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type { MakeLiquidatableResult } from "./types.js";
@@ -25,24 +20,12 @@ export default class SingularFullLiquidator extends SingularLiquidator<PathFinde
   public async preview(ca: CreditAccountData): Promise<PathFinderCloseResult> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);
-      const expectedBalances: Record<Address, Balance> = {};
-      const leftoverBalances: Record<Address, Balance> = {};
-      for (const { token, balance, isEnabled } of ca.allBalances) {
-        expectedBalances[token] = { token, balance };
-        // filter out dust, we don't want to swap it
-        const minBalance = 10n ** BigInt(Math.max(8, getDecimals(token)) - 8);
-        // also: gearbox liquidator does not need to swap disabled tokens. third-party liquidators might want to do it
-        if (balance < minBalance || !isEnabled) {
-          leftoverBalances[token] = { token, balance };
-        }
-      }
-      const result = await this.pathFinder.findBestClosePath({
-        creditAccount: ca,
-        creditManager: cm,
-        expectedBalances,
-        leftoverBalances,
-        slippage: this.config.slippage,
-      });
+
+      const result = await this.pathFinder.findBestClosePath(
+        ca,
+        cm,
+        this.config.slippage,
+      );
       if (!result) {
         throw new Error("pathfinder result is empty");
       }
