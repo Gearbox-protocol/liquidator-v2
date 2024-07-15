@@ -9,7 +9,6 @@ build({
   outExtension: { ".js": ".mjs" },
   target: ["node20"],
   sourcemap: "external",
-  dropLabels: ["DEV"],
   banner: {
     js: `
       import { createRequire } from 'module';
@@ -20,7 +19,7 @@ build({
       const __dirname = path.dirname(__filename);
     `,
   },
-  external: ["node-pty", "pino-pretty"],
+  external: ["node-pty"],
 }).catch(e => {
   console.error(e);
   process.exit(1);
