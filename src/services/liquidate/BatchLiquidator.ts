@@ -4,7 +4,9 @@ import {
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import { type Address, parseEventLogs } from "viem";
+import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { Address, TransactionReceipt } from "viem";
+import { parseEventLogs } from "viem";
 
 import type { CreditAccountData } from "../../data/index.js";
 import {
@@ -12,9 +14,15 @@ import {
   BatchLiquidationFinishedMessage,
 } from "../notifier/messages.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
-import type { BatchLiquidationResult, ILiquidatorService } from "./types.js";
+import type { ILiquidatorService } from "./types.js";
+import type { BatchLiquidationResult } from "./viem-types.js";
 
-export default abstract class BatchLiquidator
+interface BatchLiquidationOutput {
+  readonly receipt: TransactionReceipt;
+  readonly results: OptimisticResultV2[];
+}
+
+export default class BatchLiquidator
   extends AbstractLiquidator
   implements ILiquidatorService
 {
@@ -31,13 +39,9 @@ export default abstract class BatchLiquidator
     }
     this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
     try {
-      const result = await this.#liquidateBatch(accounts);
+      const { receipt, results } = await this.#liquidateBatch(accounts);
       this.notifier.notify(
-        new BatchLiquidationFinishedMessage(
-          result.liquidated,
-          result.notLiquidated,
-          result.receipt,
-        ),
+        new BatchLiquidationFinishedMessage(receipt, results),
       );
     } catch (e) {
       const decoded = await this.errorHandler.explain(e);
@@ -53,15 +57,19 @@ export default abstract class BatchLiquidator
   ): Promise<void> {
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
-    const result = await this.#liquidateBatch(accounts);
+    const { results } = await this.#liquidateBatch(accounts);
+    const success = results.filter(r => !r.isError).length;
+    for (const r of results) {
+      this.optimistic.push(r);
+    }
     this.logger.info(
-      `optimistic batch-liquidation finished: ${result.liquidated.length}/${total} accounts liquidated`,
+      `optimistic batch-liquidation finished: ${success}/${total} accounts liquidated`,
     );
   }
 
   async #liquidateBatch(
     accounts: CreditAccountData[],
-  ): Promise<BatchLiquidationResult> {
+  ): Promise<BatchLiquidationOutput> {
     const input = accounts.map(ca =>
       this.pathFinder.getEstimateBatchInput(ca, this.config.slippage),
     );
@@ -72,20 +80,26 @@ export default abstract class BatchLiquidator
       functionName: "estimateBatch",
       args: [input] as any, // TODO: types
     });
+    const batch: Record<Address, BatchLiquidationResult> = Object.fromEntries(
+      result.map(r => [r.creditAccount.toLowerCase(), r]),
+    );
     this.logger.debug(result, "estimated batch");
+
     const { request } = await this.client.pub.simulateContract({
       account: this.client.account,
       address: this.batchLiquidator,
       abi: iBatchLiquidatorAbi,
       functionName: "liquidateBatch",
       args: [
-        result.map(i => ({
-          calls: i.calls,
-          creditAccount: i.creditAccount,
-          creditFacade: accounts.find(
-            ca => ca.addr === i.creditAccount.toLowerCase(),
-          )?.creditFacade!, // TODO: checks
-        })),
+        result
+          .filter(i => i.executed)
+          .map(i => ({
+            calls: i.calls,
+            creditAccount: i.creditAccount,
+            creditFacade: accounts.find(
+              ca => ca.addr === i.creditAccount.toLowerCase(),
+            )?.creditFacade!, // TODO: checks
+          })),
         this.client.address,
       ],
     });
@@ -99,10 +113,45 @@ export default abstract class BatchLiquidator
     const liquidated = new Set(
       logs.map(l => l.args.creditAccount.toLowerCase() as Address),
     );
+    const getError = (a: CreditAccountData): string | undefined => {
+      if (liquidated.has(a.addr)) {
+        return undefined;
+      }
+      const item = batch[a.addr];
+      if (!item) {
+        return "not found in estimateBatch output";
+      }
+      if (item.pathFound) {
+        return "batch path not found";
+      }
+      if (item.executed) {
+        return "cannot execute in estimateBatch";
+      }
+      return "cannot liquidate in batch";
+    };
+    const results = accounts.map(
+      (a): OptimisticResultV2 => ({
+        version: "2",
+        callsHuman: [],
+        balancesBefore: a.filterDust(),
+        balancesAfter: {},
+        hfBefore: a.healthFactor,
+        hfAfter: 0,
+        creditManager: a.creditManager,
+        borrower: a.borrower,
+        account: a.addr,
+        gasUsed: 0, // cannot know for single account
+        calls: [...(batch[a.addr]?.calls ?? [])],
+        pathAmount: "0", // TODO: ??
+        liquidatorPremium: (batch[a.addr]?.profit ?? 0n).toString(10),
+        liquidatorProfit: "0", // cannot compute for single account
+        isError: !liquidated.has(a.addr),
+        error: getError(a),
+      }),
+    );
     return {
       receipt,
-      liquidated: accounts.filter(a => liquidated.has(a.addr)),
-      notLiquidated: accounts.filter(a => !liquidated.has(a.addr)),
+      results,
     };
   }
 

@@ -1,5 +1,5 @@
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
-import type { Address, Hash, Hex, TransactionReceipt } from "viem";
+import type { Address, Hash, Hex } from "viem";
 
 import type {
   CreditAccountData,
@@ -78,10 +78,4 @@ export interface MerkleDistributorInfo {
       proof: Hash[];
     }
   >;
-}
-
-export interface BatchLiquidationResult {
-  receipt: TransactionReceipt;
-  liquidated: CreditAccountData[];
-  notLiquidated: CreditAccountData[];
 }

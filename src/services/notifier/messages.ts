@@ -1,5 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
+import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
@@ -200,27 +201,23 @@ export class BatchLiquidationFinishedMessage
   extends BaseMessage
   implements INotifierMessage
 {
-  #liquidated: CreditAccountData[];
-  #notLiquidated: CreditAccountData[];
+  #liquidated: number;
+  #notLiquidated: number;
 
-  constructor(
-    liquidated: CreditAccountData[],
-    notLiquidated: CreditAccountData[],
-    receipt: TransactionReceipt,
-  ) {
+  constructor(receipt: TransactionReceipt, results: OptimisticResultV2[]) {
     super({ receipt });
-    this.#liquidated = liquidated;
-    this.#notLiquidated = notLiquidated;
+    this.#liquidated = results.filter(r => !r.isError).length;
+    this.#notLiquidated = results.filter(r => !!r.isError).length;
   }
 
   public get plain(): string {
     if (this.receipt?.status === "success") {
-      if (this.#notLiquidated.length === 0) {
-        return `✅ [${this.network}] batch-liquidated ${this.#liquidated.length} accounts:      
+      if (this.#notLiquidated === 0) {
+        return `✅ [${this.network}] batch-liquidated ${this.#liquidated} accounts:      
 Tx receipt: ${this.receiptPlain}
 Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}`;
       } else {
-        return `❌ [${this.network}] batch-liquidated ${this.#liquidated.length} accounts, but failed to liquidate ${this.#notLiquidated.length} more      
+        return `❌ [${this.network}] batch-liquidated ${this.#liquidated} accounts, but failed to liquidate ${this.#notLiquidated} more      
 Tx receipt: ${this.receiptPlain}
 Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}`;
       }
@@ -232,15 +229,15 @@ Tx: ${this.receiptPlain}`;
 
   public get markdown(): string {
     if (this.receipt?.status === "success") {
-      if (this.#notLiquidated.length === 0) {
+      if (this.#notLiquidated === 0) {
         return md.build(
-          md`✅ [${this.network}] batch-liquidated ${this.#liquidated.length} accounts
+          md`✅ [${this.network}] batch-liquidated ${this.#liquidated} accounts
 Tx receipt: ${this.receiptMd}
 Gas used: ${md.bold(this.receipt?.gasUsed?.toLocaleString("en"))}`,
         );
       } else {
         return md.build(
-          md`❌ [${this.network}] batch-liquidated ${this.#liquidated.length} accounts, but failed to liquidate ${this.#notLiquidated.length} more
+          md`❌ [${this.network}] batch-liquidated ${this.#liquidated} accounts, but failed to liquidate ${this.#notLiquidated} more
 Tx receipt: ${this.receiptMd}
 Gas used: ${md.bold(this.receipt?.gasUsed?.toLocaleString("en"))}`,
         );

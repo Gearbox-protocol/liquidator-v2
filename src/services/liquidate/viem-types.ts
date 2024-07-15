@@ -1,4 +1,5 @@
 import type {
+  iBatchLiquidatorAbi,
   iLiquidatorAbi,
   iPriceHelperAbi,
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
@@ -20,5 +21,14 @@ export type ILiquidatorContract = GetContractReturnType<
 export type TokenPriceInfo = ArrayElementType<
   AbiParameterToPrimitiveType<
     ExtractAbiFunction<typeof iPriceHelperAbi, "previewTokens">["outputs"]["0"]
+  >
+>;
+
+export type BatchLiquidationResult = ArrayElementType<
+  AbiParameterToPrimitiveType<
+    ExtractAbiFunction<
+      typeof iBatchLiquidatorAbi,
+      "estimateBatch"
+    >["outputs"]["0"]
   >
 >;
