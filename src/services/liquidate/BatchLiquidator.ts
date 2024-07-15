@@ -88,6 +88,13 @@ export default class BatchLiquidator
     );
     const liquidateBatchInput: LiquidateBatchInput[] = [];
     for (const r of result) {
+      const inp = input.find(
+        i => i.creditAccount === r.creditAccount.toLowerCase(),
+      );
+      this.logger.debug(
+        { executed: r.executed, pathFound: r.pathFound, input: inp },
+        `estimation for account ${r.creditAccount}`,
+      );
       if (r.executed) {
         const acc = accounts.find(
           a => a.addr === r.creditAccount.toLowerCase(),
