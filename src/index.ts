@@ -4,7 +4,7 @@ import "./services/Client.js";
 import "./services/HealthCheckerService.js";
 import "./services/OracleServiceV3.js";
 import "./services/RedstoneServiceV3.js";
-import "./services/scan/index.js";
+import "./services/scanner/index.js";
 import "./services/liquidate/index.js";
 import "./services/output/index.js";
 import "./services/notifier/index.js";

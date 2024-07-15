@@ -10,15 +10,17 @@ import {
 } from "@gearbox-protocol/types/abi";
 import { getContract } from "viem";
 
+import type { Config } from "../../config/index.js";
 import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
+import type { AddressProviderService } from "../AddressProviderService.js";
+import type Client from "../Client.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
 import type OracleServiceV3 from "../OracleServiceV3.js";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
-import AbstractScanService from "./AbstractScanService.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -34,9 +36,18 @@ interface AccountSelection {
 }
 
 @DI.Injectable(DI.Scanner)
-export class ScanServiceV3 extends AbstractScanService {
+export class Scanner {
   @Logger("Scanner")
   log!: ILogger;
+
+  @DI.Inject(DI.Config)
+  config!: Config;
+
+  @DI.Inject(DI.AddressProvider)
+  addressProvider!: AddressProviderService;
+
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   @DI.Inject(DI.Oracle)
   oracle!: OracleServiceV3;
@@ -51,8 +62,10 @@ export class ScanServiceV3 extends AbstractScanService {
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
+  #lastUpdated = 0n;
 
-  protected override async _launch(): Promise<void> {
+  public async launch(): Promise<void> {
+    await this.liquidatorService.launch();
     if (this.config.restakingWorkaround) {
       await this.#setupRestakingWorkaround();
     }
@@ -70,10 +83,15 @@ export class ScanServiceV3 extends AbstractScanService {
     await this.oracle.launch(block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    await this.updateAccounts(this.config.optimistic ? undefined : block);
+    await this.#updateAccounts(this.config.optimistic ? undefined : block);
+    if (!this.config.optimistic) {
+      this.client.pub.watchBlockNumber({
+        onBlockNumber: n => this.#onBlock(n),
+      });
+    }
   }
 
-  protected override async onBlock(blockNumber: bigint): Promise<void> {
+  async #onBlock(blockNumber: bigint): Promise<void> {
     if (this.#processing) {
       this.log.debug(
         `skipping block ${blockNumber}, still processing block ${this.#processing}`,
@@ -82,15 +100,16 @@ export class ScanServiceV3 extends AbstractScanService {
     }
     this.#processing = blockNumber;
     await this.oracle.update(blockNumber);
-    await this.updateAccounts(blockNumber);
+    await this.#updateAccounts(blockNumber);
     this.#processing = null;
+    this.#lastUpdated = blockNumber;
   }
 
   /**
    * Loads new data and recompute all health factors
    * @param atBlock Fiex block for archive node which is needed to get data
    */
-  protected async updateAccounts(atBlock?: bigint): Promise<void> {
+  async #updateAccounts(atBlock?: bigint): Promise<void> {
     const start = new Date().getTime();
     const blockS = atBlock ? ` in ${atBlock}` : "";
     let [accounts, failedTokens] = await this.#potentialLiquidations(
@@ -384,6 +403,10 @@ export class ScanServiceV3 extends AbstractScanService {
       throw new Error("data compressor not initialized");
     }
     return this.#dataCompressor;
+  }
+
+  public get lastUpdated(): bigint {
+    return this.#lastUpdated;
   }
 }
 
