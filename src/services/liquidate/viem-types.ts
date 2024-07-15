@@ -32,3 +32,12 @@ export type BatchLiquidationResult = ArrayElementType<
     >["outputs"]["0"]
   >
 >;
+
+export type LiquidateBatchInput = ArrayElementType<
+  AbiParameterToPrimitiveType<
+    ExtractAbiFunction<
+      typeof iBatchLiquidatorAbi,
+      "liquidateBatch"
+    >["inputs"]["0"]
+  >
+>;

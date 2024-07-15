@@ -15,7 +15,10 @@ import {
 } from "../notifier/messages.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
 import type { ILiquidatorService } from "./types.js";
-import type { BatchLiquidationResult } from "./viem-types.js";
+import type {
+  BatchLiquidationResult,
+  LiquidateBatchInput,
+} from "./viem-types.js";
 
 interface BatchLiquidationOutput {
   readonly receipt: TransactionReceipt;
@@ -78,32 +81,47 @@ export default class BatchLiquidator
       address: this.batchLiquidator,
       abi: iBatchLiquidatorAbi,
       functionName: "estimateBatch",
-      args: [input] as any, // TODO: types
+      args: [input],
     });
     const batch: Record<Address, BatchLiquidationResult> = Object.fromEntries(
       result.map(r => [r.creditAccount.toLowerCase(), r]),
     );
-    this.logger.debug(result, "estimated batch");
+    const liquidateBatchInput: LiquidateBatchInput[] = [];
+    for (const r of result) {
+      if (r.executed) {
+        const acc = accounts.find(
+          a => a.addr === r.creditAccount.toLowerCase(),
+        );
+        if (acc) {
+          liquidateBatchInput.push({
+            calls: r.calls,
+            creditAccount: r.creditAccount,
+            creditFacade: acc.creditFacade,
+          });
+        }
+      }
+    }
+    this.logger.debug(
+      {
+        accounts: accounts.length,
+        outputSize: result.length,
+        executed: liquidateBatchInput.length,
+      },
+      "estimated batch",
+    );
 
     const { request } = await this.client.pub.simulateContract({
       account: this.client.account,
       address: this.batchLiquidator,
       abi: iBatchLiquidatorAbi,
       functionName: "liquidateBatch",
-      args: [
-        result
-          .filter(i => i.executed)
-          .map(i => ({
-            calls: i.calls,
-            creditAccount: i.creditAccount,
-            creditFacade: accounts.find(
-              ca => ca.addr === i.creditAccount.toLowerCase(),
-            )?.creditFacade!, // TODO: checks
-          })),
-        this.client.address,
-      ],
+      args: [liquidateBatchInput, this.client.address],
     });
     const receipt = await this.client.liquidate(request as any, this.logger); // TODO: types
+    this.logger.debug(
+      { tx: receipt.transactionHash, gasUsed: receipt.gasUsed },
+      "liquidated batch",
+    );
 
     const logs = parseEventLogs({
       abi: iCreditFacadeV3Abi,
@@ -113,6 +131,7 @@ export default class BatchLiquidator
     const liquidated = new Set(
       logs.map(l => l.args.creditAccount.toLowerCase() as Address),
     );
+    this.logger.debug(`emitted ${liquidated.size} liquidation events`);
     const getError = (a: CreditAccountData): string | undefined => {
       if (liquidated.has(a.addr)) {
         return undefined;
@@ -121,10 +140,10 @@ export default class BatchLiquidator
       if (!item) {
         return "not found in estimateBatch output";
       }
-      if (item.pathFound) {
+      if (!item.pathFound) {
         return "batch path not found";
       }
-      if (item.executed) {
+      if (!item.executed) {
         return "cannot execute in estimateBatch";
       }
       return "cannot liquidate in batch";
