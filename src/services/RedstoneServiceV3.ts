@@ -233,7 +233,7 @@ export class RedstoneServiceV3 {
       dataServiceId,
       dataFeeds: [dataFeedId],
       uniqueSignersCount,
-      historicalTimestamp: this.#optimisticTimestamp,
+      // historicalTimestamp: this.#optimisticTimestamp, // TODO: this was temporary disabled to test redstone bug?
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
