@@ -38,7 +38,11 @@ export type RedstonePriceFeed = Extract<
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
-const CACHE_BLOCKLIST = new Set(["rsETH_FUNDAMENTAL", "weETH_FUNDAMENTAL"]);
+const CACHE_BLOCKLIST = new Set([
+  "rsETH_FUNDAMENTAL",
+  "weETH_FUNDAMENTAL",
+  "ezETH_FUNDAMENTAL",
+]);
 
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
