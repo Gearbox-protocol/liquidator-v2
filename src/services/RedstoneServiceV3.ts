@@ -38,6 +38,8 @@ export type RedstonePriceFeed = Extract<
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
+const CACHE_BLOCKLIST = new Set(["rsETH_FUNDAMENTAL"]);
+
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
   @Logger("Redstone")
@@ -215,6 +217,8 @@ export class RedstoneServiceV3 {
     dataFeedId: string,
     uniqueSignersCount: number,
   ): Promise<PriceOnDemandExtras> {
+    const cacheAllowed =
+      this.config.optimistic && !CACHE_BLOCKLIST.has(dataFeedId);
     const key = redstoneCacheKey(
       token,
       reserve,
@@ -222,7 +226,7 @@ export class RedstoneServiceV3 {
       dataFeedId,
       uniqueSignersCount,
     );
-    if (this.config.optimistic) {
+    if (cacheAllowed) {
       if (this.#optimisticCache.has(key)) {
         this.log.debug(`using cached response for ${key}`);
         return this.#optimisticCache.get(key)!;
@@ -233,7 +237,9 @@ export class RedstoneServiceV3 {
       dataServiceId,
       dataFeeds: [dataFeedId],
       uniqueSignersCount,
-      // historicalTimestamp: this.#optimisticTimestamp, // TODO: this was temporary disabled to test redstone bug?
+      historicalTimestamp: CACHE_BLOCKLIST.has(dataFeedId)
+        ? undefined
+        : this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
@@ -277,7 +283,7 @@ export class RedstoneServiceV3 {
       ts: result[0][1],
     };
 
-    if (this.config.optimistic) {
+    if (cacheAllowed) {
       this.#optimisticCache.set(key, response);
     }
 
