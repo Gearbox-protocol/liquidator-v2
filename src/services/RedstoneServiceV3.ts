@@ -71,22 +71,13 @@ export class RedstoneServiceV3 {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
 
     if (this.config.optimistic) {
-      const block = await this.client.pub.getBlock({
-        blockNumber: this.client.anvilForkBlock,
-      });
-      if (!block) {
-        throw new Error(`cannot get latest block`);
-      }
       // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/c7569a8eb7da1d3ad6209dfcf59c7ca508ea947b/packages/sdk/src/request-data-packages.ts#L82
       // we round the timestamp to full minutes for being compatible with
       // oracle-nodes, which usually work with rounded 10s and 60s intervals
       this.#optimisticTimestamp =
-        10 * Math.floor(Number(block.timestamp) / 10) * 1000;
-      const delta = Math.ceil(
-        (new Date().getTime() - this.#optimisticTimestamp) / 1000,
-      );
+        60_000 * Math.floor(new Date().getTime() / 60_000);
       this.log.info(
-        `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${delta}s)`,
+        `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
       );
     }
   }
