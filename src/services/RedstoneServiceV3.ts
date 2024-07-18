@@ -81,8 +81,11 @@ export class RedstoneServiceV3 {
       // oracle-nodes, which usually work with rounded 10s and 60s intervals
       this.#optimisticTimestamp =
         10 * Math.floor(Number(block.timestamp) / 10) * 1000;
+      const delta = Math.ceil(
+        (new Date().getTime() - this.#optimisticTimestamp) / 1000,
+      );
       this.log.info(
-        `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
+        `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${delta}s)`,
       );
     }
   }
