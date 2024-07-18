@@ -27,7 +27,7 @@ import {
   iDegenDistributorV3Abi,
 } from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
-import { getContract, parseEther } from "viem";
+import { parseEther } from "viem";
 
 import {
   type CreditAccountData,
@@ -42,7 +42,7 @@ import type {
   MerkleDistributorInfo,
   PartialLiquidationPreview,
 } from "./types.js";
-import type { IPriceHelperContract, TokenPriceInfo } from "./viem-types.js";
+import type { TokenPriceInfo } from "./viem-types.js";
 
 interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   /**
@@ -62,7 +62,7 @@ export default class LiquidationStrategyV3Partial
   logger!: ILogger;
 
   #partialLiquidator?: Address;
-  #priceHelper?: IPriceHelperContract;
+  #priceHelper?: Address;
   #configuratorAddr?: Address;
   #registeredCMs: Record<Address, boolean> = {};
 
@@ -78,12 +78,8 @@ export default class LiquidationStrategyV3Partial
       contractsByNetwork[this.config.network].AAVE_V3_LENDING_POOL;
     this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
-    this.#priceHelper = await this.#deployPriceHelper();
-    this.#partialLiquidator = await this.#deployPartialLiquidator(
-      router,
-      bot,
-      aavePool,
-    );
+    await this.#deployPriceHelper();
+    await this.#deployPartialLiquidator(router, bot, aavePool);
     await this.#configurePartialLiquidator(router, bot);
   }
 
@@ -241,10 +237,12 @@ export default class LiquidationStrategyV3Partial
     const priceUpdates = await this.redstone.dataCompressorUpdates(ca);
     // this helper contract fetches prices while trying to ignore failed price feeds
     // prices here are not critical, as they're used for sorting and estimation and only in optimistic mode
-    const tokens = await this.priceHelper.simulate.previewTokens([
-      ca.addr,
-      priceUpdates,
-    ]);
+    const tokens = await this.client.pub.simulateContract({
+      address: this.priceHelper,
+      abi: [...iPriceHelperAbi, ...exceptionsAbis],
+      functionName: "previewTokens",
+      args: [ca.addr, priceUpdates as any],
+    });
     // Sort by weighted value descending, but underlying token comes last
     return tokens.result
       .map(
@@ -362,7 +360,7 @@ export default class LiquidationStrategyV3Partial
     router: Address,
     bot: Address,
     aavePool: Address,
-  ): Promise<Address> {
+  ): Promise<void> {
     let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
     if (!partialLiquidatorAddress) {
       this.logger.debug("deploying partial liquidator");
@@ -433,10 +431,10 @@ export default class LiquidationStrategyV3Partial
     this.logger.info(
       `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
     );
-    return partialLiquidatorAddress;
+    this.#partialLiquidator = partialLiquidatorAddress;
   }
 
-  async #deployPriceHelper(): Promise<IPriceHelperContract | undefined> {
+  async #deployPriceHelper(): Promise<void> {
     if (!this.config.optimistic) {
       return undefined;
     }
@@ -459,12 +457,7 @@ export default class LiquidationStrategyV3Partial
     this.logger.debug(
       `deployed PriceHelper at ${priceHelperAddr} in tx ${hash}`,
     );
-
-    return getContract({
-      abi: iPriceHelperAbi,
-      address: priceHelperAddr,
-      client: this.client.pub,
-    });
+    this.#priceHelper = priceHelperAddr;
   }
 
   async #configurePartialLiquidator(
@@ -687,7 +680,7 @@ export default class LiquidationStrategyV3Partial
     return this.#partialLiquidator;
   }
 
-  private get priceHelper(): IPriceHelperContract {
+  private get priceHelper(): Address {
     if (!this.config.optimistic) {
       throw new Error("price helper is only available in optimistic mode");
     }
