@@ -108,7 +108,12 @@ export default class Client {
   public async launch(): Promise<void> {
     const { ethProviderRpcs, chainId, network, optimistic, privateKey } =
       this.config;
-    const rpcs = ethProviderRpcs.map(url => http(url, { timeout: 120_000 }));
+    const rpcs = ethProviderRpcs.map(url =>
+      http(url, {
+        timeout: optimistic ? 240_000 : 10_000,
+        retryCount: optimistic ? 3 : undefined,
+      }),
+    );
     const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
     const chain = defineChain({
       ...CHAINS[network],
