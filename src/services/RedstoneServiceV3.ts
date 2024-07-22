@@ -38,10 +38,10 @@ export type RedstonePriceFeed = Extract<
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
-const CACHE_BLOCKLIST = new Set<string>([
-  // "rsETH_FUNDAMENTAL",
-  // "weETH_FUNDAMENTAL",
-  // "ezETH_FUNDAMENTAL",
+const HISTORICAL_BLOCKLIST = new Set<string>([
+  "rsETH_FUNDAMENTAL",
+  "weETH_FUNDAMENTAL",
+  "ezETH_FUNDAMENTAL",
 ]);
 
 @DI.Injectable(DI.Redstone)
@@ -241,8 +241,7 @@ export class RedstoneServiceV3 {
     logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras> {
     const logger = this.logger.child(logContext);
-    const cacheAllowed =
-      this.config.optimistic && !CACHE_BLOCKLIST.has(dataFeedId);
+    const cacheAllowed = this.config.optimistic;
     const key = redstoneCacheKey(
       token,
       reserve,
@@ -261,7 +260,7 @@ export class RedstoneServiceV3 {
       dataServiceId,
       dataPackagesIds: [dataFeedId],
       uniqueSignersCount,
-      historicalTimestamp: CACHE_BLOCKLIST.has(dataFeedId)
+      historicalTimestamp: HISTORICAL_BLOCKLIST.has(dataFeedId)
         ? undefined
         : this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
