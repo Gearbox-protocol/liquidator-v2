@@ -180,6 +180,7 @@ export class RedstoneServiceV3 {
         await this.client.anvil.setNextBlockTimestamp({
           timestamp: BigInt(redstoneTs),
         });
+        await this.client.anvil.mine({ blocks: 1 });
         block = await this.client.pub.getBlock({ blockTag: "latest" });
         logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
