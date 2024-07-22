@@ -47,7 +47,7 @@ const CACHE_BLOCKLIST = new Set<string>([
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
   @Logger("Redstone")
-  log!: ILogger;
+  logger!: ILogger;
 
   @DI.Inject(DI.Config)
   config!: Config;
@@ -88,7 +88,7 @@ export class RedstoneServiceV3 {
       const fromNowTs = 10_000 * Math.floor(now / 10_000 - 10_000);
       this.#optimisticTimestamp = Math.min(anvilTs, fromNowTs);
       const delta = Math.floor(now / 1000) - this.#optimisticTimestamp;
-      this.log.info(
+      this.logger.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${delta}s)`,
       );
     }
@@ -97,7 +97,9 @@ export class RedstoneServiceV3 {
   public async updatesForTokens(
     tokens: string[],
     activeOnly: boolean,
+    logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras[]> {
+    const logger = this.logger.child(logContext);
     const redstoneFeeds = this.oracle.getRedstoneFeeds(activeOnly);
     const tickers = tickerInfoTokensByNetwork[this.config.network];
 
@@ -113,8 +115,8 @@ export class RedstoneServiceV3 {
       const ticker = tickers[symb];
       if (ticker) {
         if (this.oracle.hasFeed(ticker.address)) {
-          this.log.debug(
-            ticker,
+          logger.debug(
+            { ticker },
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
           redstoneUpdates.push({
@@ -123,7 +125,7 @@ export class RedstoneServiceV3 {
             reserve: false, // tickers are always added as main feed
           });
         } else {
-          this.log.debug(
+          logger.debug(
             `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
           );
         }
@@ -133,7 +135,7 @@ export class RedstoneServiceV3 {
       return [];
     }
 
-    this.log?.debug(
+    logger.debug(
       `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
     const result = await Promise.all(
@@ -144,6 +146,7 @@ export class RedstoneServiceV3 {
           "redstone-primary-prod",
           dataFeedId,
           REDSTONE_SIGNERS.signersThreshold,
+          logContext,
         ),
       ),
     );
@@ -161,12 +164,12 @@ export class RedstoneServiceV3 {
       const realtimeDelta = Math.floor(
         new Date().getTime() / 1000 - redstoneTs,
       );
-      this.log.debug(
+      logger.debug(
         { tag: "timing" },
         `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${formatTs(block)}: ${result.map(formatTs)}`,
       );
       if (delta < 0) {
-        this.log?.debug(
+        logger.debug(
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
@@ -174,7 +177,7 @@ export class RedstoneServiceV3 {
           timestamp: BigInt(redstoneTs),
         });
         block = await this.client.pub.getBlock({ blockTag: "latest" });
-        this.log?.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
+        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
     }
 
@@ -213,7 +216,11 @@ export class RedstoneServiceV3 {
         accTokens.push(token);
       }
     }
-    const priceUpdates = await this.updatesForTokens(accTokens, activeOnly);
+    const priceUpdates = await this.updatesForTokens(accTokens, activeOnly, {
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: ca.managerName,
+    });
     return priceUpdates.map(({ token, reserve, callData }) => ({
       token: token as Address,
       reserve,
@@ -227,7 +234,9 @@ export class RedstoneServiceV3 {
     dataServiceId: string,
     dataFeedId: string,
     uniqueSignersCount: number,
+    logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras> {
+    const logger = this.logger.child(logContext);
     const cacheAllowed =
       this.config.optimistic && !CACHE_BLOCKLIST.has(dataFeedId);
     const key = redstoneCacheKey(
@@ -239,7 +248,7 @@ export class RedstoneServiceV3 {
     );
     if (cacheAllowed) {
       if (this.#optimisticCache.has(key)) {
-        this.log.debug(`using cached response for ${key}`);
+        logger.debug(`using cached response for ${key}`);
         return this.#optimisticCache.get(key)!;
       }
     }
