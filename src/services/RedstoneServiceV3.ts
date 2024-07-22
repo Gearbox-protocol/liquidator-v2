@@ -87,7 +87,7 @@ export class RedstoneServiceV3 {
       const anvilTs = 10 * Math.floor(Number(block.timestamp) / 10) * 1000;
       const fromNowTs = 10_000 * Math.floor(now / 10_000 - 10_000);
       this.#optimisticTimestamp = Math.min(anvilTs, fromNowTs);
-      const delta = Math.ceil((now - this.#optimisticTimestamp) / 1000);
+      const delta = Math.floor(now / 1000) - this.#optimisticTimestamp;
       this.log.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${delta}s)`,
       );
