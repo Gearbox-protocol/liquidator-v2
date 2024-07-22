@@ -83,13 +83,13 @@ export class RedstoneServiceV3 {
       //
       // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
       // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
-      const now = new Date().getTime();
-      const anvilTs = 10 * Math.floor(Number(block.timestamp) / 10) * 1000;
-      const fromNowTs = 10_000 * Math.floor(now / 10_000 - 1);
-      this.#optimisticTimestamp = Math.min(anvilTs, fromNowTs);
-      const delta = Math.floor(now / 1000) - this.#optimisticTimestamp;
+      const nowMs = new Date().getTime();
+      const anvilTsS = 10 * Math.floor(Number(block.timestamp) / 10);
+      const fromNowTsS = 10 * Math.floor(nowMs / 10_000 - 1);
+      this.#optimisticTimestamp = Math.min(anvilTsS, fromNowTsS);
+      const deltaS = Math.floor(nowMs / 1000) - this.#optimisticTimestamp;
       this.logger.info(
-        `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${delta}s)`,
+        `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${deltaS}s)`,
       );
     }
   }
