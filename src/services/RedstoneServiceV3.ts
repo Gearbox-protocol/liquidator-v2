@@ -40,9 +40,9 @@ export type RedstonePriceFeed = Extract<
 >;
 
 const HISTORICAL_BLOCKLIST = new Set<string>([
-  "rsETH_FUNDAMENTAL",
-  "weETH_FUNDAMENTAL",
-  "ezETH_FUNDAMENTAL",
+  // "rsETH_FUNDAMENTAL",
+  // "weETH_FUNDAMENTAL",
+  // "ezETH_FUNDAMENTAL",
 ]);
 
 @DI.Injectable(DI.Redstone)
@@ -63,7 +63,7 @@ export class RedstoneServiceV3 {
   client!: Client;
 
   /**
-   * Timestamp to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
+   * Timestamp (in ms) to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
    */
   #optimisticTimestamp?: number;
   #optimisticCache: Map<string, PriceOnDemandExtras> = new Map();
@@ -85,14 +85,14 @@ export class RedstoneServiceV3 {
       // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
       // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
       const nowMs = new Date().getTime();
-      const redstoneIntervalS = 60;
-      const anvilTsS =
-        redstoneIntervalS *
-        Math.floor(Number(block.timestamp) / redstoneIntervalS);
-      const fromNowTsS =
-        redstoneIntervalS * Math.floor(nowMs / (redstoneIntervalS * 1000) - 1);
-      this.#optimisticTimestamp = Math.min(anvilTsS, fromNowTsS);
-      const deltaS = Math.floor(nowMs / 1000) - this.#optimisticTimestamp;
+      const redstoneIntervalMs = 60_000;
+      const anvilTsMs =
+        redstoneIntervalMs *
+        Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
+      const fromNowTsMs =
+        redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
+      this.#optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
+      const deltaS = Math.floor((nowMs - this.#optimisticTimestamp) / 1000);
       this.logger.info(
         `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${deltaS}s)`,
       );
