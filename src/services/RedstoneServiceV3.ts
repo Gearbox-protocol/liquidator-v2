@@ -16,6 +16,7 @@ import {
   encodeFunctionData,
   parseAbiParameters,
   toBytes,
+  toHex,
 } from "viem";
 
 import type { Config } from "../config/index.js";
@@ -177,12 +178,15 @@ export class RedstoneServiceV3 {
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        await this.client.anvil.setNextBlockTimestamp({
-          timestamp: BigInt(redstoneTs),
-        });
-        await this.client.anvil.mine({ blocks: 1 });
+        const mineDetailed = await this.client.anvil.request({
+          method: "evm_mine_detailed",
+          params: [toHex(redstoneTs)],
+        } as any);
         block = await this.client.pub.getBlock({ blockTag: "latest" });
-        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
+        logger.debug(
+          { tag: "timing", mineDetailed },
+          `new block ts: ${formatTs(block)}`,
+        );
       }
     }
 
