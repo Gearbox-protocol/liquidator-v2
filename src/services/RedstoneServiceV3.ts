@@ -94,7 +94,7 @@ export class RedstoneServiceV3 {
       this.#optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
       const deltaS = Math.floor((nowMs - this.#optimisticTimestamp) / 1000);
       this.logger.info(
-        `will use optimistic timestamp: ${this.#optimisticTimestamp} (delta: ${deltaS}s)`,
+        `will use optimistic timestamp: ${new Date(this.#optimisticTimestamp)} (${this.#optimisticTimestamp}, delta: ${deltaS}s)`,
       );
     }
   }
