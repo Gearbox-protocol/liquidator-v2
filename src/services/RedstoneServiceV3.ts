@@ -178,15 +178,11 @@ export class RedstoneServiceV3 {
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        const mineDetailed = await this.client.anvil.request({
+        [block] = await this.client.anvil.request({
           method: "evm_mine_detailed",
           params: [toHex(redstoneTs)],
-        } as any);
-        block = await this.client.pub.getBlock({ blockTag: "latest" });
-        logger.debug(
-          { tag: "timing", mineDetailed },
-          `new block ts: ${formatTs(block)}`,
-        );
+        });
+        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
     }
 

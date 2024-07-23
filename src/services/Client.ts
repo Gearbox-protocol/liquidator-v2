@@ -5,10 +5,12 @@ import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type { Abi } from "abitype";
 import type {
   Address,
+  Block,
   Chain,
   ContractFunctionArgs,
   ContractFunctionName,
   EncodeFunctionDataParameters,
+  Hex,
   PrivateKeyAccount,
   PublicClient,
   SimulateContractParameters,
@@ -69,6 +71,11 @@ type AnvilRPCSchema = [
     Method: "anvil_nodeInfo";
     Parameters: [];
     ReturnType: AnvilNodeInfo;
+  },
+  {
+    Method: "evm_mine_detailed";
+    Parameters: [Hex];
+    ReturnType: Block<Hex>[];
   },
 ];
 
