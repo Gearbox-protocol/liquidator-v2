@@ -87,6 +87,7 @@ export class ScanServiceV3 extends AbstractScanService {
     await this.oracle.update(blockNumber);
     await this.updateAccounts(blockNumber);
     this.#processing = null;
+    this._lastUpdated = blockNumber;
   }
 
   /**
