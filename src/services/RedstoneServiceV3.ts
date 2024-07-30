@@ -16,6 +16,7 @@ import {
   encodeFunctionData,
   parseAbiParameters,
   toBytes,
+  toHex,
 } from "viem";
 
 import type { Config } from "../config/index.js";
@@ -38,10 +39,16 @@ export type RedstonePriceFeed = Extract<
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
 
+const HISTORICAL_BLOCKLIST = new Set<string>([
+  // "rsETH_FUNDAMENTAL",
+  // "weETH_FUNDAMENTAL",
+  // "ezETH_FUNDAMENTAL",
+]);
+
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
   @Logger("Redstone")
-  log!: ILogger;
+  logger!: ILogger;
 
   @DI.Inject(DI.Config)
   config!: Config;
@@ -56,7 +63,7 @@ export class RedstoneServiceV3 {
   client!: Client;
 
   /**
-   * Timestamp to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
+   * Timestamp (in ms) to use to get historical data instead in optimistic mode, so that we use the same redstone data for all the liquidations
    */
   #optimisticTimestamp?: number;
   #optimisticCache: Map<string, PriceOnDemandExtras> = new Map();
@@ -69,14 +76,25 @@ export class RedstoneServiceV3 {
         blockNumber: this.client.anvilForkBlock,
       });
       if (!block) {
-        throw new Error(`cannot get latest block`);
+        throw new Error("cannot get latest block");
       }
+      // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/c7569a8eb7da1d3ad6209dfcf59c7ca508ea947b/packages/sdk/src/request-data-packages.ts#L82
       // we round the timestamp to full minutes for being compatible with
       // oracle-nodes, which usually work with rounded 10s and 60s intervals
-      this.#optimisticTimestamp =
-        10 * Math.floor(Number(block.timestamp) / 10) * 1000;
-      this.log.info(
-        `will use optimistic timestamp: ${this.#optimisticTimestamp}`,
+      //
+      // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
+      // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
+      const nowMs = new Date().getTime();
+      const redstoneIntervalMs = 60_000;
+      const anvilTsMs =
+        redstoneIntervalMs *
+        Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
+      const fromNowTsMs =
+        redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
+      this.#optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
+      const deltaS = Math.floor((nowMs - this.#optimisticTimestamp) / 1000);
+      this.logger.info(
+        `will use optimistic timestamp: ${new Date(this.#optimisticTimestamp)} (${this.#optimisticTimestamp}, delta: ${deltaS}s)`,
       );
     }
   }
@@ -84,7 +102,9 @@ export class RedstoneServiceV3 {
   public async updatesForTokens(
     tokens: string[],
     activeOnly: boolean,
+    logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras[]> {
+    const logger = this.logger.child(logContext);
     const redstoneFeeds = this.oracle.getRedstoneFeeds(activeOnly);
     const tickers = tickerInfoTokensByNetwork[this.config.network];
 
@@ -100,8 +120,8 @@ export class RedstoneServiceV3 {
       const ticker = tickers[symb];
       if (ticker) {
         if (this.oracle.hasFeed(ticker.address)) {
-          this.log.debug(
-            ticker,
+          logger.debug(
+            { ticker },
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
           redstoneUpdates.push({
@@ -110,7 +130,7 @@ export class RedstoneServiceV3 {
             reserve: false, // tickers are always added as main feed
           });
         } else {
-          this.log.debug(
+          logger.debug(
             `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
           );
         }
@@ -120,7 +140,7 @@ export class RedstoneServiceV3 {
       return [];
     }
 
-    this.log?.debug(
+    logger.debug(
       `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
     const result = await Promise.all(
@@ -131,6 +151,7 @@ export class RedstoneServiceV3 {
           "redstone-primary-prod",
           dataFeedId,
           REDSTONE_SIGNERS.signersThreshold,
+          logContext,
         ),
       ),
     );
@@ -148,20 +169,20 @@ export class RedstoneServiceV3 {
       const realtimeDelta = Math.floor(
         new Date().getTime() / 1000 - redstoneTs,
       );
-      this.log.debug(
+      logger.debug(
         { tag: "timing" },
         `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${formatTs(block)}: ${result.map(formatTs)}`,
       );
       if (delta < 0) {
-        this.log?.debug(
+        logger.debug(
           { tag: "timing" },
           `warp, because block ts ${formatTs(block)} < ${formatTs(redstoneTs)} redstone ts (${Math.ceil(-delta / 60)} min)`,
         );
-        await this.client.anvil.setNextBlockTimestamp({
-          timestamp: BigInt(redstoneTs),
+        [block] = await this.client.anvil.request({
+          method: "evm_mine_detailed",
+          params: [toHex(redstoneTs)],
         });
-        block = await this.client.pub.getBlock({ blockTag: "latest" });
-        this.log?.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
+        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       }
     }
 
@@ -200,7 +221,11 @@ export class RedstoneServiceV3 {
         accTokens.push(token);
       }
     }
-    const priceUpdates = await this.updatesForTokens(accTokens, activeOnly);
+    const priceUpdates = await this.updatesForTokens(accTokens, activeOnly, {
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: ca.managerName,
+    });
     return priceUpdates.map(({ token, reserve, callData }) => ({
       token: token as Address,
       reserve,
@@ -214,7 +239,10 @@ export class RedstoneServiceV3 {
     dataServiceId: string,
     dataFeedId: string,
     uniqueSignersCount: number,
+    logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras> {
+    const logger = this.logger.child(logContext);
+    const cacheAllowed = this.config.optimistic;
     const key = redstoneCacheKey(
       token,
       reserve,
@@ -222,18 +250,20 @@ export class RedstoneServiceV3 {
       dataFeedId,
       uniqueSignersCount,
     );
-    if (this.config.optimistic) {
+    if (cacheAllowed) {
       if (this.#optimisticCache.has(key)) {
-        this.log.debug(`using cached response for ${key}`);
+        logger.debug(`using cached response for ${key}`);
         return this.#optimisticCache.get(key)!;
       }
     }
 
     const dataPayload = await new DataServiceWrapper({
       dataServiceId,
-      dataFeeds: [dataFeedId],
+      dataPackagesIds: [dataFeedId],
       uniqueSignersCount,
-      historicalTimestamp: this.#optimisticTimestamp,
+      historicalTimestamp: HISTORICAL_BLOCKLIST.has(dataFeedId)
+        ? undefined
+        : this.#optimisticTimestamp,
     }).prepareRedstonePayload(true);
 
     const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
@@ -277,7 +307,7 @@ export class RedstoneServiceV3 {
       ts: result[0][1],
     };
 
-    if (this.config.optimistic) {
+    if (cacheAllowed) {
       this.#optimisticCache.set(key, response);
     }
 
