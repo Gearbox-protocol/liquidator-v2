@@ -42,17 +42,21 @@ export default class BatchLiquidator
       return;
     }
     this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
-    try {
-      const { receipt, results } = await this.#liquidateBatch(accounts);
-      this.notifier.notify(
-        new BatchLiquidationFinishedMessage(receipt, results),
-      );
-    } catch (e) {
-      const decoded = await this.errorHandler.explain(e);
-      this.logger.error(decoded, "cant liquidate");
-      this.notifier.notify(
-        new BatchLiquidationErrorMessage(accounts, decoded.shortMessage),
-      );
+
+    for (let i = 0; i < accounts.length; i += this.config.batchSize) {
+      const batch = accounts.slice(i, i + this.config.batchSize);
+      try {
+        const { receipt, results } = await this.#liquidateBatch(batch);
+        this.notifier.notify(
+          new BatchLiquidationFinishedMessage(receipt, results),
+        );
+      } catch (e) {
+        const decoded = await this.errorHandler.explain(e);
+        this.logger.error(decoded, "cant liquidate");
+        this.notifier.notify(
+          new BatchLiquidationErrorMessage(batch, decoded.shortMessage),
+        );
+      }
     }
   }
 
@@ -61,11 +65,14 @@ export default class BatchLiquidator
   ): Promise<void> {
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
-    const { results } = await this.#liquidateBatch(accounts);
-    const success = results.filter(r => !r.isError).length;
-    for (const r of results) {
-      this.optimistic.push(r);
+    for (let i = 0; i < accounts.length; i += this.config.batchSize) {
+      const batch = accounts.slice(i, i + this.config.batchSize);
+      const { results } = await this.#liquidateBatch(batch);
+      for (const r of results) {
+        this.optimistic.push(r);
+      }
     }
+    const success = this.optimistic.get().filter(r => !r.isError).length;
     this.logger.info(
       `optimistic batch-liquidation finished: ${success}/${total} accounts liquidated`,
     );

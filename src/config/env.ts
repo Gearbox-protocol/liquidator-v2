@@ -6,6 +6,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   batchLiquidatorAddress: "BATCH_LIQUIDATOR_ADDRESS",
   debugAccounts: "DEBUG_ACCOUNTS",
   debugManagers: "DEBUG_MANAGERS",
+  batchSize: "BATCH_SIZE",
   castBin: "CAST_BIN",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
