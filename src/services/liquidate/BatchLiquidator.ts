@@ -8,7 +8,7 @@ import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { parseEventLogs } from "viem";
 
-import type { CreditAccountData } from "../../data/index.js";
+import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import type { EstimateBatchInput } from "../../utils/ethers-6-temp/pathfinder/viem-types.js";
 import {
   BatchLiquidationErrorMessage,
@@ -42,11 +42,12 @@ export default class BatchLiquidator
       return;
     }
     this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
+    const cms = await this.getCreditManagersV3List();
 
     for (let i = 0; i < accounts.length; i += this.config.batchSize) {
       const batch = accounts.slice(i, i + this.config.batchSize);
       try {
-        const { receipt, results } = await this.#liquidateBatch(batch);
+        const { receipt, results } = await this.#liquidateBatch(batch, cms);
         this.notifier.notify(
           new BatchLiquidationFinishedMessage(receipt, results),
         );
@@ -63,11 +64,12 @@ export default class BatchLiquidator
   public async liquidateOptimistic(
     accounts: CreditAccountData[],
   ): Promise<void> {
+    const cms = await this.getCreditManagersV3List();
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
     for (let i = 0; i < accounts.length; i += this.config.batchSize) {
       const batch = accounts.slice(i, i + this.config.batchSize);
-      const { results } = await this.#liquidateBatch(batch);
+      const { results } = await this.#liquidateBatch(batch, cms);
       for (const r of results) {
         this.optimistic.push(r);
       }
@@ -80,8 +82,8 @@ export default class BatchLiquidator
 
   async #liquidateBatch(
     accounts: CreditAccountData[],
+    cms: CreditManagerData[],
   ): Promise<BatchLiquidationOutput> {
-    const cms = await this.getCreditManagersV3List();
     const inputs: EstimateBatchInput[] = [];
     for (const ca of accounts) {
       const cm = cms.find(m => ca.creditManager === m.address);
