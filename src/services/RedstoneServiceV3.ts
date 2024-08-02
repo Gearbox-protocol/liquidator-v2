@@ -78,6 +78,10 @@ export class RedstoneServiceV3 {
       if (!block) {
         throw new Error("cannot get latest block");
       }
+      this.logger.info(
+        { tag: "timing" },
+        `optimistic fork block ${block.number} ${new Date(Number(block.timestamp) * 1000)}`,
+      );
       // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/c7569a8eb7da1d3ad6209dfcf59c7ca508ea947b/packages/sdk/src/request-data-packages.ts#L82
       // we round the timestamp to full minutes for being compatible with
       // oracle-nodes, which usually work with rounded 10s and 60s intervals
@@ -94,6 +98,7 @@ export class RedstoneServiceV3 {
       this.#optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
       const deltaS = Math.floor((nowMs - this.#optimisticTimestamp) / 1000);
       this.logger.info(
+        { tag: "timing" },
         `will use optimistic timestamp: ${new Date(this.#optimisticTimestamp)} (${this.#optimisticTimestamp}, delta: ${deltaS}s)`,
       );
     }
@@ -171,7 +176,7 @@ export class RedstoneServiceV3 {
       );
       logger.debug(
         { tag: "timing" },
-        `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${formatTs(block)}: ${result.map(formatTs)}`,
+        `redstone delta ${delta} (realtime ${realtimeDelta}) for block ${block.number} ${formatTs(block)}: ${result.map(formatTs)}`,
       );
       if (delta < 0) {
         logger.debug(
