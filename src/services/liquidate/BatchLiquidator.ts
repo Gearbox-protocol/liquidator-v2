@@ -41,11 +41,14 @@ export default class BatchLiquidator
     if (!accounts.length) {
       return;
     }
-    this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
+    this.logger.warn(`need to liquidate ${accounts.length} accounts`);
     const cms = await this.getCreditManagersV3List();
+    const batches = this.#sliceBatches(accounts);
 
-    for (let i = 0; i < accounts.length; i += this.config.batchSize) {
-      const batch = accounts.slice(i, i + this.config.batchSize);
+    for (const batch of batches) {
+      this.logger.debug(
+        `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
+      );
       try {
         const { receipt, results } = await this.#liquidateBatch(batch, cms);
         this.notifier.notify(
@@ -67,8 +70,11 @@ export default class BatchLiquidator
     const cms = await this.getCreditManagersV3List();
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
-    for (let i = 0; i < accounts.length; i += this.config.batchSize) {
-      const batch = accounts.slice(i, i + this.config.batchSize);
+    const batches = this.#sliceBatches(accounts);
+    for (const batch of batches) {
+      this.logger.debug(
+        `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
+      );
       const { results } = await this.#liquidateBatch(batch, cms);
       for (const r of results) {
         this.optimistic.push(r);
@@ -234,5 +240,27 @@ export default class BatchLiquidator
       throw new Error("batch liquidator not deployed");
     }
     return this.#batchLiquidator;
+  }
+
+  #sliceBatches(accounts: CreditAccountData[]): CreditAccountData[][] {
+    const batches: CreditAccountData[][] = [];
+    const byCM: Record<string, CreditAccountData[]> = {};
+
+    for (const account of accounts) {
+      if (!byCM[account.creditManager]) {
+        byCM[account.creditManager] = [];
+      }
+      byCM[account.creditManager].push(account);
+    }
+
+    // eslint-disable-next-line guard-for-in
+    for (const cm in byCM) {
+      const cmAccs = byCM[cm];
+      for (let i = 0; i < cmAccs.length; i += this.config.batchSize) {
+        batches.push(cmAccs.slice(i, i + this.config.batchSize));
+      }
+    }
+
+    return batches;
   }
 }
