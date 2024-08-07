@@ -1482,10 +1482,10 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
-"@gearbox-protocol/types@^1.10.0":
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/types/-/types-1.10.0.tgz#15f36a61c71f51623541d734f4a80bd7964a001f"
-  integrity sha512-9yyWjXr5HFi+8S/+uRD1igsOKXFock2RshDcscEBDZjm+GMNGa3FT8ni+xHIx7j1byETOaNftxb29CugW0DBlw==
+"@gearbox-protocol/types@^1.10.2":
+  version "1.10.2"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/types/-/types-1.10.2.tgz#98098a9c837fa91caf11093a9002505eda644dd3"
+  integrity sha512-1Nn78pHfsbo+z4VpuLGDeBu4GcfjHZbHlkMFJigGsiBbATBnZE9XnYaNUFFWXqs/PK+vce3yrnetOn6LDu1/wA==
 
 "@humanwhocodes/config-array@^0.11.14":
   version "0.11.14"

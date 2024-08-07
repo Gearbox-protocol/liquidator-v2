@@ -30,7 +30,7 @@
     "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.17",
     "@gearbox-protocol/prettier-config": "2.0.0-next.0",
     "@gearbox-protocol/sdk-gov": "^2.14.1",
-    "@gearbox-protocol/types": "^1.10.0",
+    "@gearbox-protocol/types": "^1.10.2",
     "@redstone-finance/evm-connector": "^0.6.1",
     "@types/node": "^22.1.0",
     "@uniswap/sdk-core": "^5.3.1",
