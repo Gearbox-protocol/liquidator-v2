@@ -1,5 +1,5 @@
 import type {
-  OptimisticResultV2,
+  OptimisticResult,
   PartialLiquidationCondition,
 } from "@gearbox-protocol/types/optimist";
 import type { Address, Hash, Hex, SimulateContractReturnType } from "viem";
@@ -40,7 +40,7 @@ export interface ILiquidatorService {
    * @param redstoneTokens
    * @returns true is account was successfully liquidated
    */
-  liquidateOptimistic: (ca: CreditAccountData) => Promise<OptimisticResultV2>;
+  liquidateOptimistic: (ca: CreditAccountData) => Promise<OptimisticResult>;
 }
 
 export interface StrategyPreview {

@@ -1,6 +1,6 @@
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import { ierc20Abi } from "@gearbox-protocol/types/abi";
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, Hex } from "viem";
 
 import type { Config } from "../../config/index.js";
@@ -137,7 +137,7 @@ export class LiquidatorService implements ILiquidatorService {
 
   public async liquidateOptimistic(
     ca: CreditAccountData,
-  ): Promise<OptimisticResultV2> {
+  ): Promise<OptimisticResult> {
     let acc = ca;
     const logger = this.log.child({
       account: acc.addr,
@@ -145,8 +145,7 @@ export class LiquidatorService implements ILiquidatorService {
       manager: acc.managerName,
     });
     let snapshotId: Hex | undefined;
-    const optimisticResult: OptimisticResultV2 = {
-      version: "2",
+    const optimisticResult: OptimisticResult = {
       creditManager: acc.creditManager,
       borrower: acc.borrower,
       account: acc.addr,
