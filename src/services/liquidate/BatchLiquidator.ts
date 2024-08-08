@@ -10,6 +10,7 @@ import { parseEventLogs } from "viem";
 
 import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
 import type { EstimateBatchInput } from "../../utils/ethers-6-temp/pathfinder/viem-types.js";
+import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import {
   BatchLiquidationErrorMessage,
   BatchLiquidationFinishedMessage,
@@ -189,7 +190,9 @@ export default class BatchLiquidator
     };
     const results = accounts.map(
       (a): OptimisticResult => ({
-        callsHuman: [],
+        callsHuman: TxParserHelper.parseMultiCall({
+          calls: [...(batch[a.addr]?.calls ?? [])],
+        }),
         balancesBefore: a.filterDust(),
         balancesAfter: {},
         hfBefore: a.healthFactor,

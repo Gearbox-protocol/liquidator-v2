@@ -159,8 +159,9 @@ export default abstract class AbstractLiquidator {
     const raw = await this.compressor.read.getCreditManagersV3List();
     const result = raw.map(d => new CreditManagerData(d));
 
-    if (this.config.optimistic) {
-      for (const cm of result) {
+    for (const cm of result) {
+      TxParserHelper.addCreditManager(cm);
+      if (this.config.optimistic) {
         this.#cmCache[cm.address.toLowerCase()] = cm;
       }
     }
