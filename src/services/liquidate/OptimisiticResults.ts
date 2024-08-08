@@ -1,16 +1,16 @@
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 
 import { DI } from "../../di.js";
 
 @DI.Injectable(DI.OptimisticResults)
 export class OptimisticResults {
-  #results: OptimisticResultV2[] = [];
+  #results: OptimisticResult[] = [];
 
-  public push(result: OptimisticResultV2): void {
+  public push(result: OptimisticResult): void {
     this.#results.push(result);
   }
 
-  public get(): OptimisticResultV2[] {
+  public get(): OptimisticResult[] {
     return this.#results;
   }
 }

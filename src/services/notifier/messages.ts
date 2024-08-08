@@ -1,6 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
@@ -204,7 +204,7 @@ export class BatchLiquidationFinishedMessage
   #liquidated: number;
   #notLiquidated: number;
 
-  constructor(receipt: TransactionReceipt, results: OptimisticResultV2[]) {
+  constructor(receipt: TransactionReceipt, results: OptimisticResult[]) {
     super({ receipt });
     this.#liquidated = results.filter(r => !r.isError).length;
     this.#notLiquidated = results.filter(r => !!r.isError).length;

@@ -4,7 +4,7 @@ import {
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { parseEventLogs } from "viem";
 
@@ -23,7 +23,7 @@ import type {
 
 interface BatchLiquidationOutput {
   readonly receipt: TransactionReceipt;
-  readonly results: OptimisticResultV2[];
+  readonly results: OptimisticResult[];
 }
 
 export default class BatchLiquidator
@@ -182,8 +182,7 @@ export default class BatchLiquidator
       return "cannot liquidate in batch";
     };
     const results = accounts.map(
-      (a): OptimisticResultV2 => ({
-        version: "2",
+      (a): OptimisticResult => ({
         callsHuman: [],
         balancesBefore: a.filterDust(),
         balancesAfter: {},

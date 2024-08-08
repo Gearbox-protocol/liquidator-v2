@@ -1,6 +1,6 @@
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
 import { iDataCompressorV3Abi, ierc20Abi } from "@gearbox-protocol/types/abi";
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { getContract } from "viem";
 
@@ -82,9 +82,8 @@ export default abstract class AbstractLiquidator {
     this.notifier.notify(new StartedMessage());
   }
 
-  protected newOptimisticResult(acc: CreditAccountData): OptimisticResultV2 {
+  protected newOptimisticResult(acc: CreditAccountData): OptimisticResult {
     return {
-      version: "2",
       creditManager: acc.creditManager,
       borrower: acc.borrower,
       account: acc.addr,
@@ -103,9 +102,9 @@ export default abstract class AbstractLiquidator {
   }
 
   protected updateAfterPreview(
-    result: OptimisticResultV2,
+    result: OptimisticResult,
     preview: StrategyPreview,
-  ): OptimisticResultV2 {
+  ): OptimisticResult {
     return {
       ...result,
       assetOut: preview.assetOut,
@@ -119,11 +118,11 @@ export default abstract class AbstractLiquidator {
   }
 
   protected async updateAfterLiquidation(
-    result: OptimisticResultV2,
+    result: OptimisticResult,
     acc: CreditAccountData,
     underlyingBalanceBefore: bigint,
     receipt: TransactionReceipt,
-  ): Promise<OptimisticResultV2> {
+  ): Promise<OptimisticResult> {
     const ca = await this.updateCreditAccountData(acc);
     result.balancesAfter = ca.filterDust();
     result.hfAfter = ca.healthFactor;

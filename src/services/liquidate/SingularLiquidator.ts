@@ -1,4 +1,4 @@
-import type { OptimisticResultV2 } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
 
 import type { CreditAccountData } from "../../data/index.js";
@@ -102,7 +102,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
 
   async #liquidateOneOptimistic(
     acc: CreditAccountData,
-  ): Promise<OptimisticResultV2> {
+  ): Promise<OptimisticResult> {
     const logger = this.logger.child({
       account: acc.addr,
       borrower: acc.borrower,
