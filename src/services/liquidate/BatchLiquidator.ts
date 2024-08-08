@@ -118,7 +118,13 @@ export default class BatchLiquidator
         i => i.creditAccount === r.creditAccount.toLowerCase(),
       );
       this.logger.debug(
-        { executed: r.executed, pathFound: r.pathFound, input },
+        {
+          account: r.creditAccount,
+          executed: r.executed,
+          pathFound: r.pathFound,
+          calls: r.calls,
+          input,
+        },
         `estimation for account ${r.creditAccount}`,
       );
       if (r.executed) {
