@@ -263,7 +263,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   async #calcNewLTs(
     ca: CreditAccountData,
     factor = 9990n,
-  ): Promise<Record<string, [ltOld: bigint, ltNew: bigint]>> {
+  ): Promise<Record<Address, [ltOld: number, ltNew: number]>> {
     const logger = this.#caLogger(ca);
     const balances = await this.#prepareAccountTokens(ca);
     balances.forEach(b => {
@@ -298,12 +298,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     }
     const k = (WAD * dividend) / divisor;
 
-    const result: Record<string, [bigint, bigint]> = {};
+    const result: Record<Address, [number, number]> = {};
     const ltChangesHuman: Record<string, string> = {};
     for (const { token, liquidationThreshold: oldLT } of balances) {
       if (token !== ca.underlyingToken) {
         const newLT = (oldLT * k) / WAD;
-        result[token] = [oldLT, newLT];
+        result[token] = [Number(oldLT), Number(newLT)];
         ltChangesHuman[tokenSymbolByAddress[token]] = `${oldLT} => ${newLT}`;
       }
     }
@@ -317,7 +317,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   async #setNewLTs(
     ca: CreditAccountData,
     cm: CreditManagerData,
-    ltChanges: Record<Address, [bigint, bigint]>,
+    ltChanges: Record<Address, [number, number]>,
   ): Promise<void> {
     const logger = this.#caLogger(ca);
     const configuratorAddr = await this.getConfiguratorAddr();
@@ -334,7 +334,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         account: configuratorAddr,
         abi: iCreditConfiguratorV3Abi,
         functionName: "setLiquidationThreshold",
-        args: [t as Address, Number(lt)],
+        args: [t as Address, lt],
       });
       const newLT = await this.client.pub.readContract({
         address: cm.address,
