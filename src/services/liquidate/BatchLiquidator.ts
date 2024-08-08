@@ -46,12 +46,18 @@ export default class BatchLiquidator
     const cms = await this.getCreditManagersV3List();
     const batches = this.#sliceBatches(accounts);
 
-    for (const batch of batches) {
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
       this.logger.debug(
         `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
       );
       try {
-        const { receipt, results } = await this.#liquidateBatch(batch, cms);
+        const { receipt, results } = await this.#liquidateBatch(
+          batch,
+          cms,
+          i,
+          batches.length,
+        );
         this.notifier.notify(
           new BatchLiquidationFinishedMessage(receipt, results),
         );
@@ -72,11 +78,17 @@ export default class BatchLiquidator
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
     const batches = this.#sliceBatches(accounts);
-    for (const batch of batches) {
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
       this.logger.debug(
         `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
       );
-      const { results } = await this.#liquidateBatch(batch, cms);
+      const { results } = await this.#liquidateBatch(
+        batch,
+        cms,
+        i,
+        batches.length,
+      );
       for (const r of results) {
         this.optimistic.push(r);
       }
@@ -90,6 +102,8 @@ export default class BatchLiquidator
   async #liquidateBatch(
     accounts: CreditAccountData[],
     cms: CreditManagerData[],
+    index: number,
+    total: number,
   ): Promise<BatchLiquidationOutput> {
     const inputs: EstimateBatchInput[] = [];
     for (const ca of accounts) {
@@ -207,6 +221,7 @@ export default class BatchLiquidator
         liquidatorProfit: "0", // cannot compute for single account
         isError: !liquidated.has(a.addr),
         error: getError(a),
+        batchId: `${index + 1}/${total}`,
       }),
     );
     return {
