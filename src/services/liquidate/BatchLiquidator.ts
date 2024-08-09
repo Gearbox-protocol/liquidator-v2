@@ -155,7 +155,13 @@ export default class BatchLiquidator
         );
         if (acc) {
           liquidateBatchInput.push({
-            calls: r.calls,
+            calls: [
+              ...this.redstone.toMulticallUpdates(
+                acc,
+                priceUpdatesByAccount[acc.addr],
+              ),
+              ...r.calls,
+            ],
             creditAccount: r.creditAccount,
             creditFacade: acc.creditFacade,
           });

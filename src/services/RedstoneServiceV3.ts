@@ -211,14 +211,23 @@ export class RedstoneServiceV3 {
 
   public async multicallUpdates(ca: CreditAccountData): Promise<MultiCall[]> {
     const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
-    return priceUpdates.map(({ token, data, reserve }) => ({
-      target: ca.creditFacade,
-      callData: encodeFunctionData({
-        abi: iCreditFacadeV3MulticallAbi,
-        functionName: "onDemandPriceUpdate",
-        args: [token, reserve, data],
-      }),
-    }));
+    return this.toMulticallUpdates(ca, priceUpdates);
+  }
+
+  public toMulticallUpdates(
+    ca: CreditAccountData,
+    priceUpdates?: PriceUpdate[],
+  ): MultiCall[] {
+    return (
+      priceUpdates?.map(({ token, data, reserve }) => ({
+        target: ca.creditFacade,
+        callData: encodeFunctionData({
+          abi: iCreditFacadeV3MulticallAbi,
+          functionName: "onDemandPriceUpdate",
+          args: [token, reserve, data],
+        }),
+      })) ?? []
+    );
   }
 
   public async dataCompressorUpdates(
