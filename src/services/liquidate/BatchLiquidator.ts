@@ -83,6 +83,7 @@ export default class BatchLiquidator
       this.logger.debug(
         `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
       );
+      const snapshotId = await this.client.anvil.snapshot();
       const { results, receipt } = await this.#liquidateBatch(
         batch,
         cms,
@@ -99,6 +100,7 @@ export default class BatchLiquidator
       for (const r of results) {
         this.optimistic.push({ ...r, traceFile: traceId });
       }
+      await this.client.anvil.revert({ id: snapshotId });
     }
     const success = this.optimistic.get().filter(r => !r.isError).length;
     this.logger.info(
