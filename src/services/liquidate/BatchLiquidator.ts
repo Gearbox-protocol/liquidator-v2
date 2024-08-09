@@ -83,14 +83,21 @@ export default class BatchLiquidator
       this.logger.debug(
         `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
       );
-      const { results } = await this.#liquidateBatch(
+      const { results, receipt } = await this.#liquidateBatch(
         batch,
         cms,
         i,
         batches.length,
       );
+      const hasErrors = results.some(r => !!r.isError);
+      let traceId: string | undefined;
+      if (hasErrors && !!receipt) {
+        traceId = await this.errorHandler.saveTransactionTrace(
+          receipt.transactionHash,
+        );
+      }
       for (const r of results) {
-        this.optimistic.push(r);
+        this.optimistic.push({ ...r, traceFile: traceId });
       }
     }
     const success = this.optimistic.get().filter(r => !r.isError).length;
