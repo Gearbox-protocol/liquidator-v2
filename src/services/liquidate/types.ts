@@ -8,6 +8,11 @@ import type {
 } from "../../data/index.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
+  /**
+   * In case when token in PriceOnDemand is ticker, this will be the original token
+   * Otherwise they are the same
+   */
+  originalToken: Address;
   ts: number;
   reserve: boolean;
 }

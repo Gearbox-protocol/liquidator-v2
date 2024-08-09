@@ -105,6 +105,8 @@ export default class BatchLiquidator
     index: number,
     total: number,
   ): Promise<BatchLiquidationOutput> {
+    const priceUpdatesByAccount =
+      await this.redstone.batchLiquidationPreviewUpdates(accounts);
     const inputs: EstimateBatchInput[] = [];
     for (const ca of accounts) {
       const cm = cms.find(m => ca.creditManager === m.address);
@@ -113,9 +115,14 @@ export default class BatchLiquidator
           `cannot find credit manager data for ${ca.creditManager}`,
         );
       }
-      inputs.push(
-        this.pathFinder.getEstimateBatchInput(ca, cm, this.config.slippage),
+      // pathfinder returns input without price updates
+      const input = this.pathFinder.getEstimateBatchInput(
+        ca,
+        cm,
+        this.config.slippage,
       );
+      input.priceUpdates = priceUpdatesByAccount[ca.addr];
+      inputs.push(input);
     }
     const { result } = await this.client.pub.simulateContract({
       account: this.client.account,
@@ -219,6 +226,7 @@ export default class BatchLiquidator
         pathAmount: "0", // TODO: ??
         liquidatorPremium: (batch[a.addr]?.profit ?? 0n).toString(10),
         liquidatorProfit: "0", // cannot compute for single account
+        priceUpdates: priceUpdatesByAccount[a.addr],
         isError: !liquidated.has(a.addr),
         error: getError(a),
         batchId: `${index + 1}/${total}`,

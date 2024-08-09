@@ -88,10 +88,10 @@
     "@smithy/util-utf8" "^2.0.0"
     tslib "^2.6.2"
 
-"@aws-sdk/client-s3@^3.626.0":
-  version "3.626.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.626.0.tgz#02556328c2c05ae11a0ca9f0e5fba90ac6c80e74"
-  integrity sha512-+ul1NEdiAuq5L0lhxWb+FcQuw+1RKU4lNugdX/EF3Lr6Bpuo384K/4r9cRwOo/6PqRYMIengBMc9Q2HVAu8ZWg==
+"@aws-sdk/client-s3@^3.627.0":
+  version "3.627.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.627.0.tgz#9a5fe33b15fa5613085f7f254faecc0cc150ad58"
+  integrity sha512-XTbtRLPVfq2lHo0SUP6HJb6HgBsKsJR54bhhVTwj5SZ4G26KOmx2iFOz9SgHie5apU7vWIhijb48LIhbLArgGg==
   dependencies:
     "@aws-crypto/sha1-browser" "5.2.0"
     "@aws-crypto/sha256-browser" "5.2.0"
@@ -1455,10 +1455,10 @@
     eslint-plugin-simple-import-sort "^10.0.0"
     eslint-plugin-unused-imports "^3.0.0"
 
-"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.18":
-  version "2.1.0-next.18"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.18.tgz#701f57be55bac66ffea9306b7d572d77b2158d0c"
-  integrity sha512-OONhWYI5M+EEjVyvDlYqKcQqOCGF4uLj0fJYLCG3zA20mwOidnY8BBQPOof4D3UnPqiumBZ1hGXSRqyfQaqxhw==
+"@gearbox-protocol/liquidator-v2-contracts@^2.1.0-next.19":
+  version "2.1.0-next.19"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.1.0-next.19.tgz#858912a5e3ebf6f09dd563d3966f11a25daf70ba"
+  integrity sha512-5B1M1olNd5Dz2kobtCgw2+JSkMuknyMZ4tfm9H4VLDAoWDq+u8gJicfoAsgQ3q4FRb63vrZIEsjOY+h/VBDAlQ==
 
 "@gearbox-protocol/prettier-config@2.0.0-next.0":
   version "2.0.0-next.0"
@@ -5816,10 +5816,10 @@ uuid@^9.0.1:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
 
-viem@^2.19.2:
-  version "2.19.2"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-2.19.2.tgz#11f03621fd0d0d742f04e3da30fa49093a3cf612"
-  integrity sha512-BrR7fEEpuu9Om7obQGThb4BEu00PPHPKaUx+snB/F6yBZtr34FdXCPnphr+S73W2iIu/mt3yaRkfkLlD6a1R5g==
+viem@^2.19.3:
+  version "2.19.3"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.19.3.tgz#537773f50d3a0e7436d2465898afc62c0c25c01c"
+  integrity sha512-djOw1X/jOvDOEMiol4g/T030MVncF2utC9G929ODNJ/00E7UXjSpwOeuyapmaqn831eSIHlELicZETYl2vI9oQ==
   dependencies:
     "@adraffy/ens-normalize" "1.10.0"
     "@noble/curves" "1.4.0"

@@ -117,6 +117,7 @@ export class PathFinder {
       pathOptions: pathOptions[0] ?? [], // TODO: what to put here?
       iterations: BigInt(LOOPS_PER_TX),
       force: false,
+      priceUpdates: [],
     };
   }
 

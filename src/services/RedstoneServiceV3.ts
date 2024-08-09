@@ -34,6 +34,14 @@ import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
 import type { RedstoneFeed } from "./OracleServiceV3.js";
 import type OracleServiceV3 from "./OracleServiceV3.js";
 
+interface RedstoneUpdate extends RedstoneFeed {
+  /**
+   * In case when Redstone feed is using ticker to updates, this will be the original token
+   * Otherwise they are the same
+   */
+  originalToken: Address;
+}
+
 export type RedstonePriceFeed = Extract<
   PriceFeedData,
   { type: PriceFeedType.REDSTONE_ORACLE }
@@ -113,12 +121,17 @@ export class RedstoneServiceV3 {
     const redstoneFeeds = this.oracle.getRedstoneFeeds(activeOnly);
     const tickers = tickerInfoTokensByNetwork[this.config.network];
 
-    const redstoneUpdates: RedstoneFeed[] = [];
+    const redstoneUpdates: RedstoneUpdate[] = [];
     for (const t of tokens) {
-      const token = t.toLowerCase();
+      const token = t.toLowerCase() as Address;
       const feeds = redstoneFeeds[token];
       if (feeds?.length) {
-        redstoneUpdates.push(...feeds);
+        redstoneUpdates.push(
+          ...feeds.map(f => ({
+            ...f,
+            originalToken: token,
+          })),
+        );
         continue;
       }
       const symb = tokenSymbolByAddress[token];
@@ -130,8 +143,9 @@ export class RedstoneServiceV3 {
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
           redstoneUpdates.push({
-            dataFeedId: ticker.dataId,
+            originalToken: token,
             token: ticker.address,
+            dataFeedId: ticker.dataId,
             reserve: false, // tickers are always added as main feed
           });
         } else {
@@ -149,8 +163,9 @@ export class RedstoneServiceV3 {
       `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
     const result = await Promise.all(
-      redstoneUpdates.map(({ token, dataFeedId, reserve }) =>
+      redstoneUpdates.map(({ originalToken, token, dataFeedId, reserve }) =>
         this.#getRedstonePayloadForManualUsage(
+          originalToken,
           token,
           reserve,
           "redstone-primary-prod",
@@ -238,8 +253,58 @@ export class RedstoneServiceV3 {
     }));
   }
 
+  /**
+   * Gets updates from redstone for multiple accounts at once
+   * Reduces duplication, so that we don't make redstone request twice if two accounts share a token
+   *
+   * @param accounts
+   * @param activeOnly
+   * @returns
+   */
+  public async batchLiquidationPreviewUpdates(
+    accounts: CreditAccountData[],
+    activeOnly = false,
+  ): Promise<Record<Address, PriceUpdate[]>> {
+    const tokensByAccount: Record<Address, Set<Address>> = {};
+    const allTokens = new Set<Address>();
+    for (const ca of accounts) {
+      const accTokens = tokensByAccount[ca.addr] ?? new Set<Address>();
+      for (const { token, balance, isEnabled } of ca.allBalances) {
+        if (isEnabled && balance > 10n) {
+          accTokens.add(token);
+          allTokens.add(token);
+        }
+      }
+      tokensByAccount[ca.addr] = accTokens;
+    }
+
+    const priceUpdates = await this.updatesForTokens(
+      Array.from(allTokens),
+      activeOnly,
+    );
+
+    const result: Record<Address, PriceUpdate[]> = {};
+    for (const [accAddr, accTokens] of Object.entries(tokensByAccount)) {
+      const accUpdates: PriceUpdate[] = [];
+      // There can be 2 price feeds (main and reserve) per originalToken
+      for (const u of priceUpdates) {
+        if (accTokens.has(u.originalToken)) {
+          accUpdates.push({
+            token: u.token,
+            reserve: u.reserve,
+            data: u.callData,
+          });
+        }
+      }
+      result[accAddr as Address] = accUpdates;
+    }
+
+    return result;
+  }
+
   async #getRedstonePayloadForManualUsage(
-    token: Address,
+    originalToken: Address,
+    tokenOrTicker: Address,
     reserve: boolean,
     dataServiceId: string,
     dataFeedId: string,
@@ -249,7 +314,7 @@ export class RedstoneServiceV3 {
     const logger = this.logger.child(logContext);
     const cacheAllowed = this.config.optimistic;
     const key = redstoneCacheKey(
-      token,
+      tokenOrTicker,
       reserve,
       dataServiceId,
       dataFeedId,
@@ -305,8 +370,9 @@ export class RedstoneServiceV3 {
       ] as const;
     });
 
-    const response = {
-      token,
+    const response: PriceOnDemandExtras = {
+      originalToken,
+      token: tokenOrTicker,
       reserve,
       callData: result[0][0],
       ts: result[0][1],

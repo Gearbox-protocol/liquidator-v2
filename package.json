@@ -22,12 +22,12 @@
     "pino-pretty": "^11.2.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.626.0",
+    "@aws-sdk/client-s3": "^3.627.0",
     "@commitlint/cli": "^19.4.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@flashbots/ethers-provider-bundle": "^1.0.0",
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
-    "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.18",
+    "@gearbox-protocol/liquidator-v2-contracts": "^2.1.0-next.19",
     "@gearbox-protocol/prettier-config": "2.0.0-next.0",
     "@gearbox-protocol/sdk-gov": "^2.14.1",
     "@gearbox-protocol/types": "^1.11.0",
@@ -54,7 +54,7 @@
     "redstone-protocol": "^1.0.5",
     "tsx": "^4.17.0",
     "typescript": "^5.5.4",
-    "viem": "^2.19.2",
+    "viem": "^2.19.3",
     "vitest": "^2.0.5"
   },
   "prettier": "@gearbox-protocol/prettier-config",
