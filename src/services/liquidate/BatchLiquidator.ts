@@ -295,24 +295,34 @@ export default class BatchLiquidator
   }
 
   #sliceBatches(accounts: CreditAccountData[]): CreditAccountData[][] {
+    // sort by healthFactor bin ASC, debt DESC
+    const sortedAccounts = accounts.sort((a, b) => {
+      if (a.healthFactor !== b.healthFactor) {
+        return healthFactorBin(a) - healthFactorBin(b);
+      }
+      if (b.totalDebtUSD > a.totalDebtUSD) {
+        return 1;
+      } else if (b.totalDebtUSD === a.totalDebtUSD) {
+        return 0;
+      } else {
+        return -1;
+      }
+    });
+
     const batches: CreditAccountData[][] = [];
-    const byCM: Record<string, CreditAccountData[]> = {};
-
-    for (const account of accounts) {
-      if (!byCM[account.creditManager]) {
-        byCM[account.creditManager] = [];
-      }
-      byCM[account.creditManager].push(account);
+    for (let i = 0; i < sortedAccounts.length; i += this.config.batchSize) {
+      batches.push(sortedAccounts.slice(i, i + this.config.batchSize));
     }
-
-    // eslint-disable-next-line guard-for-in
-    for (const cm in byCM) {
-      const cmAccs = byCM[cm];
-      for (let i = 0; i < cmAccs.length; i += this.config.batchSize) {
-        batches.push(cmAccs.slice(i, i + this.config.batchSize));
-      }
-    }
-
     return batches;
+  }
+}
+
+function healthFactorBin({ healthFactor }: CreditAccountData): number {
+  if (healthFactor < 9300) {
+    return 0;
+  } else if (healthFactor < 9600) {
+    return 1;
+  } else {
+    return 2;
   }
 }
