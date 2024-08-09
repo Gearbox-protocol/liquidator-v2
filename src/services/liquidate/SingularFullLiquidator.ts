@@ -4,9 +4,13 @@ import type { SimulateContractReturnType } from "viem";
 import { type CreditAccountData, exceptionsAbis } from "../../data/index.js";
 import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
-import type { MakeLiquidatableResult } from "./types.js";
+import type { MakeLiquidatableResult, PriceUpdate } from "./types.js";
 
-export default class SingularFullLiquidator extends SingularLiquidator<PathFinderCloseResult> {
+interface SinglularFullPreview extends PathFinderCloseResult {
+  priceUpdates: PriceUpdate[];
+}
+
+export default class SingularFullLiquidator extends SingularLiquidator<SinglularFullPreview> {
   protected readonly name = "full";
   protected readonly adverb = "fully";
 
@@ -17,7 +21,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<PathFinde
     return Promise.resolve({});
   }
 
-  public async preview(ca: CreditAccountData): Promise<PathFinderCloseResult> {
+  public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);
 
@@ -30,12 +34,19 @@ export default class SingularFullLiquidator extends SingularLiquidator<PathFinde
         throw new Error("pathfinder result is empty");
       }
       // we want fresh redstone price in actual liquidation transactions
-      const priceUpdateCalls = await this.redstone.multicallUpdates(ca);
+      const priceUpdates = await this.redstone.liquidationPreviewUpdates(
+        ca,
+        true,
+      );
       return {
         amount: result.amount,
         minAmount: result.minAmount,
         underlyingBalance: result.underlyingBalance,
-        calls: [...priceUpdateCalls, ...result.calls],
+        calls: [
+          ...this.redstone.toMulticallUpdates(ca, priceUpdates),
+          ...result.calls,
+        ],
+        priceUpdates,
       };
     } catch (e) {
       throw new Error(`cant find close path: ${e}`);
@@ -44,7 +55,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<PathFinde
 
   public async simulate(
     account: CreditAccountData,
-    preview: PathFinderCloseResult,
+    preview: SinglularFullPreview,
   ): Promise<SimulateContractReturnType> {
     return this.client.pub.simulateContract({
       account: this.client.account,

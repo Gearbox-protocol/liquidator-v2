@@ -209,11 +209,6 @@ export class RedstoneServiceV3 {
     return result;
   }
 
-  public async multicallUpdates(ca: CreditAccountData): Promise<MultiCall[]> {
-    const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
-    return this.toMulticallUpdates(ca, priceUpdates);
-  }
-
   public toMulticallUpdates(
     ca: CreditAccountData,
     priceUpdates?: PriceUpdate[],

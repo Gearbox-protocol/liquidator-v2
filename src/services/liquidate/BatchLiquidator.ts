@@ -140,6 +140,18 @@ export default class BatchLiquidator
       functionName: "estimateBatch",
       args: [inputs],
     });
+    // BatchLiquidator contract does not return onDemandPriceUpdate calls, need to prepend them manually:
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
+      result[i].calls = [
+        ...this.redstone.toMulticallUpdates(
+          account,
+          priceUpdatesByAccount[account.addr],
+        ),
+        ...result[i].calls,
+      ];
+    }
+
     const batch: Record<Address, BatchLiquidationResult> = Object.fromEntries(
       result.map(r => [r.creditAccount.toLowerCase(), r]),
     );
@@ -164,13 +176,7 @@ export default class BatchLiquidator
         );
         if (acc) {
           liquidateBatchInput.push({
-            calls: [
-              ...this.redstone.toMulticallUpdates(
-                acc,
-                priceUpdatesByAccount[acc.addr],
-              ),
-              ...r.calls,
-            ],
+            calls: r.calls,
             creditAccount: r.creditAccount,
             creditFacade: acc.creditFacade,
           });
