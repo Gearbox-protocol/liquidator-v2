@@ -290,7 +290,7 @@ export class ScanServiceV3 extends AbstractScanService {
       `filtering liquidatable credit accounts from selection of ${accs.length}...`,
     );
     // @ts-ignore
-    const mc = await this.publicClient.multicall({
+    const mc = await this.client.pub.multicall({
       blockNumber,
       allowFailure: true,
       contracts: accs.map(({ addr, creditManager }) => ({

@@ -95,6 +95,11 @@ export default class OracleServiceV3 {
     return !!this.#feeds[token.toLowerCase() as Address];
   }
 
+  // TODO: exposed for hotfix only
+  public getFeed(token: string): OracleEntry {
+    return this.#feeds[token.toLowerCase() as Address]!;
+  }
+
   /**
    * Returns false if account has tokens without reserve price feeds for some tokens
    * @param ca

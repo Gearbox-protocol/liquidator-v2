@@ -129,8 +129,14 @@ export class RedstoneServiceV3 {
             { ticker },
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
+          // TODO:
+          // HOTFIX: sometimes ticker.dataId in sdk-gov is incorrect, prefer data from chain
+          const tickerFeedId =
+            this.oracle.getFeed(ticker.address)?.main?.dataFeedId ??
+            ticker.dataId;
+
           redstoneUpdates.push({
-            dataFeedId: ticker.dataId,
+            dataFeedId: tickerFeedId,
             token: ticker.address,
             reserve: false, // tickers are always added as main feed
           });
