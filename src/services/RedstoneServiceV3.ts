@@ -129,10 +129,25 @@ export class RedstoneServiceV3 {
             { ticker },
             `will update redstone ticker ${ticker.symbol} for ${symb}`,
           );
+          // TODO:
+          // this is hotfix
+          // Previous assumption was that tickers are always added as main feed
+          // this is not true, and for "ezETH/ETH" this is reserve
+          //
+          // need to unwrap composite price feeds and determine reserve status
+          // or wait for price feed compressor
+          let reserve = false;
+          if (
+            ticker.symbol === "ezETH/ETH" &&
+            this.config.network === "Optimism"
+          ) {
+            reserve = true;
+          }
+
           redstoneUpdates.push({
             dataFeedId: ticker.dataId,
             token: ticker.address,
-            reserve: false, // tickers are always added as main feed
+            reserve,
           });
         } else {
           logger.debug(
