@@ -50,6 +50,9 @@ export const ConfigSchema = z.object({
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: Address.optional(),
+  deployBatchLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
+  batchSize: z.coerce.number().nonnegative().default(10),
+  batchLiquidatorAddress: Address.optional(),
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
   restakingWorkaround: booleanLike.pipe(z.boolean().optional()),
 

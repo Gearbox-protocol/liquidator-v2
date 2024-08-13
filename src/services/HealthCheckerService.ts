@@ -7,7 +7,7 @@ import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import version from "../version.js";
-import type { ScanServiceV3 } from "./scan/index.js";
+import type { Scanner } from "./scanner/index.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
 
@@ -17,7 +17,7 @@ export default class HealthCheckerService {
   log!: ILogger;
 
   @DI.Inject(DI.Scanner)
-  scanServiceV3!: ScanServiceV3;
+  scanner!: Scanner;
 
   @DI.Inject(DI.Config)
   config!: Config;
@@ -40,7 +40,7 @@ export default class HealthCheckerService {
         res.end(
           JSON.stringify({
             start_time: this.#start,
-            block_number: this.scanServiceV3.lastUpdated,
+            block_number: this.scanner.lastUpdated,
             version,
           }),
         );
@@ -97,7 +97,7 @@ start_time{${labels}} ${this.#start}
 
 # HELP block_number Latest processed block
 # TYPE block_number gauge
-block_number{${labels}} ${this.scanServiceV3.lastUpdated}
+block_number{${labels}} ${this.scanner.lastUpdated}
 
 `;
   }

@@ -36,7 +36,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 import type { Config } from "../config/index.js";
-import type { CreditAccountData } from "../data/index.js";
 import { exceptionsAbis } from "../data/index.js";
 import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
@@ -167,14 +166,9 @@ export default class Client {
   }
 
   public async liquidate(
-    ca: CreditAccountData,
     request: SimulateContractReturnType["request"],
+    logger: ILogger,
   ): Promise<TransactionReceipt> {
-    const logger = this.logger.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: ca.managerName,
-    });
     logger.debug("sending liquidation tx");
     const { abi, address, args, dataSuffix, functionName, ...rest } = request;
     const data = encodeFunctionData({

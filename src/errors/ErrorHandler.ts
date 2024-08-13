@@ -66,6 +66,15 @@ export class ErrorHandler {
     };
   }
 
+  public async saveTransactionTrace(hash: string): Promise<string | undefined> {
+    return this.#runCast([
+      "run",
+      "--rpc-url",
+      this.config.ethProviderRpcs[0],
+      hash,
+    ]);
+  }
+
   /**
    * Safely tries to save trace of failed transaction to configured output
    * @param error
@@ -75,52 +84,65 @@ export class ErrorHandler {
     e: BaseError,
     context?: CreditAccountData,
   ): Promise<string | undefined> {
-    const logger = this.#caLogger(context);
+    let cast: string[] = [];
+    if (e instanceof TransactionRevertedError) {
+      cast = [
+        "run",
+        "--rpc-url",
+        this.config.ethProviderRpcs[0],
+        e.receipt.transactionHash,
+      ];
+    } else {
+      const exErr = e.walk(
+        err => err instanceof ContractFunctionExecutionError,
+      );
+      if (
+        exErr instanceof ContractFunctionExecutionError &&
+        exErr.contractAddress
+      ) {
+        const data = encodeFunctionData({
+          abi: exErr.abi,
+          args: exErr.args,
+          functionName: exErr.functionName,
+        });
+        cast = [
+          "call",
+          "--trace",
+          "--rpc-url",
+          this.config.ethProviderRpcs[0],
+          exErr.contractAddress,
+          data,
+        ];
+      }
+    }
+    if (!cast.length) {
+      return undefined;
+    }
+    return this.#runCast(cast, context);
+  }
+
+  /**
+   * Runs cast cli command and saves output to a unique file
+   * @param args
+   * @param context
+   * @returns
+   */
+  async #runCast(
+    args: string[],
+    context?: CreditAccountData,
+  ): Promise<string | undefined> {
     if (!this.config.castBin || !this.config.outDir) {
       return undefined;
     }
-    try {
-      let cast: string[] = [];
-      if (e instanceof TransactionRevertedError) {
-        cast = [
-          "run",
-          "--rpc-url",
-          this.config.ethProviderRpcs[0],
-          e.receipt.transactionHash,
-        ];
-      } else {
-        const exErr = e.walk(
-          err => err instanceof ContractFunctionExecutionError,
-        );
-        if (
-          exErr instanceof ContractFunctionExecutionError &&
-          exErr.contractAddress
-        ) {
-          const data = encodeFunctionData({
-            abi: exErr.abi,
-            args: exErr.args,
-            functionName: exErr.functionName,
-          });
-          cast = [
-            "call",
-            "--trace",
-            "--rpc-url",
-            this.config.ethProviderRpcs[0],
-            exErr.contractAddress,
-            data,
-          ];
-        }
-      }
-      if (!cast.length) {
-        return undefined;
-      }
 
+    const logger = this.#caLogger(context);
+    try {
       const traceId = `${nanoid()}.trace`;
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
       // use node-pty instead of node:child_process to have colored output
-      const pty = spawn(this.config.castBin, cast, { cols: 1024 });
+      const pty = spawn(this.config.castBin, args, { cols: 1024 });
       pty.onData(data => out.write(data));
       await new Promise(resolve => {
         pty.onExit(() => resolve(undefined));

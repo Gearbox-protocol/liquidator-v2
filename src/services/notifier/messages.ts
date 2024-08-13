@@ -1,5 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
@@ -196,6 +197,59 @@ ${callsMd(this.#callsHuman)}`,
   }
 }
 
+export class BatchLiquidationFinishedMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #liquidated: number;
+  #notLiquidated: number;
+
+  constructor(receipt: TransactionReceipt, results: OptimisticResult[]) {
+    super({ receipt });
+    this.#liquidated = results.filter(r => !r.isError).length;
+    this.#notLiquidated = results.filter(r => !!r.isError).length;
+  }
+
+  public get plain(): string {
+    if (this.receipt?.status === "success") {
+      if (this.#notLiquidated === 0) {
+        return `✅ [${this.network}] batch-liquidated ${this.#liquidated} accounts:      
+Tx receipt: ${this.receiptPlain}
+Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}`;
+      } else {
+        return `❌ [${this.network}] batch-liquidated ${this.#liquidated} accounts, but failed to liquidate ${this.#notLiquidated} more      
+Tx receipt: ${this.receiptPlain}
+Gas used: ${this.receipt?.gasUsed?.toLocaleString("en")}`;
+      }
+    }
+
+    return `❌ [${this.network}] batch-liquidate tx reverted      
+Tx: ${this.receiptPlain}`;
+  }
+
+  public get markdown(): string {
+    if (this.receipt?.status === "success") {
+      if (this.#notLiquidated === 0) {
+        return md.build(
+          md`✅ [${this.network}] batch-liquidated ${this.#liquidated} accounts
+Tx receipt: ${this.receiptMd}
+Gas used: ${md.bold(this.receipt?.gasUsed?.toLocaleString("en"))}`,
+        );
+      } else {
+        return md.build(
+          md`❌ [${this.network}] batch-liquidated ${this.#liquidated} accounts, but failed to liquidate ${this.#notLiquidated} more
+Tx receipt: ${this.receiptMd}
+Gas used: ${md.bold(this.receipt?.gasUsed?.toLocaleString("en"))}`,
+        );
+      }
+    }
+    return md.build(
+      md`❌ [${this.network}] batch-liquidate tx reverted
+Tx: ${this.receiptMd}`,
+    );
+  }
+}
+
 export class LiquidationErrorMessage
   extends BaseMessage
   implements INotifierMessage
@@ -236,6 +290,31 @@ Error: ${md.inlineCode(this.#error)}
 Path used:
 ${callsMd(this.#callsHuman)}
 ${this.#skipOnFailure}`,
+    );
+  }
+}
+export class BatchLiquidationErrorMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #error: string;
+  #accounts: CreditAccountData[];
+
+  constructor(accounts: CreditAccountData[], error: string) {
+    super({});
+    this.#accounts = accounts;
+    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
+  }
+
+  public get plain(): string {
+    return `❌ [${this.network}] failed to batch-liquidate ${this.#accounts.length} accounts      
+Error: ${this.#error}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`❌ [${this.network}] failed to batch-liquidate ${this.#accounts.length} accounts
+Error: ${md.inlineCode(this.#error)}`,
     );
   }
 }

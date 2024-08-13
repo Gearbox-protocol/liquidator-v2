@@ -34,10 +34,9 @@ import {
   type CreditManagerData,
   exceptionsAbis,
 } from "../../data/index.js";
-import { type ILogger, Logger } from "../../log/index.js";
-import AbstractLiquidationStrategyV3 from "./AbstractLiquidationStrategyV3.js";
+import type { ILogger } from "../../log/index.js";
+import SingularLiquidator from "./SingularLiquidator.js";
 import type {
-  ILiquidationStrategy,
   MakeLiquidatableResult,
   MerkleDistributorInfo,
   PartialLiquidationPreview,
@@ -51,15 +50,9 @@ interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   weightedBalance: bigint;
 }
 
-export default class LiquidationStrategyV3Partial
-  extends AbstractLiquidationStrategyV3
-  implements ILiquidationStrategy<PartialLiquidationPreview>
-{
-  public readonly name = "partial";
-  public readonly adverb = "partially";
-
-  @Logger("LiquidationStrategyV3Partial")
-  logger!: ILogger;
+export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreview> {
+  protected readonly name = "partial";
+  protected readonly adverb = "partially";
 
   #partialLiquidator?: Address;
   #priceHelper?: Address;

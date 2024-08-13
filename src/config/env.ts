@@ -3,10 +3,13 @@ import type { ConfigSchema } from "./schema.js";
 const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   addressProviderOverride: "ADDRESS_PROVIDER",
   appName: "APP_NAME",
+  batchLiquidatorAddress: "BATCH_LIQUIDATOR_ADDRESS",
   debugAccounts: "DEBUG_ACCOUNTS",
   debugManagers: "DEBUG_MANAGERS",
+  batchSize: "BATCH_SIZE",
   castBin: "CAST_BIN",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
+  deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
   ethProviderRpcs: ["JSON_RPC_PROVIDERS", "JSON_RPC_PROVIDER"],
   hfThreshold: "HF_TRESHOLD",
   restakingWorkaround: "RESTAKING_WORKAROUND",

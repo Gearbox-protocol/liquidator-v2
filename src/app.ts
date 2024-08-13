@@ -7,7 +7,7 @@ import type Client from "./services/Client.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
 import type { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
-import type { ScanServiceV3 } from "./services/scan/index.js";
+import type { Scanner } from "./services/scanner/index.js";
 import type { ISwapper } from "./services/swap/index.js";
 import version from "./version.js";
 
@@ -22,7 +22,7 @@ class App {
   addressProvider!: AddressProviderService;
 
   @DI.Inject(DI.Scanner)
-  scanServiceV3!: ScanServiceV3;
+  scanner!: Scanner;
 
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
@@ -56,7 +56,7 @@ class App {
 
     this.healthChecker.launch();
     await this.swapper.launch(this.config.network);
-    await this.scanServiceV3.launch();
+    await this.scanner.launch();
 
     if (this.config.optimistic) {
       this.log.debug("optimistic liquidation finished, writing output");
