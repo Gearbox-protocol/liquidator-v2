@@ -18,7 +18,7 @@ type IAddressProviderV3Contract = GetContractReturnType<
 const AP_BLOCK_BY_NETWORK: Record<NetworkType, bigint> = {
   Mainnet: 18433056n,
   Arbitrum: 184650310n,
-  Optimism: 117197176n, // arbitrary block, NOT_DEPLOYED yet
+  Optimism: 118410000n,
   Base: 12299805n, // arbitrary block, NOT_DEPLOYED yet
 };
 
