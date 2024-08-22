@@ -71,7 +71,7 @@ export class CreditAccountData {
   readonly cmName: string;
 
   readonly enabledTokenMask: bigint;
-  readonly healthFactor: number;
+  readonly healthFactor: bigint;
   isDeleting: boolean;
 
   readonly borrowedAmount: bigint;
@@ -104,7 +104,7 @@ export class CreditAccountData {
     this.version = Number(payload.cfVersion);
     this.cmName = payload.cmName;
 
-    this.healthFactor = Number(payload.healthFactor || 0n);
+    this.healthFactor = BigInt(payload.healthFactor || 0n);
     this.enabledTokenMask = BigInt(payload.enabledTokensMask);
     this.isDeleting = false;
 

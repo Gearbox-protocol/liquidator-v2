@@ -96,7 +96,7 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
 
 export class StartedMessage extends BaseMessage implements INotifierMessage {
   #name: string;
-  #hfThreshold: number;
+  #hfThreshold: bigint;
   #restakingWA: boolean;
 
   constructor() {

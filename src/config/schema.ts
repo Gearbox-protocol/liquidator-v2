@@ -1,4 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import { MAX_INT, type NetworkType } from "@gearbox-protocol/sdk-gov";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -46,7 +46,7 @@ export const ConfigSchema = z.object({
    * Filter out all accounts with HF >= threshold during scan stage
    * 65535 is constant for zero-debt account
    */
-  hfThreshold: z.coerce.number().min(0).max(65536).int().default(65536),
+  hfThreshold: z.coerce.bigint().min(0n).max(MAX_INT).default(MAX_INT),
   optimistic: booleanLike.pipe(z.boolean().optional()),
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   partialLiquidatorAddress: Address.optional(),

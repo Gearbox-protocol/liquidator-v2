@@ -133,7 +133,7 @@ export class Scanner {
         atBlock,
       );
     }
-    accounts = accounts.sort((a, b) => a.healthFactor - b.healthFactor);
+    accounts = accounts.sort((a, b) => Number(a.healthFactor - b.healthFactor));
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
       accounts = this.#filterRestakingAccounts(accounts);
@@ -205,8 +205,10 @@ export class Scanner {
 
     accounts = accounts.filter(ca => {
       const ok = ca.healthFactor < this.config.hfThreshold;
+      // Currently in data compressor helathFactor is set to type(uint16).max for zero-debt accounts
+      // TODO: this will be changed to type(uint256).max in 3.1
       // 65535 is zero-debt account, no need to warn about it
-      if (!ok && ca.healthFactor !== 65535) {
+      if (!ok && ca.healthFactor !== 65535n) {
         this.log.warn(
           `health factor of ${ca.name} ${ca.healthFactor} > ${this.config.hfThreshold} threshold, skipping`,
         );

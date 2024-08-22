@@ -237,7 +237,7 @@ export default class BatchLiquidator
         }),
         balancesBefore: a.filterDust(),
         balancesAfter: {},
-        hfBefore: a.healthFactor,
+        hfBefore: Number(a.healthFactor),
         hfAfter: 0,
         creditManager: a.creditManager,
         borrower: a.borrower,

@@ -88,7 +88,7 @@ export default abstract class AbstractLiquidator {
       borrower: acc.borrower,
       account: acc.addr,
       balancesBefore: acc.filterDust(),
-      hfBefore: acc.healthFactor,
+      hfBefore: Number(acc.healthFactor),
       balancesAfter: {},
       hfAfter: 0,
       gasUsed: 0,
@@ -125,7 +125,7 @@ export default abstract class AbstractLiquidator {
   ): Promise<OptimisticResult> {
     const ca = await this.updateCreditAccountData(acc);
     result.balancesAfter = ca.filterDust();
-    result.hfAfter = ca.healthFactor;
+    result.hfAfter = Number(ca.healthFactor);
 
     const balanceAfter = await this.getExecutorBalance(ca.underlyingToken);
     result.gasUsed = Number(receipt.gasUsed);
