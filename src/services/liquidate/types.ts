@@ -8,6 +8,7 @@ import type {
 } from "../../data/index.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
+  dataFeedId: string;
   /**
    * In case when token in PriceOnDemand is ticker, this will be the original token
    * Otherwise they are the same
