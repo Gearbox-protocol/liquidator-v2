@@ -34,13 +34,6 @@ import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
 import type { RedstoneFeed } from "./OracleServiceV3.js";
 import type OracleServiceV3 from "./OracleServiceV3.js";
 
-interface RedstoneRequest {
-  originalToken: Address;
-  tokenOrTicker: Address;
-  reserve: boolean;
-  dataFeedId: string;
-}
-
 interface TimestampedCalldata {
   callData: `0x${string}`;
   ts: number;
@@ -58,12 +51,6 @@ export type RedstonePriceFeed = Extract<
   PriceFeedData,
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
-
-const HISTORICAL_BLOCKLIST = new Set<string>([
-  // "rsETH_FUNDAMENTAL",
-  // "weETH_FUNDAMENTAL",
-  // "ezETH_FUNDAMENTAL",
-]);
 
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
@@ -327,6 +314,7 @@ export class RedstoneServiceV3 {
     const cacheAllowed = this.config.optimistic;
 
     const networkUpdates: RedstoneUpdate[] = [];
+    let networkResponses: PriceOnDemandExtras[] = [];
     const cachedResponses: PriceOnDemandExtras[] = [];
 
     for (const upd of updates) {
@@ -339,16 +327,21 @@ export class RedstoneServiceV3 {
       }
     }
 
-    const networkResponses = await this.#fetchRedstonePayloadForManualUsage(
-      networkUpdates,
-      dataServiceId,
-      uniqueSignersCount,
-    );
-
-    if (cacheAllowed) {
-      for (const resp of networkResponses) {
-        const key = redstoneCacheKey(resp, dataServiceId, uniqueSignersCount);
-        this.#optimisticCache.set(key, resp);
+    if (networkUpdates.length) {
+      logger.debug(
+        `fetching ${networkUpdates.length} redstone updates: ${printFeeds(networkUpdates)}`,
+      );
+      networkResponses = await this.#fetchRedstonePayloadForManualUsage(
+        networkUpdates,
+        dataServiceId,
+        uniqueSignersCount,
+      );
+      if (cacheAllowed) {
+        for (const resp of networkResponses) {
+          const key = redstoneCacheKey(resp, dataServiceId, uniqueSignersCount);
+          this.#optimisticCache.set(key, resp);
+          logger.debug(`cached response for ${key}`);
+        }
       }
     }
 
