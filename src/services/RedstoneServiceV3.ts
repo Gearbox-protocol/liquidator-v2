@@ -384,7 +384,12 @@ export class RedstoneServiceV3 {
       const { dataFeedId, originalToken, reserve, token } = t;
       const signedDataPackages = packagesByDataFeedId[dataFeedId];
       if (!signedDataPackages) {
-        throw new Error(`cannot find data package for ${dataFeedId}`);
+        throw new Error(`cannot find data packages for ${dataFeedId}`);
+      }
+      if (signedDataPackages.length !== uniqueSignersCount) {
+        throw new Error(
+          `got ${signedDataPackages.length} data packages for ${dataFeedId}, but expected ${uniqueSignersCount}`,
+        );
       }
       const calldataWithTs = getCalldataWithTimestamp(
         signedDataPackages,
