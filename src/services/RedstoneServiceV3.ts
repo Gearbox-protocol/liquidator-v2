@@ -12,7 +12,6 @@ import type { SignedDataPackage } from "redstone-protocol";
 import { RedstonePayload } from "redstone-protocol";
 import type { Address } from "viem";
 import {
-  bytesToString,
   encodeAbiParameters,
   encodeFunctionData,
   parseAbiParameters,
@@ -365,12 +364,14 @@ export class RedstoneServiceV3 {
     dataServiceId: string,
     uniqueSignersCount: number,
   ): Promise<PriceOnDemandExtras[]> {
-    const dataPayload = await new DataServiceWrapper({
+    const wrapper = new DataServiceWrapper({
       dataServiceId,
       dataPackagesIds: Array.from(new Set(updates.map(t => t.dataFeedId))),
       uniqueSignersCount,
       historicalTimestamp: this.#optimisticTimestamp,
-    }).prepareRedstonePayload(true);
+    });
+    wrapper.setMetadataTimestamp(Date.now());
+    const dataPayload = await wrapper.prepareRedstonePayload(true);
 
     // unsigned metadata looks like
     // "1724772413180#0.6.1#redstone-primary-prod___"
@@ -393,7 +394,7 @@ export class RedstoneServiceV3 {
       }
       const calldataWithTs = getCalldataWithTimestamp(
         signedDataPackages,
-        parsed.unsignedMetadata,
+        wrapper.getUnsignedMetadata(),
       );
       result.push({
         dataFeedId,
@@ -452,12 +453,23 @@ function groupDataPackages(
 
 function getCalldataWithTimestamp(
   packages: SignedDataPackage[],
-  unsignedMetadata: Uint8Array,
+  unsignedMetadata: string,
 ): TimestampedCalldata {
-  const payload = new RedstonePayload(
-    packages,
-    bytesToString(unsignedMetadata),
-  );
+  const originalPayload = RedstonePayload.prepare(packages, unsignedMetadata);
+
+  // Calculating the number of bytes in the hex representation of payload
+  // We divide by 2, beacuse 2 symbols in a hex string represent one byte
+  const originalPayloadLength = originalPayload.length / 2;
+
+  // Number of bytes that we want to add to unsigned metadata so that
+  // payload byte size becomes a multiplicity of 32
+  const bytesToAdd = 32 - (originalPayloadLength % 32);
+
+  // Adding underscores to the end of the metadata string, each underscore
+  // uses one byte in UTF-8
+  const newUnsignedMetadata = unsignedMetadata + "_".repeat(bytesToAdd);
+
+  const payload = RedstonePayload.prepare(packages, newUnsignedMetadata);
 
   let ts = 0;
   packages.forEach(p => {
@@ -472,7 +484,7 @@ function getCalldataWithTimestamp(
   return {
     callData: encodeAbiParameters(parseAbiParameters("uint256, bytes"), [
       BigInt(ts),
-      `0x${payload.toBytesHexWithout0xPrefix()}`,
+      `0x${payload}`,
     ]),
     ts,
   };
