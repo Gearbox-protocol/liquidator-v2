@@ -33,6 +33,9 @@ interface PriceFeedEntry {
 }
 
 export interface RedstoneFeed {
+  /**
+   * Can be real token or ticker address
+   */
   token: Address;
   dataFeedId: string;
   reserve: boolean;

@@ -8,10 +8,10 @@ import {
 } from "@gearbox-protocol/sdk-gov";
 import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
+import type { SignedDataPackage } from "redstone-protocol";
 import { RedstonePayload } from "redstone-protocol";
 import type { Address } from "viem";
 import {
-  bytesToString,
   encodeAbiParameters,
   encodeFunctionData,
   parseAbiParameters,
@@ -34,6 +34,11 @@ import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
 import type { RedstoneFeed } from "./OracleServiceV3.js";
 import type OracleServiceV3 from "./OracleServiceV3.js";
 
+interface TimestampedCalldata {
+  callData: `0x${string}`;
+  ts: number;
+}
+
 interface RedstoneUpdate extends RedstoneFeed {
   /**
    * In case when Redstone feed is using ticker to updates, this will be the original token
@@ -46,12 +51,6 @@ export type RedstonePriceFeed = Extract<
   PriceFeedData,
   { type: PriceFeedType.REDSTONE_ORACLE }
 >;
-
-const HISTORICAL_BLOCKLIST = new Set<string>([
-  // "rsETH_FUNDAMENTAL",
-  // "weETH_FUNDAMENTAL",
-  // "ezETH_FUNDAMENTAL",
-]);
 
 @DI.Injectable(DI.Redstone)
 export class RedstoneServiceV3 {
@@ -113,7 +112,7 @@ export class RedstoneServiceV3 {
   }
 
   public async updatesForTokens(
-    tokens: string[],
+    tokens: Address[],
     activeOnly: boolean,
     logContext: Record<string, any> = {},
   ): Promise<PriceOnDemandExtras[]> {
@@ -168,18 +167,11 @@ export class RedstoneServiceV3 {
     logger.debug(
       `need to update ${redstoneUpdates.length} redstone feeds: ${printFeeds(redstoneUpdates)}`,
     );
-    const result = await Promise.all(
-      redstoneUpdates.map(({ originalToken, token, dataFeedId, reserve }) =>
-        this.#getRedstonePayloadForManualUsage(
-          originalToken,
-          token,
-          reserve,
-          "redstone-primary-prod",
-          dataFeedId,
-          REDSTONE_SIGNERS.signersThreshold,
-          logContext,
-        ),
-      ),
+
+    const result = await this.#getRedstonePayloadForManualUsage(
+      redstoneUpdates,
+      "redstone-primary-prod",
+      REDSTONE_SIGNERS.signersThreshold,
     );
 
     if (this.config.optimistic && result.length > 0) {
@@ -245,7 +237,7 @@ export class RedstoneServiceV3 {
     ca: CreditAccountData,
     activeOnly = false,
   ): Promise<PriceUpdate[]> {
-    const accTokens: string[] = [];
+    const accTokens: Address[] = [];
     for (const { token, balance, isEnabled } of ca.allBalances) {
       if (isEnabled && balance > 10n) {
         accTokens.push(token);
@@ -313,96 +305,109 @@ export class RedstoneServiceV3 {
   }
 
   async #getRedstonePayloadForManualUsage(
-    originalToken: Address,
-    tokenOrTicker: Address,
-    reserve: boolean,
+    updates: RedstoneUpdate[],
     dataServiceId: string,
-    dataFeedId: string,
     uniqueSignersCount: number,
     logContext: Record<string, any> = {},
-  ): Promise<PriceOnDemandExtras> {
+  ): Promise<PriceOnDemandExtras[]> {
     const logger = this.logger.child(logContext);
     const cacheAllowed = this.config.optimistic;
-    const key = redstoneCacheKey(
-      tokenOrTicker,
-      reserve,
-      dataServiceId,
-      dataFeedId,
-      uniqueSignersCount,
-    );
-    if (cacheAllowed) {
-      if (this.#optimisticCache.has(key)) {
+
+    const networkUpdates: RedstoneUpdate[] = [];
+    let networkResponses: PriceOnDemandExtras[] = [];
+    const cachedResponses: PriceOnDemandExtras[] = [];
+
+    for (const upd of updates) {
+      const key = redstoneCacheKey(upd, dataServiceId, uniqueSignersCount);
+      if (cacheAllowed && this.#optimisticCache.has(key)) {
         logger.debug(`using cached response for ${key}`);
-        return this.#optimisticCache.get(key)!;
+        cachedResponses.push(this.#optimisticCache.get(key)!);
+      } else {
+        networkUpdates.push(upd);
       }
     }
 
-    const dataPayload = await new DataServiceWrapper({
-      dataServiceId,
-      dataPackagesIds: [dataFeedId],
-      uniqueSignersCount,
-      historicalTimestamp: HISTORICAL_BLOCKLIST.has(dataFeedId)
-        ? undefined
-        : this.#optimisticTimestamp,
-    }).prepareRedstonePayload(true);
-
-    const { signedDataPackages, unsignedMetadata } = RedstonePayload.parse(
-      toBytes(`0x${dataPayload}`),
-    );
-
-    const dataPackagesList = splitResponse(
-      signedDataPackages,
-      uniqueSignersCount,
-    );
-
-    const result = dataPackagesList.map(list => {
-      const payload = new RedstonePayload(
-        list,
-        bytesToString(unsignedMetadata),
+    if (networkUpdates.length) {
+      logger.debug(
+        `fetching ${networkUpdates.length} redstone updates: ${printFeeds(networkUpdates)}`,
       );
-
-      let ts = 0;
-      list.forEach(p => {
-        const newTimestamp = p.dataPackage.timestampMilliseconds / 1000;
-        if (ts === 0) {
-          ts = newTimestamp;
-        } else if (ts !== newTimestamp) {
-          throw new Error("Timestamps are not equal");
+      networkResponses = await this.#fetchRedstonePayloadForManualUsage(
+        networkUpdates,
+        dataServiceId,
+        uniqueSignersCount,
+      );
+      if (cacheAllowed) {
+        for (const resp of networkResponses) {
+          const key = redstoneCacheKey(resp, dataServiceId, uniqueSignersCount);
+          this.#optimisticCache.set(key, resp);
+          logger.debug(`cached response for ${key}`);
         }
-      });
-
-      return [
-        encodeAbiParameters(parseAbiParameters("uint256, bytes"), [
-          BigInt(ts),
-          `0x${payload.toBytesHexWithout0xPrefix()}`,
-        ]),
-        ts,
-      ] as const;
-    });
-
-    const response: PriceOnDemandExtras = {
-      originalToken,
-      token: tokenOrTicker,
-      reserve,
-      callData: result[0][0],
-      ts: result[0][1],
-    };
-
-    if (cacheAllowed) {
-      this.#optimisticCache.set(key, response);
+      }
     }
 
-    return response;
+    this.logger.debug(
+      `got ${networkResponses.length} updates from redstone and ${cachedResponses.length} from cache`,
+    );
+
+    return [...networkResponses, ...cachedResponses];
+  }
+
+  async #fetchRedstonePayloadForManualUsage(
+    updates: RedstoneUpdate[],
+    dataServiceId: string,
+    uniqueSignersCount: number,
+  ): Promise<PriceOnDemandExtras[]> {
+    const wrapper = new DataServiceWrapper({
+      dataServiceId,
+      dataPackagesIds: Array.from(new Set(updates.map(t => t.dataFeedId))),
+      uniqueSignersCount,
+      historicalTimestamp: this.#optimisticTimestamp,
+    });
+    wrapper.setMetadataTimestamp(Date.now());
+    const dataPayload = await wrapper.prepareRedstonePayload(true);
+
+    // unsigned metadata looks like
+    // "1724772413180#0.6.1#redstone-primary-prod___"
+    // where 0.6.1 is @redstone-finance/evm-connector version
+    // and 1724772413180 is current timestamp
+    const parsed = RedstonePayload.parse(toBytes(`0x${dataPayload}`));
+    const packagesByDataFeedId = groupDataPackages(parsed.signedDataPackages);
+
+    const result: PriceOnDemandExtras[] = [];
+    for (const t of updates) {
+      const { dataFeedId, originalToken, reserve, token } = t;
+      const signedDataPackages = packagesByDataFeedId[dataFeedId];
+      if (!signedDataPackages) {
+        throw new Error(`cannot find data packages for ${dataFeedId}`);
+      }
+      if (signedDataPackages.length !== uniqueSignersCount) {
+        throw new Error(
+          `got ${signedDataPackages.length} data packages for ${dataFeedId}, but expected ${uniqueSignersCount}`,
+        );
+      }
+      const calldataWithTs = getCalldataWithTimestamp(
+        signedDataPackages,
+        wrapper.getUnsignedMetadata(),
+      );
+      result.push({
+        dataFeedId,
+        originalToken,
+        token,
+        reserve,
+        ...calldataWithTs,
+      });
+    }
+
+    return result;
   }
 }
 
 function redstoneCacheKey(
-  token: Address,
-  reserve: boolean,
+  update: RedstoneUpdate,
   dataServiceId: string,
-  dataFeedId: string,
   uniqueSignersCount: number,
 ): string {
+  const { token, dataFeedId, reserve } = update;
   return [
     getTokenSymbolOrTicker(token),
     reserve ? "reserve" : "main",
@@ -412,15 +417,70 @@ function redstoneCacheKey(
   ].join("|");
 }
 
-function splitResponse<T>(arr: T[], size: number): T[][] {
-  const chunks = [];
+function groupDataPackages(
+  signedDataPackages: SignedDataPackage[],
+): Record<string, SignedDataPackage[]> {
+  const packagesByDataFeedId: Record<string, SignedDataPackage[]> = {};
+  for (const p of signedDataPackages) {
+    const { dataPoints } = p.dataPackage;
 
-  for (let i = 0; i < arr.length; i += size) {
-    const chunk = arr.slice(i, i + size);
-    chunks.push(chunk);
+    // Check if all data points have the same dataFeedId
+    const dataFeedId0 = dataPoints[0].dataFeedId;
+    for (const dp of dataPoints) {
+      if (dp.dataFeedId !== dataFeedId0) {
+        throw new Error(
+          `data package contains data points with different dataFeedIds: ${dp.dataFeedId} and ${dataFeedId0}`,
+        );
+      }
+    }
+
+    // Group data packages by dataFeedId
+    if (!packagesByDataFeedId[dataFeedId0]) {
+      packagesByDataFeedId[dataFeedId0] = [];
+    }
+    packagesByDataFeedId[dataFeedId0].push(p);
   }
 
-  return chunks;
+  return packagesByDataFeedId;
+}
+
+function getCalldataWithTimestamp(
+  packages: SignedDataPackage[],
+  unsignedMetadata: string,
+): TimestampedCalldata {
+  const originalPayload = RedstonePayload.prepare(packages, unsignedMetadata);
+
+  // Calculating the number of bytes in the hex representation of payload
+  // We divide by 2, beacuse 2 symbols in a hex string represent one byte
+  const originalPayloadLength = originalPayload.length / 2;
+
+  // Number of bytes that we want to add to unsigned metadata so that
+  // payload byte size becomes a multiplicity of 32
+  const bytesToAdd = 32 - (originalPayloadLength % 32);
+
+  // Adding underscores to the end of the metadata string, each underscore
+  // uses one byte in UTF-8
+  const newUnsignedMetadata = unsignedMetadata + "_".repeat(bytesToAdd);
+
+  const payload = RedstonePayload.prepare(packages, newUnsignedMetadata);
+
+  let ts = 0;
+  packages.forEach(p => {
+    const newTimestamp = p.dataPackage.timestampMilliseconds / 1000;
+    if (ts === 0) {
+      ts = newTimestamp;
+    } else if (ts !== newTimestamp) {
+      throw new Error("Timestamps are not equal");
+    }
+  });
+
+  return {
+    callData: encodeAbiParameters(parseAbiParameters("uint256, bytes"), [
+      BigInt(ts),
+      `0x${payload}`,
+    ]),
+    ts,
+  };
 }
 
 function printFeeds(feeds: RedstoneFeed[]): string {
