@@ -1,6 +1,6 @@
 import type {
   iBatchLiquidatorAbi,
-  iLiquidatorAbi,
+  iPartialLiquidatorAbi,
   iPriceHelperAbi,
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { AbiParameterToPrimitiveType, ExtractAbiFunction } from "abitype";
@@ -13,8 +13,8 @@ export type IPriceHelperContract = GetContractReturnType<
   PublicClient
 >;
 
-export type ILiquidatorContract = GetContractReturnType<
-  typeof iLiquidatorAbi,
+export type IPartialLiquidatorContract = GetContractReturnType<
+  typeof iPartialLiquidatorAbi,
   PublicClient
 >;
 

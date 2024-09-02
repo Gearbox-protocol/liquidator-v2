@@ -1,4 +1,4 @@
-import { MAX_INT, type NetworkType } from "@gearbox-protocol/sdk-gov";
+import { MAX_INT } from "@gearbox-protocol/sdk-gov";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -48,8 +48,10 @@ export const ConfigSchema = z.object({
    */
   hfThreshold: z.coerce.bigint().min(0n).max(MAX_INT).default(MAX_INT),
   optimistic: booleanLike.pipe(z.boolean().optional()),
-  deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
-  partialLiquidatorAddress: Address.optional(),
+  deployAaveLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
+  aavePartialLiquidatorAddress: Address.optional(),
+  deployGhoLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
+  ghoPartialLiquidatorAddress: Address.optional(),
   deployBatchLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   batchSize: z.coerce.number().nonnegative().default(10),
   batchLiquidatorAddress: Address.optional(),
@@ -72,12 +74,3 @@ export const ConfigSchema = z.object({
 });
 
 export type ConfigSchema = z.infer<typeof ConfigSchema>;
-
-/**
- * Config + derived fields
- */
-export type Config = ConfigSchema & {
-  network: NetworkType;
-  chainId: number;
-  startBlock: bigint;
-};

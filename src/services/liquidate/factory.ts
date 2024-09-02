@@ -13,16 +13,10 @@ export class LiquidatorFactory implements IFactory<ILiquidatorService, []> {
   config!: Config;
 
   produce(): ILiquidatorService {
-    const {
-      deployBatchLiquidatorContracts,
-      deployPartialLiquidatorContracts,
-      partialLiquidatorAddress,
-      batchLiquidatorAddress,
-    } = this.config;
-    if (deployPartialLiquidatorContracts || partialLiquidatorAddress) {
+    if (this.config.isPartial) {
       return new SingularPartialLiquidator();
     }
-    if (deployBatchLiquidatorContracts || batchLiquidatorAddress) {
+    if (this.config.isBatch) {
       return new BatchLiquidator();
     }
     return new SingularFullLiquidator();

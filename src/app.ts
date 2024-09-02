@@ -1,5 +1,4 @@
-import type { Config } from "./config/index.js";
-import { loadConfig } from "./config/index.js";
+import { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
 import type { AddressProviderService } from "./services/AddressProviderService.js";
@@ -68,7 +67,7 @@ class App {
 }
 
 export async function launchApp(): Promise<void> {
-  const config = await loadConfig();
+  const config = await Config.load();
   DI.set(DI.Config, config);
   const app = new App();
   await app.launch();

@@ -170,18 +170,10 @@ export class Scanner {
     priceUpdates: PriceOnDemand[],
     blockNumber?: bigint,
   ): Promise<[accounts: CreditAccountData[], failedTokens: Address[]]> {
-    const {
-      optimistic,
-      debugAccounts,
-      debugManagers,
-      deployPartialLiquidatorContracts,
-      partialLiquidatorAddress,
-    } = this.config;
+    const { optimistic, debugAccounts, debugManagers } = this.config;
     // during partial + optimistic liquidation, liquidation condition is not created externally.
     // it's created by liquidator itself before the liquidation.
-    const liquidatableOnly =
-      !optimistic ||
-      (!deployPartialLiquidatorContracts && !partialLiquidatorAddress);
+    const liquidatableOnly = !optimistic || !this.config.isPartial;
 
     const selection: AccountSelection = {
       liquidatableOnly,
