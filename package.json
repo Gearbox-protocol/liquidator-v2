@@ -49,7 +49,7 @@
     "lint-staged": "^15.2.10",
     "nanoid": "^5.0.7",
     "node-pty": "^1.0.0",
-    "pino": "^9.3.2",
+    "pino": "^9.4.0",
     "prettier": "^3.3.3",
     "redstone-protocol": "^1.0.5",
     "tsx": "^4.19.0",
