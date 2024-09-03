@@ -14,34 +14,41 @@ This mode increases protocol security showing potential problems with liquidatio
 
 Use environment variables to configure bot
 
-| Environment Variable Name              | Description                                                                 |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| ADDRESS_PROVIDER                       | Address provider address override (optional)                                |
-| APP_NAME                               | Application name, for logging                                               |
-| DEBUG_ACCOUNTS                         | Debug accounts (optional)                                                   |
-| DEBUG_MANAGERS                         | Debug managers (optional)                                                   |
-| CAST_BIN                               | Path to foundry/cast binary (optional)                                      |
-| DEPLOY_PARTIAL_LIQUIDATOR              | Deploy partial liquidator contracts (optional)                              |
-| JSON_RPC_PROVIDERS / JSON_RPC_PROVIDER | Ethereum provider RPCs (optional)                                           |
-| HF_TRESHOLD                            | HF threshold, default is 65536                                              |
-| RESTAKING_WORKAROUND                   | Restaking workaround (optional)                                             |
-| MIN_BALANCE                            | Minimum balance for notification, default is 500000000000000000n (optional) |
-| ONE_INCH_API_KEY                       | 1inch API key (optional)                                                    |
-| OPTIMISTIC                             | Optimistic liquidations (optional)                                          |
-| OUT_DIR                                | Output directory, default is "."                                            |
-| OUT_ENDPOINT                           | Output endpoint URL (optional)                                              |
-| OUT_HEADERS                            | Output headers, default is "{}"                                             |
-| OUT_FILE_NAME                          | Output file name for optimistic liquidator                                  |
-| OUT_S3_BUCKET                          | Output S3 bucket (optional)                                                 |
-| OUT_S3_PREFIX                          | Output S3 prefix, default is ""                                             |
-| PARTIAL_LIQUIDATOR_ADDRESS             | Partial liquidator address (optional)                                       |
-| PRIVATE_KEY                            | Private key                                                                 |
-| PORT                                   | Port number, default is 4000                                                |
-| SLIPPAGE                               | Slippage, default is 50                                                     |
-| SWAP_TO_ETH                            | Swap to ETH method, can be "1inch" or "uniswap" (optional)                  |
-| TELEGRAM_BOT_TOKEN                     | Telegram bot token (optional)                                               |
-| TELEGRAM_NOTIFICATIONS_CHANNEL         | Telegram notifications channel, must start with "-" (optional)              |
-| TELEGRAM_ALERTS_CHANNEL                | Telegram alerts channel, must start with "-" (optional)                     |
+# Environment Variables Configuration
+
+| Environment Variable              | Description                                                                                                                 |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `JSON_RPC_PROVIDERS`              | RPC providers to use.                                                                                                       |
+| `PRIVATE_KEY`                     | Private key used to send liquidation transactions.                                                                          |
+| `SLIPPAGE`                        | Slippage value for pathfinder.                                                                                              |
+| `ADDRESS_PROVIDER`                | By default uses address provider from @gearbox-protocol/sdk-gov. Use this option to override address provider.              |
+| `HF_TRESHOLD`                     | Filter out all accounts with HF >= threshold during scan stage.                                                             |
+| `DEPLOY_AAVE_PARTIAL_LIQUIDATOR`  | Deploy Aave partial liquidator contracts.                                                                                   |
+| `DEPLOY_GHO_PARTIAL_LIQUIDATOR`   | Deploy Gho partial liquidator contracts.                                                                                    |
+| `AAVE_PARTIAL_LIQUIDATOR_ADDRESS` | Address of deployed partial liquidator contract for all credit managers except for GHO-based.                               |
+| `GHO_PARTIAL_LIQUIDATOR_ADDRESS`  | Address of deployed partial liquidator contract for GHO credit managers.                                                    |
+| `DEPLOY_BATCH_LIQUIDATOR`         | Deploy batch liquidator contracts.                                                                                          |
+| `BATCH_LIQUIDATOR_ADDRESS`        | Address of deployed batch liquidator contract.                                                                              |
+| `BATCH_SIZE`                      | Number of accounts to liquidate at once using batch liquidator.                                                             |
+| `MIN_BALANCE`                     | If balance drops before this value - we should send notification.                                                           |
+| `TELEGRAM_BOT_TOKEN`              | Telegram bot token used to send notifications.                                                                              |
+| `TELEGRAM_NOTIFICATIONS_CHANNEL`  | Telegram channel where bot will post non-critical notifications.                                                            |
+| `TELEGRAM_ALERTS_CHANNEL`         | Telegram channel where bot will post critical notifications.                                                                |
+| `RESTAKING_WORKAROUND`            | Flag to enable less eager liquidations for LRT tokens.                                                                      |
+| `SWAP_TO_ETH`                     | Use this mechanism to swap underlying token to ETH after the liquidation (abandoned feature).                               |
+| `ONE_INCH_API_KEY`                | 1inch API key for swapper.                                                                                                  |
+| `APP_NAME`                        | App name used in various messages to distinguish instances.                                                                 |
+| `PORT`                            | Port to expose some vital signals and metrics.                                                                              |
+| `DEBUG_ACCOUNTS`                  | Only check these accounts during local debug session.                                                                       |
+| `DEBUG_MANAGERS`                  | Only check these credit managers during local debug session.                                                                |
+| `OPTIMISTIC`                      | Enable optimistic liquidations.                                                                                             |
+| `CAST_BIN`                        | Path to foundry/cast binary, so that we can create tree-like traces in case of errors. Used during optimistic liquidations. |
+| `OUT_DIR`                         | Directory to save JSON with optimistic liquidation results.                                                                 |
+| `OUT_ENDPOINT`                    | REST endpoint to POST JSON with optimistic liquidation results.                                                             |
+| `OUT_HEADERS`                     | Headers for REST endpoint.                                                                                                  |
+| `OUT_FILE_NAME`                   | Filename of JSON with optimistic liquidation results for S3 or dir output.                                                  |
+| `OUT_S3_BUCKET`                   | S3 bucket to upload JSON with optimistic liquidation results.                                                               |
+| `OUT_S3_PREFIX`                   | S3 bucket path prefix.                                                                                                      |
 
 ## How to launch
 
