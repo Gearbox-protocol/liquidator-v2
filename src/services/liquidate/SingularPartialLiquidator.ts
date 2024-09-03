@@ -1,22 +1,15 @@
 import {
-  aaveFlTakerAbi,
-  iLiquidatorAbi,
+  iPartialLiquidatorAbi,
   iPriceHelperAbi,
-  liquidatorAbi,
   priceHelperAbi,
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
-import {
-  AaveFLTaker_bytecode,
-  Liquidator_bytecode,
-  PriceHelper_bytecode,
-} from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
+import { PriceHelper_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import type { ExcludeArrayProps } from "@gearbox-protocol/sdk-gov";
 import {
-  ADDRESS_0X0,
-  contractsByNetwork,
   formatBN,
   getDecimals,
   PERCENTAGE_FACTOR,
+  tokenDataByNetwork,
   tokenSymbolByAddress,
   WAD,
 } from "@gearbox-protocol/sdk-gov";
@@ -24,7 +17,6 @@ import {
   iaclAbi,
   iCreditConfiguratorV3Abi,
   iCreditManagerV3Abi,
-  iDegenDistributorV3Abi,
 } from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseEther } from "viem";
@@ -35,10 +27,12 @@ import {
   exceptionsAbis,
 } from "../../data/index.js";
 import type { ILogger } from "../../log/index.js";
+import AAVELiquidatorContract from "./AAVELiquidatorContract.js";
+import GHOLiquidatorContract from "./GHOLiquidatorContract.js";
+import type PartialLiquidatorContract from "./PartialLiquidatorContract.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
   MakeLiquidatableResult,
-  MerkleDistributorInfo,
   PartialLiquidationPreview,
 } from "./types.js";
 import type { TokenPriceInfo } from "./viem-types.js";
@@ -54,10 +48,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   protected readonly name = "partial";
   protected readonly adverb = "partially";
 
-  #partialLiquidator?: Address;
   #priceHelper?: Address;
   #configuratorAddr?: Address;
-  #registeredCMs: Record<Address, boolean> = {};
+  /**
+   * mapping of credit manager address to deployed partial liquidator
+   */
+  #liquidatorForCM: Record<Address, PartialLiquidatorContract> = {};
 
   public async launch(): Promise<void> {
     await super.launch();
@@ -67,13 +63,34 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       "PARTIAL_LIQUIDATION_BOT",
       300,
     );
-    const aavePool =
-      contractsByNetwork[this.config.network].AAVE_V3_LENDING_POOL;
-    this.logger.debug(`router=${router}, bot=${bot}, aave pool = ${aavePool}`);
 
     await this.#deployPriceHelper();
-    await this.#deployPartialLiquidator(router, bot, aavePool);
-    await this.#configurePartialLiquidator(router, bot);
+    const cms = await this.getCreditManagersV3List();
+
+    const aaveLiquidator = new AAVELiquidatorContract(router, bot);
+    const ghoLiquidator = new GHOLiquidatorContract(router, bot);
+    const GHO = tokenDataByNetwork[this.config.network].GHO.toLowerCase();
+
+    for (const cm of cms) {
+      if (cm.underlyingToken === GHO) {
+        ghoLiquidator.addCreditManager(cm);
+        this.#liquidatorForCM[cm.address] = ghoLiquidator;
+      } else {
+        aaveLiquidator.addCreditManager(cm);
+        this.#liquidatorForCM[cm.address] = aaveLiquidator;
+      }
+    }
+
+    for (const contract of [aaveLiquidator, ghoLiquidator]) {
+      if (!contract.isSupported) {
+        this.logger.info(
+          `${contract.name} is not supported on ${this.config.network}`,
+        );
+        continue;
+      }
+      await contract.deploy();
+      await contract.configure();
+    }
   }
 
   public async makeLiquidatable(
@@ -90,7 +107,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         "warning: account has tokens without reserve price feeds",
       );
     }
-    if (!this.#registeredCMs[ca.creditManager.toLowerCase() as Address]) {
+    if (!this.liquidatorForCA(ca)) {
       throw new Error(
         "warning: account's credit manager is not registered in partial liquidator",
       );
@@ -123,6 +140,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
+    const liquidatorAddr = this.liquidatorForCA(ca);
+    if (!liquidatorAddr) {
+      throw new Error(
+        `no partial liquidator contract found for account ${ca.addr} in ${ca.cmName}`,
+      );
+    }
     const {
       result: [
         tokenOut,
@@ -133,8 +156,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       ],
     } = await this.client.pub.simulateContract({
       account: this.client.account,
-      abi: [...iLiquidatorAbi, ...exceptionsAbis],
-      address: this.partialLiquidator,
+      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      address: liquidatorAddr,
       functionName: "getOptimalLiquidation",
       args: [ca.addr, 10100n, priceUpdates as any],
     });
@@ -162,8 +185,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     try {
       const { result: preview } = await this.client.pub.simulateContract({
         account: this.client.account,
-        address: this.partialLiquidator,
-        abi: [...iLiquidatorAbi, ...exceptionsAbis],
+        address: liquidatorAddr,
+        abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
         functionName: "previewPartialLiquidation",
         args: [
           ca.creditManager,
@@ -209,10 +232,16 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
+    const liquidatorAddr = this.liquidatorForCA(account);
+    if (!liquidatorAddr) {
+      throw new Error(
+        `no partial liquidator contract found for account ${account.addr} in ${account.cmName}`,
+      );
+    }
     return this.client.pub.simulateContract({
       account: this.client.account,
-      address: this.partialLiquidator,
-      abi: [...iLiquidatorAbi, ...exceptionsAbis],
+      address: liquidatorAddr,
+      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,
@@ -349,84 +378,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     });
   }
 
-  async #deployPartialLiquidator(
-    router: Address,
-    bot: Address,
-    aavePool: Address,
-  ): Promise<void> {
-    let partialLiquidatorAddress = this.config.partialLiquidatorAddress;
-    if (!partialLiquidatorAddress) {
-      this.logger.debug("deploying partial liquidator");
-
-      let hash = await this.client.wallet.deployContract({
-        abi: aaveFlTakerAbi,
-        bytecode: AaveFLTaker_bytecode,
-        args: [aavePool],
-      });
-      this.logger.debug(`waiting for AaveFLTaker to deploy, tx hash: ${hash}`);
-      const { contractAddress: aaveFlTakerAddr } =
-        await this.client.pub.waitForTransactionReceipt({
-          hash,
-          timeout: 120_000,
-        });
-      if (!aaveFlTakerAddr) {
-        throw new Error(`AaveFLTaker was not deployed, tx hash: ${hash}`);
-      }
-      let owner = await this.client.pub.readContract({
-        abi: aaveFlTakerAbi,
-        functionName: "owner",
-        address: aaveFlTakerAddr,
-      });
-      this.logger.debug(
-        `deployed AaveFLTaker at ${aaveFlTakerAddr} owned by ${owner} in tx ${hash}`,
-      );
-
-      hash = await this.client.wallet.deployContract({
-        abi: liquidatorAbi,
-        bytecode: Liquidator_bytecode,
-        args: [router, bot, aavePool, aaveFlTakerAddr],
-      });
-      this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
-      const { contractAddress: liquidatorAddr } =
-        await this.client.pub.waitForTransactionReceipt({
-          hash,
-          timeout: 120_000,
-        });
-      if (!liquidatorAddr) {
-        throw new Error(`Liquidator was not deployed, tx hash: ${hash}`);
-      }
-      owner = await this.client.pub.readContract({
-        abi: liquidatorAbi,
-        address: liquidatorAddr,
-        functionName: "owner",
-      });
-      this.logger.debug(
-        `deployed Liquidator at ${liquidatorAddr} owned by ${owner} in tx ${hash}`,
-      );
-
-      const receipt = await this.client.simulateAndWrite({
-        address: aaveFlTakerAddr,
-        abi: aaveFlTakerAbi,
-        functionName: "setAllowedFLReceiver",
-        args: [liquidatorAddr, true],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `AaveFLTaker.setAllowedFLReceiver reverted, tx hash: ${receipt.transactionHash}`,
-        );
-      }
-      this.logger.debug(
-        `set allowed flashloan receiver on FLTaker ${aaveFlTakerAddr} to ${liquidatorAddr} in tx ${receipt.transactionHash}`,
-      );
-
-      partialLiquidatorAddress = liquidatorAddr;
-    }
-    this.logger.info(
-      `partial liquidator contract addesss: ${partialLiquidatorAddress}`,
-    );
-    this.#partialLiquidator = partialLiquidatorAddress;
-  }
-
   async #deployPriceHelper(): Promise<void> {
     if (!this.config.optimistic) {
       return undefined;
@@ -453,210 +404,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     this.#priceHelper = priceHelperAddr;
   }
 
-  async #configurePartialLiquidator(
-    router: Address,
-    bot: Address,
-  ): Promise<void> {
-    const [currentRouter, currentBot, cms] = await Promise.all([
-      this.client.pub.readContract({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "router",
-      }),
-      this.client.pub.readContract({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "partialLiquidationBot",
-      }),
-      this.getCreditManagersV3List(),
-    ]);
-
-    if (router.toLowerCase() !== currentRouter.toLowerCase()) {
-      this.logger.warn(
-        `need to update router from ${currentRouter} to ${router}`,
-      );
-      const receipt = await this.client.simulateAndWrite({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "setRouter",
-        args: [router],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `PartialLiquidator.setRouter(${router}) tx ${receipt.transactionHash} reverted`,
-        );
-      }
-      this.logger.info(
-        `set router to ${router} in tx ${receipt.transactionHash}`,
-      );
-    }
-
-    if (bot.toLowerCase() !== currentBot.toLowerCase()) {
-      this.logger.warn(`need to update bot from ${currentBot} to ${bot}`);
-      const receipt = await this.client.simulateAndWrite({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "setPartialLiquidationBot",
-        args: [bot],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `PartialLiquidator.setPartialLiquidationBot(${bot}) tx ${receipt.transactionHash} reverted`,
-        );
-      }
-      this.logger.info(`set bot to ${bot} in tx ${receipt.transactionHash}`);
-    }
-    const cmToCa = await this.#getLiquidatorAccounts(cms);
-
-    try {
-      await this.#claimDegenNFTs(cmToCa, cms);
-    } catch (e) {
-      this.logger.warn(`failed to obtain degen NFTs: ${e}`);
-    }
-
-    for (const cm of cms) {
-      const { address, name } = cm;
-      const ca = cmToCa[address];
-      if (ca === ADDRESS_0X0) {
-        await this.#registerCM(cm);
-      } else {
-        this.logger.debug(
-          `credit manager ${name} (${address}) already registered with account ${ca}`,
-        );
-        this.#registeredCMs[address.toLowerCase() as Address] = true;
-      }
-    }
-  }
-
-  async #getLiquidatorAccounts(
-    cms: CreditManagerData[],
-  ): Promise<Record<Address, Address>> {
-    const results = await this.client.pub.multicall({
-      allowFailure: false,
-      contracts: cms.map(cm => ({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "cmToCA",
-        args: [cm.address],
-      })),
-    });
-    this.logger.debug(`loaded ${cms.length} liquidator credit accounts`);
-    return Object.fromEntries(cms.map((cm, i) => [cm.address, results[i]]));
-  }
-
-  /**
-   * Claim NFT tokens as liquidator contract, so that the contract can open credit accounts in Degen NFT protected credit managers
-   * @param cmToCa
-   * @param cms
-   * @returns
-   */
-  async #claimDegenNFTs(
-    cmToCa: Record<string, string>,
-    cms: CreditManagerData[],
-  ): Promise<void> {
-    const account = this.partialLiquidator;
-
-    let nfts = 0;
-    for (const { address, name, degenNFT } of cms) {
-      if (cmToCa[address] === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
-        this.logger.debug(
-          `need degen NFT ${degenNFT} for credit manager ${name}`,
-        );
-        nfts++;
-      }
-    }
-    if (nfts === 0) {
-      return;
-    }
-
-    const distributor = await this.addressProvider.findService(
-      "DEGEN_DISTRIBUTOR",
-      0,
-      0,
-    );
-    this.logger.debug(`degen distributor: ${distributor}`);
-    const [distributorNFT, merkelRoot, claimed] =
-      await this.client.pub.multicall({
-        allowFailure: false,
-        contracts: [
-          {
-            address: distributor,
-            abi: iDegenDistributorV3Abi,
-            functionName: "degenNFT",
-          },
-          {
-            address: distributor,
-            abi: iDegenDistributorV3Abi,
-            functionName: "merkleRoot",
-          },
-          {
-            address: distributor,
-            abi: iDegenDistributorV3Abi,
-            functionName: "claimed",
-            args: [account],
-          },
-        ],
-      });
-    const merkleRootURL = `https://dm.gearbox.finance/${this.config.network.toLowerCase()}_${merkelRoot}.json`;
-    this.logger.debug(
-      `merkle root: ${merkleRootURL}, degen distributor NFT: ${distributorNFT}, claimed: ${claimed}`,
-    );
-
-    const resp = await fetch(merkleRootURL);
-    const merkle = (await resp.json()) as MerkleDistributorInfo;
-    const claims = merkle.claims[account];
-    if (!claims) {
-      throw new Error(`${account} is not eligible for degen NFT claim`);
-    }
-    this.logger.debug(claims, `claims`);
-    if (BigInt(claims.amount) <= claimed) {
-      throw new Error(`already claimed`);
-    }
-
-    const receipt = await this.client.simulateAndWrite({
-      address: distributor,
-      abi: iDegenDistributorV3Abi,
-      functionName: "claim",
-      args: [
-        BigInt(claims.index), // uint256 index,
-        account, // address account,
-        BigInt(claims.amount), // uint256 totalAmount,
-        claims.proof, // bytes32[] calldata merkleProof
-      ],
-    });
-    if (receipt.status === "reverted") {
-      throw new Error(`degenDistributor.claim reverted`);
-    }
-    this.logger.debug(`${account} claimed ${BigInt(claims.amount)} degenNFTs`);
-  }
-
-  async #registerCM(cm: CreditManagerData): Promise<void> {
-    const { address, name } = cm;
-    try {
-      this.logger.debug(`need to register credit manager ${name} (${address})`);
-      const receipt = await this.client.simulateAndWrite({
-        abi: iLiquidatorAbi,
-        address: this.partialLiquidator,
-        functionName: "registerCM",
-        args: [address],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `Liquidator.registerCM(${address}) reverted: ${receipt.transactionHash}`,
-        );
-      }
-      this.logger.info(
-        `registered credit manager ${name} (${address}) in tx ${receipt.transactionHash}`,
-      );
-      this.#registeredCMs[address.toLowerCase() as Address] = true;
-    } catch (e) {
-      this.logger.error(
-        `failed to register credit manager ${name} (${address}): ${e}`,
-      );
-      this.#registeredCMs[address.toLowerCase() as Address] = false;
-    }
-  }
-
   #caLogger(ca: CreditAccountData): ILogger {
     return this.logger.child({
       account: ca.addr,
@@ -664,13 +411,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       manager: ca.managerName,
       hf: ca.healthFactor,
     });
-  }
-
-  private get partialLiquidator(): Address {
-    if (!this.#partialLiquidator) {
-      throw new Error("strategy not launched");
-    }
-    return this.#partialLiquidator;
   }
 
   private get priceHelper(): Address {
@@ -694,5 +434,15 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       this.logger.debug(`configurator address: ${this.#configuratorAddr}`);
     }
     return this.#configuratorAddr;
+  }
+
+  /**
+   * Depending on credit manager underlying token, different partial liquidator contract should be used
+   * @param ca
+   * @returns
+   */
+  private liquidatorForCA(ca: CreditAccountData): Address | undefined {
+    const contract = this.#liquidatorForCM[ca.creditManager];
+    return contract?.address;
   }
 }
