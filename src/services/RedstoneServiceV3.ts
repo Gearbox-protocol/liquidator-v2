@@ -27,7 +27,7 @@ import type {
 } from "../data/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
-import { formatTs } from "../utils/index.js";
+import { formatTs, retry } from "../utils/index.js";
 import type { AddressProviderService } from "./AddressProviderService.js";
 import type Client from "./Client.js";
 import type { PriceOnDemandExtras, PriceUpdate } from "./liquidate/index.js";
@@ -364,7 +364,12 @@ export class RedstoneServiceV3 {
       historicalTimestamp: this.#optimisticTimestamp,
     });
     wrapper.setMetadataTimestamp(Date.now());
-    const dataPayload = await wrapper.prepareRedstonePayload(true);
+    // redstone does not provide any error types, just string messages
+    // so just retry all redstone errors
+    const dataPayload = await retry(
+      () => wrapper.prepareRedstonePayload(true),
+      { attempts: 2 },
+    );
 
     // unsigned metadata looks like
     // "1724772413180#0.6.1#redstone-primary-prod___"
