@@ -3,6 +3,7 @@ import {
   ilpPriceFeedExceptionsAbi,
   iRedstoneErrorsAbi,
   iRedstonePriceFeedExceptionsAbi,
+  iRouterV3ErrorsAbi,
 } from "@gearbox-protocol/types/abi";
 
 export const exceptionsAbis = [
@@ -10,4 +11,5 @@ export const exceptionsAbis = [
   ...iRedstonePriceFeedExceptionsAbi,
   ...iRedstoneErrorsAbi,
   ...ilpPriceFeedExceptionsAbi,
+  ...iRouterV3ErrorsAbi,
 ];
