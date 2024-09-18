@@ -10,15 +10,15 @@ export async function retry<T>(
   options: RetryOptions = {},
 ): Promise<T> {
   const { attempts = 3, interval = 200 } = options;
-  let err: any;
+  let cause: any;
   for (let i = 0; i < attempts; i++) {
     try {
       const result = await fn();
       return result;
     } catch (e) {
-      err = e;
+      cause = e;
       await setTimeout(interval);
     }
   }
-  throw err ?? new Error("all attempts failed");
+  throw new Error("all attempts failed", { cause });
 }
