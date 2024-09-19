@@ -98,11 +98,20 @@ export class Scanner {
       );
       return;
     }
-    this.#processing = blockNumber;
-    await this.oracle.update(blockNumber);
-    await this.#updateAccounts(blockNumber);
-    this.#processing = null;
-    this.#lastUpdated = blockNumber;
+    try {
+      this.#processing = blockNumber;
+      await this.oracle.update(blockNumber);
+      await this.#updateAccounts(blockNumber);
+      this.#lastUpdated = blockNumber;
+    } catch (e) {
+      this.log.error(
+        new Error(`failed to process block ${blockNumber}`, { cause: e }),
+      );
+      // this.#lastUpdated will not change in case of failed block
+      // if this happens for multiple blocks, this error should be caught by metrics monitor, since lastUpdated metric will be stagnant
+    } finally {
+      this.#processing = null;
+    }
   }
 
   /**
