@@ -1,8 +1,7 @@
+import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
 
-import type { CreditAccountData } from "../../data/index.js";
-import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
@@ -43,7 +42,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       const acc = accounts[i];
       const result = await this.#liquidateOneOptimistic(acc);
       const status = result.isError ? "FAIL" : "OK";
-      const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
+      const msg = `[${i + 1}/${total}] ${acc.creditAccount} in ${acc.creditManager} ${status}`;
       if (result.isError) {
         this.logger.warn(msg);
       } else {
@@ -57,12 +56,8 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   }
 
   async #liquidateOne(ca: CreditAccountData): Promise<void> {
-    const logger = this.logger.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: ca.managerName,
-    });
-    if (this.skipList.has(ca.addr)) {
+    const logger = this.caLogger(ca);
+    if (this.skipList.has(ca.creditAccount)) {
       this.logger.warn("skipping this account");
       return;
     }
@@ -72,7 +67,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     let preview: T | undefined;
     try {
       preview = await this.preview(ca);
-      pathHuman = TxParserHelper.parseMultiCall(preview);
+      pathHuman = this.creditAccountService.sdk.parseMultiCall(preview.calls);
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);
@@ -85,7 +80,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       const decoded = await this.errorHandler.explain(e, ca);
       logger.error(decoded, "cant liquidate");
       if (preview?.skipOnFailure) {
-        this.skipList.add(ca.addr);
+        this.skipList.add(ca.creditAccount);
         this.logger.warn("adding to skip list");
       }
       this.notifier.alert(
@@ -103,16 +98,12 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   async #liquidateOneOptimistic(
     acc: CreditAccountData,
   ): Promise<OptimisticResult> {
-    const logger = this.logger.child({
-      account: acc.addr,
-      borrower: acc.borrower,
-      manager: acc.managerName,
-    });
+    const logger = this.caLogger(acc);
     let snapshotId: Hex | undefined;
     let result = this.newOptimisticResult(acc);
     const start = Date.now();
     try {
-      const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
+      const balanceBefore = await this.getExecutorBalance(acc.underlying);
       const mlRes = await this.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
@@ -144,10 +135,10 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       );
       // swap underlying back to ETH
       await this.swapper.swap(
-        acc.underlyingToken,
+        acc.underlying,
         balanceBefore.underlying + BigInt(result.liquidatorPremium),
       );
-      const balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
+      const balanceAfter = await this.getExecutorBalance(acc.underlying);
       result.liquidatorProfit = (balanceAfter.eth - balanceBefore.eth).toString(
         10,
       );
@@ -181,9 +172,19 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   abstract makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult>;
+
+  /**
+   * Gathers all data required to generate transaction that liquidates account
+   * @param ca
+   */
   abstract preview(ca: CreditAccountData): Promise<T>;
   /**
-   * Simulates liquidation
+   * Using data gathered by preview step, simulates transaction.
+   * That is, nothing is actually written, but the gas is estimated, for example.
+   * In optimistic mode, we create snapshot after that state so that all the loaded storage slots are not reverted on next account.
+   *
+   * Returned transaction data then can be used to send actual transaction.
+   * Gas manipulations can be made thanks to estimation data returned by simulate call.
    * @param account
    * @param preview
    * @returns

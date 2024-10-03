@@ -1,13 +1,15 @@
+import type { CreditAccountData, RawTx } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import type { SimulateContractReturnType } from "viem";
+import { decodeFunctionData, type SimulateContractReturnType } from "viem";
 
-import { type CreditAccountData, exceptionsAbis } from "../../data/index.js";
-import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
+import { exceptionsAbis } from "../../data/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
-import type { MakeLiquidatableResult, PriceUpdate } from "./types.js";
+import type { MakeLiquidatableResult, StrategyPreview } from "./types.js";
 
-interface SinglularFullPreview extends PathFinderCloseResult {
-  priceUpdates: PriceUpdate[];
+interface SinglularFullPreview extends StrategyPreview {
+  amount: bigint;
+  minAmount: bigint;
+  rawTx: RawTx;
 }
 
 export default class SingularFullLiquidator extends SingularLiquidator<SinglularFullPreview> {
@@ -23,33 +25,28 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
     try {
-      const cm = await this.getCreditManagerData(ca.creditManager);
-
-      const result = await this.pathFinder.findBestClosePath(
-        ca,
-        cm,
-        this.config.slippage,
+      let bestClosePath: Omit<SinglularFullPreview, "rawTx"> | undefined;
+      // Can log it here:
+      // this.creditAccountService.sdk.once("foundPathOptions", v => {
+      //   pathOptions = v.pathOptions;
+      // });
+      this.creditAccountService.sdk.once(
+        "foundBestClosePath",
+        ({ creditAccount, ...rest }) => {
+          bestClosePath = rest;
+        },
       );
-      if (!result) {
-        throw new Error("pathfinder result is empty");
+      const rawTx = await this.creditAccountService.fullyLiquidate(
+        ca,
+        this.client.address,
+        BigInt(this.config.slippage),
+      );
+      if (!bestClosePath) {
+        throw new Error("cannot find best close path");
       }
-      // we want fresh redstone price in actual liquidation transactions
-      const priceUpdates = await this.redstone.liquidationPreviewUpdates(
-        ca,
-        true,
-      );
-      return {
-        amount: result.amount,
-        minAmount: result.minAmount,
-        underlyingBalance: result.underlyingBalance,
-        calls: [
-          ...this.redstone.toMulticallUpdates(ca, priceUpdates),
-          ...result.calls,
-        ],
-        priceUpdates,
-      };
+      return { ...bestClosePath, rawTx };
     } catch (e) {
-      throw new Error(`cant find close path: ${e}`);
+      throw new Error("cant preview full liquidation", { cause: e });
     }
   }
 
@@ -57,12 +54,17 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
     account: CreditAccountData,
     preview: SinglularFullPreview,
   ): Promise<SimulateContractReturnType> {
+    const { args } = decodeFunctionData({
+      abi: iCreditFacadeV3Abi,
+      data: preview.rawTx.callData,
+    });
+    // TODO: create view action for simulateRawTx with abis for exceptions
     return this.client.pub.simulateContract({
       account: this.client.account,
       abi: [...iCreditFacadeV3Abi, ...exceptionsAbis],
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",
-      args: [account.addr, this.client.address, preview.calls],
-    });
+      args: args as any,
+    }) as any;
   }
 }

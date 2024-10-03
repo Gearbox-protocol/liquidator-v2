@@ -1596,6 +1596,28 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
+"@gearbox-protocol/sdk-gov@^2.21.0":
+  version "2.21.0"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.21.0.tgz#99990f21c0af1d7fe8167b00c96152a598071666"
+  integrity sha512-AetfkOXvSOUOUk4yc2MqJhHjYDLm3SMeYqVU+MPyRkMlvxG7nV1ZXR2GXmu0XqD+5U8qQM7WEhmBmAaaohkX7A==
+  dependencies:
+    ethers "6.12.1"
+    humanize-duration-ts "^2.1.1"
+    zod "^3.22.2"
+
+"@gearbox-protocol/sdk@3.0.0-vfour.15":
+  version "3.0.0-vfour.15"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.15.tgz#c4d5b1722f8d2646e31cbbe0be49ad0b0c953482"
+  integrity sha512-XB2k44oWE9NDdnnc6H1YIiGKy5ZexyST9H80HpoNuHYcI3Xn6Q9ayPABtIzADayLH93QoaklpAd6eDBSw+MinQ==
+  dependencies:
+    "@gearbox-protocol/sdk-gov" "^2.21.0"
+    "@redstone-finance/evm-connector" "^0.6.2"
+    abitype "^1.0.6"
+    date-fns "^4.1.0"
+    eventemitter3 "^5.0.1"
+    redstone-protocol "^1.0.5"
+    viem "^2.21.16"
+
 "@gearbox-protocol/types@^1.12.2":
   version "1.12.2"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/types/-/types-1.12.2.tgz#316ed847817cd8ed56f660415a5648cde29f825b"
@@ -3284,6 +3306,11 @@ date-fns@^3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.6.0.tgz#f20ca4fe94f8b754951b24240676e8618c0206bf"
   integrity sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==
+
+date-fns@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-4.1.0.tgz#64b3d83fff5aa80438f5b1a633c2e83b8a1c2d14"
+  integrity sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==
 
 dateformat@^4.6.3:
   version "4.6.3"
@@ -6006,6 +6033,21 @@ uuid@^9.0.1:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
+
+viem@^2.21.16:
+  version "2.21.16"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.16.tgz#cf32200bbd1696bd6e86de7e1c12fcdfd77b63c1"
+  integrity sha512-SvhaPzTj3a+zR/5OmtJ0acjA6oGDrgPg4vtO8KboXtvbjksXEkz+oFaNjZDgxpkqbps2SLi8oPCjdpRm6WgDmw==
+  dependencies:
+    "@adraffy/ens-normalize" "1.10.0"
+    "@noble/curves" "1.4.0"
+    "@noble/hashes" "1.4.0"
+    "@scure/bip32" "1.4.0"
+    "@scure/bip39" "1.4.0"
+    abitype "1.0.5"
+    isows "1.0.4"
+    webauthn-p256 "0.0.5"
+    ws "8.17.1"
 
 viem@^2.21.9:
   version "2.21.9"

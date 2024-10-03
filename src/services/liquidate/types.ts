@@ -1,28 +1,6 @@
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
 import type { Address, Hash, Hex } from "viem";
-
-import type {
-  CreditAccountData,
-  MultiCall,
-  PriceOnDemand,
-} from "../../data/index.js";
-
-export interface PriceOnDemandExtras extends PriceOnDemand {
-  dataFeedId: string;
-  /**
-   * In case when token in PriceOnDemand is ticker, this will be the original token
-   * Otherwise they are the same
-   */
-  originalToken: Address;
-  ts: number;
-  reserve: boolean;
-}
-
-export interface PriceUpdate {
-  token: Address;
-  data: `0x${string}`;
-  reserve: boolean;
-}
 
 export interface PartialLiquidationPreview {
   calls: MultiCall[];
@@ -61,7 +39,6 @@ export interface StrategyPreview {
    * Falsh loan amount in case of partial liquidation
    */
   flashLoanAmount?: bigint;
-  priceUpdates?: PriceUpdate[];
   /**
    * If true, will not attempt to liquidate this account again
    */

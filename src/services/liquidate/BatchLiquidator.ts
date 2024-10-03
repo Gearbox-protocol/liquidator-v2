@@ -3,14 +3,12 @@ import {
   iBatchLiquidatorAbi,
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
+import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { parseEventLogs } from "viem";
 
-import type { CreditAccountData, CreditManagerData } from "../../data/index.js";
-import type { EstimateBatchInput } from "../../utils/ethers-6-temp/pathfinder/viem-types.js";
-import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import {
   BatchLiquidationErrorMessage,
   BatchLiquidationFinishedMessage,
@@ -19,8 +17,13 @@ import AbstractLiquidator from "./AbstractLiquidator.js";
 import type { ILiquidatorService } from "./types.js";
 import type {
   BatchLiquidationResult,
+  EstimateBatchInput,
   LiquidateBatchInput,
 } from "./viem-types.js";
+
+const MAX_GAS_PER_ROUTE = 200_000_000n;
+const GAS_PER_BLOCK = 400_000_000n;
+const LOOPS_PER_TX = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
 
 interface BatchLiquidationOutput {
   readonly receipt: TransactionReceipt;
@@ -43,18 +46,16 @@ export default class BatchLiquidator
       return;
     }
     this.logger.warn(`need to liquidate ${accounts.length} accounts`);
-    const cms = await this.getCreditManagersV3List();
     const batches = this.#sliceBatches(accounts);
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       this.logger.debug(
-        `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
+        `processing batch of ${batch.length} for ${batch[0]?.creditManager}: ${batch.map(ca => ca.creditAccount)}`,
       );
       try {
         const { receipt, results } = await this.#liquidateBatch(
           batch,
-          cms,
           i,
           batches.length,
         );
@@ -74,19 +75,17 @@ export default class BatchLiquidator
   public async liquidateOptimistic(
     accounts: CreditAccountData[],
   ): Promise<void> {
-    const cms = await this.getCreditManagersV3List();
     const total = accounts.length;
     this.logger.info(`optimistic batch-liquidation for ${total} accounts`);
     const batches = this.#sliceBatches(accounts);
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       this.logger.debug(
-        `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
+        `processing batch of ${batch.length} for ${batch[0]?.creditManager}: ${batch.map(ca => ca.creditAccount)}`,
       );
       const snapshotId = await this.client.anvil.snapshot();
       const { results, receipt } = await this.#liquidateBatch(
         batch,
-        cms,
         i,
         batches.length,
       );
@@ -110,7 +109,6 @@ export default class BatchLiquidator
 
   async #liquidateBatch(
     accounts: CreditAccountData[],
-    cms: CreditManagerData[],
     index: number,
     total: number,
   ): Promise<BatchLiquidationOutput> {
@@ -125,12 +123,8 @@ export default class BatchLiquidator
         );
       }
       // pathfinder returns input without price updates
-      const input = this.pathFinder.getEstimateBatchInput(
-        ca,
-        cm,
-        this.config.slippage,
-      );
-      input.priceUpdates = priceUpdatesByAccount[ca.addr];
+      const input = this.#getEstimateBatchInput(ca);
+      input.priceUpdates = priceUpdatesByAccount[ca.creditAccount];
       inputs.push(input);
     }
     const { result } = await this.client.pub.simulateContract({
@@ -292,6 +286,23 @@ export default class BatchLiquidator
       throw new Error("batch liquidator not deployed");
     }
     return this.#batchLiquidator;
+  }
+
+  #getEstimateBatchInput(ca: CreditAccountData): EstimateBatchInput {
+    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    const { pathOptions, connectors, expected, leftover } =
+      this.sdk.router.getFindClosePathInput(ca, cm.creditManager);
+    return {
+      creditAccount: ca.creditAccount,
+      expectedBalances: expected,
+      leftoverBalances: leftover,
+      connectors,
+      slippage: BigInt(this.config.slippage),
+      pathOptions: pathOptions[0] ?? [], // TODO: what to put here?
+      iterations: BigInt(LOOPS_PER_TX),
+      force: false,
+      priceUpdates: [],
+    };
   }
 
   #sliceBatches(accounts: CreditAccountData[]): CreditAccountData[][] {

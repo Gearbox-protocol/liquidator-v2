@@ -1,26 +1,21 @@
-import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
+import type {
+  CreditAccountData,
+  CreditAccountsService,
+  NetworkType,
+} from "@gearbox-protocol/sdk";
 import {
-  getTokenSymbolOrTicker,
   PERCENTAGE_FACTOR,
   tokenDataByNetwork,
 } from "@gearbox-protocol/sdk-gov";
-import {
-  iCreditManagerV3Abi,
-  iDataCompressorV3Abi,
-} from "@gearbox-protocol/types/abi";
+import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
+import type { Address } from "viem";
 import { getContract } from "viem";
 
 import type { Config } from "../../config/index.js";
-import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
-import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
-import type { IDataCompressorContract } from "../../utils/index.js";
-import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
 import type { ILiquidatorService } from "../liquidate/index.js";
-import type OracleServiceV3 from "../OracleServiceV3.js";
-import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -28,12 +23,6 @@ const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Arbitrum:
     "0xcedaa4b4a42c0a771f6c24a3745c3ca3ed73f17a".toLowerCase() as Address, // Arbitrum WETH_V3_TRADE_TIER_1
 };
-
-interface AccountSelection {
-  liquidatableOnly: boolean;
-  priceUpdates: PriceOnDemand[];
-  blockNumber?: bigint;
-}
 
 @DI.Injectable(DI.Scanner)
 export class Scanner {
@@ -43,22 +32,15 @@ export class Scanner {
   @DI.Inject(DI.Config)
   config!: Config;
 
-  @DI.Inject(DI.AddressProvider)
-  addressProvider!: AddressProviderService;
-
   @DI.Inject(DI.Client)
   client!: Client;
-
-  @DI.Inject(DI.Oracle)
-  oracle!: OracleServiceV3;
-
-  @DI.Inject(DI.Redstone)
-  redstone!: RedstoneServiceV3;
 
   @DI.Inject(DI.Liquidator)
   liquidatorService!: ILiquidatorService;
 
-  #dataCompressor?: IDataCompressorContract;
+  @DI.Inject(DI.CreditAccountService)
+  caService!: CreditAccountsService;
+
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
@@ -69,18 +51,8 @@ export class Scanner {
     if (this.config.restakingWorkaround) {
       await this.#setupRestakingWorkaround();
     }
-    const dcAddr = await this.addressProvider.findService(
-      "DATA_COMPRESSOR",
-      300,
-    );
-    this.#dataCompressor = getContract({
-      abi: iDataCompressorV3Abi,
-      address: dcAddr,
-      client: this.client.pub,
-    });
 
     const block = await this.client.pub.getBlockNumber();
-    await this.oracle.launch(block);
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.#updateAccounts(this.config.optimistic ? undefined : block);
@@ -100,7 +72,7 @@ export class Scanner {
     }
     try {
       this.#processing = blockNumber;
-      await this.oracle.update(blockNumber);
+      // TODO: update oracle, so we have actual price feeds...
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
     } catch (e) {
@@ -119,30 +91,13 @@ export class Scanner {
    * @param atBlock Fiex block for archive node which is needed to get data
    */
   async #updateAccounts(atBlock?: bigint): Promise<void> {
-    const start = new Date().getTime();
+    const start = Date.now();
     const blockS = atBlock ? ` in ${atBlock}` : "";
-    let [accounts, failedTokens] = await this.#potentialLiquidations(
-      [],
-      atBlock,
-    );
-    this.log.debug(
-      `${accounts.length} potential accounts to liquidate${blockS}, ${failedTokens.length} failed tokens: ${printTokens(failedTokens)}`,
-    );
-    if (failedTokens.length) {
-      const redstoneUpdates = await this.redstone.updatesForTokens(
-        failedTokens,
-        true,
-      );
-      const redstoneTokens = redstoneUpdates.map(({ token }) => token);
-      this.log.debug(
-        `got ${redstoneTokens.length} redstone price updates${blockS}: ${printTokens(redstoneTokens)}`,
-      );
-      [accounts, failedTokens] = await this.#potentialLiquidations(
-        redstoneUpdates,
-        atBlock,
-      );
-    }
-    accounts = accounts.sort((a, b) => Number(a.healthFactor - b.healthFactor));
+    let accounts = await this.caService.getCreditAccounts({
+      minHealthFactor: 0,
+      maxHealthFactor: 65_535,
+      includeZeroDebt: false,
+    });
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
       accounts = this.#filterRestakingAccounts(accounts);
@@ -154,175 +109,12 @@ export class Scanner {
     this.log.debug(
       `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,
     );
-    // TODO: what to do when non-redstone price fails?
-    if (failedTokens.length) {
-      this.log.error(
-        `failed tokens on second iteration${blockS}: ${printTokens(failedTokens)}`,
-      );
-    }
 
     if (this.config.optimistic) {
       await this.liquidatorService.liquidateOptimistic(accounts);
     } else {
       await this.liquidatorService.liquidate(accounts);
     }
-  }
-
-  /**
-   * Finds all potentially liquidatable credit accounts
-   *
-   * Returns
-   * @param atBlock
-   * @returns
-   */
-  async #potentialLiquidations(
-    priceUpdates: PriceOnDemand[],
-    blockNumber?: bigint,
-  ): Promise<[accounts: CreditAccountData[], failedTokens: Address[]]> {
-    const { optimistic, debugAccounts, debugManagers } = this.config;
-    // during partial + optimistic liquidation, liquidation condition is not created externally.
-    // it's created by liquidator itself before the liquidation.
-    const liquidatableOnly = !optimistic || !this.config.isPartial;
-
-    const selection: AccountSelection = {
-      liquidatableOnly,
-      priceUpdates,
-      blockNumber: blockNumber ? BigInt(blockNumber) : undefined,
-    };
-
-    let accountsRaw: CreditAccountDataRaw[] = [];
-
-    if (debugAccounts?.length) {
-      accountsRaw = await this.#getParticularAccounts(debugAccounts, selection);
-    } else if (debugManagers?.length) {
-      accountsRaw = await this.#getAccountsFromManagers(
-        debugManagers as Address[],
-        selection,
-      );
-    } else {
-      accountsRaw = await this.#getAllAccounts(selection);
-    }
-    let accounts = accountsRaw.map(a => new CreditAccountData(a));
-
-    accounts = accounts.filter(ca => {
-      const ok = ca.healthFactor < this.config.hfThreshold;
-      // Currently in data compressor helathFactor is set to type(uint16).max for zero-debt accounts
-      // TODO: this will be changed to type(uint256).max in 3.1
-      // 65535 is zero-debt account, no need to warn about it
-      if (!ok && ca.healthFactor !== 65535n) {
-        this.log.warn(
-          `health factor of ${ca.name} ${ca.healthFactor} > ${this.config.hfThreshold} threshold, skipping`,
-        );
-      }
-      return ok;
-    });
-    const failedTokens = new Set<Address>();
-    for (const acc of accounts) {
-      acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
-    }
-
-    return [accounts, Array.from(failedTokens)];
-  }
-
-  async #getParticularAccounts(
-    accs: string[],
-    { liquidatableOnly, priceUpdates, blockNumber }: AccountSelection,
-  ): Promise<CreditAccountDataRaw[]> {
-    const result: CreditAccountDataRaw[] = [];
-    for (const acc of accs) {
-      const { result: accData } =
-        await this.dataCompressor.simulate.getCreditAccountData(
-          [acc as Address, priceUpdates],
-          { blockNumber },
-        );
-      result.push(accData);
-    }
-    return liquidatableOnly
-      ? this.#filterLiquidatable(result, blockNumber)
-      : this.#filterZeroDebt(result);
-  }
-
-  // TODO: this can be nicely solved by exposing _queryCreditAccounts in DataCompressor
-  async #getAllAccounts(
-    selection: AccountSelection,
-  ): Promise<CreditAccountDataRaw[]> {
-    const { liquidatableOnly, priceUpdates, blockNumber } = selection;
-    const blockS = blockNumber ? ` in ${blockNumber}` : "";
-    if (liquidatableOnly) {
-      this.log.debug(
-        `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
-      );
-      const start = new Date().getTime();
-      const { result } =
-        await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
-          [priceUpdates],
-          { blockNumber },
-        );
-      const duration = Math.round((new Date().getTime() - start) / 1000);
-      this.log.debug(
-        { duration: `${duration}s`, count: result.length },
-        `getLiquidatableCreditAccounts`,
-      );
-      return [...result];
-    }
-    const cms = await this.dataCompressor.read.getCreditManagersV3List({
-      blockNumber,
-    });
-    this.log.debug(`found ${cms.length} credit managers`);
-    return this.#getAccountsFromManagers(
-      cms.map(m => m.addr),
-      selection,
-    );
-  }
-
-  async #getAccountsFromManagers(
-    cms: Address[],
-    { liquidatableOnly, priceUpdates, blockNumber }: AccountSelection,
-  ): Promise<CreditAccountDataRaw[]> {
-    const all = await Promise.all(
-      cms.map(cm =>
-        this.dataCompressor.simulate.getCreditAccountsByCreditManager(
-          [cm, priceUpdates],
-          { blockNumber },
-        ),
-      ),
-    );
-    const accs = all.map(r => r.result).flat();
-    this.log.debug(
-      `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
-    );
-    return liquidatableOnly
-      ? this.#filterLiquidatable(accs, blockNumber)
-      : this.#filterZeroDebt(accs);
-  }
-
-  #filterZeroDebt(accs: CreditAccountDataRaw[]): CreditAccountDataRaw[] {
-    return accs.filter(acc => acc.debt > 0n);
-  }
-
-  async #filterLiquidatable(
-    accs: CreditAccountDataRaw[],
-    blockNumber?: bigint,
-  ): Promise<CreditAccountDataRaw[]> {
-    this.log.debug(
-      `filtering liquidatable credit accounts from selection of ${accs.length}...`,
-    );
-    // @ts-ignore
-    const mc = await this.client.pub.multicall({
-      blockNumber,
-      allowFailure: true,
-      contracts: accs.map(({ addr, creditManager }) => ({
-        address: creditManager as Address,
-        abi: iCreditManagerV3Abi,
-        functionName: "isLiquidatable",
-        args: [addr as Address, PERCENTAGE_FACTOR],
-      })),
-    });
-    const result = accs.filter(
-      (_, i) => mc[i].status === "success" && mc[i].result,
-    );
-    this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
-    return result;
   }
 
   async #setupRestakingWorkaround(): Promise<void> {
@@ -392,7 +184,7 @@ export class Scanner {
         const ok = ca.healthFactor >= this.#restakingMinHF;
         if (!ok) {
           this.log.debug(
-            `filtered out ${ca.addr} due to restaking workaround (HF ${ca.healthFactor} < ${this.#restakingMinHF})`,
+            `filtered out ${ca.creditAccount} due to restaking workaround (HF ${ca.healthFactor} < ${this.#restakingMinHF})`,
           );
         }
         return ok;
@@ -401,18 +193,7 @@ export class Scanner {
     });
   }
 
-  private get dataCompressor(): IDataCompressorContract {
-    if (!this.#dataCompressor) {
-      throw new Error("data compressor not initialized");
-    }
-    return this.#dataCompressor;
-  }
-
   public get lastUpdated(): bigint {
     return this.#lastUpdated;
   }
-}
-
-function printTokens(tokens: Address[]): string {
-  return tokens.map(getTokenSymbolOrTicker).join(", ");
 }

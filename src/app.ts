@@ -1,11 +1,12 @@
+import { CreditAccountsService, GearboxSDK } from "@gearbox-protocol/sdk";
+import { privateKeyToAddress } from "viem/accounts";
+
 import { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
-import type { AddressProviderService } from "./services/AddressProviderService.js";
 import type Client from "./services/Client.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
-import type { RedstoneServiceV3 } from "./services/RedstoneServiceV3.js";
 import type { Scanner } from "./services/scanner/index.js";
 import type { ISwapper } from "./services/swap/index.js";
 import version from "./version.js";
@@ -17,17 +18,11 @@ class App {
   @DI.Inject(DI.Config)
   config!: Config;
 
-  @DI.Inject(DI.AddressProvider)
-  addressProvider!: AddressProviderService;
-
   @DI.Inject(DI.Scanner)
   scanner!: Scanner;
 
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
-
-  @DI.Inject(DI.Redstone)
-  redstone!: RedstoneServiceV3;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -49,9 +44,6 @@ class App {
     this.log.info(msg);
 
     await this.client.launch();
-    await this.addressProvider.launch();
-
-    await this.redstone.launch();
 
     this.healthChecker.launch();
     await this.swapper.launch(this.config.network);
@@ -69,6 +61,17 @@ class App {
 export async function launchApp(): Promise<void> {
   const config = await Config.load();
   DI.set(DI.Config, config);
+  const sdk = await GearboxSDK.attach({
+    account: privateKeyToAddress(config.privateKey),
+    rpcURLs: config.ethProviderRpcs,
+    addressProvider: config.addressProviderOverride,
+    timeout: 480_000,
+    chainId: config.chainId,
+    networkType: config.network,
+    logger: DI.create(DI.Logger, "sdk"),
+  });
+  const service = new CreditAccountsService(sdk);
+  DI.set(DI.CreditAccountService, service);
   const app = new App();
   await app.launch();
 }
