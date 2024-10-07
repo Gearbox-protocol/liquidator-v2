@@ -3,19 +3,17 @@ import type {
   CreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
-import {
-  PERCENTAGE_FACTOR,
-  tokenDataByNetwork,
-} from "@gearbox-protocol/sdk-gov";
+import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address } from "viem";
 import { getContract } from "viem";
 
-import type { Config } from "../../config/index.js";
-import { DI } from "../../di.js";
-import { type ILogger, Logger } from "../../log/index.js";
-import type Client from "../Client.js";
-import type { ILiquidatorService } from "../liquidate/index.js";
+import type { Config } from "../config/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
+import type Client from "./Client.js";
+import type { ILiquidatorService } from "./liquidate/index.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:

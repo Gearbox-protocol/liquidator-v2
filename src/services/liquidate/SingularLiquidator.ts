@@ -67,7 +67,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     let preview: T | undefined;
     try {
       preview = await this.preview(ca);
-      pathHuman = this.creditAccountService.sdk.parseMultiCall(preview.calls);
+      pathHuman = []; // this.creditAccountService.sdk.parseMultiCall(preview.calls);
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);

@@ -46,6 +46,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
       );
       return { ...this.#bestClosePath.mustGet(ca.creditAccount), rawTx };
     } catch (e) {
+      console.log(e);
       throw new Error("cant preview full liquidation", { cause: e });
     }
   }

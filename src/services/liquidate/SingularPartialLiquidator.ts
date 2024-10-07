@@ -81,8 +81,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     await setLTs(this.sdk, cm, newLTs, logger);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
-      // TODO: block number?
-      // TODO: maybe historic timestamp should be set as static
     );
     if (!updCa) {
       throw new Error(`cannot find credit account ${ca.creditAccount}`);

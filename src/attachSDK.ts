@@ -9,17 +9,19 @@ import { formatTs } from "./utils/index.js";
 
 export default async function attachSDK(): Promise<CreditAccountsService> {
   const config: Config = DI.get(DI.Config);
-  const client: Client = DI.get(DI.Config);
+  const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
+
+  await client.launch();
 
   const sdk = await GearboxSDK.attach({
     account: privateKeyToAddress(config.privateKey),
     rpcURLs: config.ethProviderRpcs,
     addressProvider: config.addressProviderOverride,
-    timeout: 480_000,
+    timeout: 600_000,
     chainId: config.chainId,
     networkType: config.network,
-    logger: DI.create(DI.Logger, "sdk"),
+    logger,
   });
   const service = new CreditAccountsService(sdk);
 

@@ -5,7 +5,7 @@ import { type ILogger, Logger } from "./log/index.js";
 import type Client from "./services/Client.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
-import type { Scanner } from "./services/scanner/index.js";
+import type { Scanner } from "./services/Scanner.js";
 import type { ISwapper } from "./services/swap/index.js";
 import version from "./version.js";
 

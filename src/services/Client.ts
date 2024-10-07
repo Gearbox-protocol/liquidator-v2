@@ -6,17 +6,14 @@ import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type { Abi } from "abitype";
 import type {
   Address,
-  Block,
   Chain,
   ContractFunctionArgs,
   ContractFunctionName,
   EncodeFunctionDataParameters,
-  Hex,
   PrivateKeyAccount,
   PublicClient,
   SimulateContractParameters,
   SimulateContractReturnType,
-  TestRpcSchema,
   TransactionReceipt,
   Transport,
   WalletClient,
@@ -43,39 +40,6 @@ import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
-
-interface AnvilNodeInfo {
-  currentBlockNumber: string; // hexutil.Big is a big number in hex format
-  currentBlockTimestamp: number;
-  currentBlockHash: string;
-  hardFork: string;
-  transactionOrder: string;
-  environment: {
-    baseFee: string; // big.Int is a big number, represented as string in JSON
-    chainId: number;
-    gasLimit: string;
-    gasPrice: string;
-  };
-  forkConfig: {
-    forkUrl: string;
-    forkBlockNumber: string;
-    forkRetryBackoff: number;
-  };
-}
-
-type AnvilRPCSchema = [
-  ...TestRpcSchema<"anvil">,
-  {
-    Method: "anvil_nodeInfo";
-    Parameters: [];
-    ReturnType: AnvilNodeInfo;
-  },
-  {
-    Method: "evm_mine_detailed";
-    Parameters: [Hex];
-    ReturnType: Block<Hex>[];
-  },
-];
 
 const CHAINS: Record<NetworkType, Chain> = {
   Mainnet: mainnet,
