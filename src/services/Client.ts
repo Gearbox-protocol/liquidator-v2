@@ -1,5 +1,6 @@
 import { nextTick } from "node:process";
 
+import { type AnvilClient, createAnvilClient } from "@gearbox-protocol/sdk/dev";
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type { Abi } from "abitype";
@@ -15,7 +16,6 @@ import type {
   PublicClient,
   SimulateContractParameters,
   SimulateContractReturnType,
-  TestClient,
   TestRpcSchema,
   TransactionReceipt,
   Transport,
@@ -23,7 +23,6 @@ import type {
 } from "viem";
 import {
   createPublicClient,
-  createTestClient,
   createWalletClient,
   defineChain,
   encodeFunctionData,
@@ -102,14 +101,7 @@ export default class Client {
 
   #walletClient?: WalletClient<Transport, Chain, PrivateKeyAccount, undefined>;
 
-  #testClient?: TestClient<
-    "anvil",
-    Transport,
-    Chain,
-    undefined,
-    true,
-    AnvilRPCSchema
-  >;
+  #testClient?: AnvilClient;
 
   public async launch(): Promise<void> {
     const { ethProviderRpcs, chainId, network, optimistic, privateKey } =
@@ -139,17 +131,9 @@ export default class Client {
       pollingInterval: optimistic ? 25 : undefined,
     });
     try {
-      this.#testClient = createTestClient<
-        "anvil",
-        Transport,
-        Chain,
-        undefined,
-        AnvilRPCSchema
-      >({
-        mode: "anvil",
+      this.#testClient = createAnvilClient({
         transport,
         chain,
-        pollingInterval: 25,
       });
       const resp = await this.#testClient?.request({
         method: "anvil_nodeInfo",
@@ -321,14 +305,7 @@ export default class Client {
     return this.#walletClient;
   }
 
-  public get anvil(): TestClient<
-    "anvil",
-    Transport,
-    Chain,
-    undefined,
-    true,
-    AnvilRPCSchema
-  > {
+  public get anvil(): AnvilClient {
     if (!this.config.optimistic) {
       throw new Error("test config is only available in optimistic mode");
     }

@@ -1,4 +1,9 @@
-import type { CreditAccountData, RawTx } from "@gearbox-protocol/sdk";
+import {
+  AddressMap,
+  type CreditAccountData,
+  type RawTx,
+  type RouterHooks,
+} from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { decodeFunctionData, type SimulateContractReturnType } from "viem";
 
@@ -16,8 +21,17 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
   protected readonly name = "full";
   protected readonly adverb = "fully";
 
+  #bestClosePath = new AddressMap<RouterHooks["foundBestClosePath"][0]>();
+
+  constructor() {
+    super();
+    this.creditAccountService.sdk.router.addHook("foundBestClosePath", e =>
+      this.#bestClosePath.upsert(e.creditAccount, e),
+    );
+  }
+
   public async makeLiquidatable(
-    ca: CreditAccountData,
+    _ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
     // not supported
     return Promise.resolve({});
@@ -25,26 +39,12 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
     try {
-      let bestClosePath: Omit<SinglularFullPreview, "rawTx"> | undefined;
-      // Can log it here:
-      // this.creditAccountService.sdk.once("foundPathOptions", v => {
-      //   pathOptions = v.pathOptions;
-      // });
-      this.creditAccountService.sdk.once(
-        "foundBestClosePath",
-        ({ creditAccount, ...rest }) => {
-          bestClosePath = rest;
-        },
-      );
       const rawTx = await this.creditAccountService.fullyLiquidate(
         ca,
         this.client.address,
         BigInt(this.config.slippage),
       );
-      if (!bestClosePath) {
-        throw new Error("cannot find best close path");
-      }
-      return { ...bestClosePath, rawTx };
+      return { ...this.#bestClosePath.mustGet(ca.creditAccount), rawTx };
     } catch (e) {
       throw new Error("cant preview full liquidation", { cause: e });
     }

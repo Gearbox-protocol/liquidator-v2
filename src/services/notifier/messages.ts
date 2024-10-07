@@ -1,3 +1,4 @@
+import { type CreditAccountData, etherscanUrl } from "@gearbox-protocol/sdk";
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { formatBN } from "@gearbox-protocol/sdk-gov";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
@@ -6,9 +7,7 @@ import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
-import type { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
-import { etherscanUrl } from "../../utils/index.js";
 import version from "../../version.js";
 import type { INotifierMessage } from "./types.js";
 
@@ -39,7 +38,7 @@ class BaseMessage {
     if (!this.ca) {
       throw new Error(`credit account not specified`);
     }
-    return md.link(this.ca?.addr, this.caPlain);
+    return md.link(this.ca?.creditAccount, this.caPlain);
   }
 
   protected get cmPlain(): string {
@@ -53,7 +52,7 @@ class BaseMessage {
     if (!this.ca) {
       throw new Error(`credit account not specified`);
     }
-    return md.link(this.ca.cmName, this.cmPlain);
+    return md.link(this.ca.creditManager, this.cmPlain);
   }
 
   protected get receiptPlain(): string {

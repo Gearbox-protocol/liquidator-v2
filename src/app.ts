@@ -1,6 +1,4 @@
-import { CreditAccountsService, GearboxSDK } from "@gearbox-protocol/sdk";
-import { privateKeyToAddress } from "viem/accounts";
-
+import attachSDK from "./attachSDK.js";
 import { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
@@ -61,16 +59,7 @@ class App {
 export async function launchApp(): Promise<void> {
   const config = await Config.load();
   DI.set(DI.Config, config);
-  const sdk = await GearboxSDK.attach({
-    account: privateKeyToAddress(config.privateKey),
-    rpcURLs: config.ethProviderRpcs,
-    addressProvider: config.addressProviderOverride,
-    timeout: 480_000,
-    chainId: config.chainId,
-    networkType: config.network,
-    logger: DI.create(DI.Logger, "sdk"),
-  });
-  const service = new CreditAccountsService(sdk);
+  const service = await attachSDK();
   DI.set(DI.CreditAccountService, service);
   const app = new App();
   await app.launch();

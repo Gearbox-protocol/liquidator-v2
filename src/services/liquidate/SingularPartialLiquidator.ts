@@ -168,7 +168,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
           tokenOut,
           optimalAmount,
           flashLoanAmount,
-          priceUpdates as any,
+          priceUpdates,
           connectors,
           BigInt(this.config.slippage),
         ],

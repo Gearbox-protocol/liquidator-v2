@@ -1,7 +1,8 @@
+import { detectNetwork } from "@gearbox-protocol/sdk";
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { createPublicClient, http } from "viem";
 
-import { createClassFromType, detectNetwork } from "../utils/index.js";
+import { createClassFromType } from "../utils/index.js";
 import { envConfig } from "./env.js";
 import { ConfigSchema } from "./schema.js";
 

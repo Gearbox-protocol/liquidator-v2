@@ -1,4 +1,8 @@
-import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountData,
+  MultiCall,
+  OnDemandPriceUpdate,
+} from "@gearbox-protocol/sdk";
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
 import type { Address, Hash, Hex } from "viem";
 
@@ -8,7 +12,7 @@ export interface PartialLiquidationPreview {
   amountOut: bigint;
   flashLoanAmount: bigint;
   underlyingBalance: bigint;
-  priceUpdates: PriceUpdate[];
+  priceUpdates: OnDemandPriceUpdate[];
   skipOnFailure?: boolean;
 }
 

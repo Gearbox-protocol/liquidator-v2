@@ -2,6 +2,8 @@ import events from "node:events";
 import { createWriteStream, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import { json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -11,9 +13,7 @@ import {
 } from "viem";
 
 import type { Config } from "../config/index.js";
-import type { CreditAccountData } from "../data/index.js";
 import type { ILogger } from "../log/index.js";
-import { json_stringify } from "../utils/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
 export interface ExplainedError {
@@ -157,8 +157,8 @@ export class ErrorHandler {
   #caLogger(ca?: CreditAccountData): ILogger {
     return ca
       ? this.log.child({
-          account: ca.addr,
-          manager: ca.managerName,
+          account: ca.creditAccount,
+          manager: ca.creditManager, // TODO: credit manager name
         })
       : this.log;
   }

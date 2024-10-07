@@ -1,6 +1,7 @@
+import { json_stringify } from "@gearbox-protocol/sdk";
+
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
-import { json_stringify } from "../../utils/bigint-serializer.js";
 import type { OptimisticResults } from "../liquidate/index.js";
 
 export default class BaseWriter {

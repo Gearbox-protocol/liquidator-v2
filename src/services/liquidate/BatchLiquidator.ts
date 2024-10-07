@@ -3,11 +3,18 @@ import {
   iBatchLiquidatorAbi,
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
+import {
+  type CreditAccountData,
+  filterDust,
+  type OnDemandPriceUpdate,
+} from "@gearbox-protocol/sdk";
+import {
+  iCreditFacadeV3Abi,
+  iCreditFacadeV3MulticallAbi,
+} from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
-import { parseEventLogs } from "viem";
+import { encodeFunctionData, parseEventLogs } from "viem";
 
 import {
   BatchLiquidationErrorMessage,
@@ -113,15 +120,9 @@ export default class BatchLiquidator
     total: number,
   ): Promise<BatchLiquidationOutput> {
     const priceUpdatesByAccount =
-      await this.redstone.batchLiquidationPreviewUpdates(accounts);
+      await this.#batchLiquidationPreviewUpdates(accounts);
     const inputs: EstimateBatchInput[] = [];
     for (const ca of accounts) {
-      const cm = cms.find(m => ca.creditManager === m.address);
-      if (!cm) {
-        throw new Error(
-          `cannot find credit manager data for ${ca.creditManager}`,
-        );
-      }
       // pathfinder returns input without price updates
       const input = this.#getEstimateBatchInput(ca);
       input.priceUpdates = priceUpdatesByAccount[ca.creditAccount];
@@ -136,24 +137,27 @@ export default class BatchLiquidator
     });
     // BatchLiquidator contract does not return onDemandPriceUpdate calls, need to prepend them manually:
     for (let i = 0; i < accounts.length; i++) {
-      const account = accounts[i];
-      result[i].calls = [
-        ...this.redstone.toMulticallUpdates(
-          account,
-          priceUpdatesByAccount[account.addr],
-        ),
-        ...result[i].calls,
-      ];
+      const ca = accounts[i];
+      const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+      const updates = priceUpdatesByAccount[ca.creditAccount].map(
+        ({ token, reserve, data }) => ({
+          target: cm.creditFacade.address,
+          callData: encodeFunctionData({
+            abi: iCreditFacadeV3MulticallAbi,
+            functionName: "onDemandPriceUpdate",
+            args: [token, reserve, data],
+          }),
+        }),
+      );
+      result[i].calls = [...updates, ...result[i].calls];
     }
 
     const batch: Record<Address, BatchLiquidationResult> = Object.fromEntries(
-      result.map(r => [r.creditAccount.toLowerCase(), r]),
+      result.map(r => [r.creditAccount, r]),
     );
     const liquidateBatchInput: LiquidateBatchInput[] = [];
     for (const r of result) {
-      const input = inputs.find(
-        i => i.creditAccount === r.creditAccount.toLowerCase(),
-      );
+      const input = inputs.find(i => i.creditAccount === r.creditAccount);
       this.logger.debug(
         {
           account: r.creditAccount,
@@ -165,9 +169,7 @@ export default class BatchLiquidator
         `estimation for account ${r.creditAccount}`,
       );
       if (r.executed) {
-        const acc = accounts.find(
-          a => a.addr === r.creditAccount.toLowerCase(),
-        );
+        const acc = accounts.find(a => a.creditAccount === r.creditAccount);
         if (acc) {
           liquidateBatchInput.push({
             calls: r.calls,
@@ -204,15 +206,13 @@ export default class BatchLiquidator
       eventName: "LiquidateCreditAccount",
       logs: receipt.logs,
     });
-    const liquidated = new Set(
-      logs.map(l => l.args.creditAccount.toLowerCase() as Address),
-    );
+    const liquidated = new Set(logs.map(l => l.args.creditAccount));
     this.logger.debug(`emitted ${liquidated.size} liquidation events`);
     const getError = (a: CreditAccountData): string | undefined => {
-      if (liquidated.has(a.addr)) {
+      if (liquidated.has(a.creditAccount)) {
         return undefined;
       }
-      const item = batch[a.addr];
+      const item = batch[a.creditAccount];
       if (!item) {
         return "not found in estimateBatch output";
       }
@@ -226,23 +226,23 @@ export default class BatchLiquidator
     };
     const results = accounts.map(
       (a): OptimisticResult => ({
-        callsHuman: TxParserHelper.parseMultiCall({
-          calls: [...(batch[a.addr]?.calls ?? [])],
-        }),
-        balancesBefore: a.filterDust(),
+        callsHuman: this.sdk.parseMultiCall([
+          ...(batch[a.creditAccount]?.calls ?? []),
+        ]),
+        balancesBefore: filterDust(a),
         balancesAfter: {},
         hfBefore: Number(a.healthFactor),
         hfAfter: 0,
         creditManager: a.creditManager,
-        borrower: a.borrower,
-        account: a.addr,
+        borrower: a.owner,
+        account: a.creditAccount,
         gasUsed: 0, // cannot know for single account
-        calls: [...(batch[a.addr]?.calls ?? [])],
+        calls: [...(batch[a.creditAccount]?.calls ?? [])],
         pathAmount: "0", // TODO: ??
-        liquidatorPremium: (batch[a.addr]?.profit ?? 0n).toString(10),
+        liquidatorPremium: (batch[a.creditAccount]?.profit ?? 0n).toString(10),
         liquidatorProfit: "0", // cannot compute for single account
-        priceUpdates: priceUpdatesByAccount[a.addr],
-        isError: !liquidated.has(a.addr),
+        priceUpdates: priceUpdatesByAccount[a.creditAccount],
+        isError: !liquidated.has(a.creditAccount),
         error: getError(a),
         batchId: `${index + 1}/${total}`,
       }),
@@ -261,7 +261,7 @@ export default class BatchLiquidator
       let hash = await this.client.wallet.deployContract({
         abi: batchLiquidatorAbi,
         bytecode: BatchLiquidator_bytecode,
-        args: [this.router],
+        args: [this.sdk.router.address],
       });
       this.logger.debug(
         `waiting for BatchLiquidator to deploy, tx hash: ${hash}`,
@@ -325,6 +325,39 @@ export default class BatchLiquidator
       batches.push(sortedAccounts.slice(i, i + this.config.batchSize));
     }
     return batches;
+  }
+
+  /**
+   * Gets updates from redstone for multiple accounts at once
+   *
+   * @param accounts
+   * @returns
+   */
+  async #batchLiquidationPreviewUpdates(
+    accounts: CreditAccountData[],
+  ): Promise<Record<Address, OnDemandPriceUpdate[]>> {
+    const tokensByAccount: Record<Address, Set<Address>> = {};
+    for (const ca of accounts) {
+      const accTokens = tokensByAccount[ca.creditAccount] ?? new Set<Address>();
+      for (const { token, balance, mask } of ca.tokens) {
+        const isEnabled = (mask & ca.enabledTokensMask) !== 0n;
+        if (isEnabled && balance > 10n) {
+          accTokens.add(token);
+        }
+      }
+      tokensByAccount[ca.creditAccount] = accTokens;
+    }
+    const updates =
+      await this.creditAccountService.getUpdateForAccounts(accounts); // TODO: block number
+    const result: Record<Address, OnDemandPriceUpdate[]> = {};
+    for (const ca of accounts) {
+      const market = this.sdk.marketRegister.findByCreditManager(
+        ca.creditManager,
+      );
+      result[ca.creditAccount] =
+        market.priceOracle.onDemandPriceUpdates(updates);
+    }
+    return result;
   }
 }
 
