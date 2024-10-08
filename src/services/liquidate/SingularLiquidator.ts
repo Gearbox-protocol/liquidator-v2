@@ -67,7 +67,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     let preview: T | undefined;
     try {
       preview = await this.preview(ca);
-      pathHuman = []; // this.creditAccountService.sdk.parseMultiCall(preview.calls);
+      pathHuman = this.creditAccountService.sdk.parseMultiCall(preview.calls);
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);
@@ -143,6 +143,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         10,
       );
     } catch (e: any) {
+      console.error(e);
       const decoded = await this.errorHandler.explain(e, acc, true);
       result.traceFile = decoded.traceFile;
       result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(

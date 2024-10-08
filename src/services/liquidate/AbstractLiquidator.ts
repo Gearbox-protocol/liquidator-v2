@@ -84,7 +84,7 @@ export default abstract class AbstractLiquidator {
       flashLoanAmount: preview.flashLoanAmount,
       calls: preview.calls,
       pathAmount: preview.underlyingBalance.toString(),
-      callsHuman: [], // this.creditAccountService.sdk.parseMultiCall(preview.calls),
+      callsHuman: this.creditAccountService.sdk.parseMultiCall(preview.calls),
     };
   }
 
