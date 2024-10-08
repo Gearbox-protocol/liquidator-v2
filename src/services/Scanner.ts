@@ -91,11 +91,20 @@ export class Scanner {
   async #updateAccounts(atBlock?: bigint): Promise<void> {
     const start = Date.now();
     const blockS = atBlock ? ` in ${atBlock}` : "";
-    let accounts = await this.caService.getCreditAccounts({
-      minHealthFactor: 0,
-      maxHealthFactor: 65_535,
-      includeZeroDebt: false,
-    });
+    let accounts: CreditAccountData[] = [];
+    if (this.config.debugAccount) {
+      const acc = await this.caService.getCreditAccountData(
+        this.config.debugAccount,
+      );
+      accounts = acc ? [acc] : [];
+    } else {
+      accounts = await this.caService.getCreditAccounts({
+        minHealthFactor: 0,
+        maxHealthFactor: 65_535,
+        includeZeroDebt: false,
+        creditManager: this.config.debugManager,
+      });
+    }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
       accounts = this.#filterRestakingAccounts(accounts);

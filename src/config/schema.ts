@@ -28,13 +28,13 @@ export const ConfigSchema = z.object({
    */
   port: z.coerce.number().default(4000),
   /**
-   * Only check these accounts during local debug session
+   * Only check this account during local debug session
    */
-  debugAccounts: stringArrayLike.optional().pipe(z.array(Address).optional()),
+  debugAccount: Address.optional(),
   /**
-   * Only check these credit managers during local debug session
+   * Only check this credit manager during local debug session
    */
-  debugManagers: stringArrayLike.optional().pipe(z.array(Address).optional()),
+  debugManager: Address.optional(),
   /**
    * Path to foundry/cast binary, so that we can create tree-like traces in case of errors
    * Used during optimistic liquidations

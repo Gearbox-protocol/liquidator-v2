@@ -18,7 +18,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@gearbox-protocol/sdk": "3.0.0-vfour.25",
+    "@gearbox-protocol/sdk": "3.0.0-vfour.27",
     "node-pty": "^1.0.0",
     "pino-pretty": "^11.2.2"
   },
