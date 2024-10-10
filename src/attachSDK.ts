@@ -26,6 +26,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   const service = new CreditAccountsService(sdk);
 
   if (config.optimistic) {
+    await sdk.marketRegister.loadAdapters();
     const block = await client.pub.getBlock({
       blockNumber: client.anvilForkBlock,
     });
