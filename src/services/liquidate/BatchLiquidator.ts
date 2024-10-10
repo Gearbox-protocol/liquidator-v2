@@ -348,7 +348,7 @@ export default class BatchLiquidator
       tokensByAccount[ca.creditAccount] = accTokens;
     }
     const updates =
-      await this.creditAccountService.getUpdateForAccounts(accounts); // TODO: block number
+      await this.creditAccountService.getUpdateForAccounts(accounts);
     const result: Record<Address, OnDemandPriceUpdate[]> = {};
     for (const ca of accounts) {
       const market = this.sdk.marketRegister.findByCreditManager(
