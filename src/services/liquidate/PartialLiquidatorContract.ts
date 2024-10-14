@@ -158,7 +158,7 @@ export default abstract class PartialLiquidatorContract {
     let nfts = 0;
     for (const cm of cms) {
       const { address, name } = cm.creditManager;
-      const { degenNFT } = cm.creditFacade.state;
+      const { degenNFT } = cm.creditFacade;
       if (cmToCa[address] === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
         this.logger.debug(
           `need degen NFT ${degenNFT} for credit manager ${name}`,

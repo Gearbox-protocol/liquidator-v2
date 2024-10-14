@@ -74,7 +74,7 @@ export class Scanner {
     }
     try {
       this.#processing = blockNumber;
-      await this.caService.sdk.syncState(blockNumber, timestamp);
+      await this.caService.sdk.syncState({ blockNumber, timestamp });
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
     } catch (e) {

@@ -39,10 +39,10 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     for (const cm of this.sdk.marketRegister.creditManagers) {
       if (cm.underlying === GHO) {
         ghoLiquidator.enable();
-        this.#liquidatorForCM[cm.state.creditManager.address] = ghoLiquidator;
+        this.#liquidatorForCM[cm.creditManager.address] = ghoLiquidator;
       } else {
         aaveLiquidator.enable();
-        this.#liquidatorForCM[cm.state.creditManager.address] = aaveLiquidator;
+        this.#liquidatorForCM[cm.creditManager.address] = aaveLiquidator;
       }
     }
 
