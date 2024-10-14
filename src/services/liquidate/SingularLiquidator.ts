@@ -35,7 +35,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     accounts: CreditAccountData[],
   ): Promise<void> {
     const total = accounts.length;
-    const debugS = this.config.debugAccounts ? "selective " : " ";
+    const debugS = this.config.debugAccount ? "selective " : " ";
     this.logger.info(`${debugS}optimistic liquidation for ${total} accounts`);
 
     for (let i = 0; i < total; i++) {

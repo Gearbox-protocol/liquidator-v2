@@ -1,6 +1,7 @@
 import { nextTick } from "node:process";
 
-import { type AnvilClient, createAnvilClient } from "@gearbox-protocol/sdk/dev";
+import type { AnvilClient, AnvilNodeInfo } from "@gearbox-protocol/sdk/dev";
+import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type { Abi } from "abitype";
@@ -99,11 +100,7 @@ export default class Client {
         transport,
         chain,
       });
-      const resp = await this.#testClient?.request({
-        method: "anvil_nodeInfo",
-        params: [],
-      });
-      this.#anvilInfo = resp;
+      this.#anvilInfo = await this.#testClient.anvilNodeInfo();
     } catch {}
     if (this.#anvilInfo) {
       this.logger.debug(`running on anvil, fork block: ${this.anvilForkBlock}`);

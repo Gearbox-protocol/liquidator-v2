@@ -6,7 +6,7 @@ import type {
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
-import type { Address } from "viem";
+import type { Address, Block } from "viem";
 import { getContract } from "viem";
 
 import type { Config } from "../config/index.js";
@@ -50,18 +50,22 @@ export class Scanner {
       await this.#setupRestakingWorkaround();
     }
 
-    const block = await this.client.pub.getBlockNumber();
+    const block = await this.client.pub.getBlock();
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
-    await this.#updateAccounts(this.config.optimistic ? undefined : block);
+    await this.#updateAccounts(
+      this.config.optimistic ? undefined : block.number,
+    );
     if (!this.config.optimistic) {
-      this.client.pub.watchBlockNumber({
-        onBlockNumber: n => this.#onBlock(n),
+      this.client.pub.watchBlocks({
+        onBlock: b => this.#onBlock(b),
+        includeTransactions: false,
       });
     }
   }
 
-  async #onBlock(blockNumber: bigint): Promise<void> {
+  async #onBlock(block: Block<bigint, false, "latest">): Promise<void> {
+    const { number: blockNumber, timestamp } = block;
     if (this.#processing) {
       this.log.debug(
         `skipping block ${blockNumber}, still processing block ${this.#processing}`,
@@ -70,7 +74,7 @@ export class Scanner {
     }
     try {
       this.#processing = blockNumber;
-      // TODO: update oracle, so we have actual price feeds...
+      await this.caService.sdk.syncState(blockNumber, timestamp);
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
     } catch (e) {
@@ -86,24 +90,28 @@ export class Scanner {
 
   /**
    * Loads new data and recompute all health factors
-   * @param atBlock Fiex block for archive node which is needed to get data
+   * @param blockNumber Fiex block for archive node which is needed to get data
    */
-  async #updateAccounts(atBlock?: bigint): Promise<void> {
+  async #updateAccounts(blockNumber?: bigint): Promise<void> {
     const start = Date.now();
-    const blockS = atBlock ? ` in ${atBlock}` : "";
+    const blockS = blockNumber ? ` in ${blockNumber}` : "";
     let accounts: CreditAccountData[] = [];
     if (this.config.debugAccount) {
       const acc = await this.caService.getCreditAccountData(
         this.config.debugAccount,
+        { blockNumber },
       );
       accounts = acc ? [acc] : [];
     } else {
-      accounts = await this.caService.getCreditAccounts({
-        minHealthFactor: 0,
-        maxHealthFactor: 65_535,
-        includeZeroDebt: false,
-        creditManager: this.config.debugManager,
-      });
+      accounts = await this.caService.getCreditAccounts(
+        {
+          minHealthFactor: 0,
+          maxHealthFactor: 65_535,
+          includeZeroDebt: false,
+          creditManager: this.config.debugManager,
+        },
+        { blockNumber },
+      );
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;

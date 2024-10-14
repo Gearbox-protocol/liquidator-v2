@@ -7,7 +7,7 @@ import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import version from "../version.js";
-import type { Scanner } from "./scanner/index.js";
+import type { Scanner } from "./Scanner.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
 
