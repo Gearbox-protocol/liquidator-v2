@@ -1,9 +1,8 @@
 import { nextTick } from "node:process";
 
+import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type { AnvilClient, AnvilNodeInfo } from "@gearbox-protocol/sdk/dev";
 import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk-gov";
 import type { Abi } from "abitype";
 import type {
   Address,
@@ -30,7 +29,6 @@ import {
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 import type { Config } from "../config/index.js";
 import { exceptionsAbis } from "../data/index.js";
@@ -41,13 +39,6 @@ import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
 const GAS_TIP_MULTIPLIER = 5000n;
-
-const CHAINS: Record<NetworkType, Chain> = {
-  Mainnet: mainnet,
-  Arbitrum: arbitrum,
-  Optimism: optimism,
-  Base: base,
-};
 
 @DI.Injectable(DI.Client)
 export default class Client {
@@ -79,7 +70,7 @@ export default class Client {
     );
     const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
     const chain = defineChain({
-      ...CHAINS[network],
+      ...chains[network],
       id: chainId,
     });
 

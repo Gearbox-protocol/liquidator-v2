@@ -1,8 +1,16 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { AP_PARTIAL_LIQUIDATION_BOT, AP_ROUTER } from "@gearbox-protocol/sdk";
-import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
-import { formatBN, tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
+import {
+  AP_PARTIAL_LIQUIDATION_BOT,
+  AP_ROUTER,
+  formatBN,
+} from "@gearbox-protocol/sdk";
+import {
+  calcLiquidatableLTs,
+  createAnvilClient,
+  setLTs,
+} from "@gearbox-protocol/sdk/dev";
+import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import type { Address, SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";
@@ -77,8 +85,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const newLTs = await calcLiquidatableLTs(this.sdk, ca, 9990n, logger);
     const snapshotId = await this.client.anvil.snapshot();
+    const anvil = createAnvilClient({
+      chain: this.sdk.provider.chain,
+      transport: this.sdk.provider.transport,
+    });
 
-    await setLTs(this.sdk, cm, newLTs, logger);
+    await setLTs(anvil, cm, newLTs, logger);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );

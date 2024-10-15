@@ -1,6 +1,5 @@
-import { type CreditAccountData, etherscanUrl } from "@gearbox-protocol/sdk";
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { formatBN } from "@gearbox-protocol/sdk-gov";
+import type { CreditAccountData, NetworkType } from "@gearbox-protocol/sdk";
+import { etherscanUrl, formatBN } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
