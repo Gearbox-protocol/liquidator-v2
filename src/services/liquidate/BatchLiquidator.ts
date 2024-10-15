@@ -71,7 +71,7 @@ export default class BatchLiquidator
         );
       } catch (e) {
         const decoded = await this.errorHandler.explain(e);
-        this.logger.error(decoded, "cant liquidate");
+        this.logger.error(`cant liquidate: ${decoded.shortMessage}`);
         this.notifier.notify(
           new BatchLiquidationErrorMessage(batch, decoded.shortMessage),
         );

@@ -78,7 +78,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       );
     } catch (e) {
       const decoded = await this.errorHandler.explain(e, ca);
-      logger.error(decoded, "cant liquidate");
+      logger.error(`cant liquidate: ${decoded.shortMessage}`);
       if (preview?.skipOnFailure) {
         this.skipList.add(ca.creditAccount);
         this.logger.warn("adding to skip list");
@@ -143,14 +143,13 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         10,
       );
     } catch (e: any) {
-      console.error(e);
       const decoded = await this.errorHandler.explain(e, acc, true);
       result.traceFile = decoded.traceFile;
       result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
         "\n",
         "\\n",
       );
-      logger.error({ decoded }, "cannot liquidate");
+      logger.error(`cannot liquidate: ${decoded.shortMessage}`);
     }
 
     result.duration = Date.now() - start;
