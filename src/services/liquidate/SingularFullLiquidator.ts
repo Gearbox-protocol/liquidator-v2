@@ -25,9 +25,19 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   constructor() {
     super();
-    this.creditAccountService.sdk.router.addHook("foundBestClosePath", e =>
-      this.#bestClosePath.upsert(e.creditAccount, e),
-    );
+    this.creditAccountService.sdk.router.addHook("foundBestClosePath", e => {
+      this.#bestClosePath.upsert(e.creditAccount, e);
+      this.logger.debug(
+        { account: e.creditAccount, ...e },
+        "found best close path",
+      );
+    });
+    // this.creditAccountService.sdk.router.addHook("foundPathOptions", e => {
+    //   this.logger.debug(
+    //     { account: e.creditAccount, ...e },
+    //     "found path options",
+    //   );
+    // });
   }
 
   public async makeLiquidatable(
