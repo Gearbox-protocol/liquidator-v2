@@ -40,15 +40,20 @@ export class ErrorHandler {
     const logger = this.#caLogger(context);
 
     if (error instanceof BaseError) {
-      const errorJson = `${nanoid()}.json`;
-      const errorFile = path.resolve(this.config.outDir, errorJson);
-      const asStr = json_stringify(error);
-      writeFileSync(errorFile, asStr, "utf-8");
-      logger.debug(`saved original error to ${errorFile}`);
+      let errorJson: string | undefined;
+      try {
+        const asStr = json_stringify(error);
+        const errorJson = `${nanoid()}.json`;
+        const errorFile = path.resolve(this.config.outDir, errorJson);
+        writeFileSync(errorFile, asStr, "utf-8");
+        logger.debug(`saved original error to ${errorFile}`);
+      } catch {}
 
       let traceFile: string | undefined;
       if (saveTrace) {
-        traceFile = await this.#saveErrorTrace(error, context);
+        try {
+          traceFile = await this.#saveErrorTrace(error, context);
+        } catch {}
       }
 
       return {
