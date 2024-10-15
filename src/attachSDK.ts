@@ -1,5 +1,4 @@
 import { CreditAccountsService, GearboxSDK } from "@gearbox-protocol/sdk";
-import { privateKeyToAddress } from "viem/accounts";
 
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
@@ -15,7 +14,6 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   await client.launch();
 
   const sdk = await GearboxSDK.attach({
-    account: privateKeyToAddress(config.privateKey),
     rpcURLs: config.ethProviderRpcs,
     addressProvider: config.addressProviderOverride,
     timeout: 600_000,

@@ -115,8 +115,7 @@ export default abstract class AbstractLiquidator {
     underlyingToken: Address,
   ): Promise<{ eth: bigint; underlying: bigint }> {
     // TODO: is this needed?
-    const token = this.sdk.marketRegister.tokensMeta.mustGet(underlyingToken);
-    const isWeth = token.symbol === "WETH";
+    const isWeth = this.sdk.tokensMeta.symbol(underlyingToken) === "WETH";
     const eth = await this.client.pub.getBalance({
       address: this.client.address,
     });

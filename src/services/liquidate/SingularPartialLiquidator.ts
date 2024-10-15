@@ -144,10 +144,10 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       args: [ca.creditAccount, 10100n, priceUpdates as any],
     });
     const [symb, decimals, uSymb, uDec] = [
-      this.sdk.marketRegister.tokensMeta.mustGet(tokenOut).symbol,
-      this.sdk.marketRegister.tokensMeta.mustGet(tokenOut).decimals,
-      this.sdk.marketRegister.tokensMeta.mustGet(cm.underlying).symbol,
-      this.sdk.marketRegister.tokensMeta.mustGet(cm.underlying).decimals,
+      this.sdk.tokensMeta.symbol(tokenOut),
+      this.sdk.tokensMeta.decimals(tokenOut),
+      this.sdk.tokensMeta.symbol(cm.underlying),
+      this.sdk.tokensMeta.decimals(cm.underlying),
     ];
     logger.debug(
       {

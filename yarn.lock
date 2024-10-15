@@ -1598,7 +1598,7 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0.tgz#4283fbf3258ffc6c57692162e4b0f7e304c686f3"
   integrity sha512-9eDnexCnLPFUp0ZakuZVjRbOlBWYvTq8ZdeDryyxzKUC3zaA1xIFQ2PNq5RDNvtCNOVDMzGGZfvp++zvlLyuFQ==
 
-"@gearbox-protocol/sdk-gov@^2.21.0", "@gearbox-protocol/sdk-gov@^2.22.0":
+"@gearbox-protocol/sdk-gov@^2.22.0":
   version "2.22.0"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.22.0.tgz#264f93c89edd4424745ec7094d5520d4a278c841"
   integrity sha512-b2jOj3uQEsbdWRbsq68X4LupmmMZ/hJIkCUsuO3Sw1S5xIHVlRyFgm3Py1+XcEjqA00UonYVoNjJh6jGORytiA==
@@ -1607,17 +1607,17 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@3.0.0-vfour.53":
-  version "3.0.0-vfour.53"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.53.tgz#51b3616718132537dcc6ea8f8f64cdcffec10b7e"
-  integrity sha512-HayPOrQbh4kZtgqgs34HmgmPxFK/+d7Eguzj9REWkWOX6qVWZy/LpRwNObOfSxf3BF9FcsHzx5h6+IvvdW+tNQ==
+"@gearbox-protocol/sdk@3.0.0-vfour.55":
+  version "3.0.0-vfour.55"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.55.tgz#39afa00bbe6c0eb82165593ddaad1a0cf9d59706"
+  integrity sha512-VuPvHTPgrAaiSzc0l1ZFHPUeyX74qpJ1kDUpruhW/NOkL3dKkqqUzMvOceYyLjZLFMGabklZM5zuqrkyiTv9rQ==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^2.21.0"
+    "@gearbox-protocol/sdk-gov" "^2.22.0"
     "@redstone-finance/evm-connector" "^0.6.2"
     abitype "^1.0.6"
     date-fns "^4.1.0"
     redstone-protocol "^1.0.5"
-    viem ">=2.21.0 <3.0.0"
+    viem "^2.21.26"
 
 "@gearbox-protocol/types@^1.12.2":
   version "1.12.2"
@@ -3969,9 +3969,9 @@ fast-safe-stringify@^2.1.1:
   integrity sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==
 
 fast-uri@^3.0.1:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/fast-uri/-/fast-uri-3.0.2.tgz#d78b298cf70fd3b752fd951175a3da6a7b48f024"
-  integrity sha512-GR6f0hD7XXyNJa25Tb9BuIdN0tdr+0BMi6/CJPH3wJO1JjNG3n/VsSw38AwRdKZABm8lGbPfakLRkYzx2V9row==
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/fast-uri/-/fast-uri-3.0.3.tgz#892a1c91802d5d7860de728f18608a0573142241"
+  integrity sha512-aLrHthzCjH5He4Z2H9YZ+v6Ujb9ocRuW6ZzkJQOrTxleEijANq4v1TsaPaVG1PZcuurEzrLcWRyYBYXD5cEiaw==
 
 fast-xml-parser@4.4.1:
   version "4.4.1"
@@ -5949,7 +5949,7 @@ uuid@^9.0.1:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
 
-"viem@>=2.21.0 <3.0.0", viem@^2.21.25:
+viem@^2.21.25, viem@^2.21.26:
   version "2.21.26"
   resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.26.tgz#6a4d070c35caee8635a4badb32f0d735c4ce59df"
   integrity sha512-qanTFUzU5y3tCZTwYlwA/LXCR4X7OsCPvvKOmxOyuY8gEvWKMS/oh+FBxYO/2bXOhDG/ylg1V3toIbRuMseF8w==
