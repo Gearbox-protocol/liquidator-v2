@@ -90,7 +90,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       transport: this.sdk.provider.transport,
     });
 
-    await setLTs(anvil, cm, newLTs, logger);
+    await setLTs(anvil, cm.creditManager, newLTs, logger);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
