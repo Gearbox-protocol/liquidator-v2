@@ -4,7 +4,6 @@ import type {
   NetworkType,
 } from "@gearbox-protocol/sdk";
 import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
-import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
@@ -134,6 +133,7 @@ export class Scanner {
 
   async #setupRestakingWorkaround(): Promise<void> {
     this.#restakingCMAddr = RESTAKING_CMS[this.config.network];
+    const ezETH = this.caService.sdk.tokensMeta.mustFindBySymbol("ezETH");
 
     if (this.#restakingCMAddr) {
       const cm = getContract({
@@ -143,9 +143,7 @@ export class Scanner {
       });
       const [[, , liquidationDiscount], ezETHLT] = await Promise.all([
         cm.read.fees(),
-        cm.read.liquidationThresholds([
-          tokenDataByNetwork[this.config.network].ezETH,
-        ]),
+        cm.read.liquidationThresholds([ezETH.addr]),
       ]);
 
       // For restaking accounts, say for simplicity account with only ezETH:

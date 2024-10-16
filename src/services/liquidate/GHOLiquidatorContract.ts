@@ -6,7 +6,6 @@ import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import type { Address } from "viem";
 
 import type { ILogger } from "../../log/index.js";
@@ -39,7 +38,7 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
         // constructor(address _ghoFlashMinter, address _gho) {
         args: [
           this.ghoFlashMinter,
-          tokenDataByNetwork[this.config.network].GHO,
+          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr,
         ],
       });
       this.logger.debug(`waiting for GhoFMTaker to deploy, tx hash: ${hash}`);
@@ -69,7 +68,7 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
           this.bot,
           this.ghoFlashMinter,
           ghoFMTakerAddr,
-          tokenDataByNetwork[this.config.network].GHO,
+          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr,
         ],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);

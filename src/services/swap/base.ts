@@ -1,4 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import type { NetworkType } from "@gearbox-protocol/sdk";
 import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import type { Address } from "viem";
 

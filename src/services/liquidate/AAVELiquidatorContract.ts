@@ -6,12 +6,19 @@ import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import { contractsByNetwork } from "@gearbox-protocol/sdk-gov";
+import type { NetworkType } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type { ILogger } from "../../log/index.js";
 import { Logger } from "../../log/index.js";
 import PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+
+const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
+  Mainnet: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+  Arbitrum: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  Optimism: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  Base: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+};
 
 export default class AAVELiquidatorContract extends PartialLiquidatorContract {
   @Logger("AAVEPartialLiquidator")
@@ -23,8 +30,7 @@ export default class AAVELiquidatorContract extends PartialLiquidatorContract {
 
   public async deploy(): Promise<void> {
     let address = this.config.aavePartialLiquidatorAddress;
-    const aavePool =
-      contractsByNetwork[this.config.network].AAVE_V3_LENDING_POOL;
+    const aavePool = AAVE_V3_LENDING_POOL[this.config.network];
     if (!address) {
       this.logger.debug(
         { aavePool, router: this.router, bot: this.bot },

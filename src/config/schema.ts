@@ -1,4 +1,4 @@
-import { MAX_INT } from "@gearbox-protocol/sdk-gov";
+import { MAX_UINT16 } from "@gearbox-protocol/sdk";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -15,7 +15,7 @@ const bigintLike = z.any().transform(v => BigInt(v));
 
 export const ConfigSchema = z.object({
   /**
-   * By default uses address provider from @gearbox-protocol/sdk-gov
+   * By default uses address provider from @gearbox-protocol/sdk
    * Use this option to override address provider
    */
   addressProviderOverride: Address.optional(),
@@ -64,8 +64,9 @@ export const ConfigSchema = z.object({
   /**
    * Filter out all accounts with HF >= threshold during scan stage
    * 65535 is constant for zero-debt account (kind strang, because it's in the middle of the range of allowed values)
+   * TODO: this should be changed to uint256 in contracts
    */
-  hfThreshold: z.coerce.bigint().min(0n).max(MAX_INT).default(MAX_INT),
+  hfThreshold: z.coerce.bigint().min(0n).max(MAX_UINT16).default(MAX_UINT16),
   /**
    * Enable optimistic liquidations
    */

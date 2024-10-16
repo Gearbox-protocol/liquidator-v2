@@ -1,4 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
+import type { NetworkType } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 /**
  * Service that used to swap underlying back to ETH after liquidation

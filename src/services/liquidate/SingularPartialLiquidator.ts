@@ -10,7 +10,6 @@ import {
   createAnvilClient,
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
-import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
 import type { Address, SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";
@@ -42,7 +41,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
     const aaveLiquidator = new AAVELiquidatorContract(router, bot);
     const ghoLiquidator = new GHOLiquidatorContract(router, bot);
-    const GHO = tokenDataByNetwork[this.config.network].GHO.toLowerCase();
+    const GHO =
+      this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr;
 
     for (const cm of this.sdk.marketRegister.creditManagers) {
       if (cm.underlying === GHO) {
