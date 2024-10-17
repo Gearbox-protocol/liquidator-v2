@@ -163,7 +163,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       "found optimal liquidation",
     );
     const connectors = this.sdk.router.getAvailableConnectors(
-      ca.tokens.map(t => t.token),
+      Object.keys(cm.collateralTokens) as Address[],
     );
 
     try {
