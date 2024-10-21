@@ -249,7 +249,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     );
     const feeds = market.priceOracle.reservePriceFeeds;
     for (const { token, balance } of ca.tokens) {
-      if (balance > 10n && !feeds[token]) {
+      if (balance > 10n && !feeds.has(token)) {
         throw new Error(
           "warning: account has tokens without reserve price feeds",
         );

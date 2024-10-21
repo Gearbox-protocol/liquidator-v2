@@ -24,8 +24,6 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   const service = new CreditAccountsService(sdk);
 
   if (config.optimistic) {
-    // TODO: this should be moved to attach later...when periphery-v3 has contract updates
-    await sdk.marketRegister.updatePrices();
     const block = await client.pub.getBlock({
       blockNumber: client.anvilForkBlock,
     });
