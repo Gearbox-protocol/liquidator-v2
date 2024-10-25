@@ -29,7 +29,7 @@ export interface ILiquidatorService {
 }
 
 export interface StrategyPreview {
-  calls: MultiCall[];
+  calls: readonly MultiCall[];
   underlyingBalance: bigint;
   /**
    * Asset in case of partial liquidation

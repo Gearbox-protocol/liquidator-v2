@@ -4,7 +4,6 @@ import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
-import { formatTs } from "./utils/index.js";
 
 export default async function attachSDK(): Promise<CreditAccountsService> {
   const config: Config = DI.get(DI.Config);
@@ -12,17 +11,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   const logger: ILogger = DI.create(DI.Logger, "sdk");
 
   await client.launch();
-
-  const sdk = await GearboxSDK.attach({
-    rpcURLs: config.ethProviderRpcs,
-    addressProvider: config.addressProviderOverride,
-    timeout: 600_000,
-    chainId: config.chainId,
-    networkType: config.network,
-    logger,
-  });
-  const service = new CreditAccountsService(sdk);
-
+  let optimisticTimestamp: number | undefined;
   if (config.optimistic) {
     const block = await client.pub.getBlock({
       blockNumber: client.anvilForkBlock,
@@ -47,23 +36,32 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
       Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
     const fromNowTsMs =
       redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
-    const optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
+    optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
     const deltaS = Math.floor((nowMs - optimisticTimestamp) / 1000);
     logger.info(
       { tag: "timing" },
       `will use optimistic timestamp: ${new Date(optimisticTimestamp)} (${optimisticTimestamp}, delta: ${deltaS}s)`,
     );
-    // in optimistic mode, this will align redstone timestamps and enable caching
-    service.sdk.priceFeeds.setRedstoneHistoricalTimestamp(optimisticTimestamp);
-    // in optimistic mode, warp time if redstone timestamp does not match it
-    service.sdk.priceFeeds.addHook(
-      "updatesGenerated",
-      async ({ timestamp }) => {
-        const block = await client.anvil.evmMineDetailed(timestamp);
-        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
-      },
-    );
   }
+
+  const sdk = await GearboxSDK.attach({
+    rpcURLs: config.ethProviderRpcs,
+    addressProvider: config.addressProviderOverride,
+    timeout: 600_000,
+    chainId: config.chainId,
+    networkType: config.network,
+    redstoneHistoricTimestamp: optimisticTimestamp,
+    logger,
+  });
+  // in optimistic mode, warp time if redstone timestamp does not match it
+  // service.sdk.priceFeeds.addHook(
+  //   "updatesGenerated",
+  //   async ({ timestamp }) => {
+  //     const block = await client.anvil.evmMineDetailed(timestamp);
+  //     logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
+  //   },
+  // );
+  const service = new CreditAccountsService(sdk);
 
   return service;
 }

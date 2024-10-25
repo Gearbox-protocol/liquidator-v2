@@ -1,4 +1,4 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
 
@@ -67,7 +67,9 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     let preview: T | undefined;
     try {
       preview = await this.preview(ca);
-      pathHuman = this.creditAccountService.sdk.parseMultiCall(preview.calls);
+      pathHuman = this.creditAccountService.sdk.parseMultiCall(
+        preview.calls as MultiCall[],
+      );
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);

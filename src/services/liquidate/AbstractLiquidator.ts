@@ -2,6 +2,7 @@ import type {
   CreditAccountData,
   CreditAccountsService,
   GearboxSDK,
+  MultiCall,
 } from "@gearbox-protocol/sdk";
 import { filterDust } from "@gearbox-protocol/sdk";
 import { ierc20Abi } from "@gearbox-protocol/types/abi";
@@ -82,9 +83,11 @@ export default abstract class AbstractLiquidator {
       assetOut: preview.assetOut,
       amountOut: preview.amountOut,
       flashLoanAmount: preview.flashLoanAmount,
-      calls: preview.calls,
+      calls: preview.calls as MultiCall[],
       pathAmount: preview.underlyingBalance.toString(),
-      callsHuman: this.creditAccountService.sdk.parseMultiCall(preview.calls),
+      callsHuman: this.creditAccountService.sdk.parseMultiCall(
+        preview.calls as MultiCall[],
+      ),
     };
   }
 

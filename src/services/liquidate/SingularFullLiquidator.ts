@@ -1,9 +1,4 @@
-import {
-  AddressMap,
-  type CreditAccountData,
-  type RawTx,
-  type RouterHooks,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountData, RawTx } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { decodeFunctionData, type SimulateContractReturnType } from "viem";
 
@@ -21,24 +16,15 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
   protected readonly name = "full";
   protected readonly adverb = "fully";
 
-  #bestClosePath = new AddressMap<RouterHooks["foundBestClosePath"][0]>();
-
-  constructor() {
-    super();
-    this.creditAccountService.sdk.router.addHook("foundBestClosePath", e => {
-      this.#bestClosePath.upsert(e.creditAccount, e);
-      this.logger.debug(
-        { account: e.creditAccount, ...e },
-        "found best close path",
-      );
-    });
-    // this.creditAccountService.sdk.router.addHook("foundPathOptions", e => {
-    //   this.logger.debug(
-    //     { account: e.creditAccount, ...e },
-    //     "found path options",
-    //   );
-    // });
-  }
+  // constructor() {
+  // super();
+  // this.creditAccountService.sdk.router.addHook("foundPathOptions", e => {
+  //   this.logger.debug(
+  //     { account: e.creditAccount, ...e },
+  //     "found path options",
+  //   );
+  // });
+  // }
 
   public async makeLiquidatable(
     _ca: CreditAccountData,
@@ -49,12 +35,13 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
     try {
-      const rawTx = await this.creditAccountService.fullyLiquidate(
-        ca,
-        this.client.address,
-        BigInt(this.config.slippage),
-      );
-      return { ...this.#bestClosePath.mustGet(ca.creditAccount), rawTx };
+      const { tx, routerCloseResult } =
+        await this.creditAccountService.fullyLiquidate(
+          ca,
+          this.client.address,
+          BigInt(this.config.slippage),
+        );
+      return { ...routerCloseResult, rawTx: tx };
     } catch (e) {
       throw new Error("cant preview full liquidation", { cause: e });
     }
