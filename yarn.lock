@@ -1602,10 +1602,10 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@3.0.0-vfour.80":
-  version "3.0.0-vfour.80"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.80.tgz#c6dc507c5ce12a7c10768b64e7f7473377d42c3d"
-  integrity sha512-QoDgncy66GycIPqGGgFrIsw4Y4BRgmam0nbsypRcFyb5W4ULUOOcT8MIuEbU8kRejuPjpkgcK5hlYzMTN6aZmQ==
+"@gearbox-protocol/sdk@3.0.0-vfour.90":
+  version "3.0.0-vfour.90"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.90.tgz#e50aee4c8306605ae910fb65354789c8ed8b00ac"
+  integrity sha512-KdNUml1op4Gfcp6cK6NUUQqIGLZ70MWU0ilb7dMySFIRGkUkViY0+baQwSc96d3Vx85SlLvKnEcsni3ebN540Q==
   dependencies:
     "@gearbox-protocol/sdk-gov" "^2.22.0"
     "@redstone-finance/evm-connector" "^0.6.2"
