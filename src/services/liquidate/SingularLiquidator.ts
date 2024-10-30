@@ -111,8 +111,8 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
       const preview = await this.preview(acc);
-      logger.debug({ pathHuman: result.callsHuman }, "path found");
       result = this.updateAfterPreview(result, preview);
+      logger.debug({ pathHuman: result.callsHuman }, "path found");
 
       const { request } = await this.simulate(acc, preview);
 

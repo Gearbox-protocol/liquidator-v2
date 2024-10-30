@@ -1576,7 +1576,7 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0.tgz#4283fbf3258ffc6c57692162e4b0f7e304c686f3"
   integrity sha512-9eDnexCnLPFUp0ZakuZVjRbOlBWYvTq8ZdeDryyxzKUC3zaA1xIFQ2PNq5RDNvtCNOVDMzGGZfvp++zvlLyuFQ==
 
-"@gearbox-protocol/sdk-gov@^2.22.0", "@gearbox-protocol/sdk-gov@^2.25.0":
+"@gearbox-protocol/sdk-gov@^2.25.0":
   version "2.25.0"
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.25.0.tgz#6c26f80117a399c1a70e991fbeed03c5d11ecc77"
   integrity sha512-F3TRfgj4TO+Kc5/bLNTjbe3p+N/pGG+g/GTB993Cdp+kBW9GdasAlVtLk0jT4fzPidH0KZkYsDocL2YJg7L+uw==
@@ -1585,12 +1585,12 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@3.0.0-vfour.96":
-  version "3.0.0-vfour.96"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.96.tgz#5772fdf0b96769cf3534cc202e0c3e296a6da60e"
-  integrity sha512-LUbs+gCQzbR8oWziswPtFUCwMF4DDxx1je4tylYr2SX9436upWpqBj9d8lvkZJEtnmvOqQL7IXSZ27dL2PGxRw==
+"@gearbox-protocol/sdk@3.0.0-vfour.98":
+  version "3.0.0-vfour.98"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.98.tgz#ba2731fb74da1fe361e167c95caee1cd4d52e7ee"
+  integrity sha512-DcbFC3cbU3ismzC2zr27tPlhzhfmqXXizsBR054ovyEOWygw0wYWGw5E9tKV7eanEb2+dktOZwkYXVjcaIfPjg==
   dependencies:
-    "@gearbox-protocol/sdk-gov" "^2.22.0"
+    "@gearbox-protocol/sdk-gov" "^2.25.0"
     "@redstone-finance/evm-connector" "^0.6.2"
     abitype "^1.0.6"
     date-fns "^4.1.0"
