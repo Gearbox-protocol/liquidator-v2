@@ -121,7 +121,11 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const priceUpdates =
-      await this.creditAccountService.getOnDemandPriceUpdates(ca);
+      await this.creditAccountService.getOnDemandPriceUpdates(
+        ca.creditManager,
+        ca,
+        undefined,
+      );
     const liquidatorAddr = this.liquidatorForCA(ca);
     if (!liquidatorAddr) {
       throw new Error(
