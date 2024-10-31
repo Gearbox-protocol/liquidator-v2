@@ -1,7 +1,10 @@
+import type {
+  PriceFeedData,
+  PriceFeedType,
+  TickerInfo,
+} from "@gearbox-protocol/sdk-gov";
 import {
   getTokenSymbolOrTicker,
-  type PriceFeedData,
-  type PriceFeedType,
   REDSTONE_SIGNERS,
   tickerInfoTokensByNetwork,
   tokenSymbolByAddress,
@@ -134,30 +137,8 @@ export class RedstoneServiceV3 {
         continue;
       }
       const symb = tokenSymbolByAddress[token];
-      const ticker = tickers[symb];
-      if (ticker) {
-        if (this.oracle.hasFeed(ticker.address)) {
-          logger.debug(
-            { ticker },
-            `will update redstone ticker ${ticker.symbol} for ${symb}`,
-          );
-          // TODO:
-          // HOTFIX: sometimes ticker.dataId in sdk-gov is incorrect, prefer data from chain
-          const tickerFeedId =
-            this.oracle.getFeed(ticker.address)?.main?.dataFeedId ??
-            ticker.dataId;
-
-          redstoneUpdates.push({
-            originalToken: token,
-            token: ticker.address,
-            dataFeedId: tickerFeedId,
-            reserve: false, // tickers are always added as main feed
-          });
-        } else {
-          logger.debug(
-            `ticker ${ticker.symbol} for ${symb} is not registered in price oracle, skipping`,
-          );
-        }
+      for (const ticker of tickers[symb] ?? []) {
+        redstoneUpdates.push(...this.#updateForTicker(ticker, token, logger));
       }
     }
     if (!redstoneUpdates.length) {
@@ -302,6 +283,33 @@ export class RedstoneServiceV3 {
     }
 
     return result;
+  }
+
+  #updateForTicker(
+    ticker: TickerInfo,
+    token: Address,
+    logger: ILogger,
+  ): RedstoneUpdate[] {
+    const symbol = tokenSymbolByAddress[token];
+    if (this.oracle.hasFeed(ticker.address)) {
+      logger.debug(
+        { ticker },
+        `will update redstone ticker ${ticker.symbol} for ${symbol}`,
+      );
+
+      return [
+        {
+          originalToken: token,
+          token: ticker.address,
+          dataFeedId: ticker.dataId,
+          reserve: ticker.reserve,
+        },
+      ];
+    }
+    logger.debug(
+      `ticker ${ticker.symbol} for ${symbol} is not registered in price oracle, skipping`,
+    );
+    return [];
   }
 
   async #getRedstonePayloadForManualUsage(
