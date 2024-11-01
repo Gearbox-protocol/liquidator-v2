@@ -180,7 +180,9 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       },
       "found optimal liquidation",
     );
-    const connectors = this.pathFinder.getAvailableConnectors(ca.allBalances);
+    const connectors = this.pathFinder.getAvailableConnectors(
+      cm.collateralTokens,
+    );
 
     try {
       const { result: preview } = await this.client.pub.simulateContract({

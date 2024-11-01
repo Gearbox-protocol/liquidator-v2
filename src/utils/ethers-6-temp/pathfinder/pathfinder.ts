@@ -159,7 +159,7 @@ export class PathFinder {
       balance: leftoverBalances[token]?.balance || 1n,
     }));
 
-    const connectors = this.getAvailableConnectors(ca.allBalances);
+    const connectors = this.getAvailableConnectors(cm.collateralTokens);
     return { expected, leftover, connectors, pathOptions };
   }
 
@@ -167,7 +167,7 @@ export class PathFinder {
     return r1.amount > r2.amount ? r1 : r2;
   }
 
-  getAvailableConnectors(availableList: Array<{ token: Address }>) {
+  getAvailableConnectors(availableList: Address[]) {
     const connectors = PathFinder.getAvailableConnectors(
       availableList,
       this.#connectors,
@@ -176,11 +176,11 @@ export class PathFinder {
   }
 
   static getAvailableConnectors(
-    availableList: Array<{ token: Address }>,
+    availableList: Address[],
     connectors: Address[],
   ) {
     const available = new Set(
-      availableList.map(t => t.token.toLowerCase() as Address),
+      availableList.map(t => t.toLowerCase() as Address),
     );
     return connectors.filter(t => available.has(t.toLowerCase() as Address));
   }
