@@ -1,5 +1,9 @@
 import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { getConnectors, getDecimals } from "@gearbox-protocol/sdk-gov";
+import {
+  getConnectors,
+  getDecimals,
+  getTokenSymbol,
+} from "@gearbox-protocol/sdk-gov";
 import { iRouterV3Abi } from "@gearbox-protocol/types/abi";
 import { type Address, getContract, type PublicClient } from "viem";
 
@@ -8,6 +12,8 @@ import type {
   CreditAccountData,
   CreditManagerData,
 } from "../../../data/index.js";
+import type { ILogger } from "../../../log/index.js";
+import { Logger } from "../../../log/index.js";
 import type { PathFinderCloseResult } from "./core.js";
 import type { PathOptionSerie } from "./pathOptions.js";
 import { PathOptionFactory } from "./pathOptions.js";
@@ -29,8 +35,11 @@ interface FindBestClosePathInterm {
 }
 
 export class PathFinder {
+  @Logger("PathFinder")
+  logger!: ILogger;
+
   readonly #pathFinder: IRouterV3Contract;
-  readonly #connectors: Address[];
+  readonly #connectors: Set<Address>;
   readonly #network: NetworkType;
 
   constructor(address: Address, client: PublicClient, network: NetworkType) {
@@ -40,7 +49,9 @@ export class PathFinder {
       client,
     });
     this.#network = network;
-    this.#connectors = getConnectors(network);
+    this.#connectors = new Set(
+      getConnectors(network).map(c => c.toLowerCase() as Address),
+    );
   }
 
   /**
@@ -60,6 +71,14 @@ export class PathFinder {
   ): Promise<PathFinderCloseResult> {
     const { pathOptions, expected, leftover, connectors } =
       this.#getBestClosePathInput(ca, cm);
+    const logger = this.logger.child({
+      account: ca.addr,
+      borrower: ca.borrower,
+      manager: ca.managerName,
+    });
+    logger.debug(
+      `connectors: ${connectors.map(c => getTokenSymbol(c)).join(", ")}`,
+    );
     let results: RouterResult[] = [];
     for (const po of pathOptions) {
       const { result } = await this.#pathFinder.simulate.findBestClosePath(
@@ -167,21 +186,9 @@ export class PathFinder {
     return r1.amount > r2.amount ? r1 : r2;
   }
 
-  getAvailableConnectors(availableList: Address[]) {
-    const connectors = PathFinder.getAvailableConnectors(
-      availableList,
-      this.#connectors,
+  public getAvailableConnectors(tokens: Address[]): Address[] {
+    return Array.from(
+      this.#connectors.intersection(new Set(tokens.map(a => a.toLowerCase()))),
     );
-    return connectors;
-  }
-
-  static getAvailableConnectors(
-    availableList: Address[],
-    connectors: Address[],
-  ) {
-    const available = new Set(
-      availableList.map(t => t.toLowerCase() as Address),
-    );
-    return connectors.filter(t => available.has(t.toLowerCase() as Address));
   }
 }
