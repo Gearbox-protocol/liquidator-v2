@@ -187,8 +187,6 @@ export class PathFinder {
   }
 
   public getAvailableConnectors(tokens: Address[]): Address[] {
-    return Array.from(
-      this.#connectors.intersection(new Set(tokens.map(a => a.toLowerCase()))),
-    );
+    return tokens.filter(t => this.#connectors.has(t.toLowerCase() as Address));
   }
 }
