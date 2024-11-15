@@ -27,6 +27,7 @@ import { ConvexRewardPoolParser } from "./convextRewardPoolParser.js";
 import { CreditFacadeParser } from "./creditFacadeParser.js";
 import { CreditManagerParser } from "./creditManagerParser.js";
 import { CurveAdapterParser } from "./curveAdapterParser.js";
+import { DaiUsdsAdapterParser } from "./daiUsdsAdapterParser.js";
 import { ERC20Parser } from "./ERC20Parser.js";
 import { ERC4626AdapterParser } from "./erc626AdapterParser.js";
 import type { IParser } from "./iParser.js";
@@ -34,6 +35,7 @@ import { LidoAdapterParser } from "./lidoAdapterParser.js";
 import { LidoSTETHParser } from "./lidoSTETHParser.js";
 import { PoolParser } from "./poolParser.js";
 import { PriceOracleParser } from "./priceOracleParser.js";
+import { StakingRewardsAdapterParser } from "./stakingRewardsAdapterParser.js";
 import { UniswapV2AdapterParser } from "./uniV2AdapterParser.js";
 import { UniswapV3AdapterParser } from "./uniV3AdapterParser.js";
 import { VelodromeV2RouterAdapterParser } from "./velodromeV2RouterAdapterParser.js";
@@ -298,6 +300,18 @@ export class TxParser {
         TxParser._addParser(
           addressLC,
           new CamelotV3AdapterParser(contract, isContract),
+        );
+        break;
+      case "DAI_USDS_EXCHANGE":
+        TxParser._addParser(
+          addressLC,
+          new DaiUsdsAdapterParser(contract, isContract),
+        );
+        break;
+      case "STAKING_REWARDS":
+        TxParser._addParser(
+          addressLC,
+          new StakingRewardsAdapterParser(contract, isContract),
         );
         break;
       // CONVEX_L2_BOOSTER = 25,
