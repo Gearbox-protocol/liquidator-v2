@@ -208,9 +208,10 @@ export class RedstoneServiceV3 {
     ca: CreditAccountData,
   ): Promise<PriceOnDemand[]> {
     const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
-    return priceUpdates.map(({ token, data }) => ({
+    return priceUpdates.map(({ token, data, reserve }) => ({
       token,
       callData: data,
+      reserve,
     }));
   }
 
@@ -307,6 +308,9 @@ export class RedstoneServiceV3 {
       ];
     }
     logger.debug(
+      {
+        ticker,
+      },
       `ticker ${ticker.symbol} for ${symbol} is not registered in price oracle, skipping`,
     );
     return [];

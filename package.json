@@ -27,7 +27,7 @@
     "@commitlint/config-conventional": "^19.5.0",
     "@flashbots/ethers-provider-bundle": "^1.0.0",
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
-    "@gearbox-protocol/liquidator-v2-contracts": "^2.2.1",
+    "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
     "@gearbox-protocol/sdk-gov": "^2.26.1",
     "@gearbox-protocol/types": "^1.12.4",
@@ -54,7 +54,7 @@
     "redstone-protocol": "^1.0.5",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "viem": "^2.21.45",
+    "viem": "^2.21.47",
     "vitest": "^2.1.5"
   },
   "prettier": "@gearbox-protocol/prettier-config",

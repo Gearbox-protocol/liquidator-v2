@@ -1590,10 +1590,10 @@
     eslint-plugin-simple-import-sort "^10.0.0"
     eslint-plugin-unused-imports "^3.0.0"
 
-"@gearbox-protocol/liquidator-v2-contracts@^2.2.1":
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.2.1.tgz#af5c375b7e11d1e3b466298bc8b518d124abdd81"
-  integrity sha512-ybyA+pwgAgaEgil6m5nsP01/f+6/sc3nnQo3byCI03z7/rTeQwiKdK3Os+WIx837Uy8nqpVUxuQhIhBq33Hlbw==
+"@gearbox-protocol/liquidator-v2-contracts@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/liquidator-v2-contracts/-/liquidator-v2-contracts-2.2.2.tgz#565f01df50df68d3870e323f90676648e803f340"
+  integrity sha512-JKXxU8rW32m8Chzhg3fzmnGzE7hfzzS0Nl1vTHyuPCvgY73OqG6dAyaAJMaRJ4t78OvrqLStHCN2rzGvdt95/w==
 
 "@gearbox-protocol/prettier-config@2.0.0":
   version "2.0.0"
@@ -5980,10 +5980,10 @@ uuid@^9.0.1:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
 
-viem@^2.21.45:
-  version "2.21.45"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.45.tgz#7a445428d4909cc334f231ee916ede1b69190603"
-  integrity sha512-I+On/IiaObQdhDKWU5Rurh6nf3G7reVkAODG5ECIfjsrGQ3EPJnxirUPT4FNV6bWER5iphoG62/TidwuTSOA1A==
+viem@^2.21.47:
+  version "2.21.47"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.47.tgz#f518baeb73f1aa801ac0dbf7b5c30ee6c4031cb0"
+  integrity sha512-Bpj+DUlt0A3AOc5vQz7h+YWcwOfNHryIzhIb6iQv9bNZXVVLtADv4l338to6IglXDjnXhDqfVUGo8PeAL92vug==
   dependencies:
     "@noble/curves" "1.6.0"
     "@noble/hashes" "1.5.0"

@@ -265,7 +265,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       address: this.priceHelper,
       abi: [...iPriceHelperAbi, ...exceptionsAbis],
       functionName: "previewTokens",
-      args: [ca.addr, priceUpdates as any],
+      args: [ca.addr, priceUpdates],
     });
     // Sort by weighted value descending, but underlying token comes last
     return tokens.result
