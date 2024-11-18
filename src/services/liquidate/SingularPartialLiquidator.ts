@@ -119,16 +119,23 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const snapshotId = await this.client.anvil.snapshot();
 
     await this.#setNewLTs(ca, cm, ltChanges);
-    const updCa = await this.updateCreditAccountData(ca);
-    logger.debug({
-      hfNew: updCa.healthFactor.toString(),
-      hfOld: ca.healthFactor.toString(),
-      isSuccessful: updCa.isSuccessful,
-    });
+    let hfNew = 0;
+    try {
+      // this currently reverts when price updates contain reserve = true updates
+      const updCa = await this.updateCreditAccountData(ca);
+      logger.debug({
+        hfNew: updCa.healthFactor.toString(),
+        hfOld: ca.healthFactor.toString(),
+        isSuccessful: updCa.isSuccessful,
+      });
+      hfNew = Number(updCa.healthFactor);
+    } catch (e) {
+      logger.warn(e);
+    }
     return {
       snapshotId,
       partialLiquidationCondition: {
-        hfNew: Number(updCa.healthFactor),
+        hfNew,
         ltChanges,
       },
     };
