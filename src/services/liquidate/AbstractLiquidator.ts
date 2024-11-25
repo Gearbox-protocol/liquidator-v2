@@ -1,5 +1,8 @@
 import { tokenSymbolByAddress } from "@gearbox-protocol/sdk-gov";
-import { iDataCompressorV3Abi, ierc20Abi } from "@gearbox-protocol/types/abi";
+import {
+  iDataCompressorV3Abi,
+  ierc20MetadataAbi,
+} from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { getContract } from "viem";
@@ -202,7 +205,7 @@ export default abstract class AbstractLiquidator {
       ? eth
       : await this.client.pub.readContract({
           address: underlyingToken,
-          abi: ierc20Abi,
+          abi: ierc20MetadataAbi,
           functionName: "balanceOf",
           args: [this.client.address],
         });
