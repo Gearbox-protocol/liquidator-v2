@@ -33,6 +33,8 @@ import { ERC4626AdapterParser } from "./erc626AdapterParser.js";
 import type { IParser } from "./iParser.js";
 import { LidoAdapterParser } from "./lidoAdapterParser.js";
 import { LidoSTETHParser } from "./lidoSTETHParser.js";
+import { MellowLrtVaultAdapterParser } from "./MellowLrtVaultAdapterParser.js";
+import { PendleRouterAdapterParser } from "./PendleRouterAdapterParser.js";
 import { PoolParser } from "./poolParser.js";
 import { PriceOracleParser } from "./priceOracleParser.js";
 import { StakingRewardsAdapterParser } from "./stakingRewardsAdapterParser.js";
@@ -312,6 +314,18 @@ export class TxParser {
         TxParser._addParser(
           addressLC,
           new StakingRewardsAdapterParser(contract, isContract),
+        );
+        break;
+      case "PENDLE_ROUTER":
+        TxParser._addParser(
+          addressLC,
+          new PendleRouterAdapterParser(contract, isContract),
+        );
+        break;
+      case "MELLOW_LRT_VAULT":
+        TxParser._addParser(
+          addressLC,
+          new MellowLrtVaultAdapterParser(contract, isContract),
         );
         break;
       // CONVEX_L2_BOOSTER = 25,
