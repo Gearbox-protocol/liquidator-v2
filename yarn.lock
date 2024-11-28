@@ -1468,10 +1468,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0.tgz#4283fbf3258ffc6c57692162e4b0f7e304c686f3"
   integrity sha512-9eDnexCnLPFUp0ZakuZVjRbOlBWYvTq8ZdeDryyxzKUC3zaA1xIFQ2PNq5RDNvtCNOVDMzGGZfvp++zvlLyuFQ==
 
-"@gearbox-protocol/sdk-gov@^2.30.1":
-  version "2.30.1"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.30.1.tgz#a69151b909bd72732ea4ce1e4574934ac9cdbaea"
-  integrity sha512-bi1MCeijn2wICB4aOod3TrBdXMw1AC0KzhfGZpG5rMvzFivU20ta8nYeYtTtywuj/9R3l8GivwFIkaNELFDtVg==
+"@gearbox-protocol/sdk-gov@^2.30.2":
+  version "2.30.2"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.30.2.tgz#cf7de53856c0641b70e03003ca4ffd9aeb086abb"
+  integrity sha512-sEwZO1VdaxngLflF9PeEskcp+0KQRhV/wo0Qd5eZqDvIzNcKKvYWqv0MgHO+3Y4nravXXNY/9U6vwu75j+mVvw==
   dependencies:
     ethers "6.12.1"
     humanize-duration-ts "^2.1.1"
@@ -5806,10 +5806,10 @@ uuid@^9.0.1:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
 
-viem@^2.21.51:
-  version "2.21.51"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.51.tgz#2d548bce12cd019647165787bd69f133d3c4b5b2"
-  integrity sha512-IBZTFoo9cZvMBkFqaJq5G8Ori4IeEDe9AHE5CmOlvNw7ytkC3vdVrJ/APL+V3H4d/5i1FiV331UsckIqQLIM0w==
+viem@^2.21.52:
+  version "2.21.52"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.21.52.tgz#a020f83c1e4df9dde78db3570f4c8c3a22ffb8ab"
+  integrity sha512-O53JhgVhp9CB0T3afy79O5ixNr8XXRGYQtlGYerzttnP56Oh2NBx4+Otz8IFd9N5DVPywf6tmYxHP1RVA99xJA==
   dependencies:
     "@noble/curves" "1.6.0"
     "@noble/hashes" "1.5.0"

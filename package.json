@@ -29,7 +29,7 @@
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
-    "@gearbox-protocol/sdk-gov": "^2.30.1",
+    "@gearbox-protocol/sdk-gov": "^2.30.2",
     "@gearbox-protocol/types": "^1.13.1",
     "@redstone-finance/evm-connector": "^0.6.2",
     "@types/node": "^22.10.1",
@@ -54,7 +54,7 @@
     "redstone-protocol": "^1.0.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "viem": "^2.21.51",
+    "viem": "^2.21.52",
     "vitest": "^2.1.6"
   },
   "prettier": "@gearbox-protocol/prettier-config",
