@@ -1468,10 +1468,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0.tgz#4283fbf3258ffc6c57692162e4b0f7e304c686f3"
   integrity sha512-9eDnexCnLPFUp0ZakuZVjRbOlBWYvTq8ZdeDryyxzKUC3zaA1xIFQ2PNq5RDNvtCNOVDMzGGZfvp++zvlLyuFQ==
 
-"@gearbox-protocol/sdk-gov@^2.30.0":
-  version "2.30.0"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.30.0.tgz#9a82585b2d8c70ba3f015b6e2fe018f4b335c857"
-  integrity sha512-y72nz8ZBO4U+wH2XeDA4xaeCEQNRZk86i7UlfIGgSt6rj+Y3AFyWarwH6UqxoVdQ2KAYFJxVxOihk72IQPe7rw==
+"@gearbox-protocol/sdk-gov@^2.30.1":
+  version "2.30.1"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.30.1.tgz#a69151b909bd72732ea4ce1e4574934ac9cdbaea"
+  integrity sha512-bi1MCeijn2wICB4aOod3TrBdXMw1AC0KzhfGZpG5rMvzFivU20ta8nYeYtTtywuj/9R3l8GivwFIkaNELFDtVg==
   dependencies:
     ethers "6.12.1"
     humanize-duration-ts "^2.1.1"
@@ -2331,10 +2331,10 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@types/node@^22.10.0":
-  version "22.10.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.10.0.tgz#89bfc9e82496b9c7edea3382583fa94f75896e81"
-  integrity sha512-XC70cRZVElFHfIUB40FgZOBbgJYFKKMa5nb9lxcwYstFG/Mi+/Y0bGS+rs6Dmhmkpq4pnNiLiuZAbc02YCOnmA==
+"@types/node@^22.10.1":
+  version "22.10.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.10.1.tgz#41ffeee127b8975a05f8c4f83fb89bcb2987d766"
+  integrity sha512-qKgsUwfHZV2WCWLAnVP1JqnpE6Im6h3Y0+fYgMTasNQ7V++CBX5OT1as0g0f+OyubbFqhf6XVNIsmN4IIhEgGQ==
   dependencies:
     undici-types "~6.20.0"
 
