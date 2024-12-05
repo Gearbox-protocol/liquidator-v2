@@ -14,6 +14,7 @@ import type { Config } from "../../config/index.js";
 import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
+import { ErrorHandler } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
@@ -63,8 +64,10 @@ export class Scanner {
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
   #lastUpdated = 0n;
+  #errorHandler?: ErrorHandler;
 
   public async launch(): Promise<void> {
+    this.#errorHandler = new ErrorHandler(this.config, this.log);
     await this.liquidatorService.launch();
     if (this.config.restakingWorkaround) {
       await this.#setupRestakingWorkaround();
@@ -200,7 +203,15 @@ export class Scanner {
         selection,
       );
     } else {
-      accountsRaw = await this.#getAllAccounts(selection);
+      try {
+        accountsRaw = await this.#getAllAccounts(selection);
+      } catch (e) {
+        const decoded = await this.errorHandler.explain(e, undefined, true);
+        this.log.error(
+          `get all accounts failed with trace: ${decoded.traceFile}`,
+        );
+        throw e;
+      }
     }
     let accounts = accountsRaw.map(a => new CreditAccountData(a));
 
@@ -406,6 +417,13 @@ export class Scanner {
       throw new Error("data compressor not initialized");
     }
     return this.#dataCompressor;
+  }
+
+  protected get errorHandler(): ErrorHandler {
+    if (!this.#errorHandler) {
+      throw new Error("error handler not initialized");
+    }
+    return this.#errorHandler;
   }
 
   public get lastUpdated(): bigint {
