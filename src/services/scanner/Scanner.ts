@@ -7,7 +7,6 @@ import {
 import {
   iCreditManagerV3Abi,
   iDataCompressorV3Abi,
-  iUpdatablePriceFeedAbi,
 } from "@gearbox-protocol/types/abi";
 import { getContract } from "viem";
 
@@ -17,10 +16,7 @@ import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
-import {
-  type IDataCompressorContract,
-  simulateMulticall,
-} from "../../utils/index.js";
+import type { IDataCompressorContract } from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
 import type {
@@ -139,10 +135,13 @@ export class Scanner {
       `${accounts.length} potential accounts to liquidate${blockS}, ${failedTokens.length} failed tokens: ${printTokens(failedTokens)}`,
     );
     if (failedTokens.length) {
-      const redstoneUpdates = await this.redstone.updatesForTokens(
+      let redstoneUpdates = await this.redstone.updatesForTokens(
         failedTokens,
         true,
       );
+      // for data compressor we need only main price feeds
+      redstoneUpdates = redstoneUpdates.filter(u => !u.reserve);
+
       const redstoneTokens = redstoneUpdates.map(({ token }) => token);
       this.log.debug(
         `got ${redstoneTokens.length} redstone price updates${blockS}: ${printTokens(redstoneTokens)}`,
@@ -236,10 +235,7 @@ export class Scanner {
     });
     const failedTokens = new Set<Address>();
     for (const acc of accounts) {
-      if (acc.healthFactor !== 65535n) {
-        // TODO: fix this when HF is changed to uint256
-        acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
-      }
+      acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
     }
 
     return [accounts, Array.from(failedTokens)];
@@ -275,31 +271,31 @@ export class Scanner {
       );
       const start = new Date().getTime();
       // getLiquidatableCreditAccounts does not support priceUpdates on main price feeds
-      // const { result } =
-      //   await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
-      //     [priceUpdates],
-      //     { blockNumber },
-      //   );
-      const resp = await simulateMulticall(this.client.pub, {
-        contracts: [
-          ...priceUpdates.map(p => ({
-            address: p.address,
-            abi: iUpdatablePriceFeedAbi,
-            functionName: "updatePrice",
-            args: [p.callData],
-          })),
-          {
-            address: this.dataCompressor.address,
-            abi: iDataCompressorV3Abi,
-            functionName: "getLiquidatableCreditAccounts",
-            args: [[]],
-          },
-        ],
-        blockNumber,
-        allowFailure: false,
-        gas: 550_000_000n,
-      });
-      const result = resp.pop() as readonly CreditAccountDataRaw[];
+      const { result } =
+        await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
+          [priceUpdates],
+          { blockNumber, gas: 550_000_000n },
+        );
+      // const resp = await simulateMulticall(this.client.pub, {
+      //   contracts: [
+      //     ...priceUpdates.map(p => ({
+      //       address: p.address,
+      //       abi: iUpdatablePriceFeedAbi,
+      //       functionName: "updatePrice",
+      //       args: [p.callData],
+      //     })),
+      //     {
+      //       address: this.dataCompressor.address,
+      //       abi: iDataCompressorV3Abi,
+      //       functionName: "getLiquidatableCreditAccounts",
+      //       args: [[]],
+      //     },
+      //   ],
+      //   blockNumber,
+      //   allowFailure: false,
+      //   gas: 550_000_000n,
+      // });
+      // const result = resp.pop() as readonly CreditAccountDataRaw[];
       const duration = Math.round((new Date().getTime() - start) / 1000);
       this.log.debug(
         { duration: `${duration}s`, count: result.length },
@@ -338,26 +334,32 @@ export class Scanner {
     cm: Address,
     { priceUpdates, blockNumber }: AccountSelection,
   ): Promise<CreditAccountDataRaw[]> {
-    const resp = await simulateMulticall(this.client.pub, {
-      contracts: [
-        ...priceUpdates.map(p => ({
-          address: p.address,
-          abi: iUpdatablePriceFeedAbi,
-          functionName: "updatePrice",
-          args: [p.callData],
-        })),
-        {
-          address: this.dataCompressor.address,
-          abi: iDataCompressorV3Abi,
-          functionName: "getCreditAccountsByCreditManager",
-          args: [cm, []],
-        },
-      ],
-      blockNumber,
-      allowFailure: false,
-      gas: 550_000_000n,
-    });
-    const result = resp.pop() as readonly CreditAccountDataRaw[];
+    const { result } =
+      await this.dataCompressor.simulate.getCreditAccountsByCreditManager(
+        [cm, priceUpdates],
+        { blockNumber, gas: 550_000_000n },
+      );
+    // const resp = await simulateMulticall(this.client.pub, {
+    //   contracts: [
+    //     ...priceUpdates.map(p => ({
+    //       address: p.address,
+    //       abi: iUpdatablePriceFeedAbi,
+    //       functionName: "updatePrice",
+    //       args: [p.callData],
+    //     })),
+    //     {
+    //       address: this.dataCompressor.address,
+    //       abi: iDataCompressorV3Abi,
+    //       functionName: "getCreditAccountsByCreditManager",
+    //       args: [cm, []],
+    //     },
+    //   ],
+    //   blockNumber,
+    //   allowFailure: false,
+    //   gas: 550_000_000n,
+    // });
+    // const result = resp.pop() as readonly CreditAccountDataRaw[];
+    this.log.debug(`${result.length} accounts loaded from ${cm}`);
     return [...result];
   }
 
