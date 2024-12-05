@@ -316,23 +316,46 @@ export class Scanner {
 
   async #getAccountsFromManagers(
     cms: Address[],
-    { liquidatableOnly, priceUpdates, blockNumber }: AccountSelection,
+    selection: AccountSelection,
   ): Promise<CreditAccountDataRaw[]> {
+    const { liquidatableOnly, blockNumber } = selection;
     const all = await Promise.all(
-      cms.map(cm =>
-        this.dataCompressor.simulate.getCreditAccountsByCreditManager(
-          [cm, priceUpdates],
-          { blockNumber },
-        ),
-      ),
+      cms.map(cm => this.#getAccountsFromManager(cm, selection)),
     );
-    const accs = all.map(r => r.result).flat();
+    const accs = all.flat();
     this.log.debug(
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
     );
     return liquidatableOnly
       ? this.#filterLiquidatable(accs, blockNumber)
       : this.#filterZeroDebt(accs);
+  }
+
+  async #getAccountsFromManager(
+    cm: Address,
+    { priceUpdates, blockNumber }: AccountSelection,
+  ): Promise<CreditAccountDataRaw[]> {
+    const resp = await simulateMulticall(this.client.pub, {
+      contracts: [
+        ...priceUpdates.map(p => ({
+          address: p.address,
+          abi: iUpdatablePriceFeedAbi,
+          functionName: "updatePrice",
+          args: [p.callData],
+        })),
+        {
+          address: this.dataCompressor.address,
+          abi: iDataCompressorV3Abi,
+          functionName: "getCreditAccountsByCreditManager",
+          args: [cm, []],
+        },
+      ],
+      blockNumber,
+      allowFailure: false,
+      gas: 550_000_000n,
+    });
+    const result = resp.pop() as readonly CreditAccountDataRaw[];
+    return [...result];
   }
 
   #filterZeroDebt(accs: CreditAccountDataRaw[]): CreditAccountDataRaw[] {
