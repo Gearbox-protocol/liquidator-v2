@@ -236,7 +236,10 @@ export class Scanner {
     });
     const failedTokens = new Set<Address>();
     for (const acc of accounts) {
-      acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
+      if (acc.healthFactor !== 65535n) {
+        // TODO: fix this when HF is changed to uint256
+        acc.priceFeedsNeeded.forEach(t => failedTokens.add(t));
+      }
     }
 
     return [accounts, Array.from(failedTokens)];
