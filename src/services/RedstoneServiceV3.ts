@@ -304,6 +304,7 @@ export class RedstoneServiceV3 {
           token: ticker.address,
           dataFeedId: ticker.dataId,
           reserve: ticker.reserve,
+          address: ticker.priceFeed,
         },
       ];
     }
@@ -392,7 +393,7 @@ export class RedstoneServiceV3 {
 
     const result: PriceOnDemandExtras[] = [];
     for (const t of updates) {
-      const { dataFeedId, originalToken, reserve, token } = t;
+      const { dataFeedId, originalToken, reserve, token, address } = t;
       const signedDataPackages = packagesByDataFeedId[dataFeedId];
       if (!signedDataPackages) {
         throw new Error(`cannot find data packages for ${dataFeedId}`);
@@ -407,6 +408,7 @@ export class RedstoneServiceV3 {
         wrapper.getUnsignedMetadata(),
       );
       result.push({
+        address,
         dataFeedId,
         originalToken,
         token,
@@ -504,7 +506,7 @@ function printFeeds(feeds: RedstoneFeed[]): string {
   return feeds
     .map(
       f =>
-        `${getTokenSymbolOrTicker(f.token)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId}`,
+        `${getTokenSymbolOrTicker(f.token)} ${f.reserve ? "reserve" : "main"} -> ${f.dataFeedId} (${f.address})`,
     )
     .join(", ");
 }
