@@ -297,7 +297,7 @@ export class Scanner {
         ],
         blockNumber,
         allowFailure: false,
-        gas: 1_000_000_000n,
+        gas: 550_000_000n,
       });
       const result = resp.pop() as readonly CreditAccountDataRaw[];
       const duration = Math.round((new Date().getTime() - start) / 1000);
@@ -355,7 +355,7 @@ export class Scanner {
       ],
       blockNumber,
       allowFailure: false,
-      gas: 1_000_000_000n,
+      gas: 550_000_000n,
     });
     const result = resp.pop() as readonly CreditAccountDataRaw[];
     return [...result];
