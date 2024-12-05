@@ -39,6 +39,10 @@ export interface RedstoneFeed {
   token: Address;
   dataFeedId: string;
   reserve: boolean;
+  /**
+   * Feed address
+   */
+  address: Address;
 }
 
 interface OracleEntry {
@@ -142,13 +146,23 @@ export default class OracleServiceV3 {
       if (main.dataFeedId && (!activeOnly || active === "main")) {
         result[token] = [
           ...(result[token] ?? []),
-          { token, dataFeedId: main.dataFeedId, reserve: false },
+          {
+            token,
+            address: main.address,
+            dataFeedId: main.dataFeedId,
+            reserve: false,
+          },
         ];
       }
       if (reserve?.dataFeedId && (!activeOnly || active === "reserve")) {
         result[token] = [
           ...(result[token] ?? []),
-          { token, dataFeedId: reserve.dataFeedId, reserve: true },
+          {
+            token,
+            address: reserve.address,
+            dataFeedId: reserve.dataFeedId,
+            reserve: true,
+          },
         ];
       }
     }

@@ -7,19 +7,26 @@ import {
 import {
   iCreditManagerV3Abi,
   iDataCompressorV3Abi,
+  iUpdatablePriceFeedAbi,
 } from "@gearbox-protocol/types/abi";
 import { getContract } from "viem";
 
 import type { Config } from "../../config/index.js";
-import type { CreditAccountDataRaw, PriceOnDemand } from "../../data/index.js";
+import type { CreditAccountDataRaw } from "../../data/index.js";
 import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
-import type { IDataCompressorContract } from "../../utils/index.js";
+import {
+  type IDataCompressorContract,
+  simulateMulticall,
+} from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
-import type { ILiquidatorService } from "../liquidate/index.js";
+import type {
+  ILiquidatorService,
+  PriceOnDemandExtras,
+} from "../liquidate/index.js";
 import type OracleServiceV3 from "../OracleServiceV3.js";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
 
@@ -32,7 +39,7 @@ const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
 
 interface AccountSelection {
   liquidatableOnly: boolean;
-  priceUpdates: PriceOnDemand[];
+  priceUpdates: PriceOnDemandExtras[];
   blockNumber?: bigint;
 }
 
@@ -179,7 +186,7 @@ export class Scanner {
    * @returns
    */
   async #potentialLiquidations(
-    priceUpdates: PriceOnDemand[],
+    priceUpdates: PriceOnDemandExtras[],
     blockNumber?: bigint,
   ): Promise<[accounts: CreditAccountData[], failedTokens: Address[]]> {
     const { optimistic, debugAccounts, debugManagers } = this.config;
@@ -264,11 +271,32 @@ export class Scanner {
         `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
       );
       const start = new Date().getTime();
-      const { result } =
-        await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
-          [priceUpdates],
-          { blockNumber },
-        );
+      // getLiquidatableCreditAccounts does not support priceUpdates on main price feeds
+      // const { result } =
+      //   await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
+      //     [priceUpdates],
+      //     { blockNumber },
+      //   );
+      const resp = await simulateMulticall(this.client.pub, {
+        contracts: [
+          ...priceUpdates.map(p => ({
+            address: p.address,
+            abi: iUpdatablePriceFeedAbi,
+            functionName: "updatePrice",
+            args: [p.callData],
+          })),
+          {
+            address: this.dataCompressor.address,
+            abi: iDataCompressorV3Abi,
+            functionName: "getLiquidatableCreditAccounts",
+            args: [[]],
+          },
+        ],
+        blockNumber,
+        allowFailure: false,
+        gas: 550_000_000n,
+      });
+      const result = resp.pop() as readonly CreditAccountDataRaw[];
       const duration = Math.round((new Date().getTime() - start) / 1000);
       this.log.debug(
         { duration: `${duration}s`, count: result.length },
