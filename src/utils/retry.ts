@@ -20,5 +20,5 @@ export async function retry<T>(
       await setTimeout(interval);
     }
   }
-  throw new Error("all attempts failed", { cause });
+  throw new Error(`all attempts failed: ${cause}`);
 }
