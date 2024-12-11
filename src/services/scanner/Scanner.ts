@@ -318,10 +318,12 @@ export class Scanner {
     selection: AccountSelection,
   ): Promise<CreditAccountDataRaw[]> {
     const { liquidatableOnly, blockNumber } = selection;
-    const all = await Promise.all(
-      cms.map(cm => this.#getAccountsFromManager(cm, selection)),
-    );
-    const accs = all.flat();
+    const accs: CreditAccountDataRaw[] = [];
+    // do not use Promise.all, because it crashes anvil
+    for (const cm of cms) {
+      const accsFromCM = await this.#getAccountsFromManager(cm, selection);
+      accs.push(...accsFromCM);
+    }
     this.log.debug(
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
     );
