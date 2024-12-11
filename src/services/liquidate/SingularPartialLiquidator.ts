@@ -68,20 +68,31 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const cms = await this.getCreditManagersV3List();
 
     const aaveLiquidator = new AAVELiquidatorContract(router, bot);
-    const ghoLiquidator = new GHOLiquidatorContract(router, bot);
+    const ghoLiquidator = new GHOLiquidatorContract(router, bot, "GHO");
+    const dolaLiquidator = new GHOLiquidatorContract(router, bot, "DOLA");
     const GHO = tokenDataByNetwork[this.config.network].GHO.toLowerCase();
+    const DOLA = tokenDataByNetwork[this.config.network].DOLA.toLowerCase();
 
     for (const cm of cms) {
-      if (cm.underlyingToken === GHO) {
-        ghoLiquidator.addCreditManager(cm);
-        this.#liquidatorForCM[cm.address] = ghoLiquidator;
-      } else {
-        aaveLiquidator.addCreditManager(cm);
-        this.#liquidatorForCM[cm.address] = aaveLiquidator;
+      switch (cm.underlyingToken) {
+        case GHO: {
+          ghoLiquidator.addCreditManager(cm);
+          this.#liquidatorForCM[cm.address] = ghoLiquidator;
+          break;
+        }
+        case DOLA: {
+          dolaLiquidator.addCreditManager(cm);
+          this.#liquidatorForCM[cm.address] = dolaLiquidator;
+          break;
+        }
+        default: {
+          aaveLiquidator.addCreditManager(cm);
+          this.#liquidatorForCM[cm.address] = aaveLiquidator;
+        }
       }
     }
 
-    for (const contract of [aaveLiquidator, ghoLiquidator]) {
+    for (const contract of [aaveLiquidator, ghoLiquidator, dolaLiquidator]) {
       if (!contract.isSupported) {
         this.logger.info(
           `${contract.name} is not supported on ${this.config.network}`,
