@@ -16,7 +16,10 @@ import { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
-import type { IDataCompressorContract } from "../../utils/index.js";
+import {
+  type IDataCompressorContract,
+  simulateMulticall,
+} from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
 import type {
@@ -276,26 +279,6 @@ export class Scanner {
           [priceUpdates],
           { blockNumber, gas: 550_000_000n },
         );
-      // const resp = await simulateMulticall(this.client.pub, {
-      //   contracts: [
-      //     ...priceUpdates.map(p => ({
-      //       address: p.address,
-      //       abi: iUpdatablePriceFeedAbi,
-      //       functionName: "updatePrice",
-      //       args: [p.callData],
-      //     })),
-      //     {
-      //       address: this.dataCompressor.address,
-      //       abi: iDataCompressorV3Abi,
-      //       functionName: "getLiquidatableCreditAccounts",
-      //       args: [[]],
-      //     },
-      //   ],
-      //   blockNumber,
-      //   allowFailure: false,
-      //   gas: 550_000_000n,
-      // });
-      // const result = resp.pop() as readonly CreditAccountDataRaw[];
       const duration = Math.round((new Date().getTime() - start) / 1000);
       this.log.debug(
         { duration: `${duration}s`, count: result.length },
@@ -321,7 +304,7 @@ export class Scanner {
     const accs: CreditAccountDataRaw[] = [];
     // do not use Promise.all, because it crashes anvil
     for (const cm of cms) {
-      const accsFromCM = await this.#getAccountsFromManager(cm, selection);
+      const accsFromCM = await this.#getAccountsFromManager2(cm, selection);
       accs.push(...accsFromCM);
     }
     this.log.debug(
@@ -332,37 +315,52 @@ export class Scanner {
       : this.#filterZeroDebt(accs);
   }
 
-  async #getAccountsFromManager(
+  // async #getAccountsFromManager(
+  //   cm: Address,
+  //   { priceUpdates, blockNumber }: AccountSelection,
+  // ): Promise<CreditAccountDataRaw[]> {
+  //   const { result } =
+  //     await this.dataCompressor.simulate.getCreditAccountsByCreditManager(
+  //       [cm, priceUpdates],
+  //       { blockNumber, gas: 550_000_000n },
+  //     );
+  //   this.log.debug(`${result.length} accounts loaded from ${cm}`);
+  //   return [...result];
+  // }
+
+  async #getAccountsFromManager2(
     cm: Address,
     { priceUpdates, blockNumber }: AccountSelection,
+    pageSize = 25,
   ): Promise<CreditAccountDataRaw[]> {
-    const { result } =
-      await this.dataCompressor.simulate.getCreditAccountsByCreditManager(
-        [cm, priceUpdates],
-        { blockNumber, gas: 550_000_000n },
+    const accAddrs = await this.client.pub.readContract({
+      address: cm,
+      abi: iCreditManagerV3Abi,
+      functionName: "creditAccounts",
+      args: [],
+    });
+    this.log.debug(`found ${accAddrs.length} accounts in ${cm}`);
+    // paginate via accAddrs and getCreditAccountData with multicall
+    const result: CreditAccountDataRaw[] = [];
+    for (let i = 0; i < accAddrs.length; i += pageSize) {
+      const page = accAddrs.slice(i, i + pageSize);
+      const resp = await simulateMulticall(this.client.pub, {
+        contracts: page.map(acc => ({
+          address: this.dataCompressor.address,
+          abi: iDataCompressorV3Abi,
+          functionName: "getCreditAccountData",
+          args: [acc, priceUpdates],
+        })),
+        blockNumber,
+        allowFailure: false,
+        gas: 550_000_000n,
+      });
+      result.push(...(resp as any as CreditAccountDataRaw[]));
+      this.log.debug(
+        `loaded page ${i + 1} of ${accAddrs.length} accounts from ${cm}`,
       );
-    // const resp = await simulateMulticall(this.client.pub, {
-    //   contracts: [
-    //     ...priceUpdates.map(p => ({
-    //       address: p.address,
-    //       abi: iUpdatablePriceFeedAbi,
-    //       functionName: "updatePrice",
-    //       args: [p.callData],
-    //     })),
-    //     {
-    //       address: this.dataCompressor.address,
-    //       abi: iDataCompressorV3Abi,
-    //       functionName: "getCreditAccountsByCreditManager",
-    //       args: [cm, []],
-    //     },
-    //   ],
-    //   blockNumber,
-    //   allowFailure: false,
-    //   gas: 550_000_000n,
-    // });
-    // const result = resp.pop() as readonly CreditAccountDataRaw[];
-    this.log.debug(`${result.length} accounts loaded from ${cm}`);
-    return [...result];
+    }
+    return result;
   }
 
   #filterZeroDebt(accs: CreditAccountDataRaw[]): CreditAccountDataRaw[] {
