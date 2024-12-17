@@ -181,6 +181,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   abstract makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult>;
+
   abstract preview(ca: CreditAccountData): Promise<T>;
   /**
    * Simulates liquidation

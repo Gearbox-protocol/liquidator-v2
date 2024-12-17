@@ -30,10 +30,12 @@ import type { ILogger } from "../../log/index.js";
 import AAVELiquidatorContract from "./AAVELiquidatorContract.js";
 import GHOLiquidatorContract from "./GHOLiquidatorContract.js";
 import type PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import SingularFullLiquidator from "./SingularFullLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
   MakeLiquidatableResult,
   PartialLiquidationPreview,
+  PartialLiquidationPreviewWithFallback,
 } from "./types.js";
 import type { TokenPriceInfo } from "./viem-types.js";
 
@@ -44,7 +46,7 @@ interface TokenBalance extends ExcludeArrayProps<TokenPriceInfo> {
   weightedBalance: bigint;
 }
 
-export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreview> {
+export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
   protected readonly name = "partial";
   protected readonly adverb = "partially";
 
@@ -54,9 +56,16 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
    * mapping of credit manager address to deployed partial liquidator
    */
   #liquidatorForCM: Record<Address, PartialLiquidatorContract> = {};
+  #fallback?: SingularFullLiquidator;
 
-  public async launch(): Promise<void> {
-    await super.launch();
+  public async launch(asFallback?: boolean): Promise<void> {
+    await super.launch(asFallback);
+
+    if (this.config.partialFallback && !asFallback) {
+      this.#fallback = new SingularFullLiquidator();
+      this.logger.debug("launching full liquidator as fallback");
+      await this.#fallback.launch(true);
+    }
 
     const router = await this.addressProvider.findService("ROUTER", 300);
     const bot = await this.addressProvider.findService(
@@ -154,7 +163,26 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
   public async preview(
     ca: CreditAccountData,
-  ): Promise<PartialLiquidationPreview> {
+  ): Promise<PartialLiquidationPreviewWithFallback> {
+    try {
+      const partial = await this.#preview(ca);
+      return {
+        ...partial,
+        fallback: false,
+      };
+    } catch (e) {
+      if (this.#fallback) {
+        const result = await this.#fallback.preview(ca);
+        return {
+          ...result,
+          fallback: true,
+        };
+      }
+      throw e;
+    }
+  }
+
+  async #preview(ca: CreditAccountData): Promise<PartialLiquidationPreview> {
     const logger = this.#caLogger(ca);
     const cm = await this.getCreditManagerData(ca.creditManager);
     const priceUpdates = await this.redstone.liquidationPreviewUpdates(ca);
@@ -249,6 +277,19 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   }
 
   public async simulate(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreviewWithFallback,
+  ): Promise<SimulateContractReturnType> {
+    if (preview.fallback) {
+      if (!this.#fallback) {
+        throw new Error("fallback liquidator is not launched");
+      }
+      return this.#fallback.simulate(account, preview);
+    }
+    return this.#simulate(account, preview);
+  }
+
+  async #simulate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
