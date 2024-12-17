@@ -90,7 +90,7 @@ export const ConfigSchema = z.object({
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */
-  partialFallback: z.boolean().optional(),
+  partialFallback: booleanLike.pipe(z.boolean().optional()),
   /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
