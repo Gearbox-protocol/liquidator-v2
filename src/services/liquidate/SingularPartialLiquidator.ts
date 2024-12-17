@@ -164,6 +164,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   public async preview(
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreviewWithFallback> {
+    const logger = this.#caLogger(ca);
     try {
       const partial = await this.#preview(ca);
       return {
@@ -172,6 +173,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       };
     } catch (e) {
       if (this.#fallback) {
+        logger.debug("previewing with fallback liquidator");
         const result = await this.#fallback.preview(ca);
         return {
           ...result,
@@ -280,10 +282,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     account: CreditAccountData,
     preview: PartialLiquidationPreviewWithFallback,
   ): Promise<SimulateContractReturnType> {
+    const logger = this.#caLogger(account);
     if (preview.fallback) {
       if (!this.#fallback) {
         throw new Error("fallback liquidator is not launched");
       }
+      logger.debug("simulating with fallback liquidator");
       return this.#fallback.simulate(account, preview);
     }
     return this.#simulate(account, preview);
