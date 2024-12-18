@@ -208,11 +208,13 @@ export class RedstoneServiceV3 {
     ca: CreditAccountData,
   ): Promise<PriceOnDemand[]> {
     const priceUpdates = await this.liquidationPreviewUpdates(ca, true);
-    return priceUpdates.map(({ token, data, reserve }) => ({
-      token,
-      callData: data,
-      reserve,
-    }));
+    return priceUpdates
+      .filter(u => !u.reserve)
+      .map(({ token, data, reserve }) => ({
+        token,
+        callData: data,
+        reserve,
+      }));
   }
 
   public async liquidationPreviewUpdates(
