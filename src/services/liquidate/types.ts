@@ -6,6 +6,7 @@ import type {
   MultiCall,
   PriceOnDemand,
 } from "../../data/index.js";
+import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 
 export interface PriceOnDemandExtras extends PriceOnDemand {
   /**
@@ -28,6 +29,10 @@ export interface PriceUpdate {
   reserve: boolean;
 }
 
+export interface FullLiquidationPreview extends PathFinderCloseResult {
+  priceUpdates: PriceUpdate[];
+}
+
 export interface PartialLiquidationPreview {
   calls: MultiCall[];
   assetOut: Address;
@@ -38,8 +43,14 @@ export interface PartialLiquidationPreview {
   skipOnFailure?: boolean;
 }
 
+export type PartialLiquidationPreviewWithFallback =
+  | (PartialLiquidationPreview & {
+      fallback: false;
+    })
+  | (FullLiquidationPreview & { fallback: true });
+
 export interface ILiquidatorService {
-  launch: () => Promise<void>;
+  launch: (asFallback?: boolean) => Promise<void>;
   liquidate: (accounts: CreditAccountData[]) => Promise<void>;
   /**
    *

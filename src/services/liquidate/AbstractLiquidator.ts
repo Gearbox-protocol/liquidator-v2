@@ -65,7 +65,7 @@ export default abstract class AbstractLiquidator {
   #router?: Address;
   #cmCache: Record<string, CreditManagerData> = {};
 
-  public async launch(): Promise<void> {
+  public async launch(asFallback?: boolean): Promise<void> {
     this.#errorHandler = new ErrorHandler(this.config, this.logger);
     const [pfAddr, dcAddr] = await Promise.all([
       this.addressProvider.findService("ROUTER", 300),
@@ -82,7 +82,9 @@ export default abstract class AbstractLiquidator {
       this.client.pub,
       this.config.network,
     );
-    this.notifier.notify(new StartedMessage());
+    if (!asFallback) {
+      this.notifier.notify(new StartedMessage());
+    }
   }
 
   protected newOptimisticResult(acc: CreditAccountData): OptimisticResult {

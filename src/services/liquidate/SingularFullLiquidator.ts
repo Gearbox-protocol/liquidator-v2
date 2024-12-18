@@ -2,15 +2,13 @@ import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import type { SimulateContractReturnType } from "viem";
 
 import { type CreditAccountData, exceptionsAbis } from "../../data/index.js";
-import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
-import type { MakeLiquidatableResult, PriceUpdate } from "./types.js";
+import type {
+  FullLiquidationPreview,
+  MakeLiquidatableResult,
+} from "./types.js";
 
-interface SinglularFullPreview extends PathFinderCloseResult {
-  priceUpdates: PriceUpdate[];
-}
-
-export default class SingularFullLiquidator extends SingularLiquidator<SinglularFullPreview> {
+export default class SingularFullLiquidator extends SingularLiquidator<FullLiquidationPreview> {
   protected readonly name = "full";
   protected readonly adverb = "fully";
 
@@ -21,7 +19,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
     return Promise.resolve({});
   }
 
-  public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
+  public async preview(ca: CreditAccountData): Promise<FullLiquidationPreview> {
     try {
       const cm = await this.getCreditManagerData(ca.creditManager);
 
@@ -55,7 +53,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   public async simulate(
     account: CreditAccountData,
-    preview: SinglularFullPreview,
+    preview: FullLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
     return this.client.pub.simulateContract({
       account: this.client.account,
