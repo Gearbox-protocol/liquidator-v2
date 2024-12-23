@@ -5,7 +5,7 @@ import {
   getDecimals,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
-import { ierc20Abi } from "@gearbox-protocol/types/abi";
+import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
 import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json" assert { type: "json" };
@@ -108,7 +108,7 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
 
     await this.client.simulateAndWrite({
       address: token.address as Address,
-      abi: ierc20Abi,
+      abi: ierc20MetadataAbi,
       functionName: "approve",
       args: [SWAP_ROUTER_ADDRESS, amount],
     });

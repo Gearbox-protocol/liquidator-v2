@@ -5,7 +5,7 @@ import {
   getDecimals,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
-import { ierc20Abi } from "@gearbox-protocol/types/abi";
+import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
@@ -84,7 +84,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
       );
       await this.client.simulateAndWrite({
-        abi: ierc20Abi,
+        abi: ierc20MetadataAbi,
         address: tokenAddr,
         functionName: "approve",
         args: [this.routerAddress, amount],
