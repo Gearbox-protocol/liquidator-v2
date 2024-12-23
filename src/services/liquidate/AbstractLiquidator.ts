@@ -50,9 +50,11 @@ export default abstract class AbstractLiquidator {
 
   #errorHandler?: ErrorHandler;
 
-  public async launch(): Promise<void> {
+  public async launch(asFallback?: boolean): Promise<void> {
     this.#errorHandler = new ErrorHandler(this.config, this.logger);
-    this.notifier.notify(new StartedMessage());
+    if (!asFallback) {
+      this.notifier.notify(new StartedMessage());
+    }
   }
 
   protected newOptimisticResult(acc: CreditAccountData): OptimisticResult {

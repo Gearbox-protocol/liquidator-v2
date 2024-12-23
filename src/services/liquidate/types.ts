@@ -2,9 +2,16 @@ import type {
   CreditAccountData,
   MultiCall,
   OnDemandPriceUpdate,
+  RawTx,
 } from "@gearbox-protocol/sdk";
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
 import type { Address, Hash, Hex } from "viem";
+
+export interface FullLiquidationPreview extends StrategyPreview {
+  amount: bigint;
+  minAmount: bigint;
+  rawTx: RawTx;
+}
 
 export interface PartialLiquidationPreview {
   calls: MultiCall[];
@@ -16,8 +23,14 @@ export interface PartialLiquidationPreview {
   skipOnFailure?: boolean;
 }
 
+export type PartialLiquidationPreviewWithFallback =
+  | (PartialLiquidationPreview & {
+      fallback: false;
+    })
+  | (FullLiquidationPreview & { fallback: true });
+
 export interface ILiquidatorService {
-  launch: () => Promise<void>;
+  launch: (asFallback?: boolean) => Promise<void>;
   liquidate: (accounts: CreditAccountData[]) => Promise<void>;
   /**
    *

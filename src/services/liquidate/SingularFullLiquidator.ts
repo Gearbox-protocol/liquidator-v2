@@ -1,18 +1,15 @@
-import type { CreditAccountData, RawTx } from "@gearbox-protocol/sdk";
+import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { decodeFunctionData, type SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
-import type { MakeLiquidatableResult, StrategyPreview } from "./types.js";
+import type {
+  FullLiquidationPreview,
+  MakeLiquidatableResult,
+} from "./types.js";
 
-interface SinglularFullPreview extends StrategyPreview {
-  amount: bigint;
-  minAmount: bigint;
-  rawTx: RawTx;
-}
-
-export default class SingularFullLiquidator extends SingularLiquidator<SinglularFullPreview> {
+export default class SingularFullLiquidator extends SingularLiquidator<FullLiquidationPreview> {
   protected readonly name = "full";
   protected readonly adverb = "fully";
 
@@ -33,7 +30,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
     return Promise.resolve({});
   }
 
-  public async preview(ca: CreditAccountData): Promise<SinglularFullPreview> {
+  public async preview(ca: CreditAccountData): Promise<FullLiquidationPreview> {
     try {
       const { tx, routerCloseResult, calls } =
         await this.creditAccountService.fullyLiquidate(
@@ -49,7 +46,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<Singlular
 
   public async simulate(
     account: CreditAccountData,
-    preview: SinglularFullPreview,
+    preview: FullLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
     const { args } = decodeFunctionData({
       abi: iCreditFacadeV3Abi,

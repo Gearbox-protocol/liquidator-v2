@@ -16,13 +16,15 @@ import { exceptionsAbis } from "../../data/index.js";
 import AAVELiquidatorContract from "./AAVELiquidatorContract.js";
 import GHOLiquidatorContract from "./GHOLiquidatorContract.js";
 import type PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import SingularFullLiquidator from "./SingularFullLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
   MakeLiquidatableResult,
   PartialLiquidationPreview,
+  PartialLiquidationPreviewWithFallback,
 } from "./types.js";
 
-export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreview> {
+export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
   protected readonly name = "partial";
   protected readonly adverb = "partially";
 
@@ -30,9 +32,16 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
    * mapping of credit manager address to deployed partial liquidator
    */
   #liquidatorForCM: Record<Address, PartialLiquidatorContract> = {};
+  #fallback?: SingularFullLiquidator;
 
-  public async launch(): Promise<void> {
-    await super.launch();
+  public async launch(asFallback?: boolean): Promise<void> {
+    await super.launch(asFallback);
+
+    if (this.config.partialFallback && !asFallback) {
+      this.#fallback = new SingularFullLiquidator();
+      this.logger.debug("launching full liquidator as fallback");
+      await this.#fallback.launch(true);
+    }
 
     const router = this.sdk.addressProvider.getLatestVersion(AP_ROUTER);
     const bot = this.sdk.addressProvider.getLatestVersion(
@@ -129,7 +138,28 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
   public async preview(
     ca: CreditAccountData,
-  ): Promise<PartialLiquidationPreview> {
+  ): Promise<PartialLiquidationPreviewWithFallback> {
+    const logger = this.caLogger(ca);
+    try {
+      const partial = await this.#preview(ca);
+      return {
+        ...partial,
+        fallback: false,
+      };
+    } catch (e) {
+      if (this.#fallback) {
+        logger.debug("previewing with fallback liquidator");
+        const result = await this.#fallback.preview(ca);
+        return {
+          ...result,
+          fallback: true,
+        };
+      }
+      throw e;
+    }
+  }
+
+  async #preview(ca: CreditAccountData): Promise<PartialLiquidationPreview> {
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const priceUpdates =
@@ -229,6 +259,21 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   }
 
   public async simulate(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreviewWithFallback,
+  ): Promise<SimulateContractReturnType> {
+    const logger = this.caLogger(account);
+    if (preview.fallback) {
+      if (!this.#fallback) {
+        throw new Error("fallback liquidator is not launched");
+      }
+      logger.debug("simulating with fallback liquidator");
+      return this.#fallback.simulate(account, preview);
+    }
+    return this.#simulate(account, preview);
+  }
+
+  async #simulate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {

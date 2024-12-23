@@ -43,8 +43,8 @@ export default class BatchLiquidator
 {
   #batchLiquidator?: Address;
 
-  public override async launch(): Promise<void> {
-    await super.launch();
+  public override async launch(asFallback?: boolean): Promise<void> {
+    await super.launch(asFallback);
     await this.#deployContract();
   }
 
