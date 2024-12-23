@@ -25,11 +25,11 @@ export default abstract class PartialLiquidatorContract {
   @DI.Inject(DI.Client)
   client!: Client;
 
-  #enabled = false;
   #registeredCMs: Record<Address, boolean> = {};
   #address?: Address;
   #router: Address;
   #bot: Address;
+  #creditManagers: CreditFactory[] = [];
 
   public readonly name: string;
 
@@ -101,8 +101,7 @@ export default abstract class PartialLiquidatorContract {
       this.logger.warn(`failed to obtain degen NFTs: ${e}`);
     }
 
-    for (const cm of this.creditAccountService.sdk.marketRegister
-      .creditManagers) {
+    for (const cm of this.#creditManagers) {
       const { address, name } = cm.creditManager;
       const ca = cmToCa[address];
       if (ca === ADDRESS_0X0) {
@@ -118,12 +117,12 @@ export default abstract class PartialLiquidatorContract {
 
   public abstract deploy(): Promise<void>;
 
-  public enable(): void {
-    this.#enabled = true;
+  public addCreditManager(cm: CreditFactory): void {
+    this.#creditManagers.push(cm);
   }
 
-  public get enabled(): boolean {
-    return this.#enabled;
+  public get isSupported(): boolean {
+    return this.#creditManagers.length > 0;
   }
 
   /**
@@ -131,10 +130,9 @@ export default abstract class PartialLiquidatorContract {
    * @returns
    */
   async #getLiquidatorAccounts(): Promise<Record<Address, Address>> {
-    const cms = this.creditAccountService.sdk.marketRegister.creditManagers;
     const results = await this.client.pub.multicall({
       allowFailure: false,
-      contracts: cms.map(cm => ({
+      contracts: this.#creditManagers.map(cm => ({
         abi: iPartialLiquidatorAbi,
         address: this.address,
         functionName: "cmToCA",
@@ -143,7 +141,10 @@ export default abstract class PartialLiquidatorContract {
     });
     this.logger.debug(`loaded ${results.length} liquidator credit accounts`);
     return Object.fromEntries(
-      cms.map((cm, i) => [cm.creditManager.address, results[i]]),
+      this.#creditManagers.map((cm, i) => [
+        cm.creditManager.address,
+        results[i],
+      ]),
     );
   }
 
@@ -154,9 +155,8 @@ export default abstract class PartialLiquidatorContract {
    */
   async #claimDegenNFTs(cmToCa: Record<string, string>): Promise<void> {
     const account = this.address;
-    const cms = this.creditAccountService.sdk.marketRegister.creditManagers;
     let nfts = 0;
-    for (const cm of cms) {
+    for (const cm of this.#creditManagers) {
       const { address, name } = cm.creditManager;
       const { degenNFT } = cm.creditFacade;
       if (cmToCa[address] === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {

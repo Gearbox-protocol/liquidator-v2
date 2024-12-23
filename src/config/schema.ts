@@ -75,20 +75,19 @@ export const ConfigSchema = z.object({
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
    */
-  deployAaveLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
+  deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   /**
    * Address of deployed partiali liquidator contract for all credit managers except for GHO-based
    */
   aavePartialLiquidatorAddress: Address.optional(),
   /**
-   * The serive can deploy partial liquidator contracts.
-   * Usage: deploy them once from local machine then pass the address to production service
-   */
-  deployGhoLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
-  /**
    * Address of deployed partiali liquidator contract for GHO credit managers
    */
   ghoPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partiali liquidator contract for DOLA credit managers
+   */
+  dolaPartialLiquidatorAddress: Address.optional(),
   /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service

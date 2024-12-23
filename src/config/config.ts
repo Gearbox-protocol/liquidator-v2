@@ -40,8 +40,7 @@ export class Config extends ConfigClass {
     return !!(
       this.aavePartialLiquidatorAddress ||
       this.ghoPartialLiquidatorAddress ||
-      this.deployAaveLiquidatorContracts ||
-      this.deployGhoLiquidatorContracts
+      this.deployPartialLiquidatorContracts
     );
   }
 

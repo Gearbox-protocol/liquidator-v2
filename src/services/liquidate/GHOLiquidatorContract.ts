@@ -15,19 +15,22 @@ import PartialLiquidatorContract from "./PartialLiquidatorContract.js";
 export default class GHOLiquidatorContract extends PartialLiquidatorContract {
   @Logger("GHOPartialLiquidator")
   logger!: ILogger;
+  #token: "DOLA" | "GHO";
 
-  constructor(router: Address, bot: Address) {
-    super("GHO Partial Liquidator", router, bot);
+  constructor(router: Address, bot: Address, token: "DOLA" | "GHO") {
+    super(`${token} Partial Liquidator`, router, bot);
+    this.#token = token;
   }
 
   public async deploy(): Promise<void> {
-    let address = this.config.ghoPartialLiquidatorAddress;
+    let address = this.deployedAddress;
     if (!address) {
       this.logger.debug(
         {
-          ghoFlashMinter: this.ghoFlashMinter,
+          flashMinter: this.flashMinter,
           router: this.router,
           bot: this.bot,
+          token: this.#token,
         },
         "deploying partial liquidator",
       );
@@ -37,8 +40,9 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
         bytecode: GhoFMTaker_bytecode,
         // constructor(address _ghoFlashMinter, address _gho) {
         args: [
-          this.ghoFlashMinter,
-          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr,
+          this.flashMinter,
+          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol(this.#token)
+            .addr,
         ],
       });
       this.logger.debug(`waiting for GhoFMTaker to deploy, tx hash: ${hash}`);
@@ -66,9 +70,10 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
         args: [
           this.router,
           this.bot,
-          this.ghoFlashMinter,
+          this.flashMinter,
           ghoFMTakerAddr,
-          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr,
+          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol(this.#token)
+            .addr,
         ],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
@@ -110,12 +115,27 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
     this.address = address;
   }
 
-  private get ghoFlashMinter(): Address {
+  private get deployedAddress(): Address | undefined {
+    switch (this.#token) {
+      case "GHO":
+        return this.config.ghoPartialLiquidatorAddress;
+      case "DOLA":
+        return this.config.dolaPartialLiquidatorAddress;
+    }
+    return undefined;
+  }
+
+  private get flashMinter(): Address {
     if (this.config.network === "Mainnet") {
-      return "0xb639D208Bcf0589D54FaC24E655C79EC529762B8";
+      switch (this.#token) {
+        case "GHO":
+          return "0xb639D208Bcf0589D54FaC24E655C79EC529762B8";
+        case "DOLA":
+          return "0x6C5Fdc0c53b122Ae0f15a863C349f3A481DE8f1F";
+      }
     }
     throw new Error(
-      `gho flash minter is not available on ${this.config.network}`,
+      `${this.#token} flash minter is not available on ${this.config.network}`,
     );
   }
 }
