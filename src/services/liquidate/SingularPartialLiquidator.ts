@@ -10,6 +10,7 @@ import {
   createAnvilClient,
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
+import { ADDRESS_0X0 } from "@gearbox-protocol/sdk-gov";
 import type { Address, SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";
@@ -51,10 +52,13 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     const aaveLiquidator = new AAVELiquidatorContract(router, bot);
     const ghoLiquidator = new GHOLiquidatorContract(router, bot, "GHO");
     const dolaLiquidator = new GHOLiquidatorContract(router, bot, "DOLA");
+    // safe to use 0x0 because none of underlyings is 0x0, so no cms will be added
     const GHO =
-      this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("GHO").addr;
+      this.creditAccountService.sdk.tokensMeta.findBySymbol("GHO")?.addr ??
+      ADDRESS_0X0;
     const DOLA =
-      this.creditAccountService.sdk.tokensMeta.mustFindBySymbol("DOLA").addr;
+      this.creditAccountService.sdk.tokensMeta.findBySymbol("DOLA")?.addr ??
+      ADDRESS_0X0;
 
     for (const cm of this.sdk.marketRegister.creditManagers) {
       switch (cm.underlying) {
