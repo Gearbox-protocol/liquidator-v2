@@ -1592,10 +1592,19 @@
     humanize-duration-ts "^2.1.1"
     zod "^3.22.2"
 
-"@gearbox-protocol/sdk@3.0.0-vfour.130":
-  version "3.0.0-vfour.130"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.130.tgz#2e16f3cbe544f870e64f7705d754be3c37b7a1ea"
-  integrity sha512-9fltsB17GDbQbgTT5U0cLp19umI1eRvsvRe5R3U0Y3JW3H13OrinJ7UVA9zU/PtxBkLonbBYlCuxGDgpjlOVEA==
+"@gearbox-protocol/sdk-gov@^2.33.2":
+  version "2.33.2"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk-gov/-/sdk-gov-2.33.2.tgz#ae8a3f802d4553cacd0d4a1e832052599facb7c8"
+  integrity sha512-P1Bcb8kBg1ZVdloLMQpqkJvPxp4cV7vIRBPRI0XRzsLciJM5ME1dAWiwaZENZGlN52aOzu024gal0HIYZYuR5g==
+  dependencies:
+    ethers "6.12.1"
+    humanize-duration-ts "^2.1.1"
+    zod "^3.22.2"
+
+"@gearbox-protocol/sdk@3.0.0-vfour.135":
+  version "3.0.0-vfour.135"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.135.tgz#f34a780cc03b49d63b0c9ae44ca7024aa7040c7d"
+  integrity sha512-Ih0WQ0tyYwYpR4mL7HJB6J/XaxKh+eYc+rTBWJfPKK5asGF9CcGPAObbxSbUsmc8IcrTamG7KhrRo2AxjF3x9w==
   dependencies:
     "@gearbox-protocol/sdk-gov" "^2.33.1"
     "@redstone-finance/evm-connector" "^0.7.3"

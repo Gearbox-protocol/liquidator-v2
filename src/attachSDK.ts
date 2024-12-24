@@ -47,6 +47,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   const sdk = await GearboxSDK.attach({
     rpcURLs: config.ethProviderRpcs,
     addressProvider: config.addressProviderOverride,
+    marketConfigurators: [config.marketConfigurator],
     timeout: 600_000,
     chainId: config.chainId,
     networkType: config.network,

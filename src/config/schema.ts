@@ -20,6 +20,10 @@ export const ConfigSchema = z.object({
    */
   addressProviderOverride: Address.optional(),
   /**
+   * Market configurator address to attach SDK
+   */
+  marketConfigurator: Address,
+  /**
    * App name used in various messages to distinguish instances
    */
   appName: z.string().default("liquidator-ts"),
