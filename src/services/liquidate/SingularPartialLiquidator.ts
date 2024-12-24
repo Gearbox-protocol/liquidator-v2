@@ -173,7 +173,9 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       };
     } catch (e) {
       if (this.#fallback) {
-        logger.debug("previewing with fallback liquidator");
+        logger.warn(
+          `partial liquidation failed, falling back to full liquidation: ${e}`,
+        );
         const result = await this.#fallback.preview(ca);
         return {
           ...result,
