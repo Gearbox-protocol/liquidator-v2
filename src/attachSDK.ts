@@ -62,7 +62,9 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   //     logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
   //   },
   // );
-  const service = new CreditAccountsService(sdk);
+  const service = new CreditAccountsService(sdk, {
+    batchSize: config.batchSize, // TODO: technically, this is different batch size, needs to be changed
+  });
 
   return service;
 }
