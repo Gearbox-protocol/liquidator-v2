@@ -8,6 +8,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   debugAccount: "DEBUG_ACCOUNT",
   debugManager: "DEBUG_MANAGER",
   batchSize: "BATCH_SIZE",
+  compressorBatchSize: "COMPRESSOR_BATCH_SIZE",
   castBin: "CAST_BIN",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",

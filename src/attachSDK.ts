@@ -63,7 +63,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   //   },
   // );
   const service = new CreditAccountsService(sdk, {
-    batchSize: config.batchSize, // TODO: technically, this is different batch size, needs to be changed
+    batchSize: config.compressorBatchSize,
   });
 
   return service;

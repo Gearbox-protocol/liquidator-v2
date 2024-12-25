@@ -110,6 +110,10 @@ export const ConfigSchema = z.object({
    */
   batchSize: z.coerce.number().nonnegative().default(10),
   /**
+   * Limit number of accounts to load from compressor. 0 = unlimited, let compressor decide
+   */
+  compressorBatchSize: z.coerce.number().nonnegative().default(0),
+  /**
    * Slippage value for pathfined
    */
   slippage: z.coerce.number().min(0).max(10000).int().default(50),
