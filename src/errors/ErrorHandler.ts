@@ -63,7 +63,10 @@ export class ErrorHandler {
         longMessage: error.message,
       };
     }
-    const longMessage = error instanceof Error ? error.message : `${error}`;
+    if (error instanceof Error) {
+      return this.#unwrapCause(error);
+    }
+    const longMessage = `${error}`;
     const shortMessage = longMessage.split("\n")[0].slice(0, 128);
     return {
       longMessage,
@@ -157,6 +160,16 @@ export class ErrorHandler {
     } catch (e) {
       logger.warn(`failed to save trace: ${e}`);
     }
+  }
+
+  #unwrapCause(e: Error): Pick<ExplainedError, "longMessage" | "shortMessage"> {
+    const shortMessage = e.message.split("\n")[0].slice(0, 128);
+    let longMessage = e.message;
+    if (e.cause) {
+      const cause = this.#unwrapCause(e.cause as Error);
+      longMessage = longMessage + "Cause: " + cause.longMessage;
+    }
+    return { shortMessage, longMessage };
   }
 
   #caLogger(ca?: CreditAccountData): ILogger {
