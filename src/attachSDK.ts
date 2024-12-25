@@ -4,6 +4,7 @@ import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
+import { formatTs } from "./utils/index.js";
 
 export default async function attachSDK(): Promise<CreditAccountsService> {
   const config: Config = DI.get(DI.Config);
@@ -54,14 +55,15 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     redstoneHistoricTimestamp: optimisticTimestamp,
     logger,
   });
-  // in optimistic mode, warp time if redstone timestamp does not match it
-  // service.sdk.priceFeeds.addHook(
-  //   "updatesGenerated",
-  //   async ({ timestamp }) => {
-  //     const block = await client.anvil.evmMineDetailed(timestamp);
-  //     logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
-  //   },
-  // );
+  if (config.optimistic) {
+    // in optimistic mode, warp time if redstone timestamp does not match it
+    sdk.priceFeeds.addHook("updatesGenerated", async ({ timestamp }) => {
+      try {
+        const block = await client.anvil.evmMineDetailed(timestamp);
+        logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
+      } catch {}
+    });
+  }
   const service = new CreditAccountsService(sdk, {
     batchSize: config.compressorBatchSize,
   });
