@@ -1,6 +1,7 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import {
+  ADDRESS_0X0,
   AP_PARTIAL_LIQUIDATION_BOT,
   AP_ROUTER,
   formatBN,
@@ -10,7 +11,6 @@ import {
   createAnvilClient,
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
-import { ADDRESS_0X0 } from "@gearbox-protocol/sdk-gov";
 import type { Address, SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";

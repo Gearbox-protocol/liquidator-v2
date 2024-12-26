@@ -1,10 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
-import {
-  CHAINS,
-  decimals,
-  getDecimals,
-  tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk-gov";
+import { chains, type NetworkType } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
@@ -49,34 +43,31 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
   public async launch(network: NetworkType): Promise<void> {
     await super.launch(network);
     this.WETH = new Token(
-      CHAINS[network],
+      chains[network].id,
       this.wethAddr,
-      decimals.WETH,
+      18,
       "WETH",
       "Wrapped Ether",
     );
   }
 
   public async swap(tokenAddr: Address, amount: bigint): Promise<void> {
+    const symb = this.creditAccountService.sdk.tokensMeta.symbol(tokenAddr);
     if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${symb} back to ETH: amount to small`,
       );
       return;
     }
     try {
       if (tokenAddr.toLowerCase() !== this.wethAddr.toLowerCase()) {
-        this.log.debug(
-          `swapping ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
-        );
+        this.log.debug(`swapping ${symb} back to ETH`);
         await this.executeTrade(tokenAddr, amount);
-        this.log.debug(`swapped ${tokenSymbolByAddress[tokenAddr]} to WETH`);
+        this.log.debug(`swapped ${symb} to WETH`);
       }
       this.log.debug("unwrapped ETH");
     } catch (e) {
-      this.log.error(
-        `gailed to swap ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${e}`,
-      );
+      this.log.error(`gailed to swap ${symb} back to ETH: ${e}`);
     }
   }
 
@@ -84,12 +75,16 @@ export default class Uniswap extends BaseSwapper implements ISwapper {
     tokenAddr: Address,
     amount: bigint,
   ): Promise<void> {
+    const [symb, decimals] = [
+      this.creditAccountService.sdk.tokensMeta.symbol(tokenAddr),
+      this.creditAccountService.sdk.tokensMeta.decimals(tokenAddr),
+    ];
     const token = new Token(
-      CHAINS[this.network],
+      chains[this.network].id,
       tokenAddr,
-      getDecimals(tokenAddr),
-      tokenSymbolByAddress[tokenAddr],
-      tokenSymbolByAddress[tokenAddr],
+      decimals,
+      symb,
+      symb,
     );
 
     const pool = await this.getPool(token);

@@ -1,5 +1,5 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
-import { tokenDataByNetwork } from "@gearbox-protocol/sdk-gov";
+import type { CreditAccountsService, NetworkType } from "@gearbox-protocol/sdk";
+import { WETH } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type { Config } from "../../config/index.js";
@@ -13,12 +13,15 @@ export default abstract class BaseSwapper {
   @DI.Inject(DI.Client)
   client!: Client;
 
+  @DI.Inject(DI.CreditAccountService)
+  creditAccountService!: CreditAccountsService;
+
   #network?: NetworkType;
   #wethAddr?: Address;
 
   protected async launch(network: NetworkType): Promise<void> {
     this.#network = network;
-    this.#wethAddr = tokenDataByNetwork[network].WETH;
+    this.#wethAddr = WETH[network];
   }
 
   protected get network(): NetworkType {

@@ -21,7 +21,7 @@ Use environment variables to configure bot
 | `JSON_RPC_PROVIDERS`              | RPC providers to use.                                                                                                       |
 | `PRIVATE_KEY`                     | Private key used to send liquidation transactions.                                                                          |
 | `SLIPPAGE`                        | Slippage value for pathfinder.                                                                                              |
-| `ADDRESS_PROVIDER`                | By default uses address provider from @gearbox-protocol/sdk-gov. Use this option to override address provider.              |
+| `ADDRESS_PROVIDER`                | By default uses address provider from @gearbox-protocol/sdk. Use this option to override address provider.                  |
 | `HF_TRESHOLD`                     | Filter out all accounts with HF >= threshold during scan stage.                                                             |
 | `DEPLOY_AAVE_PARTIAL_LIQUIDATOR`  | Deploy Aave partial liquidator contracts.                                                                                   |
 | `DEPLOY_GHO_PARTIAL_LIQUIDATOR`   | Deploy Gho partial liquidator contracts.                                                                                    |
