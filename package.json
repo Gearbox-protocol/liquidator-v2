@@ -18,7 +18,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@gearbox-protocol/sdk": "3.0.0-vfour.139",
+    "@gearbox-protocol/sdk": "3.0.0-vfour.152",
     "node-pty": "^1.0.0",
     "pino-pretty": "^13.0.0"
   },
@@ -30,7 +30,6 @@
     "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
     "@gearbox-protocol/types": "^1.14.1",
-    "@redstone-finance/evm-connector": "^0.7.3",
     "@types/node": "^22.10.2",
     "@uniswap/sdk-core": "^6.1.1",
     "@uniswap/v3-sdk": "^3.19.0",
@@ -44,15 +43,14 @@
     "esbuild": "^0.24.2",
     "eslint": "^8.57.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.11",
+    "lint-staged": "^15.3.0",
     "nanoid": "^5.0.9",
     "node-pty": "^1.0.0",
     "pino": "^9.6.0",
     "prettier": "^3.4.2",
-    "redstone-protocol": "^1.0.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "viem": "^2.21.57",
+    "viem": "^2.21.59",
     "vitest": "^2.1.8"
   },
   "prettier": "@gearbox-protocol/prettier-config",
