@@ -1578,10 +1578,10 @@
   resolved "https://registry.yarnpkg.com/@gearbox-protocol/prettier-config/-/prettier-config-2.0.0.tgz#4283fbf3258ffc6c57692162e4b0f7e304c686f3"
   integrity sha512-9eDnexCnLPFUp0ZakuZVjRbOlBWYvTq8ZdeDryyxzKUC3zaA1xIFQ2PNq5RDNvtCNOVDMzGGZfvp++zvlLyuFQ==
 
-"@gearbox-protocol/sdk@3.0.0-vfour.167":
-  version "3.0.0-vfour.167"
-  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.167.tgz#16d5a8b32629cfeca2fd4e9c083cac36991d3751"
-  integrity sha512-Fu9DeyZD5giadkF5WbDRtBat5mbeXP7Sqe2T9clVe9nb4CQMqo3VqO0MEn4/AI9r9XBYaGF4rB6iZtx+cmDiNQ==
+"@gearbox-protocol/sdk@3.0.0-vfour.176":
+  version "3.0.0-vfour.176"
+  resolved "https://registry.yarnpkg.com/@gearbox-protocol/sdk/-/sdk-3.0.0-vfour.176.tgz#4f1135e4d91aebcf22642cff73aa8368205933cc"
+  integrity sha512-7Ny7VzVe3QIxdFyaBNpaBHy0g5+snhFvY7n2ivOJj7u+gmtdLtjggPNLWouJifebytU2bWGQhZ/CG8TMI1R0fg==
   dependencies:
     "@redstone-finance/evm-connector" "^0.7.3"
     abitype "^1.0.8"
