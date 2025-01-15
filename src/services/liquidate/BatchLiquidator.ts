@@ -306,24 +306,43 @@ export default class BatchLiquidator
   }
 
   #sliceBatches(accounts: CreditAccountData[]): CreditAccountData[][] {
-    // sort by healthFactor bin ASC, debt DESC
-    const sortedAccounts = accounts.sort((a, b) => {
-      if (a.healthFactor !== b.healthFactor) {
-        return healthFactorBin(a) - healthFactorBin(b);
+    // Group accounts by oracle - so that price updates contain only tokens known to the oracle
+    const accountsByOracle = new Map<Address, CreditAccountData[]>();
+    for (const ca of accounts) {
+      const market = this.sdk.marketRegister.findByCreditManager(
+        ca.creditManager,
+      );
+      const oracle = market.priceOracle.address;
+      if (accountsByOracle.has(oracle)) {
+        accountsByOracle.set(oracle, []);
       }
-      if (b.totalDebtUSD > a.totalDebtUSD) {
-        return 1;
-      } else if (b.totalDebtUSD === a.totalDebtUSD) {
-        return 0;
-      } else {
-        return -1;
-      }
-    });
-
-    const batches: CreditAccountData[][] = [];
-    for (let i = 0; i < sortedAccounts.length; i += this.config.batchSize) {
-      batches.push(sortedAccounts.slice(i, i + this.config.batchSize));
+      accountsByOracle.get(oracle)!.push(ca);
     }
+
+    // Sort accounts within each oracle by healthFactor bin ASC, debt DESC
+    for (const oracleAccounts of accountsByOracle.values()) {
+      oracleAccounts.sort((a, b) => {
+        if (a.healthFactor !== b.healthFactor) {
+          return healthFactorBin(a) - healthFactorBin(b);
+        }
+        if (b.totalDebtUSD > a.totalDebtUSD) {
+          return 1;
+        } else if (b.totalDebtUSD === a.totalDebtUSD) {
+          return 0;
+        } else {
+          return -1;
+        }
+      });
+    }
+
+    // Create batches from each oracle's accounts
+    const batches: CreditAccountData[][] = [];
+    for (const oracleAccounts of accountsByOracle.values()) {
+      for (let i = 0; i < oracleAccounts.length; i += this.config.batchSize) {
+        batches.push(oracleAccounts.slice(i, i + this.config.batchSize));
+      }
+    }
+
     return batches;
   }
 
