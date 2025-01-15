@@ -313,7 +313,7 @@ export default class BatchLiquidator
         ca.creditManager,
       );
       const oracle = market.priceOracle.address;
-      if (accountsByOracle.has(oracle)) {
+      if (!accountsByOracle.has(oracle)) {
         accountsByOracle.set(oracle, []);
       }
       accountsByOracle.get(oracle)!.push(ca);
