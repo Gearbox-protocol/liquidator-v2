@@ -48,7 +48,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   const sdk = await GearboxSDK.attach({
     rpcURLs: config.ethProviderRpcs,
     addressProvider: config.addressProviderOverride,
-    marketConfigurators: [config.marketConfigurator],
+    marketConfigurators: config.marketConfigurators,
     timeout: 600_000,
     chainId: config.chainId,
     networkType: config.network,
@@ -64,7 +64,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
       } catch {}
     });
     // load second time with hook
-    await sdk.marketRegister.loadMarkets([config.marketConfigurator]);
+    await sdk.marketRegister.loadMarkets(config.marketConfigurators);
   }
   const service = new CreditAccountsService(sdk, {
     batchSize: config.compressorBatchSize,

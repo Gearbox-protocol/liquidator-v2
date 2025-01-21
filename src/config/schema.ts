@@ -20,9 +20,12 @@ export const ConfigSchema = z.object({
    */
   addressProviderOverride: Address.optional(),
   /**
-   * Market configurator address to attach SDK
+   * Market configurators addresses to attach SDK
    */
-  marketConfigurator: Address,
+  marketConfigurators: z
+    .string()
+    .transform(s => s.split(","))
+    .pipe(z.array(Address)),
   /**
    * App name used in various messages to distinguish instances
    */

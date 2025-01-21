@@ -1,8 +1,5 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
-import type {
-  CreditAccountsService,
-  CreditFactory,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountsService, CreditSuite } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AP_DEGEN_DISTRIBUTOR } from "@gearbox-protocol/sdk";
 import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address } from "viem";
@@ -29,7 +26,7 @@ export default abstract class PartialLiquidatorContract {
   #address?: Address;
   #router: Address;
   #bot: Address;
-  #creditManagers: CreditFactory[] = [];
+  #creditManagers: CreditSuite[] = [];
 
   public readonly name: string;
 
@@ -117,7 +114,7 @@ export default abstract class PartialLiquidatorContract {
 
   public abstract deploy(): Promise<void>;
 
-  public addCreditManager(cm: CreditFactory): void {
+  public addCreditManager(cm: CreditSuite): void {
     this.#creditManagers.push(cm);
   }
 
@@ -230,7 +227,7 @@ export default abstract class PartialLiquidatorContract {
     this.logger.debug(`${account} claimed ${BigInt(claims.amount)} degenNFTs`);
   }
 
-  async #registerCM(cm: CreditFactory): Promise<void> {
+  async #registerCM(cm: CreditSuite): Promise<void> {
     const { address, name } = cm.creditManager;
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);

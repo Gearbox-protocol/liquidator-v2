@@ -2,7 +2,7 @@ import type { ConfigSchema } from "./schema.js";
 
 const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   addressProviderOverride: "ADDRESS_PROVIDER",
-  marketConfigurator: "MARKET_CONFIGURATOR",
+  marketConfigurators: "MARKET_CONFIGURATORS",
   appName: "APP_NAME",
   batchLiquidatorAddress: "BATCH_LIQUIDATOR_ADDRESS",
   debugAccount: "DEBUG_ACCOUNT",
