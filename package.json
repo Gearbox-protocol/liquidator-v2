@@ -18,21 +18,21 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@gearbox-protocol/sdk": "3.0.0-vfour.178",
+    "@gearbox-protocol/sdk": "3.0.0-vfour.192",
     "node-pty": "^1.0.0",
     "pino-pretty": "^13.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.726.0",
+    "@aws-sdk/client-s3": "^3.735.0",
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
-    "@gearbox-protocol/types": "^1.14.1",
-    "@types/node": "^22.10.5",
-    "@uniswap/sdk-core": "^7.0.0",
-    "@uniswap/v3-sdk": "^3.20.0",
+    "@gearbox-protocol/types": "^1.14.3",
+    "@types/node": "^22.12.0",
+    "@uniswap/sdk-core": "^7.5.0",
+    "@uniswap/v3-sdk": "^3.24.0",
     "@vlad-yakovlev/telegram-md": "^2.0.0",
     "abitype": "^1.0.8",
     "axios": "^1.7.9",
@@ -43,15 +43,15 @@
     "esbuild": "^0.24.2",
     "eslint": "^8.57.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.3.0",
+    "lint-staged": "^15.4.3",
     "nanoid": "^5.0.9",
     "node-pty": "^1.0.0",
     "pino": "^9.6.0",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "viem": "^2.22.6",
-    "vitest": "^2.1.8"
+    "viem": "^2.22.16",
+    "vitest": "^3.0.4"
   },
   "prettier": "@gearbox-protocol/prettier-config",
   "lint-staged": {
