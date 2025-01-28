@@ -77,9 +77,11 @@ export class RedstoneServiceV3 {
    */
   #optimisticTimestamp?: number;
   #optimisticCache: Map<string, PriceOnDemandExtras> = new Map();
+  #gateways?: string[];
 
   public async launch(): Promise<void> {
     this.liquidationPreviewUpdates = this.liquidationPreviewUpdates.bind(this);
+    this.#gateways = this.config.redstoneGateways;
 
     if (this.config.optimistic) {
       const block = await this.client.pub.getBlock({
@@ -377,6 +379,7 @@ export class RedstoneServiceV3 {
       dataPackagesIds: Array.from(new Set(updates.map(t => t.dataFeedId))),
       uniqueSignersCount,
       historicalTimestamp: this.#optimisticTimestamp,
+      urls: this.#gateways,
     });
     wrapper.setMetadataTimestamp(Date.now());
     // redstone does not provide any error types, just string messages

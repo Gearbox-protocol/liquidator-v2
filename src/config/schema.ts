@@ -71,6 +71,13 @@ export const ConfigSchema = z.object({
    */
   optimistic: booleanLike.pipe(z.boolean().optional()),
   /**
+   * Override redstone gateways
+   */
+  redstoneGateways: z
+    .string()
+    .optional()
+    .transform(v => v?.split(",")),
+  /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
    */

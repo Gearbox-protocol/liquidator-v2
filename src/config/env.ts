@@ -33,6 +33,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   telegramBotToken: "TELEGRAM_BOT_TOKEN",
   telegramNotificationsChannel: "TELEGRAM_NOTIFICATIONS_CHANNEL",
   telegramAlersChannel: "TELEGRAM_ALERTS_CHANNEL",
+  redstoneGateways: "REDSTONE_GATEWAYS",
 };
 
 export const envConfig: Record<string, string> = Object.fromEntries(
