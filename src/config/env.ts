@@ -15,6 +15,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   ethProviderRpcs: "JSON_RPC_PROVIDERS",
   hfThreshold: "HF_TRESHOLD",
   restakingWorkaround: "RESTAKING_WORKAROUND",
+  redstoneGateways: "REDSTONE_GATEWAYS",
   minBalance: "MIN_BALANCE",
   oneInchApiKey: "ONE_INCH_API_KEY",
   optimistic: "OPTIMISTIC",
