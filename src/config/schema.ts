@@ -85,7 +85,7 @@ export const ConfigSchema = z.object({
   redstoneGateways: z
     .string()
     .optional()
-    .transform(s => s?.split(",")),
+    .transform(s => (s ? s.split(",") : undefined)),
   /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
