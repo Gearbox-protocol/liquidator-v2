@@ -386,7 +386,7 @@ export class RedstoneServiceV3 {
     // so just retry all redstone errors
     const dataPayload = await retry(
       () => wrapper.prepareRedstonePayload(true),
-      { attempts: 5 },
+      { attempts: 5, interval: this.#optimisticTimestamp ? 30_500 : 250 },
     );
 
     // unsigned metadata looks like
