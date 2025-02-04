@@ -29,7 +29,7 @@
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
-    "@gearbox-protocol/sdk-gov": "^2.34.0-next.37",
+    "@gearbox-protocol/sdk-gov": "2.34.0-next.39",
     "@gearbox-protocol/types": "^1.14.3",
     "@redstone-finance/evm-connector": "^0.7.3",
     "@types/node": "^22.10.7",
