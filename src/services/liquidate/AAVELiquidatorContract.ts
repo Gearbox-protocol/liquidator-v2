@@ -6,7 +6,7 @@ import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import { type NetworkType, NOT_DEPLOYED } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type { ILogger } from "../../log/index.js";
@@ -18,6 +18,7 @@ const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
   Arbitrum: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
   Optimism: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
   Base: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+  Sonic: NOT_DEPLOYED,
 };
 
 export default class AAVELiquidatorContract extends PartialLiquidatorContract {
