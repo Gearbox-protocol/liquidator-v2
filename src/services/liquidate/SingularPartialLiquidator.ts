@@ -133,7 +133,10 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         ltChanges: Object.fromEntries(
           Object.entries(newLTs).map(([t, newLT]) => [
             t,
-            [cm.collateralTokens[t as Address], newLT],
+            [
+              cm.creditManager.liquidationThresholds.mustGet(t as Address),
+              newLT,
+            ],
           ]),
         ),
       },
@@ -214,7 +217,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       "found optimal liquidation",
     );
     const connectors = this.sdk.router.getAvailableConnectors(
-      Object.keys(cm.collateralTokens) as Address[],
+      cm.creditManager.collateralTokens,
     );
 
     try {

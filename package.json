@@ -28,7 +28,7 @@
     "@gearbox-protocol/eslint-config": "2.0.0-next.2",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.2.2",
     "@gearbox-protocol/prettier-config": "2.0.0",
-    "@gearbox-protocol/sdk": "^3.0.0-vfour.223",
+    "@gearbox-protocol/sdk": "^3.0.0-vfour.226",
     "@gearbox-protocol/types": "^1.14.3",
     "@types/node": "^22.12.0",
     "@uniswap/sdk-core": "^7.5.0",
