@@ -24,7 +24,7 @@ jobs:
           npm install -g corepack@latest
           echo "After : corepack version => $(corepack --version)"
           corepack enable
-          pnpm --version
+          yarn --version
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
