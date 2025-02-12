@@ -19,7 +19,7 @@ ENV YARN_CACHE_FOLDER=/root/.yarn
 
 WORKDIR /app
 
-COPY --from=dev /app/package.json /app
+COPY --from=dev /app/package.json /app/yarn.lock /app/.yarnrc.yml /app/
 COPY --from=dev /app/build/ /app/build
 
 RUN --mount=type=cache,id=yarn,target=/root/.yarn \
