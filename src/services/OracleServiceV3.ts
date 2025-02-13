@@ -80,7 +80,7 @@ export default class OracleServiceV3 {
 
   public async launch(block: bigint): Promise<void> {
     this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
-    this.#oracle = await this.addressProvider.findService("PRICE_ORACLE", 300);
+    this.#oracle = this.addressProvider.findService("PRICE_ORACLE", 300);
     this.log.debug(`starting oracle v3 at ${block}`);
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);

@@ -164,11 +164,7 @@ export default abstract class PartialLiquidatorContract {
       return;
     }
 
-    const distributor = await this.addressProvider.findService(
-      "DEGEN_DISTRIBUTOR",
-      0,
-      0,
-    );
+    const distributor = this.addressProvider.findService("DEGEN_DISTRIBUTOR");
     this.logger.debug(`degen distributor: ${distributor}`);
     const [distributorNFT, merkelRoot, claimed] =
       await this.client.pub.multicall({

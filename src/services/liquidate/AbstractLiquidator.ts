@@ -67,10 +67,10 @@ export default abstract class AbstractLiquidator {
 
   public async launch(asFallback?: boolean): Promise<void> {
     this.#errorHandler = new ErrorHandler(this.config, this.logger);
-    const [pfAddr, dcAddr] = await Promise.all([
+    const [pfAddr, dcAddr] = [
       this.addressProvider.findService("ROUTER", 300),
       this.addressProvider.findService("DATA_COMPRESSOR", 300),
-    ]);
+    ];
     this.#router = pfAddr;
     this.#compressor = getContract({
       abi: iDataCompressorV3Abi,
