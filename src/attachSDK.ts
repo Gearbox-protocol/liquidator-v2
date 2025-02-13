@@ -37,7 +37,9 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
       Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
     const deltaS = Math.floor((nowMs - optimisticTimestamp) / 1000);
     if (deltaS < 0) {
-      optimisticTimestamp = nowMs - redstoneIntervalMs;
+      optimisticTimestamp =
+        Math.floor((nowMs - redstoneIntervalMs) / redstoneIntervalMs) *
+        redstoneIntervalMs;
     } else if (deltaS * 1000 < redstoneIntervalMs) {
       optimisticTimestamp -= redstoneIntervalMs;
     }
