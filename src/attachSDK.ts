@@ -32,13 +32,15 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
     const nowMs = new Date().getTime();
     const redstoneIntervalMs = 60_000;
-    const anvilTsMs =
+    optimisticTimestamp =
       redstoneIntervalMs *
       Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
-    const fromNowTsMs =
-      redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
-    optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
     const deltaS = Math.floor((nowMs - optimisticTimestamp) / 1000);
+    if (deltaS < 0) {
+      optimisticTimestamp = nowMs - redstoneIntervalMs;
+    } else if (deltaS * 1000 < redstoneIntervalMs) {
+      optimisticTimestamp -= redstoneIntervalMs;
+    }
     logger.info(
       { tag: "timing" },
       `will use optimistic timestamp: ${new Date(optimisticTimestamp)} (${optimisticTimestamp}, delta: ${deltaS}s)`,
