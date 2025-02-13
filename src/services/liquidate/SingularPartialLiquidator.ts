@@ -67,8 +67,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       await this.#fallback.launch(true);
     }
 
-    const router = await this.addressProvider.findService("ROUTER", 300);
-    const bot = await this.addressProvider.findService(
+    const router = this.addressProvider.findService("ROUTER", 300);
+    const bot = this.addressProvider.findService(
       "PARTIAL_LIQUIDATION_BOT",
       300,
     );
@@ -492,7 +492,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
   private async getConfiguratorAddr(): Promise<Address> {
     if (!this.#configuratorAddr) {
-      const aclAddr = await this.addressProvider.findService("ACL", 0);
+      const aclAddr = this.addressProvider.findService("ACL");
       this.#configuratorAddr = await this.client.pub.readContract({
         address: aclAddr,
         abi: iaclAbi,

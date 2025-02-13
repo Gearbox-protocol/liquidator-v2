@@ -78,10 +78,7 @@ export class Scanner {
     if (this.config.restakingWorkaround) {
       await this.#setupRestakingWorkaround();
     }
-    const dcAddr = await this.addressProvider.findService(
-      "DATA_COMPRESSOR",
-      300,
-    );
+    const dcAddr = this.addressProvider.findService("DATA_COMPRESSOR", 300);
     this.#dataCompressor = getContract({
       abi: iDataCompressorV3Abi,
       address: dcAddr,
