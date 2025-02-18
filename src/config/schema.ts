@@ -71,6 +71,10 @@ export const ConfigSchema = z.object({
    */
   optimistic: booleanLike.pipe(z.boolean().optional()),
   /**
+   * Optimistic timestamp to pass from external runner, in ms
+   */
+  optimisticTimestamp: z.number().int().positive().nullish(),
+  /**
    * Override redstone gateways
    */
   redstoneGateways: z
