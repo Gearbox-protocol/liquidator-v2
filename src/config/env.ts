@@ -29,6 +29,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   aavePartialLiquidatorAddress: "AAVE_PARTIAL_LIQUIDATOR_ADDRESS",
   ghoPartialLiquidatorAddress: "GHO_PARTIAL_LIQUIDATOR_ADDRESS",
   dolaPartialLiquidatorAddress: "DOLA_PARTIAL_LIQUIDATOR_ADDRESS",
+  nexoPartialLiquidatorAddress: "NEXO_PARTIAL_LIQUIDATOR_ADDRESS",
   partialFallback: "PARTIAL_FALLBACK",
   privateKey: "PRIVATE_KEY",
   port: "PORT",

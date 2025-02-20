@@ -9,8 +9,8 @@ import {
 import { type NetworkType, NOT_DEPLOYED } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
+import { DI } from "../../di.js";
 import type { ILogger } from "../../log/index.js";
-import { Logger } from "../../log/index.js";
 import PartialLiquidatorContract from "./PartialLiquidatorContract.js";
 
 const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
@@ -22,15 +22,24 @@ const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
 };
 
 export default class AAVELiquidatorContract extends PartialLiquidatorContract {
-  @Logger("AAVEPartialLiquidator")
-  logger!: ILogger;
+  logger: ILogger;
 
-  constructor(router: Address, bot: Address) {
-    super("AAVE Partial Liquidator", router, bot);
+  constructor(name: string, router: Address, bot: Address, address?: Address) {
+    super(name, router, bot);
+    if (address) {
+      this.address = address;
+    }
+    this.logger = DI.create(DI.Logger, name.replaceAll(" ", ""));
   }
 
   public async deploy(): Promise<void> {
-    let address = this.config.aavePartialLiquidatorAddress;
+    let address: Address | undefined;
+    try {
+      // this strange code accomodates for the fact that for Nexo we need to have several configurable addresses
+      // and we need to deploy contract on testnet if the address is not configured
+      address = this.address;
+    } catch {}
+
     const aavePool = AAVE_V3_LENDING_POOL[this.config.network];
     if (!address) {
       this.logger.debug(

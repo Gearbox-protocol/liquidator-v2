@@ -115,6 +115,9 @@ export default abstract class PartialLiquidatorContract {
   public abstract deploy(): Promise<void>;
 
   public addCreditManager(cm: CreditSuite): void {
+    this.logger.debug(
+      `adding credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
+    );
     this.#creditManagers.push(cm);
   }
 

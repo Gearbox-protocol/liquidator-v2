@@ -96,17 +96,21 @@ export const ConfigSchema = z.object({
    */
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   /**
-   * Address of deployed partiali liquidator contract for all credit managers except for GHO-based
+   * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
    */
   aavePartialLiquidatorAddress: Address.optional(),
   /**
-   * Address of deployed partiali liquidator contract for GHO credit managers
+   * Address of deployed partial liquidator contract for GHO credit managers
    */
   ghoPartialLiquidatorAddress: Address.optional(),
   /**
-   * Address of deployed partiali liquidator contract for DOLA credit managers
+   * Address of deployed partial liquidator contract for DOLA credit managers
    */
   dolaPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for Nexo credit managers
+   */
+  nexoPartialLiquidatorAddress: Address.optional(),
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */

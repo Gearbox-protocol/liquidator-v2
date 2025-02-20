@@ -1,11 +1,6 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import {
-  ADDRESS_0X0,
-  AP_PARTIAL_LIQUIDATION_BOT,
-  AP_ROUTER,
-  formatBN,
-} from "@gearbox-protocol/sdk";
+import { ADDRESS_0X0, AP_ROUTER, formatBN } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -24,6 +19,10 @@ import type {
   PartialLiquidationPreview,
   PartialLiquidationPreviewWithFallback,
 } from "./types.js";
+
+// currently there is no reliable way to get this from sdk
+const LEGACY_PL_BOT: Address = "0x0f06c2bD612Ee7D52d4bC76Ce3BD7E95247AF2a9";
+const NEXO_PL_BOT: Address = "0x223D666828A6a9DFd91081614d18f45bFe8B489B";
 
 export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
   protected readonly name = "partial";
@@ -45,13 +44,29 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     }
 
     const router = this.sdk.addressProvider.getLatestVersion(AP_ROUTER);
-    const bot = this.sdk.addressProvider.getLatestVersion(
-      AP_PARTIAL_LIQUIDATION_BOT,
-    );
 
-    const aaveLiquidator = new AAVELiquidatorContract(router, bot);
-    const ghoLiquidator = new GHOLiquidatorContract(router, bot, "GHO");
-    const dolaLiquidator = new GHOLiquidatorContract(router, bot, "DOLA");
+    const aaveLiquidator = new AAVELiquidatorContract(
+      "AAVE Partial Liquidator",
+      router,
+      LEGACY_PL_BOT,
+      this.config.aavePartialLiquidatorAddress,
+    );
+    const nexoLiquidator = new AAVELiquidatorContract(
+      "AAVE Nexo Partial Liquidator",
+      router,
+      NEXO_PL_BOT,
+      this.config.nexoPartialLiquidatorAddress,
+    );
+    const ghoLiquidator = new GHOLiquidatorContract(
+      router,
+      LEGACY_PL_BOT,
+      "GHO",
+    );
+    const dolaLiquidator = new GHOLiquidatorContract(
+      router,
+      LEGACY_PL_BOT,
+      "DOLA",
+    );
     // safe to use 0x0 because none of underlyings is 0x0, so no cms will be added
     const GHO =
       this.creditAccountService.sdk.tokensMeta.findBySymbol("GHO")?.addr ??
@@ -73,13 +88,23 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
           break;
         }
         default: {
-          aaveLiquidator.addCreditManager(cm);
-          this.#liquidatorForCM[cm.creditManager.address] = aaveLiquidator;
+          if (cm.name.toLowerCase().includes("nexo")) {
+            nexoLiquidator.addCreditManager(cm);
+            this.#liquidatorForCM[cm.creditManager.address] = nexoLiquidator;
+          } else {
+            aaveLiquidator.addCreditManager(cm);
+            this.#liquidatorForCM[cm.creditManager.address] = aaveLiquidator;
+          }
         }
       }
     }
 
-    for (const contract of [aaveLiquidator, ghoLiquidator, dolaLiquidator]) {
+    for (const contract of [
+      aaveLiquidator,
+      nexoLiquidator,
+      ghoLiquidator,
+      dolaLiquidator,
+    ]) {
       if (!contract.isSupported) {
         this.logger.info(
           `${contract.name} is not supported on ${this.config.network}`,
