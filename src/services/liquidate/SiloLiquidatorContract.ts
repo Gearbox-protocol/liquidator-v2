@@ -50,20 +50,21 @@ export default class SiloLiquidatorContract extends PartialLiquidatorContract {
       if (!siloFLTakerAddr) {
         throw new Error(`SiloFLTaker was not deployed, tx hash: ${hash}`);
       }
+      this.#siloFLTaker = siloFLTakerAddr;
       let owner = await this.client.pub.readContract({
         abi: siloFlTakerAbi,
         functionName: "owner",
-        address: siloFLTakerAddr,
+        address: this.siloFLTaker,
       });
       this.logger.debug(
-        `deployed SiloFLTaker at ${siloFLTakerAddr} owned by ${owner} in tx ${hash}`,
+        `deployed SiloFLTaker at ${this.siloFLTaker} owned by ${owner} in tx ${hash}`,
       );
 
       hash = await this.client.wallet.deployContract({
         abi: siloLiquidatorAbi,
         bytecode: SiloLiquidator_bytecode,
         // constructor(address _router, address _plb, address _siloFLTaker) AbstractLiquidator(_router, _plb) {
-        args: [this.router, this.bot, siloFLTakerAddr],
+        args: [this.router, this.bot, this.siloFLTaker],
       });
       this.logger.debug(
         `waiting for SiloLiquidator to deploy, tx hash: ${hash}`,
@@ -90,7 +91,7 @@ export default class SiloLiquidatorContract extends PartialLiquidatorContract {
 
       // siloFLTaker.setAllowedFLReceiver(address(liquidator), true);
       const receipt = await this.client.simulateAndWrite({
-        address: siloFLTakerAddr,
+        address: this.siloFLTaker,
         abi: siloFlTakerAbi,
         functionName: "setAllowedFLReceiver",
         args: [liquidatorAddr, true],
@@ -101,7 +102,7 @@ export default class SiloLiquidatorContract extends PartialLiquidatorContract {
         );
       }
       this.logger.debug(
-        `set allowed flashloan receiver on SiloFLTaker ${siloFLTakerAddr} to ${liquidatorAddr} in tx ${receipt.transactionHash}`,
+        `set allowed flashloan receiver on SiloFLTaker ${this.siloFLTaker} to ${liquidatorAddr} in tx ${receipt.transactionHash}`,
       );
 
       await this.setTokenToSilo(

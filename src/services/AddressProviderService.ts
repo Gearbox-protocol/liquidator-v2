@@ -25,7 +25,7 @@ const AP_BLOCK_BY_NETWORK: Record<NetworkType, bigint> = {
   Arbitrum: 184650310n,
   Optimism: 118410000n,
   Base: 12299805n, // arbitrary block, NOT_DEPLOYED yet
-  Sonic: 8897028n, // arbitrary block, NOT_DEPLOYED yet
+  Sonic: 8889841n, // arbitrary block, NOT_DEPLOYED yet
 };
 
 @DI.Injectable(DI.AddressProvider)
@@ -68,6 +68,7 @@ export class AddressProviderService {
       const versions = this.#addresses.get(service) ?? new Map();
       versions.set(Number(version!), value!);
       this.#addresses.set(service, versions);
+      this.log.debug(`found ${service} v${version} at ${value}`);
     }
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
