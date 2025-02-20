@@ -83,9 +83,13 @@ export const ConfigSchema = z.object({
    */
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
   /**
-   * Address of deployed partiali liquidator contract for all credit managers except for GHO-based
+   * Address of deployed partial liquidator contract for all credit managers except for GHO-based
    */
   aavePartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed silo liquidator contract on Sonic
+   */
+  siloPartialLiquidatorAddress: Address.optional(),
   /**
    * Address of deployed partiali liquidator contract for GHO credit managers
    */
