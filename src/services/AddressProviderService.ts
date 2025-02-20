@@ -20,6 +20,7 @@ const AP_BLOCK_BY_NETWORK: Record<NetworkType, bigint> = {
   Arbitrum: 184650310n,
   Optimism: 118410000n,
   Base: 12299805n, // arbitrary block, NOT_DEPLOYED yet
+  Sonic: 8897028n, // arbitrary block, NOT_DEPLOYED yet
 };
 
 @DI.Injectable(DI.AddressProvider)

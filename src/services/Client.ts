@@ -33,7 +33,7 @@ import {
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrum, base, mainnet, optimism } from "viem/chains";
+import { arbitrum, base, mainnet, optimism, sonic } from "viem/chains";
 
 import type { Config } from "../config/index.js";
 import { exceptionsAbis } from "../data/index.js";
@@ -83,6 +83,7 @@ const CHAINS: Record<NetworkType, Chain> = {
   Arbitrum: arbitrum,
   Optimism: optimism,
   Base: base,
+  Sonic: sonic,
 };
 
 @DI.Injectable(DI.Client)
