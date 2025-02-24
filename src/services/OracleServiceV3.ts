@@ -191,12 +191,20 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    const logs = await this.client.pub.getLogs({
+    let logs = await this.client.pub.getLogs({
       address: this.oracle,
       events: iPriceOracleV3EventsAbi,
       fromBlock: BigInt(this.#lastBlock),
       toBlock: BigInt(toBlock),
       strict: true,
+    });
+    // sort logs by blockNumber ASC, logIndex ASC
+    // on sonic sometimes events are not in order
+    logs = logs.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber < b.blockNumber ? -1 : 1;
+      }
+      return a.logIndex < b.logIndex ? -1 : 1;
     });
 
     this.log.debug(`found ${logs.length} oracle events`);
