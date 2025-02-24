@@ -59,6 +59,22 @@ const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
   Sonic: 8897028n, // not deployed yet, arbitrary block here
 };
 
+type OracleEvent =
+  | Log<
+      bigint,
+      number,
+      boolean,
+      ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetPriceFeed">,
+      true
+    >
+  | Log<
+      bigint,
+      number,
+      boolean,
+      ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetReservePriceFeed">,
+      true
+    >;
+
 @DI.Injectable(DI.Oracle)
 export default class OracleServiceV3 {
   @Logger("Oracle")
@@ -180,7 +196,9 @@ export default class OracleServiceV3 {
       events: iPriceOracleV3EventsAbi,
       fromBlock: BigInt(this.#lastBlock),
       toBlock: BigInt(toBlock),
+      strict: true,
     });
+
     this.log.debug(`found ${logs.length} oracle events`);
     for (const l of logs) {
       switch (l.eventName) {
@@ -199,21 +217,7 @@ export default class OracleServiceV3 {
     this.#lastBlock = toBlock;
   }
 
-  async #setPriceFeed(
-    e:
-      | Log<
-          bigint,
-          number,
-          boolean,
-          ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetPriceFeed">
-        >
-      | Log<
-          bigint,
-          number,
-          boolean,
-          ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetReservePriceFeed">
-        >,
-  ): Promise<void> {
+  async #setPriceFeed(e: OracleEvent): Promise<void> {
     const kind = e.eventName === "SetPriceFeed" ? "main" : "reserve";
     const token = e.args.token?.toLowerCase() as Address;
     if (!token) {
