@@ -154,6 +154,17 @@ export class PathFinder {
       if (balance < minBalance || !isEnabled) {
         leftoverBalances[token] = { token, balance };
       }
+
+      // TODO: this was not tested, revert
+      // if (balance < minBalance) {
+      //   // According to van0k:
+      //   // If the token is enabled, we need to pass the exact balance, even if it's 0
+      //   // If it's not enabled, we can set it to 1 event if the balance is 0
+      //   leftoverBalances[token] = {
+      //     token,
+      //     balance: isEnabled ? balance : BigIntUtils.max(1n, balance),
+      //   };
+      // }
     }
 
     const pathOptions = PathOptionFactory.generatePathOptions(

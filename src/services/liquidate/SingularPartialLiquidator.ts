@@ -30,6 +30,7 @@ import type { ILogger } from "../../log/index.js";
 import AAVELiquidatorContract from "./AAVELiquidatorContract.js";
 import GHOLiquidatorContract from "./GHOLiquidatorContract.js";
 import type PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import SiloLiquidatorContract from "./SiloLiquidatorContract.js";
 import SingularFullLiquidator from "./SingularFullLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
@@ -75,7 +76,30 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
     await this.#deployPriceHelper();
     const cms = await this.getCreditManagersV3List();
+    let liquidatorContracts: PartialLiquidatorContract[] = [];
+    if (this.config.network === "Sonic") {
+      liquidatorContracts = await this.#getSonicContracts(cms, router, bot);
+    } else {
+      liquidatorContracts = await this.#getDefaultContracts(cms, router, bot);
+    }
 
+    for (const contract of liquidatorContracts) {
+      if (!contract.isSupported) {
+        this.logger.info(
+          `${contract.name} is not supported on ${this.config.network}`,
+        );
+        continue;
+      }
+      await contract.deploy();
+      await contract.configure();
+    }
+  }
+
+  async #getDefaultContracts(
+    cms: CreditManagerData[],
+    router: Address,
+    bot: Address,
+  ): Promise<PartialLiquidatorContract[]> {
     const aaveLiquidator = new AAVELiquidatorContract(router, bot);
     const ghoLiquidator = new GHOLiquidatorContract(router, bot, "GHO");
     const dolaLiquidator = new GHOLiquidatorContract(router, bot, "DOLA");
@@ -100,17 +124,19 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         }
       }
     }
+    return [aaveLiquidator, ghoLiquidator, dolaLiquidator];
+  }
 
-    for (const contract of [aaveLiquidator, ghoLiquidator, dolaLiquidator]) {
-      if (!contract.isSupported) {
-        this.logger.info(
-          `${contract.name} is not supported on ${this.config.network}`,
-        );
-        continue;
-      }
-      await contract.deploy();
-      await contract.configure();
+  async #getSonicContracts(
+    cms: CreditManagerData[],
+    router: Address,
+    bot: Address,
+  ): Promise<PartialLiquidatorContract[]> {
+    const siloLiquidator = new SiloLiquidatorContract(router, bot);
+    for (const cm of cms) {
+      this.#liquidatorForCM[cm.address] = siloLiquidator;
     }
+    return [siloLiquidator];
   }
 
   public async makeLiquidatable(

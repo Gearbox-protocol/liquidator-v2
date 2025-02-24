@@ -56,6 +56,7 @@ const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
   Optimism: 116864678n, // not deployed yet, arbitrary block here
   Arbitrum: 184650373n,
   Base: 12299805n, // not deployed yet, arbitrary block here
+  Sonic: 8897028n, // not deployed yet, arbitrary block here
 };
 
 @DI.Injectable(DI.Oracle)
