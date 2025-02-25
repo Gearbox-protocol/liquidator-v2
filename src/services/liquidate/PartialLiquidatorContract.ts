@@ -1,6 +1,6 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountsService, CreditSuite } from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, AP_DEGEN_DISTRIBUTOR } from "@gearbox-protocol/sdk";
+import { ADDRESS_0X0 } from "@gearbox-protocol/sdk";
 import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address } from "viem";
 
@@ -170,9 +170,10 @@ export default abstract class PartialLiquidatorContract {
       return;
     }
 
+    // TODO: this assumes that there's only one degen distributor
     const distributor =
-      this.creditAccountService.sdk.addressProvider.getLatestVersion(
-        AP_DEGEN_DISTRIBUTOR,
+      await this.creditAccountService.sdk.marketRegister.marketConfigurators[0].getPeripheryContract(
+        "DEGEN_DISTRIBUTOR",
       );
     this.logger.debug(`degen distributor: ${distributor}`);
     const [distributorNFT, merkelRoot, claimed] =
