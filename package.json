@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "node-pty": "^1.0.0",
-    "pino-pretty": "^13.0.0"
+    "pino-pretty": "^13.0.0",
+    "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.758.0",

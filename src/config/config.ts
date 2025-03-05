@@ -1,6 +1,7 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import { detectNetwork } from "@gearbox-protocol/sdk";
 import { createPublicClient, http } from "viem";
+import { fromError } from "zod-validation-error";
 
 import { createClassFromType } from "../utils/index.js";
 import { envConfig } from "./env.js";
@@ -16,7 +17,12 @@ const ConfigClass = createClassFromType<ConfigSchema & DynamicConfig>();
 
 export class Config extends ConfigClass {
   static async load(): Promise<Config> {
-    const schema = ConfigSchema.parse(envConfig);
+    let schema: ConfigSchema;
+    try {
+      schema = ConfigSchema.parse(envConfig);
+    } catch (e) {
+      throw fromError(e);
+    }
 
     const client = createPublicClient({
       transport: http(schema.ethProviderRpcs[0]),
