@@ -105,7 +105,7 @@ export class Scanner {
       accounts = await this.caService.getCreditAccounts(
         {
           minHealthFactor: 0,
-          maxHealthFactor: 65_535,
+          maxHealthFactor: Number(this.config.hfThreshold),
           includeZeroDebt: false,
           creditManager: this.config.debugManager,
         },
