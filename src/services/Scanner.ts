@@ -3,7 +3,7 @@ import type {
   CreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
-import { PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { MAX_UINT16, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
@@ -102,10 +102,14 @@ export class Scanner {
       );
       accounts = acc ? [acc] : [];
     } else {
+      let maxHealthFactor = Number(this.config.hfThreshold);
+      if (this.config.optimistic && this.config.isPartial) {
+        maxHealthFactor = Number(MAX_UINT16);
+      }
       accounts = await this.caService.getCreditAccounts(
         {
           minHealthFactor: 0,
-          maxHealthFactor: Number(this.config.hfThreshold),
+          maxHealthFactor,
           includeZeroDebt: false,
           creditManager: this.config.debugManager,
         },
