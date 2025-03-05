@@ -105,6 +105,9 @@ export default class Client {
     request: SimulateContractReturnType["request"],
     logger: ILogger,
   ): Promise<TransactionReceipt> {
+    if (this.config.dryRun && !this.config.optimistic) {
+      throw new Error("dry run mode");
+    }
     logger.debug("sending liquidation tx");
     const { abi, address, args, dataSuffix, functionName, ...rest } = request;
     const data = encodeFunctionData({

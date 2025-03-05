@@ -1,4 +1,4 @@
-import { MAX_UINT16 } from "@gearbox-protocol/sdk";
+import { MAX_UINT16, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -70,14 +70,22 @@ export const ConfigSchema = z.object({
     .pipe(z.bigint().positive().default(500000000000000000n)),
   /**
    * Filter out all accounts with HF >= threshold during scan stage
-   * 65535 is constant for zero-debt account (kind strang, because it's in the middle of the range of allowed values)
+   * 65535 is constant for zero-debt account (kinda strange, because it's in the middle of the range of allowed values)
    * TODO: this should be changed to uint256 in contracts
    */
-  hfThreshold: z.coerce.bigint().min(0n).max(MAX_UINT16).default(MAX_UINT16),
+  hfThreshold: z.coerce
+    .bigint()
+    .min(0n)
+    .max(MAX_UINT16)
+    .default(PERCENTAGE_FACTOR),
   /**
    * Enable optimistic liquidations
    */
   optimistic: booleanLike.pipe(z.boolean().optional()),
+  /**
+   * Do not send transactions in non-optimistic mode, just log them
+   */
+  dryRun: booleanLike.pipe(z.boolean().optional()),
   /**
    * Optimistic timestamp to pass from external runner, in ms
    */
