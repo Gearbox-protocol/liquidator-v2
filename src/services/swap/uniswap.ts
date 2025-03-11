@@ -2,7 +2,7 @@ import { chains, type NetworkType } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { Currency } from "@uniswap/sdk-core";
 import { CurrencyAmount, Percent, Token, TradeType } from "@uniswap/sdk-core";
-import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json" assert { type: "json" };
+import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json" with { type: "json" };
 import type { SwapOptions } from "@uniswap/v3-sdk";
 import {
   computePoolAddress,
