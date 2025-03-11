@@ -88,7 +88,9 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         this.skipList.add(ca.addr);
         this.logger.warn("adding to skip list");
       }
-      this.notifier.alert(
+      // mechanism to be less annoyed with telegram spam
+      const severity = this.getAlertBucket(ca).chooseSeverity();
+      this.notifier[severity](
         new LiquidationErrorMessage(
           ca,
           this.adverb,

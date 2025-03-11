@@ -18,7 +18,11 @@ import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
 import type { IDataCompressorContract } from "../../utils/index.js";
 import type { AddressProviderService } from "../AddressProviderService.js";
 import type Client from "../Client.js";
-import { type INotifier, StartedMessage } from "../notifier/index.js";
+import {
+  AlertBucket,
+  type INotifier,
+  StartedMessage,
+} from "../notifier/index.js";
 import type OracleServiceV3 from "../OracleServiceV3.js";
 import type { IOptimisticOutputWriter } from "../output/index.js";
 import type { RedstoneServiceV3 } from "../RedstoneServiceV3.js";
@@ -64,6 +68,8 @@ export default abstract class AbstractLiquidator {
   #pathFinder?: PathFinder;
   #router?: Address;
   #cmCache: Record<string, CreditManagerData> = {};
+
+  protected alertBuckets = new Map<Address, AlertBucket>();
 
   public async launch(asFallback?: boolean): Promise<void> {
     this.#errorHandler = new ErrorHandler(this.config, this.logger);
@@ -212,6 +218,17 @@ export default abstract class AbstractLiquidator {
           args: [this.client.address],
         });
     return { eth, underlying };
+  }
+
+  protected getAlertBucket(ca: CreditAccountData): AlertBucket {
+    const acc = ca.addr.toLowerCase() as Address;
+    if (!this.alertBuckets.has(acc)) {
+      this.alertBuckets.set(
+        acc,
+        new AlertBucket([0, 60_000, 10 * 60_000, 30 * 60_000]),
+      );
+    }
+    return this.alertBuckets.get(acc)!;
   }
 
   protected get errorHandler(): ErrorHandler {
