@@ -43,7 +43,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       await this.#fallback.launch(true);
     }
 
-    const router = this.sdk.addressProvider.getLatestVersion(AP_ROUTER);
+    const [router] = this.sdk.addressProvider.getLatestVersion(AP_ROUTER);
 
     const aaveLiquidator = new AAVELiquidatorContract(
       "AAVE Partial Liquidator",
