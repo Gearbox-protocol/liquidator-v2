@@ -169,12 +169,16 @@ export default abstract class PartialLiquidatorContract {
     if (nfts === 0) {
       return;
     }
+    const mcs =
+      this.creditAccountService.sdk.marketRegister.marketConfigurators;
 
-    // TODO: this assumes that there's only one degen distributor
-    const distributor =
-      await this.creditAccountService.sdk.marketRegister.marketConfigurators[0].getPeripheryContract(
-        "DEGEN_DISTRIBUTOR",
+    if (mcs.length !== 1) {
+      throw new Error(
+        "claim degen NFT works only with single market configurator",
       );
+    }
+
+    const distributor = await mcs[0].getPeripheryContract("DEGEN_DISTRIBUTOR");
     this.logger.debug(`degen distributor: ${distributor}`);
     const [distributorNFT, merkelRoot, claimed] =
       await this.client.pub.multicall({
