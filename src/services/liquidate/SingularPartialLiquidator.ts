@@ -22,7 +22,7 @@ import type {
 
 // currently there is no reliable way to get this from sdk
 const LEGACY_PL_BOT: Address = "0x0f06c2bD612Ee7D52d4bC76Ce3BD7E95247AF2a9";
-const NEXO_PL_BOT: Address = "0x223D666828A6a9DFd91081614d18f45bFe8B489B";
+const NEXO_PL_BOT: Address = "0xc82020f1922AE56CCF25d5F2E2d6155E44583ef9";
 
 export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
   protected readonly name = "partial";
