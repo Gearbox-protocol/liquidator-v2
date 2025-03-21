@@ -11,9 +11,10 @@ export default class FileWriter
   public async write(): Promise<void> {
     const filename = join(this.config.outDir, this.filename);
     try {
+      this.log.debug(`writing to ${filename}`);
       await writeFile(filename, this.content, "utf-8");
     } catch (e) {
-      console.error(e);
+      this.log.error(e, `failed to write to ${filename}`);
     }
   }
 }

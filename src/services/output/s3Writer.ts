@@ -13,6 +13,7 @@ export default class S3Writer
     const key = join(this.config.outS3Prefix, this.filename);
     const client = new S3Client({});
     try {
+      this.log.debug(`uploading to s3://${this.config.outS3Bucket}/${key}`);
       await client.send(
         new PutObjectCommand({
           Bucket: this.config.outS3Bucket,
@@ -22,7 +23,10 @@ export default class S3Writer
         }),
       );
     } catch (e) {
-      console.error(e);
+      this.log.error(
+        e,
+        `failed to upload to s3://${this.config.outS3Bucket}/${key}`,
+      );
     }
   }
 }

@@ -1,9 +1,14 @@
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
+import type { ILogger } from "../../log/index.js";
+import { Logger } from "../../log/index.js";
 import { json_stringify } from "../../utils/bigint-serializer.js";
 import type { OptimisticResults } from "../liquidate/index.js";
 
 export default class BaseWriter {
+  @Logger("OutputWriter")
+  log!: ILogger;
+
   @DI.Inject(DI.Config)
   config!: Config;
 
