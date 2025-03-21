@@ -99,6 +99,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       }
     }
 
+    let expectedEnv: Record<string, string> = {};
     for (const contract of [
       aaveLiquidator,
       nexoLiquidator,
@@ -113,7 +114,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       }
       await contract.deploy();
       await contract.configure();
+      expectedEnv = {
+        ...expectedEnv,
+        ...Object.fromEntries([contract.envVariable]),
+      };
     }
+    this.logger.info(expectedEnv, "expected env");
   }
 
   public async makeLiquidatable(
