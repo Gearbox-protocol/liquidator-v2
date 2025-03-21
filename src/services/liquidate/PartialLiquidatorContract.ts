@@ -248,6 +248,8 @@ export default abstract class PartialLiquidatorContract {
     }
   }
 
+  public abstract get envVariable(): [key: string, value: string];
+
   protected set address(value: Address) {
     this.#address = value;
   }

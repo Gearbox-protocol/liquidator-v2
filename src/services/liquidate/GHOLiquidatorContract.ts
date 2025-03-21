@@ -137,4 +137,8 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
       `${this.#token} flash minter is not available on ${this.config.network}`,
     );
   }
+
+  public get envVariable(): [key: string, value: string] {
+    return [`${this.#token}_PARTIAL_LIQUIDATOR_ADDRESS`, this.address];
+  }
 }

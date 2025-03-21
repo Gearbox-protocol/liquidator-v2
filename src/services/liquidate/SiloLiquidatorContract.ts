@@ -140,4 +140,8 @@ export default class SiloLiquidatorContract extends PartialLiquidatorContract {
     }
     return this.#siloFLTaker;
   }
+
+  public get envVariable(): [key: string, value: string] {
+    return ["SILO_PARTIAL_LIQUIDATOR_ADDRESS", this.address];
+  }
 }

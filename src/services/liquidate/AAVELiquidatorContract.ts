@@ -97,4 +97,8 @@ export default class AAVELiquidatorContract extends PartialLiquidatorContract {
     this.logger.info(`partial liquidator contract addesss: ${address}`);
     this.address = address;
   }
+
+  public get envVariable(): [key: string, value: string] {
+    return ["AAVE_PARTIAL_LIQUIDATOR_ADDRESS", this.address];
+  }
 }

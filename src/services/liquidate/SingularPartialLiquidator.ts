@@ -83,6 +83,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       liquidatorContracts = await this.#getDefaultContracts(cms, router, bot);
     }
 
+    let expectedEnv: Record<string, string> = {};
     for (const contract of liquidatorContracts) {
       if (!contract.isSupported) {
         this.logger.info(
@@ -92,7 +93,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       }
       await contract.deploy();
       await contract.configure();
+      expectedEnv = {
+        ...expectedEnv,
+        ...Object.fromEntries([contract.envVariable]),
+      };
     }
+    this.logger.info(expectedEnv, "expected env");
   }
 
   async #getDefaultContracts(
