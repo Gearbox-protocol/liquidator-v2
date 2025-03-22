@@ -88,7 +88,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
           break;
         }
         default: {
-          if (cm.name.toLowerCase().includes("nexo")) {
+          // identifying nexo (aka k3) credit managers
+          if (cm.name.toLowerCase().includes("k3")) {
             nexoLiquidator.addCreditManager(cm);
             this.#liquidatorForCM[cm.creditManager.address] = nexoLiquidator;
           } else {
