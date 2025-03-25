@@ -1611,7 +1611,7 @@ __metadata:
     "@gearbox-protocol/eslint-config": "npm:2.0.0-next.2"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/prettier-config": "npm:2.0.0"
-    "@gearbox-protocol/sdk": "npm:3.0.0-vfour.334"
+    "@gearbox-protocol/sdk": "npm:3.0.0-vfour.336"
     "@gearbox-protocol/types": "npm:^1.14.6"
     "@types/node": "npm:^22.13.13"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1650,9 +1650,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:3.0.0-vfour.334":
-  version: 3.0.0-vfour.334
-  resolution: "@gearbox-protocol/sdk@npm:3.0.0-vfour.334"
+"@gearbox-protocol/sdk@npm:3.0.0-vfour.336":
+  version: 3.0.0-vfour.336
+  resolution: "@gearbox-protocol/sdk@npm:3.0.0-vfour.336"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.3"
     "@redstone-finance/protocol": "npm:^0.7.3"
@@ -1663,7 +1663,7 @@ __metadata:
     zod: "npm:^3.24.2"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/2e32510001f0c62e51e131ee6c0b1978747819e3a71a83d0b1f94510e330f3d3ce7ffeddb0dce5846db44eb9a2ccc722a755c3bb78f33905dbfb721a12ec018c
+  checksum: 10c0/2d2213a67d9f34423c1d6fd2c6356b5090996c4d4efeae976cbf68056e3fd4121bbd23650af63851afc22aa3b37f37409c239c037e983a1ee9252eed33020fda
   languageName: node
   linkType: hard
 
