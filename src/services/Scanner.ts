@@ -98,7 +98,7 @@ export class Scanner {
     if (this.config.debugAccount) {
       const acc = await this.caService.getCreditAccountData(
         this.config.debugAccount,
-        { blockNumber },
+        blockNumber,
       );
       accounts = acc ? [acc] : [];
     } else {
@@ -113,7 +113,7 @@ export class Scanner {
           includeZeroDebt: false,
           creditManager: this.config.debugManager,
         },
-        { blockNumber },
+        blockNumber,
       );
     }
     if (this.config.restakingWorkaround) {
