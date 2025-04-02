@@ -73,7 +73,15 @@ export class Scanner {
     }
     try {
       this.#processing = blockNumber;
-      await this.caService.sdk.syncState({ blockNumber, timestamp });
+      await this.caService.sdk.syncState({
+        blockNumber,
+        timestamp,
+        // this effectively updates chainlink prices
+        // we don't need this
+        // if there're new price feeds, syncState will pick them up anyway
+        // and redstone price updates will be updated in credit account service calls
+        skipPriceUpdate: true,
+      });
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
     } catch (e) {
