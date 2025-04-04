@@ -13,7 +13,32 @@ const booleanLike = z
 
 const bigintLike = z.any().transform(v => BigInt(v));
 
-export const ConfigSchema = z.object({
+export const PartialV300ConfigSchema = z.object({
+  /**
+   * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
+   */
+  aavePartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for GHO credit managers
+   */
+  ghoPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for DOLA credit managers
+   */
+  dolaPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for Nexo credit managers
+   */
+  nexoPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for Sonic credit managers
+   */
+  siloPartialLiquidatorAddress: Address.optional(),
+});
+
+export type PartialV300ConfigSchema = z.infer<typeof PartialV300ConfigSchema>;
+
+export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * By default uses address provider from @gearbox-protocol/sdk
    * Use this option to override address provider
@@ -103,22 +128,7 @@ export const ConfigSchema = z.object({
    * Usage: deploy them once from local machine then pass the address to production service
    */
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
-  /**
-   * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
-   */
-  aavePartialLiquidatorAddress: Address.optional(),
-  /**
-   * Address of deployed partial liquidator contract for GHO credit managers
-   */
-  ghoPartialLiquidatorAddress: Address.optional(),
-  /**
-   * Address of deployed partial liquidator contract for DOLA credit managers
-   */
-  dolaPartialLiquidatorAddress: Address.optional(),
-  /**
-   * Address of deployed partial liquidator contract for Nexo credit managers
-   */
-  nexoPartialLiquidatorAddress: Address.optional(),
+
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */

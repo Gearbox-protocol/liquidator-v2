@@ -1,6 +1,6 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, AP_ROUTER, formatBN } from "@gearbox-protocol/sdk";
+import { formatBN, TypedObjectUtils } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -9,9 +9,10 @@ import {
 import type { Address, SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../data/index.js";
-import AAVELiquidatorContract from "./AAVELiquidatorContract.js";
-import GHOLiquidatorContract from "./GHOLiquidatorContract.js";
-import type PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import {
+  createPartialLiquidators,
+  type IPartialLiquidatorContract,
+} from "./partial/index.js";
 import SingularFullLiquidator from "./SingularFullLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
@@ -20,10 +21,6 @@ import type {
   PartialLiquidationPreviewWithFallback,
 } from "./types.js";
 
-// currently there is no reliable way to get this from sdk
-const LEGACY_PL_BOT: Address = "0x0f06c2bD612Ee7D52d4bC76Ce3BD7E95247AF2a9";
-const NEXO_PL_BOT: Address = "0xc82020f1922AE56CCF25d5F2E2d6155E44583ef9";
-
 export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
   protected readonly name = "partial";
   protected readonly adverb = "partially";
@@ -31,7 +28,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   /**
    * mapping of credit manager address to deployed partial liquidator
    */
-  #liquidatorForCM: Record<Address, PartialLiquidatorContract> = {};
+  #liquidatorForCM: Record<Address, IPartialLiquidatorContract> = {};
   #fallback?: SingularFullLiquidator;
 
   public async launch(asFallback?: boolean): Promise<void> {
@@ -43,84 +40,33 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       await this.#fallback.launch(true);
     }
 
-    const [router] = this.sdk.addressProvider.getLatestVersion(AP_ROUTER);
-
-    const aaveLiquidator = new AAVELiquidatorContract(
-      "AAVE Partial Liquidator",
-      router,
-      LEGACY_PL_BOT,
-      this.config.aavePartialLiquidatorAddress,
-    );
-    const nexoLiquidator = new AAVELiquidatorContract(
-      "AAVE Nexo Partial Liquidator",
-      router,
-      NEXO_PL_BOT,
-      this.config.nexoPartialLiquidatorAddress,
-    );
-    const ghoLiquidator = new GHOLiquidatorContract(
-      router,
-      LEGACY_PL_BOT,
-      "GHO",
-    );
-    const dolaLiquidator = new GHOLiquidatorContract(
-      router,
-      LEGACY_PL_BOT,
-      "DOLA",
-    );
-    // safe to use 0x0 because none of underlyings is 0x0, so no cms will be added
-    const GHO =
-      this.creditAccountService.sdk.tokensMeta.findBySymbol("GHO")?.addr ??
-      ADDRESS_0X0;
-    const DOLA =
-      this.creditAccountService.sdk.tokensMeta.findBySymbol("DOLA")?.addr ??
-      ADDRESS_0X0;
-
-    for (const cm of this.sdk.marketRegister.creditManagers) {
-      switch (cm.underlying) {
-        case GHO: {
-          ghoLiquidator.addCreditManager(cm);
-          this.#liquidatorForCM[cm.creditManager.address] = ghoLiquidator;
-          break;
-        }
-        case DOLA: {
-          dolaLiquidator.addCreditManager(cm);
-          this.#liquidatorForCM[cm.creditManager.address] = dolaLiquidator;
-          break;
-        }
-        default: {
-          // identifying nexo (aka k3) credit managers
-          if (cm.name.toLowerCase().includes("k3")) {
-            nexoLiquidator.addCreditManager(cm);
-            this.#liquidatorForCM[cm.creditManager.address] = nexoLiquidator;
-          } else {
-            aaveLiquidator.addCreditManager(cm);
-            this.#liquidatorForCM[cm.creditManager.address] = aaveLiquidator;
-          }
-        }
-      }
+    this.#liquidatorForCM = createPartialLiquidators(this.sdk);
+    const contracts = new Set<IPartialLiquidatorContract>();
+    for (const [cm, contract] of TypedObjectUtils.entries(
+      this.#liquidatorForCM,
+    )) {
+      this.logger.debug(
+        `Will use ${contract.name} for ${this.sdk.provider.addressLabels.get(cm)}`,
+      );
+      contracts.add(contract);
     }
-
+    this.logger.debug(
+      `Need to deploy ${contracts.size} partial liquidator contracts: ${Array.from(
+        contracts,
+      )
+        .map(c => c.name)
+        .join(", ")}`,
+    );
     let expectedEnv: Record<string, string> = {};
-    for (const contract of [
-      aaveLiquidator,
-      nexoLiquidator,
-      ghoLiquidator,
-      dolaLiquidator,
-    ]) {
-      if (!contract.isSupported) {
-        this.logger.info(
-          `${contract.name} is not supported on ${this.config.network}`,
-        );
-        continue;
-      }
+    for (const contract of contracts) {
       await contract.deploy();
       await contract.configure();
       expectedEnv = {
         ...expectedEnv,
-        ...Object.fromEntries([contract.envVariable]),
+        ...contract.envVariables,
       };
     }
-    this.logger.info(expectedEnv, "expected env");
+    this.logger.debug(expectedEnv, "expected env");
   }
 
   public async makeLiquidatable(

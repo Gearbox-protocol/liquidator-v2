@@ -6,28 +6,69 @@ import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
+import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
-import type { ILogger } from "../../log/index.js";
-import { Logger } from "../../log/index.js";
-import PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import { FLASH_MINTERS } from "../constants.js";
+import PartialLiquidatorV300Contract from "./PartialLiquidatorV300Contract.js";
 
-export default class GHOLiquidatorContract extends PartialLiquidatorContract {
-  @Logger("GHOPartialLiquidator")
-  logger!: ILogger;
+export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   #token: "DOLA" | "GHO";
+  #flashMinter: Address;
 
-  constructor(router: Address, bot: Address, token: "DOLA" | "GHO") {
-    super(`${token} Partial Liquidator`, router, bot);
+  public static tryAttach(
+    cm: CreditSuite,
+  ): GHOLiquidatorV300Contract | undefined {
+    const router = PartialLiquidatorV300Contract.router(cm);
+    if (!router) {
+      return undefined;
+    }
+    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
+    const flashMinter = FLASH_MINTERS[cm.provider.networkType]?.[symbol];
+    if (!flashMinter) {
+      return undefined;
+    }
+    switch (symbol) {
+      case "GHO":
+        return new GHOLiquidatorV300Contract(
+          router,
+          curator,
+          "GHO",
+          flashMinter,
+        );
+      case "DOLA":
+        return new GHOLiquidatorV300Contract(
+          router,
+          curator,
+          "DOLA",
+          flashMinter,
+        );
+    }
+    return undefined;
+  }
+
+  constructor(
+    router: Address,
+    curator: Curator,
+    token: "DOLA" | "GHO",
+    flashMinter: Address,
+  ) {
+    const key =
+      token === "GHO"
+        ? "ghoPartialLiquidatorAddress"
+        : "dolaPartialLiquidatorAddress";
+    super(token, router, curator, key);
     this.#token = token;
+    this.#flashMinter = flashMinter;
   }
 
   public async deploy(): Promise<void> {
-    let address = this.deployedAddress;
+    let address = this.configAddress;
     if (!address) {
       this.logger.debug(
         {
-          flashMinter: this.flashMinter,
+          flashMinter: this.#flashMinter,
           router: this.router,
           bot: this.bot,
           token: this.#token,
@@ -40,7 +81,7 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
         bytecode: GhoFMTaker_bytecode,
         // constructor(address _ghoFlashMinter, address _gho) {
         args: [
-          this.flashMinter,
+          this.#flashMinter,
           this.creditAccountService.sdk.tokensMeta.mustFindBySymbol(this.#token)
             .addr,
         ],
@@ -70,10 +111,9 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
         args: [
           this.router,
           this.bot,
-          this.flashMinter,
+          this.#flashMinter,
           ghoFMTakerAddr,
-          this.creditAccountService.sdk.tokensMeta.mustFindBySymbol(this.#token)
-            .addr,
+          this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
         ],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
@@ -115,31 +155,7 @@ export default class GHOLiquidatorContract extends PartialLiquidatorContract {
     this.address = address;
   }
 
-  private get deployedAddress(): Address | undefined {
-    switch (this.#token) {
-      case "GHO":
-        return this.config.ghoPartialLiquidatorAddress;
-      case "DOLA":
-        return this.config.dolaPartialLiquidatorAddress;
-    }
-    return undefined;
-  }
-
-  private get flashMinter(): Address {
-    if (this.config.network === "Mainnet") {
-      switch (this.#token) {
-        case "GHO":
-          return "0xb639D208Bcf0589D54FaC24E655C79EC529762B8";
-        case "DOLA":
-          return "0x6C5Fdc0c53b122Ae0f15a863C349f3A481DE8f1F";
-      }
-    }
-    throw new Error(
-      `${this.#token} flash minter is not available on ${this.config.network}`,
-    );
-  }
-
-  public get envVariable(): [key: string, value: string] {
-    return [`${this.#token}_PARTIAL_LIQUIDATOR_ADDRESS`, this.address];
+  public override get envVariables(): Record<string, string> {
+    return { [`${this.#token}_PARTIAL_LIQUIDATOR_ADDRESS`]: this.address };
   }
 }

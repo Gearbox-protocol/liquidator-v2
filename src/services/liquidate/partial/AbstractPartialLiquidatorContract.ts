@@ -1,17 +1,27 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
-import type { CreditAccountsService, CreditSuite } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountsService,
+  CreditSuite,
+  Curator,
+  GearboxSDK,
+} from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0 } from "@gearbox-protocol/sdk";
 import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address } from "viem";
 
-import type { Config } from "../../config/index.js";
-import { DI } from "../../di.js";
-import type { ILogger } from "../../log/index.js";
-import type Client from "../Client.js";
-import type { MerkleDistributorInfo } from "./types.js";
+import type { Config } from "../../../config/index.js";
+import { DI } from "../../../di.js";
+import type { ILogger } from "../../../log/index.js";
+import type Client from "../../Client.js";
+import type {
+  IPartialLiquidatorContract,
+  MerkleDistributorInfo,
+} from "./types.js";
 
-export default abstract class PartialLiquidatorContract {
-  abstract logger: ILogger;
+export abstract class AbstractPartialLiquidatorContract
+  implements IPartialLiquidatorContract
+{
+  logger: ILogger;
 
   @DI.Inject(DI.Config)
   config!: Config;
@@ -25,71 +35,29 @@ export default abstract class PartialLiquidatorContract {
   #registeredCMs: Record<Address, boolean> = {};
   #address?: Address;
   #router: Address;
-  #bot: Address;
   #creditManagers: CreditSuite[] = [];
 
   public readonly name: string;
+  public readonly curator: Curator;
+  public readonly version: number;
 
-  constructor(name: string, router: Address, bot: Address) {
-    this.name = name;
+  constructor(
+    name: string,
+    version: number,
+    router: Address,
+    curator: Curator,
+  ) {
+    this.name = `${name} ${curator} V${version}`;
+    this.curator = curator;
+    this.version = version;
     this.#router = router;
-    this.#bot = bot;
+    this.logger = DI.create(DI.Logger, this.name.replaceAll(" ", ""));
   }
 
   /**
-   * Registers router, partial liquidation bot and credit manager addresses in liquidator contract if necessary
+   * Registers credit manager addresses in liquidator contract if necessary
    */
   public async configure(): Promise<void> {
-    const [currentRouter, currentBot] = await Promise.all([
-      this.client.pub.readContract({
-        abi: iPartialLiquidatorAbi,
-        address: this.address,
-        functionName: "router",
-      }),
-      this.client.pub.readContract({
-        abi: iPartialLiquidatorAbi,
-        address: this.address,
-        functionName: "partialLiquidationBot",
-      }),
-    ]);
-
-    if (this.router.toLowerCase() !== currentRouter.toLowerCase()) {
-      this.logger.warn(
-        `need to update router from ${currentRouter} to ${this.router}`,
-      );
-      const receipt = await this.client.simulateAndWrite({
-        abi: iPartialLiquidatorAbi,
-        address: this.address,
-        functionName: "setRouter",
-        args: [this.router],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `PartialLiquidator.setRouter(${this.router}) tx ${receipt.transactionHash} reverted`,
-        );
-      }
-      this.logger.info(
-        `set router to ${this.router} in tx ${receipt.transactionHash}`,
-      );
-    }
-
-    if (this.bot.toLowerCase() !== currentBot.toLowerCase()) {
-      this.logger.warn(`need to update bot from ${currentBot} to ${this.bot}`);
-      const receipt = await this.client.simulateAndWrite({
-        abi: iPartialLiquidatorAbi,
-        address: this.address,
-        functionName: "setPartialLiquidationBot",
-        args: [this.bot],
-      });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `PartialLiquidator.setPartialLiquidationBot(${this.bot}) tx ${receipt.transactionHash} reverted`,
-        );
-      }
-      this.logger.info(
-        `set bot to ${this.bot} in tx ${receipt.transactionHash}`,
-      );
-    }
     const cmToCa = await this.#getLiquidatorAccounts();
 
     try {
@@ -112,6 +80,23 @@ export default abstract class PartialLiquidatorContract {
     }
   }
 
+  protected async updateRouterAddress(router: Address): Promise<void> {
+    const receipt = await this.client.simulateAndWrite({
+      abi: iPartialLiquidatorAbi,
+      address: this.address,
+      functionName: "setRouter",
+      args: [router],
+    });
+    if (receipt.status === "reverted") {
+      throw new Error(
+        `PartialLiquidator.setRouter(${router}) tx ${receipt.transactionHash} reverted`,
+      );
+    }
+    this.logger.info(
+      `set router to ${router} in tx ${receipt.transactionHash}`,
+    );
+  }
+
   public abstract deploy(): Promise<void>;
 
   public addCreditManager(cm: CreditSuite): void {
@@ -119,10 +104,6 @@ export default abstract class PartialLiquidatorContract {
       `adding credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
     );
     this.#creditManagers.push(cm);
-  }
-
-  public get isSupported(): boolean {
-    return this.#creditManagers.length > 0;
   }
 
   /**
@@ -262,7 +243,9 @@ export default abstract class PartialLiquidatorContract {
     }
   }
 
-  public abstract get envVariable(): [key: string, value: string];
+  public get envVariables(): Record<string, string> {
+    return {};
+  }
 
   protected set address(value: Address) {
     this.#address = value;
@@ -279,7 +262,7 @@ export default abstract class PartialLiquidatorContract {
     return this.#router;
   }
 
-  protected get bot(): Address {
-    return this.#bot;
+  protected get sdk(): GearboxSDK {
+    return this.creditAccountService.sdk;
   }
 }

@@ -5,7 +5,7 @@ import type {
   RawTx,
 } from "@gearbox-protocol/sdk";
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
-import type { Address, Hash, Hex } from "viem";
+import type { Address, Hex } from "viem";
 
 export interface FullLiquidationPreview extends StrategyPreview {
   amount: bigint;
@@ -65,17 +65,4 @@ export interface StrategyPreview {
 export interface MakeLiquidatableResult {
   snapshotId?: Hex;
   partialLiquidationCondition?: PartialLiquidationCondition;
-}
-
-export interface MerkleDistributorInfo {
-  merkleRoot: Hash;
-  tokenTotal: string;
-  claims: Record<
-    Address,
-    {
-      index: number;
-      amount: string;
-      proof: Hash[];
-    }
-  >;
 }

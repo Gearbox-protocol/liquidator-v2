@@ -1610,8 +1610,9 @@ __metadata:
     "@commitlint/config-conventional": "npm:^19.8.0"
     "@gearbox-protocol/eslint-config": "npm:2.0.0-next.2"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
+    "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.1"
     "@gearbox-protocol/prettier-config": "npm:2.0.0"
-    "@gearbox-protocol/sdk": "npm:3.0.0-vfour.368"
+    "@gearbox-protocol/sdk": "npm:3.0.0-vfour.381"
     "@gearbox-protocol/types": "npm:^1.14.6"
     "@types/node": "npm:^22.13.14"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1641,6 +1642,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@gearbox-protocol/next-contracts@npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.1":
+  version: 2.5.0-next.1
+  resolution: "@gearbox-protocol/liquidator-v2-contracts@npm:2.5.0-next.1"
+  checksum: 10c0/61432f18ffeb4bf49ab04ef148c454f4b1eeaa8849d4e837719c9115c3c93dfe7fd83e09feb55fd8e2d9ca2e8c4f291550eae7702ceb860a0c968e3e41b420d5
+  languageName: node
+  linkType: hard
+
 "@gearbox-protocol/prettier-config@npm:2.0.0":
   version: 2.0.0
   resolution: "@gearbox-protocol/prettier-config@npm:2.0.0"
@@ -1650,9 +1658,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:3.0.0-vfour.368":
-  version: 3.0.0-vfour.368
-  resolution: "@gearbox-protocol/sdk@npm:3.0.0-vfour.368"
+"@gearbox-protocol/sdk@npm:3.0.0-vfour.381":
+  version: 3.0.0-vfour.381
+  resolution: "@gearbox-protocol/sdk@npm:3.0.0-vfour.381"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.3"
     "@redstone-finance/protocol": "npm:^0.7.3"
@@ -1663,7 +1671,7 @@ __metadata:
     zod: "npm:^3.24.2"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/b021bafd5dc7481635f6a01ee71d49c048346d4050fdad4e3967c9e9a40c1d26ea65dd7e3c41dda01161cb5d47708895b87d925fb352828977f1fd79d79dc69b
+  checksum: 10c0/5d99782620c73d4bcb1c64fac0dfa8d31be756e48eeb6599f1d5d90eb729a82a86f7bca5e42e9844c9829550c36b0a132c54b87f180a3512cdde8951633065ec
   languageName: node
   linkType: hard
 

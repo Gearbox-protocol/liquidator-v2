@@ -6,55 +6,58 @@ import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import { type NetworkType, NOT_DEPLOYED } from "@gearbox-protocol/sdk";
-import type { Address } from "viem";
+import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import { type Address, isAddress } from "viem";
 
-import { DI } from "../../di.js";
-import type { ILogger } from "../../log/index.js";
-import PartialLiquidatorContract from "./PartialLiquidatorContract.js";
+import { AAVE_V3_LENDING_POOL } from "../constants.js";
+import PartialLiquidatorV300Contract from "./PartialLiquidatorV300Contract.js";
 
-const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
-  Mainnet: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
-  Arbitrum: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-  Optimism: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-  Base: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-  Sonic: NOT_DEPLOYED,
-  MegaETH: NOT_DEPLOYED,
-  Monad: NOT_DEPLOYED,
-  Berachain: NOT_DEPLOYED,
-  Avalanche: NOT_DEPLOYED,
-};
+export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
+  #aavePool: Address;
 
-export default class AAVELiquidatorContract extends PartialLiquidatorContract {
-  logger: ILogger;
-
-  constructor(name: string, router: Address, bot: Address, address?: Address) {
-    super(name, router, bot);
-    if (address) {
-      this.address = address;
+  public static tryAttach(
+    cm: CreditSuite,
+  ): AAVELiquidatorV300Contract | undefined {
+    const router = PartialLiquidatorV300Contract.router(cm);
+    if (!router) {
+      return undefined;
     }
-    this.logger = DI.create(DI.Logger, name.replaceAll(" ", ""));
+    const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
+    if (!isAddress(aavePool)) {
+      return undefined;
+    }
+    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
+    switch (symbol) {
+      case "GHO":
+      case "DOLA":
+        return undefined;
+      default:
+        return new AAVELiquidatorV300Contract(router, curator, aavePool);
+    }
+  }
+
+  constructor(router: Address, curator: Curator, aavePool: Address) {
+    const key =
+      curator === "K3"
+        ? "nexoPartialLiquidatorAddress"
+        : "aavePartialLiquidatorAddress";
+    super("Aave", router, curator, key);
+    this.#aavePool = aavePool;
   }
 
   public async deploy(): Promise<void> {
-    let address: Address | undefined;
-    try {
-      // this strange code accomodates for the fact that for Nexo we need to have several configurable addresses
-      // and we need to deploy contract on testnet if the address is not configured
-      address = this.address;
-    } catch {}
-
-    const aavePool = AAVE_V3_LENDING_POOL[this.config.network];
+    let address = this.configAddress;
     if (!address) {
       this.logger.debug(
-        { aavePool, router: this.router, bot: this.bot },
+        { aavePool: this.#aavePool, router: this.router, bot: this.bot },
         "deploying partial liquidator",
       );
 
       let hash = await this.client.wallet.deployContract({
         abi: aaveFlTakerAbi,
         bytecode: AaveFLTaker_bytecode,
-        args: [aavePool],
+        args: [this.#aavePool],
       });
       this.logger.debug(`waiting for AaveFLTaker to deploy, tx hash: ${hash}`);
       const { contractAddress: aaveFlTakerAddr } =
@@ -77,7 +80,7 @@ export default class AAVELiquidatorContract extends PartialLiquidatorContract {
       hash = await this.client.wallet.deployContract({
         abi: aaveLiquidatorAbi,
         bytecode: AaveLiquidator_bytecode,
-        args: [this.router, this.bot, aavePool, aaveFlTakerAddr],
+        args: [this.router, this.bot, this.#aavePool, aaveFlTakerAddr],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
       const { contractAddress: liquidatorAddr } =
@@ -118,7 +121,7 @@ export default class AAVELiquidatorContract extends PartialLiquidatorContract {
     this.address = address;
   }
 
-  public get envVariable(): [key: string, value: string] {
-    return ["AAVE_PARTIAL_LIQUIDATOR_ADDRESS", this.address];
+  public override get envVariables(): Record<string, string> {
+    return { AAVE_PARTIAL_LIQUIDATOR_ADDRESS: this.address };
   }
 }
