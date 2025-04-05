@@ -2,9 +2,13 @@ import { json_stringify } from "@gearbox-protocol/sdk";
 
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import type { OptimisticResults } from "../liquidate/index.js";
 
 export default class BaseWriter {
+  @Logger("OutputWriter")
+  log!: ILogger;
+
   @DI.Inject(DI.Config)
   config!: Config;
 
