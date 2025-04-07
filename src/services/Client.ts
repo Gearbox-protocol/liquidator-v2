@@ -38,7 +38,7 @@ import { type ILogger, Logger } from "../log/index.js";
 import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
-const GAS_TIP_MULTIPLIER = 5000n;
+const GAS_X = 5000n;
 
 @DI.Injectable(DI.Client)
 export default class Client {
@@ -120,12 +120,10 @@ export default class Client {
       to: request.address,
       data,
     });
-    if (req.maxPriorityFeePerGas && req.maxFeePerGas) {
-      const extraTip =
-        (BigInt(req.maxPriorityFeePerGas) * GAS_TIP_MULTIPLIER) /
-        PERCENTAGE_FACTOR;
-      req.maxPriorityFeePerGas = BigInt(req.maxPriorityFeePerGas) + extraTip;
-      req.maxFeePerGas = BigInt(req.maxFeePerGas) + extraTip;
+    const { gas, maxFeePerGas, maxPriorityFeePerGas } = req;
+    if (maxPriorityFeePerGas && maxFeePerGas) {
+      req.maxPriorityFeePerGas = 10n * maxPriorityFeePerGas;
+      req.maxFeePerGas = 2n * maxFeePerGas + req.maxPriorityFeePerGas;
       logger.debug(
         {
           maxFeePerGas: req.maxFeePerGas,
@@ -134,10 +132,8 @@ export default class Client {
         `increase gas fees`,
       );
     }
-    if (req.gas) {
-      req.gas =
-        (req.gas * (GAS_TIP_MULTIPLIER + PERCENTAGE_FACTOR)) /
-        PERCENTAGE_FACTOR;
+    if (gas) {
+      req.gas = (gas * (GAS_X + PERCENTAGE_FACTOR)) / PERCENTAGE_FACTOR;
     }
     const serializedTransaction = await this.wallet.signTransaction(req);
     const hash = await this.wallet.sendRawTransaction({
