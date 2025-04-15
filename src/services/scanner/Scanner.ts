@@ -265,23 +265,29 @@ export class Scanner {
   ): Promise<CreditAccountDataRaw[]> {
     const { liquidatableOnly, priceUpdates, blockNumber } = selection;
     const blockS = blockNumber ? ` in ${blockNumber}` : "";
-    if (liquidatableOnly) {
-      this.log.debug(
-        `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
-      );
-      const start = new Date().getTime();
-      // getLiquidatableCreditAccounts does not support priceUpdates on main price feeds
-      const { result } =
-        await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
-          [priceUpdates],
-          { blockNumber, gas: 550_000_000n },
+    try {
+      if (liquidatableOnly) {
+        this.log.debug(
+          `getting liquidatable credit accounts${blockS} with ${priceUpdates.length} price updates...`,
         );
-      const duration = Math.round((new Date().getTime() - start) / 1000);
-      this.log.debug(
-        { duration: `${duration}s`, count: result.length },
-        `getLiquidatableCreditAccounts`,
-      );
-      return [...result];
+        const start = new Date().getTime();
+        // getLiquidatableCreditAccounts does not support priceUpdates on main price feeds
+        const { result } =
+          await this.dataCompressor.simulate.getLiquidatableCreditAccounts(
+            [priceUpdates],
+            { blockNumber, gas: 550_000_000n },
+          );
+        const duration = Math.round((new Date().getTime() - start) / 1000);
+        this.log.debug(
+          { duration: `${duration}s`, count: result.length },
+          `getLiquidatableCreditAccounts`,
+        );
+        return [...result];
+      }
+    } catch (e) {
+      this.log.error(`failed to call getLiquidatableCreditAccounts: ${e}`);
+      // been revering with EVM error MemoryOOG lately
+      // fallback to getCreditManagersV3List below
     }
     const cms = await this.dataCompressor.read.getCreditManagersV3List({
       blockNumber,
