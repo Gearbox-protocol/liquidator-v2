@@ -140,6 +140,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   ): Promise<PartialLiquidatorContract[]> {
     const siloLiquidator = new SiloLiquidatorContract(router, bot);
     for (const cm of cms) {
+      siloLiquidator.addCreditManager(cm);
       this.#liquidatorForCM[cm.address] = siloLiquidator;
     }
     return [siloLiquidator];
