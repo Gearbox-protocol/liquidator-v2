@@ -47,6 +47,7 @@ export class Config extends ConfigClass {
       this.aavePartialLiquidatorAddress ||
       this.ghoPartialLiquidatorAddress ||
       this.dolaPartialLiquidatorAddress ||
+      this.siloPartialLiquidatorAddress ||
       this.deployPartialLiquidatorContracts
     );
   }
