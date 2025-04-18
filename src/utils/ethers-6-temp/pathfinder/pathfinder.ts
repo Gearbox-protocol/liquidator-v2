@@ -80,15 +80,15 @@ export class PathFinder {
     logger.debug(
       `connectors: ${connectors.map(c => getTokenSymbol(c)).join(", ")}`,
     );
-    // TODO: stkcvxllamathena workaround
+    // TODO: stkcvxRLUSDUSDC workaround
     const force = ca.allBalances.some(
       b =>
         b.token.toLowerCase() ===
-          tokenDataByNetwork.Mainnet.stkcvxllamathena.toLowerCase() &&
+          tokenDataByNetwork.Mainnet.stkcvxRLUSDUSDC.toLowerCase() &&
         b.balance > 10n,
     );
     if (force) {
-      logger.warn("applying stkcvxllamathena workaround");
+      logger.warn("applying stkcvxRLUSDUSDC workaround");
     }
     let results: RouterResult[] = [];
     for (const po of pathOptions) {
