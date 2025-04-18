@@ -3,6 +3,7 @@ import {
   getConnectors,
   getDecimals,
   getTokenSymbol,
+  tokenDataByNetwork,
 } from "@gearbox-protocol/sdk-gov";
 import { iRouterV3Abi } from "@gearbox-protocol/types/abi";
 import { type Address, getContract, type PublicClient } from "viem";
@@ -79,6 +80,13 @@ export class PathFinder {
     logger.debug(
       `connectors: ${connectors.map(c => getTokenSymbol(c)).join(", ")}`,
     );
+    // TODO: stkcvxllamathena workaround
+    const force = ca.allBalances.some(
+      b =>
+        b.token.toLowerCase() ===
+          tokenDataByNetwork.Mainnet.stkcvxllamathena.toLowerCase() &&
+        b.balance > 10n,
+    );
     let results: RouterResult[] = [];
     for (const po of pathOptions) {
       const { result } = await this.#pathFinder.simulate.findBestClosePath(
@@ -90,7 +98,7 @@ export class PathFinder {
           BigInt(slippage),
           po,
           BigInt(LOOPS_PER_TX),
-          false,
+          force,
         ],
         {
           gas: GAS_PER_BLOCK,
