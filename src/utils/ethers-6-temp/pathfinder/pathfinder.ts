@@ -87,6 +87,9 @@ export class PathFinder {
           tokenDataByNetwork.Mainnet.stkcvxllamathena.toLowerCase() &&
         b.balance > 10n,
     );
+    if (force) {
+      logger.warn("applying stkcvxllamathena workaround");
+    }
     let results: RouterResult[] = [];
     for (const po of pathOptions) {
       const { result } = await this.#pathFinder.simulate.findBestClosePath(
