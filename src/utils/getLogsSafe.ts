@@ -54,8 +54,8 @@ export async function getLogsSafe<
     }
 
     const [left, right] = await Promise.all([
-      getLogs(client, { ...params, ...bisected[0] } as any),
-      getLogs(client, { ...params, ...bisected[1] } as any),
+      getLogsSafe(client, { ...params, ...bisected[0] } as any),
+      getLogsSafe(client, { ...params, ...bisected[1] } as any),
     ]);
     return [...left, ...right] as GetLogsReturnType<
       abiEvent,

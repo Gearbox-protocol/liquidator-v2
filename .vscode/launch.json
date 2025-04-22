@@ -5,14 +5,30 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Liquidator V2",
       "type": "node",
       "request": "launch",
-      "name": "Run Liquidator V2",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/build/index.js",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": ["${workspaceFolder}/build/**/*.js"],
-      "envFile": "${workspaceFolder}/.env"
+      // Debug current file in VSCode
+      "program": "${workspaceFolder}/src/index.ts",
+      "envFile": "${workspaceFolder}/.env",
+      /*
+       * Path to tsx binary
+       * Assuming locally installed
+       */
+      "runtimeExecutable": "tsx",
+      /*
+       * Open terminal when debugging starts (Optional)
+       * Useful to see console.logs
+       */
+      // "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      // Files to exclude from debugger (e.g. call stack)
+      "skipFiles": [
+        // Node.js internal core modules
+        "<node_internals>/**"
+        // Ignore all dependencies (optional)
+        // "${workspaceFolder}/node_modules/**",
+      ]
     }
   ]
 }
