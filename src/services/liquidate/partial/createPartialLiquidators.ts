@@ -70,7 +70,7 @@ export function createPartialLiquidators(
       uniqueContracts[liquidatorForCM.name].addCreditManager(cm);
       result[cm.creditManager.address] = uniqueContracts[liquidatorForCM.name];
       sdk.logger?.debug(
-        `created partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name} at ${liquidatorForCM.address}`,
+        `created partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name}`,
       );
     } else {
       sdk.logger?.warn(
