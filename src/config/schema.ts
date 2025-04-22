@@ -1,4 +1,4 @@
-import { MAX_UINT256, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -95,14 +95,9 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
     .pipe(z.bigint().positive().default(500000000000000000n)),
   /**
    * Filter out all accounts with HF >= threshold during scan stage
-   * 65535 is constant for zero-debt account (kinda strange, because it's in the middle of the range of allowed values)
-   * TODO: this should be changed to uint256 in contracts
+   * Min HF is set to crash older versions, which had 10000 as 100%
    */
-  hfThreshold: z.coerce
-    .bigint()
-    .min(0n)
-    .max(MAX_UINT256)
-    .default(PERCENTAGE_FACTOR),
+  hfThreshold: z.coerce.bigint().min(1100n).max(MAX_UINT256).default(WAD),
   /**
    * Enable optimistic liquidations
    */
