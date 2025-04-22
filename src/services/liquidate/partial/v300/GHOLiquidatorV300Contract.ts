@@ -64,6 +64,7 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   }
 
   public async deploy(): Promise<void> {
+    await super.deploy();
     let address = this.configAddress;
     if (!address) {
       this.logger.debug(

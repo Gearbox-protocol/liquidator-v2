@@ -32,7 +32,13 @@ export function createPartialLiquidators(
   const uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
   const result: Record<Address, IPartialLiquidatorContract> = {};
 
+  sdk.logger?.debug(
+    `creating partial liquidator contracts for ${sdk.marketRegister.creditManagers.length} credit managers`,
+  );
   for (const cm of sdk.marketRegister.creditManagers) {
+    sdk.logger?.debug(
+      `creating partial liquidator contract for ${cm.creditManager.name}`,
+    );
     let liquidatorForCM: IPartialLiquidatorContract | undefined;
 
     for (const f of FACTORIES) {
@@ -51,6 +57,13 @@ export function createPartialLiquidators(
       uniqueContracts[liquidatorForCM.name] ??= liquidatorForCM;
       uniqueContracts[liquidatorForCM.name].addCreditManager(cm);
       result[cm.creditManager.address] = uniqueContracts[liquidatorForCM.name];
+      sdk.logger?.debug(
+        `created partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name} at ${liquidatorForCM.address}`,
+      );
+    } else {
+      sdk.logger?.warn(
+        `could not find partial liquidator contract for ${cm.creditManager.name}`,
+      );
     }
   }
 

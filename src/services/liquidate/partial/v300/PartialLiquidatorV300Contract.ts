@@ -30,6 +30,12 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     this.configAddress = this.config[configAddress];
   }
 
+  public async deploy(): Promise<void> {
+    if (this.configAddress) {
+      this.logger.debug(`found address in config: ${this.configAddress}`);
+    }
+  }
+
   /**
    * Registers router, partial liquidation bot and credit manager addresses in liquidator contract if necessary
    */

@@ -38,6 +38,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       this.#fallback = new SingularFullLiquidator();
       this.logger.debug("launching full liquidator as fallback");
       await this.#fallback.launch(true);
+    } else {
+      this.logger.debug("fallback to full mode disabled");
     }
 
     this.#liquidatorForCM = createPartialLiquidators(this.sdk);
