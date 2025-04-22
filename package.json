@@ -29,7 +29,7 @@
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
     "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.1",
     "@gearbox-protocol/prettier-config": "2.1.0",
-    "@gearbox-protocol/sdk": "3.0.1-next.3",
+    "@gearbox-protocol/sdk": "3.0.1-next.4",
     "@gearbox-protocol/types": "^1.14.6",
     "@types/node": "^22.14.1",
     "@uniswap/sdk-core": "^7.7.2",
