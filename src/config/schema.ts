@@ -1,4 +1,4 @@
-import { MAX_UINT16, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -101,7 +101,7 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   hfThreshold: z.coerce
     .bigint()
     .min(0n)
-    .max(MAX_UINT16)
+    .max(MAX_UINT256)
     .default(PERCENTAGE_FACTOR),
   /**
    * Enable optimistic liquidations
