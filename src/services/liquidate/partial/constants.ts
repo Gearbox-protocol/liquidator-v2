@@ -12,6 +12,7 @@ export const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
   Monad: NOT_DEPLOYED,
   Berachain: NOT_DEPLOYED,
   Avalanche: NOT_DEPLOYED,
+  BNB: NOT_DEPLOYED,
 };
 
 export const FLASH_MINTERS: Partial<

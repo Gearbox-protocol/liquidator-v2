@@ -15,6 +15,7 @@ export const WETH: Record<NetworkType, Address> = {
   Monad: "0xB5a30b0FDc5EA94A52fDc42e3E9760Cb8449Fb37",
   Berachain: "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
   Avalanche: "0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab",
+  BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
 };
 
 export default abstract class BaseSwapper {
