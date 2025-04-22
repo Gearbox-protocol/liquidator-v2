@@ -1,12 +1,13 @@
 import type { Address, NetworkType } from "@gearbox-protocol/sdk-gov";
 import { ADDRESS_PROVIDER } from "@gearbox-protocol/sdk-gov";
 import { iAddressProviderV3Abi } from "@gearbox-protocol/types/abi";
-import { getContract, hexToString, stringToHex } from "viem";
+import { getAbiItem, hexToString, stringToHex } from "viem";
 
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
+import { getLogsSafe } from "../utils/getLogsSafe.js";
 import type Client from "./Client.js";
 
 const AP_SERVICES = [
@@ -49,18 +50,16 @@ export class AddressProviderService {
       ? ` (overrides default ${ADDRESS_PROVIDER[this.config.network]})`
       : "";
 
-    const contract = getContract({
-      address,
-      abi: iAddressProviderV3Abi,
-      client: this.client.pub,
-    });
+    const toBlock = await this.client.pub.getBlockNumber();
 
-    const logs = await contract.getEvents.SetAddress(
-      {
-        key: AP_SERVICES.map(s => stringToHex(s, { size: 32 })),
-      },
-      { fromBlock: AP_BLOCK_BY_NETWORK[this.config.network], strict: true },
-    );
+    const logs = await getLogsSafe(this.client.pub, {
+      address,
+      event: getAbiItem({ abi: iAddressProviderV3Abi, name: "SetAddress" }),
+      args: { key: AP_SERVICES.map(s => stringToHex(s, { size: 32 })) },
+      fromBlock: AP_BLOCK_BY_NETWORK[this.config.network],
+      toBlock,
+      strict: true,
+    });
 
     for (const { args } of logs) {
       const { key, version, value } = args;

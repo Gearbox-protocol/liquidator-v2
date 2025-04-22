@@ -14,6 +14,7 @@ import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
+import { getLogsSafe } from "../utils/getLogsSafe.js";
 import type { AddressProviderService } from "./AddressProviderService.js";
 import type Client from "./Client.js";
 
@@ -191,7 +192,7 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    let logs = await this.client.pub.getLogs({
+    let logs = await getLogsSafe(this.client.pub, {
       address: this.oracle,
       events: iPriceOracleV3EventsAbi,
       fromBlock: BigInt(this.#lastBlock),
