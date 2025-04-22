@@ -1,4 +1,5 @@
 import type { GearboxSDK } from "@gearbox-protocol/sdk";
+import { AP_ROUTER } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type {
@@ -32,12 +33,23 @@ export function createPartialLiquidators(
   const uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
   const result: Record<Address, IPartialLiquidatorContract> = {};
 
+  const routerV300 = sdk.addressProvider.getLatestInRange(
+    AP_ROUTER,
+    [300, 309],
+  );
+  const routerV310 = sdk.addressProvider.getLatestInRange(
+    AP_ROUTER,
+    [310, 319],
+  );
+
   sdk.logger?.debug(
+    { routerV300, routerV310 },
     `creating partial liquidator contracts for ${sdk.marketRegister.creditManagers.length} credit managers`,
   );
   for (const cm of sdk.marketRegister.creditManagers) {
+    const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     sdk.logger?.debug(
-      `creating partial liquidator contract for ${cm.creditManager.name}`,
+      `creating partial liquidator contract for ${cm.creditManager.name} with underlying ${symbol}`,
     );
     let liquidatorForCM: IPartialLiquidatorContract | undefined;
 
