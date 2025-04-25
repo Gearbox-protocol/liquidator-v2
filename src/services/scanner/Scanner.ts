@@ -398,9 +398,19 @@ export class Scanner {
       ],
     });
     mc = mc.slice(priceUpdates.length);
-    const result = accs.filter(
-      (_, i) => mc[i].status === "success" && mc[i].result,
-    );
+    const result: CreditAccountDataRaw[] = [];
+    for (let i = 0; i < accs.length; i++) {
+      const isLiquidatable = mc[i].status === "success" && mc[i].result;
+      const account = accs[i];
+      if (isLiquidatable) {
+        result.push(account);
+      } else {
+        this.log.debug(
+          { response: mc[i] },
+          `account ${account.addr} with hf ${account.healthFactor} is not liquidatable`,
+        );
+      }
+    }
     this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
     return result;
   }
