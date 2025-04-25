@@ -255,7 +255,7 @@ export class Scanner {
       result.push(accData);
     }
     return liquidatableOnly
-      ? this.#filterLiquidatable(result, blockNumber)
+      ? this.#filterLiquidatable(result, priceUpdates, blockNumber)
       : this.#filterZeroDebt(result);
   }
 
@@ -303,7 +303,7 @@ export class Scanner {
     cms: Address[],
     selection: AccountSelection,
   ): Promise<CreditAccountDataRaw[]> {
-    const { liquidatableOnly, blockNumber } = selection;
+    const { liquidatableOnly, blockNumber, priceUpdates } = selection;
     const accs: CreditAccountDataRaw[] = [];
     // do not use Promise.all, because it crashes anvil
     for (const cm of cms) {
@@ -314,7 +314,7 @@ export class Scanner {
       `loaded ${accs.length} credit accounts from ${cms.length} credit managers`,
     );
     return liquidatableOnly
-      ? this.#filterLiquidatable(accs, blockNumber)
+      ? this.#filterLiquidatable(accs, priceUpdates, blockNumber)
       : this.#filterZeroDebt(accs);
   }
 
@@ -334,7 +334,7 @@ export class Scanner {
   async #getAccountsFromManager2(
     cm: Address,
     { priceUpdates, blockNumber }: AccountSelection,
-    pageSize = 25,
+    pageSize = 30,
   ): Promise<CreditAccountDataRaw[]> {
     const accAddrs = await this.client.pub.readContract({
       address: cm,
@@ -348,17 +348,22 @@ export class Scanner {
     for (let i = 0; i < accAddrs.length; i += pageSize) {
       const page = accAddrs.slice(i, i + pageSize);
       const resp = await simulateMulticall(this.client.pub, {
-        contracts: page.map(acc => ({
-          address: this.dataCompressor.address,
-          abi: iDataCompressorV3Abi,
-          functionName: "getCreditAccountData",
-          args: [acc, priceUpdates],
-        })),
+        contracts: [
+          ...this.redstone.toDirectMulticallUpdates(priceUpdates),
+          ...page.map(acc => ({
+            address: this.dataCompressor.address,
+            abi: iDataCompressorV3Abi,
+            functionName: "getCreditAccountData",
+            args: [acc, priceUpdates],
+          })),
+        ],
         blockNumber,
         allowFailure: false,
         gas: 550_000_000n,
       });
-      result.push(...(resp as any as CreditAccountDataRaw[]));
+      result.push(
+        ...(resp.slice(priceUpdates.length) as CreditAccountDataRaw[]),
+      );
       this.log.debug(
         `loaded page ${i + 1} of ${accAddrs.length} accounts from ${cm}`,
       );
@@ -372,22 +377,27 @@ export class Scanner {
 
   async #filterLiquidatable(
     accs: CreditAccountDataRaw[],
+    priceUpdates: PriceOnDemandExtras[],
     blockNumber?: bigint,
   ): Promise<CreditAccountDataRaw[]> {
     this.log.debug(
       `filtering liquidatable credit accounts from selection of ${accs.length}...`,
     );
     // @ts-ignore
-    const mc = await this.client.pub.multicall({
+    let mc = await this.client.pub.multicall({
       blockNumber,
       allowFailure: true,
-      contracts: accs.map(({ addr, creditManager }) => ({
-        address: creditManager as Address,
-        abi: iCreditManagerV3Abi,
-        functionName: "isLiquidatable",
-        args: [addr as Address, PERCENTAGE_FACTOR],
-      })),
+      contracts: [
+        ...this.redstone.toDirectMulticallUpdates(priceUpdates),
+        ...accs.map(({ addr, creditManager }) => ({
+          address: creditManager as Address,
+          abi: iCreditManagerV3Abi,
+          functionName: "isLiquidatable",
+          args: [addr as Address, PERCENTAGE_FACTOR],
+        })),
+      ],
     });
+    mc = mc.slice(priceUpdates.length);
     const result = accs.filter(
       (_, i) => mc[i].status === "success" && mc[i].result,
     );

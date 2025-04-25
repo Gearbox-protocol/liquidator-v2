@@ -9,11 +9,14 @@ import {
   tickerInfoTokensByNetwork,
   tokenSymbolByAddress,
 } from "@gearbox-protocol/sdk-gov";
-import { iCreditFacadeV3MulticallAbi } from "@gearbox-protocol/types/abi";
+import {
+  iCreditFacadeV3MulticallAbi,
+  iUpdatablePriceFeedAbi,
+} from "@gearbox-protocol/types/abi";
 import { DataServiceWrapper } from "@redstone-finance/evm-connector";
 import type { SignedDataPackage } from "redstone-protocol";
 import { RedstonePayload } from "redstone-protocol";
-import type { Address } from "viem";
+import type { Address, MulticallContracts } from "viem";
 import {
   encodeAbiParameters,
   encodeFunctionData,
@@ -206,6 +209,19 @@ export class RedstoneServiceV3 {
           functionName: "onDemandPriceUpdate",
           args: [token, reserve, data],
         }),
+      })) ?? []
+    );
+  }
+
+  public toDirectMulticallUpdates(
+    priceUpdates?: PriceOnDemandExtras[],
+  ): MulticallContracts<unknown[]> {
+    return (
+      priceUpdates?.map(({ callData, address }) => ({
+        abi: iUpdatablePriceFeedAbi,
+        address,
+        functionName: "updatePrice",
+        args: [callData],
       })) ?? []
     );
   }
