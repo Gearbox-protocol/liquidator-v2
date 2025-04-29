@@ -6,7 +6,11 @@ import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import {
+  ADDRESS_0X0,
+  type CreditSuite,
+  type Curator,
+} from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "viem";
 
@@ -85,8 +89,9 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
       abi: ghoLiquidatorAbi,
       bytecode: GhoLiquidator_bytecode,
       // constructor(address _router, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
+      // use 0x0 as router for determentstic address. it's set later using setRouter
       args: [
-        this.router,
+        ADDRESS_0X0,
         this.#flashMinter,
         ghoFMTakerAddr,
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
