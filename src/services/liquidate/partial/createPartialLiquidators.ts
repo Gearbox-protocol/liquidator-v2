@@ -49,7 +49,13 @@ export function createPartialLiquidators(
   for (const cm of sdk.marketRegister.creditManagers) {
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     sdk.logger?.debug(
-      `creating partial liquidator contract for ${cm.creditManager.name} with underlying ${symbol}`,
+      {
+        manager: cm.creditManager.name,
+        underlying: symbol,
+        facadeVersion: cm.creditFacade.version,
+        routerVersion: cm.router.version,
+      },
+      "creating partial liquidator contract",
     );
     let liquidatorForCM: IPartialLiquidatorContract | undefined;
 
