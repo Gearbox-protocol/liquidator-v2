@@ -19,15 +19,14 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): SiloLiquidatorV310Contract | undefined {
-    const router = PartialLiquidatorV310Contract.router(cm);
-    if (!router) {
+    if (cm.router.version < 310 || cm.router.version > 319) {
       return undefined;
     }
     if (cm.provider.networkType !== "Sonic") {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
-    return new SiloLiquidatorV310Contract(router, curator);
+    return new SiloLiquidatorV310Contract(cm.router.address, curator);
   }
 
   constructor(router: Address, curator: Curator) {

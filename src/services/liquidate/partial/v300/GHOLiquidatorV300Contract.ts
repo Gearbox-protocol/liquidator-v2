@@ -19,8 +19,7 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): GHOLiquidatorV300Contract | undefined {
-    const router = PartialLiquidatorV300Contract.router(cm);
-    if (!router) {
+    if (cm.router.version < 300 || cm.router.version > 309) {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
@@ -32,14 +31,14 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
     switch (symbol) {
       case "GHO":
         return new GHOLiquidatorV300Contract(
-          router,
+          cm.router.address,
           curator,
           "GHO",
           flashMinter,
         );
       case "DOLA":
         return new GHOLiquidatorV300Contract(
-          router,
+          cm.router.address,
           curator,
           "DOLA",
           flashMinter,

@@ -1,6 +1,6 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
-import { AP_ROUTER, hexEq } from "@gearbox-protocol/sdk";
+import type { Curator } from "@gearbox-protocol/sdk";
+import { hexEq } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type { PartialV300ConfigSchema } from "../../../../config/index.js";
@@ -10,14 +10,6 @@ import { V300_PARTIAL_LIQUIDATOR_BOTS } from "./constants.js";
 export default abstract class PartialLiquidatorV300Contract extends AbstractPartialLiquidatorContract {
   #bot: Address;
   protected readonly configAddress?: Address;
-
-  public static router(cm: CreditSuite): Address | undefined {
-    const router = cm.sdk.addressProvider.getLatestInRange(
-      AP_ROUTER,
-      [300, 309],
-    );
-    return router?.[0];
-  }
 
   constructor(
     name: string,

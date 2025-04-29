@@ -19,8 +19,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): AAVELiquidatorV310Contract | undefined {
-    const router = PartialLiquidatorV310Contract.router(cm);
-    if (!router) {
+    if (cm.router.version < 310 || cm.router.version > 319) {
       return undefined;
     }
     const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
@@ -34,7 +33,11 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
       case "DOLA":
         return undefined;
       default:
-        return new AAVELiquidatorV310Contract(router, curator, aavePool);
+        return new AAVELiquidatorV310Contract(
+          cm.router.address,
+          curator,
+          aavePool,
+        );
     }
   }
 
