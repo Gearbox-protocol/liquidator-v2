@@ -196,9 +196,9 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       },
       "found optimal liquidation",
     );
-    const connectors = this.sdk.router.getAvailableConnectors(
-      cm.creditManager.collateralTokens,
-    );
+    const connectors = this.sdk
+      .routerFor(cm)
+      .getAvailableConnectors(cm.creditManager.collateralTokens);
 
     try {
       const { result: preview } = await this.client.pub.simulateContract({

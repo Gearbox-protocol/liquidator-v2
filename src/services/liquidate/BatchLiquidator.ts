@@ -4,6 +4,7 @@ import {
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import {
+  AP_ROUTER,
   type CreditAccountData,
   filterDust,
   type OnDemandPriceUpdate,
@@ -261,7 +262,7 @@ export default class BatchLiquidator
       let hash = await this.client.wallet.deployContract({
         abi: batchLiquidatorAbi,
         bytecode: BatchLiquidator_bytecode,
-        args: [this.sdk.router.address],
+        args: [this.#router],
       });
       this.logger.debug(
         `waiting for BatchLiquidator to deploy, tx hash: ${hash}`,
@@ -290,8 +291,9 @@ export default class BatchLiquidator
 
   #getEstimateBatchInput(ca: CreditAccountData): EstimateBatchInput {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    const router = this.sdk.routerFor(cm);
     const { pathOptions, connectors, expected, leftover } =
-      this.sdk.router.getFindClosePathInput(ca, cm.creditManager);
+      router.getFindClosePathInput(ca, cm.creditManager);
     return {
       creditAccount: ca.creditAccount,
       expectedBalances: expected,
@@ -377,6 +379,17 @@ export default class BatchLiquidator
         market.priceOracle.onDemandPriceUpdates(updates);
     }
     return result;
+  }
+
+  get #router(): Address {
+    const router = this.sdk.addressProvider.getLatestInRange(
+      AP_ROUTER,
+      [300, 309],
+    );
+    if (!router) {
+      throw new Error("router v300 not found");
+    }
+    return router[0];
   }
 }
 
