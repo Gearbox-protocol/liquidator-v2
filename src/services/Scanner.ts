@@ -145,9 +145,9 @@ export class Scanner {
 
   async #setupRestakingWorkaround(): Promise<void> {
     this.#restakingCMAddr = RESTAKING_CMS[this.config.network];
-    const ezETH = this.caService.sdk.tokensMeta.mustFindBySymbol("ezETH");
 
     if (this.#restakingCMAddr) {
+      const ezETH = this.caService.sdk.tokensMeta.mustFindBySymbol("ezETH");
       const cm = getContract({
         abi: iCreditManagerV3Abi,
         address: this.#restakingCMAddr,
