@@ -99,7 +99,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
 
   async #liquidateOneOptimistic(
     acc: CreditAccountData,
-  ): Promise<OptimisticResult> {
+  ): Promise<OptimisticResult<bigint>> {
     const logger = this.caLogger(acc);
     let snapshotId: Hex | undefined;
     let result = this.newOptimisticResult(acc);
@@ -141,9 +141,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         balanceBefore.underlying + BigInt(result.liquidatorPremium),
       );
       const balanceAfter = await this.getExecutorBalance(acc.underlying);
-      result.liquidatorProfit = (balanceAfter.eth - balanceBefore.eth).toString(
-        10,
-      );
+      result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
     } catch (e: any) {
       const decoded = await this.errorHandler.explain(e, acc, true);
       result.traceFile = decoded.traceFile;

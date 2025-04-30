@@ -109,13 +109,15 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     return {
       snapshotId,
       partialLiquidationCondition: {
-        hfNew: Number(updCa.healthFactor),
+        hfNew: updCa.healthFactor,
         ltChanges: Object.fromEntries(
           Object.entries(newLTs).map(([t, newLT]) => [
             t,
             [
-              cm.creditManager.liquidationThresholds.mustGet(t as Address),
-              newLT,
+              BigInt(
+                cm.creditManager.liquidationThresholds.mustGet(t as Address),
+              ),
+              BigInt(newLT),
             ],
           ]),
         ),

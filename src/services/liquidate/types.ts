@@ -64,5 +64,5 @@ export interface StrategyPreview {
 
 export interface MakeLiquidatableResult {
   snapshotId?: Hex;
-  partialLiquidationCondition?: PartialLiquidationCondition;
+  partialLiquidationCondition?: PartialLiquidationCondition<bigint>;
 }

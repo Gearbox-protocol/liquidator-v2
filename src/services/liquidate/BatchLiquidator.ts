@@ -35,7 +35,7 @@ const LOOPS_PER_TX = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
 
 interface BatchLiquidationOutput {
   readonly receipt: TransactionReceipt;
-  readonly results: OptimisticResult[];
+  readonly results: OptimisticResult<bigint>[];
 }
 
 export default class BatchLiquidator
@@ -226,22 +226,22 @@ export default class BatchLiquidator
       return "cannot liquidate in batch";
     };
     const results = accounts.map(
-      (a): OptimisticResult => ({
+      (a): OptimisticResult<bigint> => ({
         callsHuman: this.sdk.parseMultiCall([
           ...(batch[a.creditAccount]?.calls ?? []),
         ]),
         balancesBefore: filterDust(a),
         balancesAfter: {},
-        hfBefore: Number(a.healthFactor),
-        hfAfter: 0,
+        hfBefore: a.healthFactor,
+        hfAfter: 0n,
         creditManager: a.creditManager,
         borrower: a.owner,
         account: a.creditAccount,
-        gasUsed: 0, // cannot know for single account
+        gasUsed: 0n, // cannot know for single account
         calls: [...(batch[a.creditAccount]?.calls ?? [])],
-        pathAmount: "0", // TODO: ??
-        liquidatorPremium: (batch[a.creditAccount]?.profit ?? 0n).toString(10),
-        liquidatorProfit: "0", // cannot compute for single account
+        pathAmount: 0n,
+        liquidatorPremium: batch[a.creditAccount]?.profit ?? 0n,
+        liquidatorProfit: 0n, // cannot compute for single account
         priceUpdates: priceUpdatesByAccount[a.creditAccount],
         isError: !liquidated.has(a.creditAccount),
         error: getError(a),
