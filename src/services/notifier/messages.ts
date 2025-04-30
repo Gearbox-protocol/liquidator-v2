@@ -202,7 +202,10 @@ export class BatchLiquidationFinishedMessage
   #liquidated: number;
   #notLiquidated: number;
 
-  constructor(receipt: TransactionReceipt, results: OptimisticResult[]) {
+  constructor(
+    receipt: TransactionReceipt,
+    results: OptimisticResult<bigint>[],
+  ) {
     super({ receipt });
     this.#liquidated = results.filter(r => !r.isError).length;
     this.#notLiquidated = results.filter(r => !!r.isError).length;

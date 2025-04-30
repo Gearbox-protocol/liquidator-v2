@@ -6,7 +6,11 @@ import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import {
+  ADDRESS_0X0,
+  type CreditSuite,
+  type Curator,
+} from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import { type Address, isAddress } from "viem";
 
@@ -19,8 +23,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): AAVELiquidatorV310Contract | undefined {
-    const router = PartialLiquidatorV310Contract.router(cm);
-    if (!router) {
+    if (cm.router.version < 310 || cm.router.version > 319) {
       return undefined;
     }
     const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
@@ -34,7 +37,11 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
       case "DOLA":
         return undefined;
       default:
-        return new AAVELiquidatorV310Contract(router, curator, aavePool);
+        return new AAVELiquidatorV310Contract(
+          cm.router.address,
+          curator,
+          aavePool,
+        );
     }
   }
 
@@ -57,7 +64,8 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
       abi: aaveLiquidatorAbi,
       bytecode: AaveLiquidator_bytecode,
       // constructor(address _router, address _aavePool, address _aaveFLTaker)
-      args: [this.router, this.#aavePool, aaveFlTakerAddr],
+      // use 0x0 as router for determentstic address. it's set later using setRouter
+      args: [ADDRESS_0X0, this.#aavePool, aaveFlTakerAddr],
     });
     this.logger.debug(`AaveLiquidator address: ${liquidatorAddr}`);
 

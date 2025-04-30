@@ -1,4 +1,8 @@
-import type { CreditAccountsService, NetworkType } from "@gearbox-protocol/sdk";
+import {
+  type CreditAccountsService,
+  type NetworkType,
+  NOT_DEPLOYED,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type { Config } from "../../config/index.js";
@@ -16,6 +20,7 @@ export const WETH: Record<NetworkType, Address> = {
   Berachain: "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
   Avalanche: "0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab",
   BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+  WorldChain: NOT_DEPLOYED,
 };
 
 export default abstract class BaseSwapper {

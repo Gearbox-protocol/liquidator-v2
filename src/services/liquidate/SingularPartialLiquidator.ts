@@ -38,6 +38,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       this.#fallback = new SingularFullLiquidator();
       this.logger.debug("launching full liquidator as fallback");
       await this.#fallback.launch(true);
+    } else {
+      this.logger.debug("fallback to full mode disabled");
     }
 
     this.#liquidatorForCM = createPartialLiquidators(this.sdk);
@@ -107,13 +109,15 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     return {
       snapshotId,
       partialLiquidationCondition: {
-        hfNew: Number(updCa.healthFactor),
+        hfNew: updCa.healthFactor,
         ltChanges: Object.fromEntries(
           Object.entries(newLTs).map(([t, newLT]) => [
             t,
             [
-              cm.creditManager.liquidationThresholds.mustGet(t as Address),
-              newLT,
+              BigInt(
+                cm.creditManager.liquidationThresholds.mustGet(t as Address),
+              ),
+              BigInt(newLT),
             ],
           ]),
         ),
@@ -194,9 +198,9 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       },
       "found optimal liquidation",
     );
-    const connectors = this.sdk.router.getAvailableConnectors(
-      cm.creditManager.collateralTokens,
-    );
+    const connectors = this.sdk
+      .routerFor(cm)
+      .getAvailableConnectors(cm.creditManager.collateralTokens);
 
     try {
       const { result: preview } = await this.client.pub.simulateContract({

@@ -18,15 +18,14 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): SiloLiquidatorV300Contract | undefined {
-    const router = PartialLiquidatorV300Contract.router(cm);
-    if (!router) {
+    if (cm.router.version < 300 || cm.router.version > 309) {
       return undefined;
     }
     if (cm.provider.networkType !== "Sonic") {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
-    return new SiloLiquidatorV300Contract(router, curator);
+    return new SiloLiquidatorV300Contract(cm.router.address, curator);
   }
 
   constructor(router: Address, curator: Curator) {
@@ -34,6 +33,7 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   }
 
   public async deploy(): Promise<void> {
+    await super.deploy();
     let address = this.configAddress;
     if (!address) {
       this.logger.debug(

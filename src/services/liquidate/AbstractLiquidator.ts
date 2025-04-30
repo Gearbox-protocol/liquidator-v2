@@ -57,36 +57,38 @@ export default abstract class AbstractLiquidator {
     }
   }
 
-  protected newOptimisticResult(acc: CreditAccountData): OptimisticResult {
+  protected newOptimisticResult(
+    acc: CreditAccountData,
+  ): OptimisticResult<bigint> {
     return {
       creditManager: acc.creditManager,
       borrower: acc.owner,
       account: acc.creditAccount,
       balancesBefore: filterDust(acc),
-      hfBefore: Number(acc.healthFactor),
+      hfBefore: BigInt(acc.healthFactor),
       balancesAfter: {},
-      hfAfter: 0,
-      gasUsed: 0,
+      hfAfter: 0n,
+      gasUsed: 0n,
       calls: [],
       callsHuman: [],
       isError: true,
-      pathAmount: "0",
-      liquidatorPremium: "0",
-      liquidatorProfit: "0",
+      pathAmount: 0n,
+      liquidatorPremium: 0n,
+      liquidatorProfit: 0n,
     };
   }
 
   protected updateAfterPreview(
-    result: OptimisticResult,
+    result: OptimisticResult<bigint>,
     preview: StrategyPreview,
-  ): OptimisticResult {
+  ): OptimisticResult<bigint> {
     return {
       ...result,
       assetOut: preview.assetOut,
       amountOut: preview.amountOut,
       flashLoanAmount: preview.flashLoanAmount,
       calls: preview.calls as MultiCall[],
-      pathAmount: preview.underlyingBalance.toString(),
+      pathAmount: preview.underlyingBalance,
       callsHuman: this.creditAccountService.sdk.parseMultiCall(
         preview.calls as MultiCall[],
       ),
@@ -94,11 +96,11 @@ export default abstract class AbstractLiquidator {
   }
 
   protected async updateAfterLiquidation(
-    result: OptimisticResult,
+    result: OptimisticResult<bigint>,
     acc: CreditAccountData,
     underlyingBalanceBefore: bigint,
     receipt: TransactionReceipt,
-  ): Promise<OptimisticResult> {
+  ): Promise<OptimisticResult<bigint>> {
     const ca = await this.creditAccountService.getCreditAccountData(
       acc.creditAccount,
     );
@@ -106,13 +108,12 @@ export default abstract class AbstractLiquidator {
       throw new Error(`account ${acc.creditAccount} not found`);
     }
     result.balancesAfter = filterDust(ca);
-    result.hfAfter = Number(ca.healthFactor);
+    result.hfAfter = ca.healthFactor;
 
     const balanceAfter = await this.getExecutorBalance(ca.underlying);
-    result.gasUsed = Number(receipt.gasUsed);
-    result.liquidatorPremium = (
-      balanceAfter.underlying - underlyingBalanceBefore
-    ).toString(10);
+    result.gasUsed = receipt.gasUsed;
+    result.liquidatorPremium =
+      balanceAfter.underlying - underlyingBalanceBefore;
     return result;
   }
 

@@ -4,6 +4,7 @@ import {
 } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
 import {
+  AP_ROUTER,
   type CreditAccountData,
   filterDust,
   type OnDemandPriceUpdate,
@@ -34,7 +35,7 @@ const LOOPS_PER_TX = Number(GAS_PER_BLOCK / MAX_GAS_PER_ROUTE);
 
 interface BatchLiquidationOutput {
   readonly receipt: TransactionReceipt;
-  readonly results: OptimisticResult[];
+  readonly results: OptimisticResult<bigint>[];
 }
 
 export default class BatchLiquidator
@@ -225,22 +226,22 @@ export default class BatchLiquidator
       return "cannot liquidate in batch";
     };
     const results = accounts.map(
-      (a): OptimisticResult => ({
+      (a): OptimisticResult<bigint> => ({
         callsHuman: this.sdk.parseMultiCall([
           ...(batch[a.creditAccount]?.calls ?? []),
         ]),
         balancesBefore: filterDust(a),
         balancesAfter: {},
-        hfBefore: Number(a.healthFactor),
-        hfAfter: 0,
+        hfBefore: a.healthFactor,
+        hfAfter: 0n,
         creditManager: a.creditManager,
         borrower: a.owner,
         account: a.creditAccount,
-        gasUsed: 0, // cannot know for single account
+        gasUsed: 0n, // cannot know for single account
         calls: [...(batch[a.creditAccount]?.calls ?? [])],
-        pathAmount: "0", // TODO: ??
-        liquidatorPremium: (batch[a.creditAccount]?.profit ?? 0n).toString(10),
-        liquidatorProfit: "0", // cannot compute for single account
+        pathAmount: 0n,
+        liquidatorPremium: batch[a.creditAccount]?.profit ?? 0n,
+        liquidatorProfit: 0n, // cannot compute for single account
         priceUpdates: priceUpdatesByAccount[a.creditAccount],
         isError: !liquidated.has(a.creditAccount),
         error: getError(a),
@@ -261,7 +262,7 @@ export default class BatchLiquidator
       let hash = await this.client.wallet.deployContract({
         abi: batchLiquidatorAbi,
         bytecode: BatchLiquidator_bytecode,
-        args: [this.sdk.router.address],
+        args: [this.#router],
       });
       this.logger.debug(
         `waiting for BatchLiquidator to deploy, tx hash: ${hash}`,
@@ -290,8 +291,9 @@ export default class BatchLiquidator
 
   #getEstimateBatchInput(ca: CreditAccountData): EstimateBatchInput {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    const router = this.sdk.routerFor(cm);
     const { pathOptions, connectors, expected, leftover } =
-      this.sdk.router.getFindClosePathInput(ca, cm.creditManager);
+      router.getFindClosePathInput(ca, cm.creditManager);
     return {
       creditAccount: ca.creditAccount,
       expectedBalances: expected,
@@ -377,6 +379,17 @@ export default class BatchLiquidator
         market.priceOracle.onDemandPriceUpdates(updates);
     }
     return result;
+  }
+
+  get #router(): Address {
+    const router = this.sdk.addressProvider.getLatestInRange(
+      AP_ROUTER,
+      [300, 309],
+    );
+    if (!router) {
+      throw new Error("router v300 not found");
+    }
+    return router[0];
   }
 }
 

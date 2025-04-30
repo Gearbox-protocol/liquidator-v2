@@ -1,4 +1,5 @@
 import type { GearboxSDK } from "@gearbox-protocol/sdk";
+import { AP_ROUTER } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type {
@@ -32,7 +33,30 @@ export function createPartialLiquidators(
   const uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
   const result: Record<Address, IPartialLiquidatorContract> = {};
 
+  const routerV300 = sdk.addressProvider.getLatestInRange(
+    AP_ROUTER,
+    [300, 309],
+  );
+  const routerV310 = sdk.addressProvider.getLatestInRange(
+    AP_ROUTER,
+    [310, 319],
+  );
+
+  sdk.logger?.debug(
+    { routerV300, routerV310 },
+    `creating partial liquidator contracts for ${sdk.marketRegister.creditManagers.length} credit managers`,
+  );
   for (const cm of sdk.marketRegister.creditManagers) {
+    const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
+    sdk.logger?.debug(
+      {
+        manager: cm.creditManager.name,
+        underlying: symbol,
+        facadeVersion: cm.creditFacade.version,
+        routerVersion: cm.router.version,
+      },
+      "creating partial liquidator contract",
+    );
     let liquidatorForCM: IPartialLiquidatorContract | undefined;
 
     for (const f of FACTORIES) {
@@ -51,6 +75,13 @@ export function createPartialLiquidators(
       uniqueContracts[liquidatorForCM.name] ??= liquidatorForCM;
       uniqueContracts[liquidatorForCM.name].addCreditManager(cm);
       result[cm.creditManager.address] = uniqueContracts[liquidatorForCM.name];
+      sdk.logger?.debug(
+        `created partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name}`,
+      );
+    } else {
+      sdk.logger?.warn(
+        `could not find partial liquidator contract for ${cm.creditManager.name}`,
+      );
     }
   }
 
