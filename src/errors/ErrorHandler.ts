@@ -1,9 +1,8 @@
 import events from "node:events";
-import { createWriteStream, writeFileSync } from "node:fs";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
 
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -37,17 +36,17 @@ export class ErrorHandler {
     context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
-    const logger = this.#caLogger(context);
+    // const logger = this.#caLogger(context);
 
     if (error instanceof BaseError) {
-      let errorJson: string | undefined;
-      try {
-        const asStr = json_stringify(error);
-        const errorJson = `${nanoid()}.json`;
-        const errorFile = path.resolve(this.config.outDir, errorJson);
-        writeFileSync(errorFile, asStr, "utf-8");
-        logger.debug(`saved original error to ${errorFile}`);
-      } catch {}
+      // let errorJson: string | undefined;
+      // try {
+      //   const asStr = json_stringify(error);
+      //   const errorJson = `${nanoid()}.json`;
+      //   const errorFile = path.resolve(this.config.outDir, errorJson);
+      //   writeFileSync(errorFile, asStr, "utf-8");
+      //   logger.debug(`saved original error to ${errorFile}`);
+      // } catch {}
 
       let traceFile: string | undefined;
       if (saveTrace) {
@@ -57,7 +56,7 @@ export class ErrorHandler {
       }
 
       return {
-        errorJson,
+        // errorJson,
         traceFile,
         shortMessage: error.shortMessage,
         longMessage: error.message,
