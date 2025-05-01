@@ -2,7 +2,7 @@ import { nextTick } from "node:process";
 
 import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type { AnvilClient, AnvilNodeInfo } from "@gearbox-protocol/sdk/dev";
-import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
+import { createAnvilClient, createTransport } from "@gearbox-protocol/sdk/dev";
 import type { Abi } from "abitype";
 import type {
   Address,
@@ -23,9 +23,7 @@ import {
   createWalletClient,
   defineChain,
   encodeFunctionData,
-  fallback,
   formatEther,
-  http,
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -60,15 +58,22 @@ export default class Client {
   #testClient?: AnvilClient;
 
   public async launch(): Promise<void> {
-    const { ethProviderRpcs, chainId, network, optimistic, privateKey } =
-      this.config;
-    const rpcs = ethProviderRpcs.map(url =>
-      http(url, {
-        timeout: optimistic ? 240_000 : 10_000,
-        retryCount: optimistic ? 3 : undefined,
-      }),
-    );
-    const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
+    const {
+      jsonRpcProviders,
+      alchemyKeys,
+      chainId,
+      network,
+      optimistic,
+      privateKey,
+    } = this.config;
+    const transport = createTransport({
+      alchemyKeys: alchemyKeys ?? [],
+      rpcUrls: jsonRpcProviders ?? [],
+      protocol: "http",
+      network,
+      timeout: optimistic ? 240_000 : 10_000,
+      retryCount: optimistic ? 3 : undefined,
+    });
     const chain = defineChain({
       ...chains[network],
       id: chainId,

@@ -1,4 +1,5 @@
 import { CreditAccountsService, GearboxSDK } from "@gearbox-protocol/sdk";
+import { createTransport } from "@gearbox-protocol/sdk/dev";
 
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
@@ -49,11 +50,18 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     );
   }
 
-  const sdk = await GearboxSDK.attach({
-    rpcURLs: config.ethProviderRpcs,
-    addressProvider: config.addressProviderOverride,
-    marketConfigurators: config.marketConfigurators,
+  const transport = createTransport({
+    alchemyKeys: config.alchemyKeys ?? [],
+    rpcUrls: config.jsonRpcProviders ?? [],
+    protocol: "http",
+    network: config.network,
     timeout: 600_000,
+  });
+
+  const sdk = await GearboxSDK.attach({
+    transport,
+    addressProvider: config.addressProvider,
+    marketConfigurators: config.marketConfigurators,
     chainId: config.chainId,
     networkType: config.network,
     redstoneHistoricTimestamp: optimisticTimestamp,

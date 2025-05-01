@@ -1,4 +1,4 @@
-import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, NetworkType, WAD } from "@gearbox-protocol/sdk";
 import { Address } from "abitype/zod";
 import { type Hex, isHex } from "viem";
 import { z } from "zod";
@@ -39,11 +39,12 @@ export const PartialV300ConfigSchema = z.object({
 export type PartialV300ConfigSchema = z.infer<typeof PartialV300ConfigSchema>;
 
 export const ConfigSchema = PartialV300ConfigSchema.extend({
+  network: NetworkType,
   /**
    * By default uses address provider from @gearbox-protocol/sdk
    * Use this option to override address provider
    */
-  addressProviderOverride: Address.optional(),
+  addressProvider: Address.optional(),
   /**
    * Market configurators addresses to attach SDK
    */
@@ -75,9 +76,14 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * RPC providers to use
    */
-  ethProviderRpcs: stringArrayLike
+  jsonRpcProviders: stringArrayLike
     .optional()
-    .pipe(z.array(z.string().url()).min(1)),
+    .pipe(z.array(z.string().url()))
+    .optional(),
+  /**
+   * Alchemy API keys to use
+   */
+  alchemyKeys: stringArrayLike.optional(),
   /**
    * Private key used to send liquidation transactions
    */

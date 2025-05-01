@@ -1,7 +1,7 @@
 import type { ConfigSchema } from "./schema.js";
 
 const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
-  addressProviderOverride: "ADDRESS_PROVIDER",
+  addressProvider: "ADDRESS_PROVIDER",
   marketConfigurators: "MARKET_CONFIGURATORS",
   appName: "APP_NAME",
   batchLiquidatorAddress: "BATCH_LIQUIDATOR_ADDRESS",
@@ -12,14 +12,16 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   castBin: "CAST_BIN",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
-  ethProviderRpcs: "JSON_RPC_PROVIDERS",
   hfThreshold: "HF_TRESHOLD",
+  jsonRpcProviders: "JSON_RPC_PROVIDERS",
+  alchemyKeys: "ALCHEMY_KEYS",
   restakingWorkaround: "RESTAKING_WORKAROUND",
   redstoneGateways: "REDSTONE_GATEWAYS",
   minBalance: "MIN_BALANCE",
   oneInchApiKey: "ONE_INCH_API_KEY",
   optimistic: "OPTIMISTIC",
   dryRun: "DRY_RUN",
+  network: "NETWORK",
   optimisticTimestamp: "OPTIMISTIC_TIMESTAMP",
   outDir: "OUT_DIR",
   outEndpoint: "OUT_ENDPOINT",

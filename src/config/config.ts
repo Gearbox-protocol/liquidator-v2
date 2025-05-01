@@ -1,6 +1,5 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
-import { detectNetwork } from "@gearbox-protocol/sdk";
-import { createPublicClient, http } from "viem";
+import { createTransport } from "@gearbox-protocol/sdk/dev";
+import { createPublicClient } from "viem";
 import { fromError } from "zod-validation-error";
 
 import { createClassFromType } from "../utils/index.js";
@@ -8,7 +7,6 @@ import { envConfig } from "./env.js";
 import { ConfigSchema } from "./schema.js";
 
 interface DynamicConfig {
-  readonly network: NetworkType;
   readonly chainId: number;
   readonly startBlock: bigint;
 }
@@ -25,20 +23,23 @@ export class Config extends ConfigClass {
     }
 
     const client = createPublicClient({
-      transport: http(schema.ethProviderRpcs[0]),
-      name: "detect network client",
+      transport: createTransport({
+        alchemyKeys: schema.alchemyKeys ?? [],
+        rpcUrls: schema.jsonRpcProviders ?? [],
+        protocol: "http",
+        network: schema.network,
+      }),
+      name: "preload client",
     });
 
-    const [startBlock, chainId, network] = await Promise.all([
+    const [startBlock, chainId] = await Promise.all([
       client.getBlockNumber(),
       client.getChainId(),
-      detectNetwork(client),
     ]);
     return new Config({
       ...schema,
       startBlock,
       chainId: Number(chainId),
-      network,
     });
   }
 

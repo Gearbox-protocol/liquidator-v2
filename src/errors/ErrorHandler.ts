@@ -75,12 +75,13 @@ export class ErrorHandler {
   }
 
   public async saveTransactionTrace(hash: string): Promise<string | undefined> {
-    return this.#runCast([
-      "run",
-      "--rpc-url",
-      this.config.ethProviderRpcs[0],
-      hash,
-    ]);
+    // this only works for anvil, so we expect jsonRpcProviders to be set
+    const anvilURL = this.config.jsonRpcProviders?.[0];
+    if (!anvilURL) {
+      return undefined;
+    }
+
+    return this.#runCast(["run", "--rpc-url", anvilURL, hash]);
   }
 
   /**
@@ -93,13 +94,13 @@ export class ErrorHandler {
     context?: CreditAccountData,
   ): Promise<string | undefined> {
     let cast: string[] = [];
+    // this only works for anvil, so we expect jsonRpcProviders to be set
+    const anvilURL = this.config.jsonRpcProviders?.[0];
+    if (!anvilURL) {
+      return undefined;
+    }
     if (e instanceof TransactionRevertedError) {
-      cast = [
-        "run",
-        "--rpc-url",
-        this.config.ethProviderRpcs[0],
-        e.receipt.transactionHash,
-      ];
+      cast = ["run", "--rpc-url", anvilURL, e.receipt.transactionHash];
     } else {
       const exErr = e.walk(
         err => err instanceof ContractFunctionExecutionError,
@@ -117,7 +118,7 @@ export class ErrorHandler {
           "call",
           "--trace",
           "--rpc-url",
-          this.config.ethProviderRpcs[0],
+          anvilURL,
           exErr.contractAddress,
           data,
         ];
