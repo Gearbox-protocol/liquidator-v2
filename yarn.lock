@@ -94,9 +94,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.800.0":
-  version: 3.800.0
-  resolution: "@aws-sdk/client-s3@npm:3.800.0"
+"@aws-sdk/client-s3@npm:^3.802.0":
+  version: 3.802.0
+  resolution: "@aws-sdk/client-s3@npm:3.802.0"
   dependencies:
     "@aws-crypto/sha1-browser": "npm:5.2.0"
     "@aws-crypto/sha256-browser": "npm:5.2.0"
@@ -154,7 +154,7 @@ __metadata:
     "@smithy/util-utf8": "npm:^4.0.0"
     "@smithy/util-waiter": "npm:^4.0.3"
     tslib: "npm:^2.6.2"
-  checksum: 10c0/718e55fd9b83d4f7a63ee95eef3b452f29398f27ad98ff97f6d14d86ad0d48b2543277af149de21c80e8c1bfeb1c1d3aa55abe4218c30ce7e9d5c47ed2c9c522
+  checksum: 10c0/2580cb30bdbf74306eda8406108fbb6be47d5d6bdc4e4ecf314323cde75d213dc1cd68f90e11042223d1e4ddce94816a2810240cc7059fd717ca6c84e752618d
   languageName: node
   linkType: hard
 
@@ -1605,14 +1605,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@gearbox-protocol/liquidator-v2@workspace:."
   dependencies:
-    "@aws-sdk/client-s3": "npm:^3.800.0"
+    "@aws-sdk/client-s3": "npm:^3.802.0"
     "@commitlint/cli": "npm:^19.8.0"
     "@commitlint/config-conventional": "npm:^19.8.0"
     "@gearbox-protocol/eslint-config": "npm:2.0.0-next.2"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.1"
     "@gearbox-protocol/prettier-config": "npm:2.1.0"
-    "@gearbox-protocol/sdk": "npm:4.1.8"
+    "@gearbox-protocol/sdk": "npm:4.1.9"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^22.15.3"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1657,9 +1657,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:4.1.8":
-  version: 4.1.8
-  resolution: "@gearbox-protocol/sdk@npm:4.1.8"
+"@gearbox-protocol/sdk@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@gearbox-protocol/sdk@npm:4.1.9"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1670,7 +1670,7 @@ __metadata:
     zod: "npm:^3.24.3"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/7c2e2068f236bdba060eb8b903242600ec45bc4fcb3f0c8b2d8fa9576f993fedb7a8634984f5655656dd755ea95c5614fec68e1482d9fcaf57acb7206c2eb903
+  checksum: 10c0/097deebed61cd6976dd7a65139e307bec991be211ac39bf6e2d029d2ae456190a4c1ee52ddc81def52eda1aee972df6f6a58329ba9d8d76b5743ba81a11fdaf9
   languageName: node
   linkType: hard
 
