@@ -1074,13 +1074,13 @@ __metadata:
   linkType: hard
 
 "@eslint-community/eslint-utils@npm:^4.2.0, @eslint-community/eslint-utils@npm:^4.4.0":
-  version: 4.6.1
-  resolution: "@eslint-community/eslint-utils@npm:4.6.1"
+  version: 4.7.0
+  resolution: "@eslint-community/eslint-utils@npm:4.7.0"
   dependencies:
     eslint-visitor-keys: "npm:^3.4.3"
   peerDependencies:
     eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
-  checksum: 10c0/cdeb6f8fc33a83726357d7f736075cdbd6e79dc7ac4b00b15680f1111d0f33bda583e7fafa5937245a058cc66302dc47568bba57b251302dc74964d8e87f56d7
+  checksum: 10c0/c0f4f2bd73b7b7a9de74b716a664873d08ab71ab439e51befe77d61915af41a81ecec93b408778b3a7856185244c34c2c8ee28912072ec14def84ba2dec70adf
   languageName: node
   linkType: hard
 
@@ -1612,7 +1612,7 @@ __metadata:
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.1"
     "@gearbox-protocol/prettier-config": "npm:2.1.0"
-    "@gearbox-protocol/sdk": "npm:4.1.1"
+    "@gearbox-protocol/sdk": "npm:4.1.8"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^22.15.3"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1634,7 +1634,7 @@ __metadata:
     prettier: "npm:^3.5.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    viem: "npm:^2.28.1"
+    viem: "npm:^2.28.3"
     vitest: "npm:^3.1.2"
     zod: "npm:^3.24.3"
     zod-validation-error: "npm:^3.4.0"
@@ -1657,9 +1657,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:4.1.1":
-  version: 4.1.1
-  resolution: "@gearbox-protocol/sdk@npm:4.1.1"
+"@gearbox-protocol/sdk@npm:4.1.8":
+  version: 4.1.8
+  resolution: "@gearbox-protocol/sdk@npm:4.1.8"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1670,7 +1670,7 @@ __metadata:
     zod: "npm:^3.24.3"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/89c74b3c4739546fda6889117e8e6ea9fde7621b7e42758dc2eb88027ff42006b9c02d2b78e0b6cf0d53aba94332b1559a12ad7cf1865945e8867250c529f15e
+  checksum: 10c0/7c2e2068f236bdba060eb8b903242600ec45bc4fcb3f0c8b2d8fa9576f993fedb7a8634984f5655656dd755ea95c5614fec68e1482d9fcaf57acb7206c2eb903
   languageName: node
   linkType: hard
 
@@ -8282,9 +8282,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.28.1":
-  version: 2.28.1
-  resolution: "viem@npm:2.28.1"
+"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.28.3":
+  version: 2.28.3
+  resolution: "viem@npm:2.28.3"
   dependencies:
     "@noble/curves": "npm:1.8.2"
     "@noble/hashes": "npm:1.7.2"
@@ -8299,7 +8299,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/982e9b2322ab4b6e9cadb5511ae66358c118d4bf09015ca1ce4fd23f133c8d300f3712dc4f1bce841e67892ecf8daf58f5adef2b1299f7fac785a1233f1dfa9b
+  checksum: 10c0/d403b03d464ddae8a121c092e96371ede39ce393caefe1b89b2f34d39c1e7751ab56e20b89da9598d9ac52ee337d340e2f41344ae74f77444978f8ed24a75775
   languageName: node
   linkType: hard
 
