@@ -12,7 +12,7 @@ export const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
   Monad: NOT_DEPLOYED,
   Berachain: NOT_DEPLOYED,
   Avalanche: NOT_DEPLOYED,
-  BNB: NOT_DEPLOYED,
+  BNB: "0x6807dc923806fE8Fd134338EABCA509979a7e0cB",
   WorldChain: NOT_DEPLOYED,
 };
 
