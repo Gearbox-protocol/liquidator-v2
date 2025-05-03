@@ -120,8 +120,10 @@ export class ErrorHandler {
           anvilURL,
           ...(exErr.sender ? ["--from", exErr.sender] : []),
           exErr.contractAddress,
-          data,
+          // data,
         ];
+        this.#caLogger(context).debug(`calling cast ${cast.join(" ")} <data>`);
+        cast.push(data);
       }
     }
     if (!cast.length) {
