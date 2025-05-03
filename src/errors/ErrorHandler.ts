@@ -58,8 +58,8 @@ export class ErrorHandler {
       return {
         // errorJson,
         traceFile,
-        shortMessage: error.shortMessage,
-        longMessage: error.message,
+        shortMessage: `${error.name}: ${error.shortMessage}`,
+        longMessage: `${error.name}: ${error.message}`,
       };
     }
     if (error instanceof Error) {
@@ -118,6 +118,7 @@ export class ErrorHandler {
           "--trace",
           "--rpc-url",
           anvilURL,
+          ...(exErr.sender ? ["--from", exErr.sender] : []),
           exErr.contractAddress,
           data,
         ];
