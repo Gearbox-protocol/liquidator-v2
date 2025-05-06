@@ -8,7 +8,7 @@ import {
   iCreditManagerV3Abi,
   iDataCompressorV3Abi,
 } from "@gearbox-protocol/types/abi";
-import { getContract } from "viem";
+import { BaseError, getContract } from "viem";
 
 import type { Config } from "../../config/index.js";
 import type { CreditAccountDataRaw } from "../../data/index.js";
@@ -412,21 +412,25 @@ export class Scanner {
       }
     }
     mc = mc.slice(priceUpdates.length);
-    const result: CreditAccountDataRaw[] = [];
+    const results: CreditAccountDataRaw[] = [];
     for (let i = 0; i < accs.length; i++) {
-      const isLiquidatable = mc[i].status === "success" && mc[i].result;
-      const account = accs[i];
-      if (isLiquidatable) {
-        result.push(account);
-      } else {
-        this.log.debug(
-          { response: mc[i] },
-          `account ${account.addr} with hf ${account.healthFactor} is not liquidatable`,
+      const acc = accs[i];
+      const { status, error, result } = mc[i];
+      if (status === "failure") {
+        const errMsg =
+          error instanceof BaseError ? error.shortMessage : error.message;
+        this.log.warn(
+          { account: acc.addr, priceFeedsNeeded: acc.priceFeedsNeeded },
+          `isLiquidatable reverted: ${errMsg}`,
         );
+      } else if (result) {
+        results.push(acc);
       }
     }
-    this.log.debug(`${result.length}/${accs.length} accounts are liquidatable`);
-    return result;
+    this.log.debug(
+      `${results.length}/${accs.length} accounts are liquidatable`,
+    );
+    return results;
   }
 
   async #setupRestakingWorkaround(): Promise<void> {
