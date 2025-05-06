@@ -360,6 +360,7 @@ export class Scanner {
         blockNumber,
         allowFailure: false,
         gas: 550_000_000n,
+        batchSize: 0,
       });
       result.push(
         ...(resp.slice(priceUpdates.length) as CreditAccountDataRaw[]),
@@ -387,6 +388,8 @@ export class Scanner {
     let mc = await simulateMulticall(this.client.pub, {
       blockNumber,
       allowFailure: true,
+      batchSize: 0,
+      gas: 550_000_000n,
       contracts: [
         ...this.redstone.toDirectMulticallUpdates(priceUpdates),
         ...accs.map(
