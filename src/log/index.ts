@@ -13,6 +13,7 @@ class LoggerFactory implements IFactory<ILogger, [string]> {
     this.#logger = pino({
       level: process.env.LOG_LEVEL ?? "debug",
       base: { executionId },
+      bindings: () => ({}),
       formatters: {
         level: label => {
           return {
