@@ -400,6 +400,14 @@ export class Scanner {
         ),
       ],
     });
+    for (let i = 0; i < priceUpdates.length; i++) {
+      const pu = priceUpdates[i];
+      if (mc[i].status === "failure") {
+        this.log.warn(
+          `price update of ${pu.dataFeedId} feed at ${pu.address} failed: ${mc[i].error}`,
+        );
+      }
+    }
     mc = mc.slice(priceUpdates.length);
     const result: CreditAccountDataRaw[] = [];
     for (let i = 0; i < accs.length; i++) {
