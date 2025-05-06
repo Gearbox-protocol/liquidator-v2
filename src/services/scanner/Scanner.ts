@@ -423,6 +423,7 @@ export class Scanner {
           { account: acc.addr, priceFeedsNeeded: acc.priceFeedsNeeded },
           `isLiquidatable reverted: ${errMsg}`,
         );
+        results.push(acc);
       } else if (result) {
         results.push(acc);
       }
