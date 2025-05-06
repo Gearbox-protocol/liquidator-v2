@@ -8,6 +8,7 @@ import {
   type CreditAccountData,
   filterDust,
   type OnDemandPriceUpdate,
+  VERSION_RANGE_300,
 } from "@gearbox-protocol/sdk";
 import {
   iCreditFacadeV3Abi,
@@ -382,9 +383,9 @@ export default class BatchLiquidator
   }
 
   get #router(): Address {
-    const router = this.sdk.addressProvider.getLatestInRange(
+    const router = this.sdk.addressProvider.getLatest(
       AP_ROUTER,
-      [300, 309],
+      VERSION_RANGE_300,
     );
     if (!router) {
       throw new Error("router v300 not found");

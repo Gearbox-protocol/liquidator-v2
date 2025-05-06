@@ -1,5 +1,9 @@
 import type { GearboxSDK } from "@gearbox-protocol/sdk";
-import { AP_ROUTER } from "@gearbox-protocol/sdk";
+import {
+  AP_ROUTER,
+  VERSION_RANGE_300,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import type {
@@ -33,13 +37,13 @@ export function createPartialLiquidators(
   const uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
   const result: Record<Address, IPartialLiquidatorContract> = {};
 
-  const routerV300 = sdk.addressProvider.getLatestInRange(
+  const routerV300 = sdk.addressProvider.getLatest(
     AP_ROUTER,
-    [300, 309],
+    VERSION_RANGE_300,
   );
-  const routerV310 = sdk.addressProvider.getLatestInRange(
+  const routerV310 = sdk.addressProvider.getLatest(
     AP_ROUTER,
-    [310, 319],
+    VERSION_RANGE_310,
   );
 
   sdk.logger?.debug(
