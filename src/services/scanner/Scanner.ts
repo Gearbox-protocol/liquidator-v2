@@ -383,18 +383,21 @@ export class Scanner {
     this.log.debug(
       `filtering liquidatable credit accounts from selection of ${accs.length}...`,
     );
-    // @ts-ignore
-    let mc = await this.client.pub.multicall({
+
+    let mc = await simulateMulticall(this.client.pub, {
       blockNumber,
       allowFailure: true,
       contracts: [
         ...this.redstone.toDirectMulticallUpdates(priceUpdates),
-        ...accs.map(({ addr, creditManager }) => ({
-          address: creditManager as Address,
-          abi: iCreditManagerV3Abi,
-          functionName: "isLiquidatable",
-          args: [addr as Address, PERCENTAGE_FACTOR],
-        })),
+        ...accs.map(
+          ({ addr, creditManager }) =>
+            ({
+              address: creditManager as Address,
+              abi: iCreditManagerV3Abi,
+              functionName: "isLiquidatable",
+              args: [addr as Address, PERCENTAGE_FACTOR],
+            }) as const,
+        ),
       ],
     });
     mc = mc.slice(priceUpdates.length);
