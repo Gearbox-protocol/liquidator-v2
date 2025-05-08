@@ -6,7 +6,7 @@ import type {
   OnDemandPriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import type { Address, SimulateContractReturnType } from "viem";
+import { type Address, parseAbi, type SimulateContractReturnType } from "viem";
 
 import { exceptionsAbis } from "../../../../data/index.js";
 import type { PartialLiquidationPreview } from "../../types.js";
@@ -26,7 +26,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
    */
   public override async configure(): Promise<void> {
     const currentRouter = await this.client.pub.readContract({
-      abi: iPartialLiquidatorAbi,
+      abi: parseAbi(["function router() view returns (address)"]),
       address: this.address,
       functionName: "router",
     });
