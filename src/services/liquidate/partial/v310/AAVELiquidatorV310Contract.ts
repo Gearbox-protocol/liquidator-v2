@@ -6,11 +6,7 @@ import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
-import {
-  ADDRESS_0X0,
-  type CreditSuite,
-  type Curator,
-} from "@gearbox-protocol/sdk";
+import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import { type Address, isAddress } from "viem";
 
@@ -56,16 +52,16 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address: aaveFlTakerAddr } = await deployer.ensureExists({
       abi: aaveFlTakerAbi,
       bytecode: AaveFLTaker_bytecode,
-      args: [this.#aavePool],
+      // constructor(address _owner, address _aavePool)
+      args: [this.owner, this.#aavePool],
     });
     this.logger.debug(`AaveFLTaker address: ${aaveFlTakerAddr}`);
 
     const { address: liquidatorAddr } = await deployer.ensureExists({
       abi: aaveLiquidatorAbi,
       bytecode: AaveLiquidator_bytecode,
-      // constructor(address _router, address _aavePool, address _aaveFLTaker)
-      // use 0x0 as router for determentstic address. it's set later using setRouter
-      args: [ADDRESS_0X0, this.#aavePool, aaveFlTakerAddr],
+      // constructor(address _owner, address _aavePool, address _aaveFLTaker)
+      args: [this.owner, this.#aavePool, aaveFlTakerAddr],
     });
     this.logger.debug(`AaveLiquidator address: ${liquidatorAddr}`);
 

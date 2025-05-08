@@ -6,12 +6,7 @@ import {
   SiloFLTaker_bytecode,
   SiloLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
-import {
-  ADDRESS_0X0,
-  type CreditSuite,
-  type Curator,
-  hexEq,
-} from "@gearbox-protocol/sdk";
+import { type CreditSuite, type Curator, hexEq } from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "viem";
 
@@ -43,6 +38,8 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address: siloFLTakerAddr } = await deployer.ensureExists({
       abi: siloFlTakerAbi,
       bytecode: SiloFLTaker_bytecode,
+      // constructor(address _owner)
+      args: [this.owner],
     });
     this.logger.debug(`fl taker address: ${siloFLTakerAddr}`);
     this.#siloFLTaker = siloFLTakerAddr;
@@ -50,9 +47,8 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address: liquidatorAddr } = await deployer.ensureExists({
       abi: siloLiquidatorAbi,
       bytecode: SiloLiquidator_bytecode,
-      // constructor(address _router, address _siloFLTaker)
-      // use 0x0 as router for determentstic address. it's set later using setRouter
-      args: [ADDRESS_0X0, this.siloFLTaker],
+      // constructor(address _owner, address _siloFLTaker)
+      args: [this.owner, this.siloFLTaker],
     });
     this.logger.debug(`liquidator address: ${liquidatorAddr}`);
 

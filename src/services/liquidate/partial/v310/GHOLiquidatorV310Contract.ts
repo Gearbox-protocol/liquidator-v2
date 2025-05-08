@@ -6,11 +6,7 @@ import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
-import {
-  ADDRESS_0X0,
-  type CreditSuite,
-  type Curator,
-} from "@gearbox-protocol/sdk";
+import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "viem";
 
@@ -68,8 +64,9 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address: ghoFMTakerAddr } = await deployer.ensureExists({
       abi: ghoFmTakerAbi,
       bytecode: GhoFMTaker_bytecode,
-      // constructor(address _ghoFlashMinter, address _gho) {
+      // constructor(address _owner, address _ghoFlashMinter, address _gho) {
       args: [
+        this.owner,
         this.#flashMinter,
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
       ],
@@ -88,10 +85,9 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address: liquidatorAddr } = await deployer.ensureExists({
       abi: ghoLiquidatorAbi,
       bytecode: GhoLiquidator_bytecode,
-      // constructor(address _router, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
-      // use 0x0 as router for determentstic address. it's set later using setRouter
+      // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
       args: [
-        ADDRESS_0X0,
+        this.owner,
         this.#flashMinter,
         ghoFMTakerAddr,
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,

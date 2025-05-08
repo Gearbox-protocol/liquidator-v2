@@ -265,4 +265,8 @@ export abstract class AbstractPartialLiquidatorContract
   protected get sdk(): GearboxSDK {
     return this.creditAccountService.sdk;
   }
+
+  protected get owner(): Address {
+    return this.client.wallet.account.address;
+  }
 }
