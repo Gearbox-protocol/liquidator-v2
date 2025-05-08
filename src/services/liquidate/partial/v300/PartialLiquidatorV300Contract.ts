@@ -1,10 +1,22 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
-import type { Curator } from "@gearbox-protocol/sdk";
-import { hexEq } from "@gearbox-protocol/sdk";
-import { type Address, parseAbi } from "viem";
+import type {
+  CreditAccountData,
+  CreditSuite,
+  Curator,
+  OnDemandPriceUpdate,
+} from "@gearbox-protocol/sdk";
+import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
+import type { Address, SimulateContractReturnType } from "viem";
+import { parseAbi } from "viem";
 
 import type { PartialV300ConfigSchema } from "../../../../config/index.js";
+import { exceptionsAbis } from "../../../../data/index.js";
+import type { PartialLiquidationPreview } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
+import type {
+  OptimalPartialLiquidation,
+  RawPartialLiquidationPreview,
+} from "../types.js";
 import { V300_PARTIAL_LIQUIDATOR_BOTS } from "./constants.js";
 
 export default abstract class PartialLiquidatorV300Contract extends AbstractPartialLiquidatorContract {
@@ -78,6 +90,85 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     }
 
     await super.configure();
+  }
+
+  public async getOptimalLiquidation(
+    creditAccount: Address,
+    priceUpdates: OnDemandPriceUpdate[],
+  ): Promise<OptimalPartialLiquidation> {
+    const {
+      result: [
+        tokenOut,
+        optimalAmount,
+        repaidAmount,
+        flashLoanAmount,
+        isOptimalRepayable,
+      ],
+    } = await this.client.pub.simulateContract({
+      account: this.client.account,
+      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      address: this.address,
+      functionName: "getOptimalLiquidation",
+      args: [creditAccount, 10100n, priceUpdates],
+    });
+    return {
+      tokenOut,
+      optimalAmount,
+      repaidAmount,
+      flashLoanAmount,
+      isOptimalRepayable,
+    };
+  }
+
+  public async previewPartialLiquidation(
+    ca: CreditAccountData,
+    cm: CreditSuite,
+    optimalLiquidation: OptimalPartialLiquidation,
+    priceUpdates: OnDemandPriceUpdate[],
+  ): Promise<RawPartialLiquidationPreview> {
+    const connectors = this.sdk
+      .routerFor(cm)
+      .getAvailableConnectors(cm.creditManager.collateralTokens);
+
+    const { result: preview } = await this.client.pub.simulateContract({
+      account: ADDRESS_0X0,
+      address: this.address,
+      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      functionName: "previewPartialLiquidation",
+      args: [
+        ca.creditManager,
+        ca.creditAccount,
+        optimalLiquidation.tokenOut,
+        optimalLiquidation.optimalAmount,
+        optimalLiquidation.flashLoanAmount,
+        priceUpdates,
+        connectors,
+        BigInt(this.config.slippage),
+      ],
+    });
+
+    return preview;
+  }
+
+  public async partialLiquidateAndConvert(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+  ): Promise<SimulateContractReturnType> {
+    return this.client.pub.simulateContract({
+      account: this.client.account,
+      address: this.address,
+      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      functionName: "partialLiquidateAndConvert",
+      args: [
+        account.creditManager,
+        account.creditAccount,
+        preview.assetOut,
+        preview.amountOut,
+        preview.flashLoanAmount,
+        preview.priceUpdates,
+        preview.calls,
+      ],
+    });
   }
 
   protected get bot(): Address {

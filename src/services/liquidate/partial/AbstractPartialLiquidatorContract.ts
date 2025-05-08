@@ -1,21 +1,26 @@
-import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type {
+  CreditAccountData,
   CreditAccountsService,
   CreditSuite,
   Curator,
   GearboxSDK,
+  OnDemandPriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0 } from "@gearbox-protocol/sdk";
 import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
-import type { Address } from "viem";
+import type { Address, SimulateContractReturnType } from "viem";
+import { parseAbi } from "viem";
 
 import type { Config } from "../../../config/index.js";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
+import type { PartialLiquidationPreview } from "../types.js";
 import type {
   IPartialLiquidatorContract,
   MerkleDistributorInfo,
+  OptimalPartialLiquidation,
+  RawPartialLiquidationPreview,
 } from "./types.js";
 
 export abstract class AbstractPartialLiquidatorContract
@@ -82,7 +87,7 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected async updateRouterAddress(router: Address): Promise<void> {
     const receipt = await this.client.simulateAndWrite({
-      abi: iPartialLiquidatorAbi,
+      abi: parseAbi(["function setRouter(address newRouter)"]),
       address: this.address,
       functionName: "setRouter",
       args: [router],
@@ -114,7 +119,9 @@ export abstract class AbstractPartialLiquidatorContract
     const results = await this.client.pub.multicall({
       allowFailure: false,
       contracts: this.#creditManagers.map(cm => ({
-        abi: iPartialLiquidatorAbi,
+        abi: parseAbi([
+          "function cmToCA(address creditManager) view returns (address creditAccount)",
+        ]),
         address: this.address,
         functionName: "cmToCA",
         args: [cm.creditManager.address],
@@ -221,7 +228,7 @@ export abstract class AbstractPartialLiquidatorContract
     try {
       this.logger.debug(`need to register credit manager ${name} (${address})`);
       const receipt = await this.client.simulateAndWrite({
-        abi: iPartialLiquidatorAbi,
+        abi: parseAbi(["function registerCM(address creditManager)"]),
         address: this.address,
         functionName: "registerCM",
         args: [address],
@@ -242,6 +249,23 @@ export abstract class AbstractPartialLiquidatorContract
       this.#registeredCMs[address.toLowerCase() as Address] = false;
     }
   }
+
+  public abstract getOptimalLiquidation(
+    creditAccount: Address,
+    priceUpdates: OnDemandPriceUpdate[],
+  ): Promise<OptimalPartialLiquidation>;
+
+  public abstract previewPartialLiquidation(
+    ca: CreditAccountData,
+    cm: CreditSuite,
+    optimalLiquidation: OptimalPartialLiquidation,
+    priceUpdates: OnDemandPriceUpdate[],
+  ): Promise<RawPartialLiquidationPreview>;
+
+  public abstract partialLiquidateAndConvert(
+    account: CreditAccountData,
+    preview: PartialLiquidationPreview,
+  ): Promise<SimulateContractReturnType>;
 
   public get envVariables(): Record<string, string> {
     return {};

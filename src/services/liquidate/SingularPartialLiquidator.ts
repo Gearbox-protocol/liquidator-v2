@@ -1,6 +1,5 @@
-import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, formatBN, TypedObjectUtils } from "@gearbox-protocol/sdk";
+import { TypedObjectUtils } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -8,9 +7,9 @@ import {
 } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
 
-import { exceptionsAbis } from "../../data/index.js";
 import {
   createPartialLiquidators,
+  humanizeOptimalLiquidation,
   type IPartialLiquidatorContract,
 } from "./partial/index.js";
 import SingularFullLiquidator from "./SingularFullLiquidator.js";
@@ -158,69 +157,30 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         ca,
         undefined,
       );
-    const liquidatorAddr = this.liquidatorForCA(ca);
-    if (!liquidatorAddr) {
+    const liquidatorContract = this.liquidatorForCA(ca);
+    if (!liquidatorContract) {
       throw new Error(
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
       );
     }
-    const {
-      result: [
-        tokenOut,
-        optimalAmount,
-        repaidAmount,
-        flashLoanAmount,
-        isOptimalRepayable,
-      ],
-    } = await this.client.pub.simulateContract({
-      account: this.client.account,
-      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
-      address: liquidatorAddr,
-      functionName: "getOptimalLiquidation",
-      args: [ca.creditAccount, 10100n, priceUpdates as any],
-    });
-    const [symb, decimals, uSymb, uDec] = [
-      this.sdk.tokensMeta.symbol(tokenOut),
-      this.sdk.tokensMeta.decimals(tokenOut),
-      this.sdk.tokensMeta.symbol(cm.underlying),
-      this.sdk.tokensMeta.decimals(cm.underlying),
-    ];
+    const optimalLiquidation = await liquidatorContract.getOptimalLiquidation(
+      ca.creditAccount,
+      priceUpdates,
+    );
     logger.debug(
-      {
-        tokenOut: `${symb} (${tokenOut})`,
-        optimalAmount:
-          formatBN(optimalAmount, decimals) + ` ${symb} (${optimalAmount})`,
-        flashLoanAmount:
-          formatBN(flashLoanAmount, uDec) + ` ${uSymb} (${flashLoanAmount})`,
-        repaidAmount:
-          formatBN(repaidAmount, uDec) + ` ${uSymb} (${repaidAmount})`,
-        isOptimalRepayable,
-      },
+      humanizeOptimalLiquidation(cm, optimalLiquidation),
       "found optimal liquidation",
     );
-    const connectors = this.sdk
-      .routerFor(cm)
-      .getAvailableConnectors(cm.creditManager.collateralTokens);
 
     try {
-      const { result: preview } = await this.client.pub.simulateContract({
-        account: ADDRESS_0X0,
-        address: liquidatorAddr,
-        abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
-        functionName: "previewPartialLiquidation",
-        args: [
-          ca.creditManager,
-          ca.creditAccount,
-          tokenOut,
-          optimalAmount,
-          flashLoanAmount,
-          priceUpdates,
-          connectors,
-          BigInt(this.config.slippage),
-        ],
-      });
+      const preview = await liquidatorContract.previewPartialLiquidation(
+        ca,
+        cm,
+        optimalLiquidation,
+        priceUpdates,
+      );
       if (preview.profit < 0n) {
-        if (isOptimalRepayable) {
+        if (optimalLiquidation.isOptimalRepayable) {
           throw new Error("optimal liquidation is not profitable or errored");
         } else {
           throw new Error(
@@ -229,19 +189,19 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
         }
       }
       return {
-        assetOut: tokenOut as Address,
-        amountOut: optimalAmount,
-        flashLoanAmount,
+        assetOut: optimalLiquidation.tokenOut,
+        amountOut: optimalLiquidation.optimalAmount,
+        flashLoanAmount: optimalLiquidation.flashLoanAmount,
         priceUpdates,
         calls: preview.calls.map(c => ({
           callData: c.callData,
           target: c.target,
         })),
         underlyingBalance: preview.profit,
-        skipOnFailure: !isOptimalRepayable,
+        skipOnFailure: !optimalLiquidation.isOptimalRepayable,
       };
     } catch (e) {
-      if (!isOptimalRepayable) {
+      if (!optimalLiquidation.isOptimalRepayable) {
         throw new Error(`warning: ${e}`);
       }
       throw e;
@@ -267,27 +227,13 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType> {
-    const liquidatorAddr = this.liquidatorForCA(account);
-    if (!liquidatorAddr) {
+    const liquidator = this.liquidatorForCA(account);
+    if (!liquidator) {
       throw new Error(
         `no partial liquidator contract found for account ${account.creditAccount} in ${account.creditManager}`,
       );
     }
-    return this.client.pub.simulateContract({
-      account: this.client.account,
-      address: liquidatorAddr,
-      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
-      functionName: "partialLiquidateAndConvert",
-      args: [
-        account.creditManager,
-        account.creditAccount,
-        preview.assetOut,
-        preview.amountOut,
-        preview.flashLoanAmount,
-        preview.priceUpdates,
-        preview.calls,
-      ],
-    });
+    return liquidator.partialLiquidateAndConvert(account, preview);
   }
 
   /**
@@ -316,8 +262,9 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
    * @param ca
    * @returns
    */
-  private liquidatorForCA(ca: CreditAccountData): Address | undefined {
-    const contract = this.#liquidatorForCM[ca.creditManager];
-    return contract?.address;
+  private liquidatorForCA(
+    ca: CreditAccountData,
+  ): IPartialLiquidatorContract | undefined {
+    return this.#liquidatorForCM[ca.creditManager];
   }
 }
