@@ -269,7 +269,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
     try {
       const { result: preview } = await this.client.pub.simulateContract({
-        account: "0x0000000000000000000000000000000000000000"fix: preview partial liquidation should be called from address 0x0,
+        account: "0x0000000000000000000000000000000000000000",
         address: liquidatorAddr,
         abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
         functionName: "previewPartialLiquidation",
