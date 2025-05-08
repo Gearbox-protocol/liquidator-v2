@@ -1,7 +1,6 @@
-import { iPartialLiquidatorAbi } from "@gearbox-protocol/next-contracts/abi";
 import type { Curator } from "@gearbox-protocol/sdk";
 import { hexEq } from "@gearbox-protocol/sdk";
-import type { Address } from "viem";
+import { type Address, parseAbi } from "viem";
 
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 
@@ -15,7 +14,8 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
    */
   public override async configure(): Promise<void> {
     const currentRouter = await this.client.pub.readContract({
-      abi: iPartialLiquidatorAbi,
+      // abi: iPartialLiquidatorAbi,
+      abi: parseAbi(["function router() view returns (address)"]),
       address: this.address,
       functionName: "router",
     });

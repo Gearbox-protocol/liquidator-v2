@@ -1,7 +1,7 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { Curator } from "@gearbox-protocol/sdk";
 import { hexEq } from "@gearbox-protocol/sdk";
-import type { Address } from "viem";
+import { type Address, parseAbi } from "viem";
 
 import type { PartialV300ConfigSchema } from "../../../../config/index.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
@@ -35,12 +35,16 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     const [currentRouter, currentBot] = await this.client.pub.multicall({
       contracts: [
         {
-          abi: iPartialLiquidatorAbi,
+          // abi: iPartialLiquidatorAbi,
+          abi: parseAbi(["function router() view returns (address)"]),
           address: this.address,
           functionName: "router",
         },
         {
-          abi: iPartialLiquidatorAbi,
+          // abi: iPartialLiquidatorAbi,
+          abi: parseAbi([
+            "function partialLiquidationBot() view returns (address)",
+          ]),
           address: this.address,
           functionName: "partialLiquidationBot",
         },
