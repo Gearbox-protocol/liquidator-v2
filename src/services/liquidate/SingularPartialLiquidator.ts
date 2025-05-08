@@ -1,6 +1,6 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { formatBN, TypedObjectUtils } from "@gearbox-protocol/sdk";
+import { ADDRESS_0X0, formatBN, TypedObjectUtils } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -204,7 +204,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
 
     try {
       const { result: preview } = await this.client.pub.simulateContract({
-        account: this.client.account,
+        account: ADDRESS_0X0,
         address: liquidatorAddr,
         abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
         functionName: "previewPartialLiquidation",
