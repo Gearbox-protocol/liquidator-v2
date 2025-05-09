@@ -42,7 +42,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
 
   public async getOptimalLiquidation(
     creditAccount: Address,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<OptimalPartialLiquidation> {
     const {
       result: [
@@ -72,7 +72,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<RawPartialLiquidationPreview> {
     const { result: preview } = await this.client.pub.simulateContract({
       account: ADDRESS_0X0,

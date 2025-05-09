@@ -94,7 +94,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
 
   public async getOptimalLiquidation(
     creditAccount: Address,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "token" | "reserve">[],
   ): Promise<OptimalPartialLiquidation> {
     const {
       result: [
@@ -124,7 +124,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "token" | "reserve">[],
   ): Promise<RawPartialLiquidationPreview> {
     const connectors = this.sdk
       .routerFor(cm)
