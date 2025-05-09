@@ -192,5 +192,5 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   abstract simulate(
     account: CreditAccountData,
     preview: T,
-  ): Promise<SimulateContractReturnType>;
+  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
 }

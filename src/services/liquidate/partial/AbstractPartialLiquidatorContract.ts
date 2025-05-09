@@ -265,7 +265,7 @@ export abstract class AbstractPartialLiquidatorContract
   public abstract partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ): Promise<SimulateContractReturnType>;
+  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
 
   public get envVariables(): Record<string, string> {
     return {};

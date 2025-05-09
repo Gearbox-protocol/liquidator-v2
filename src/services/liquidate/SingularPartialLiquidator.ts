@@ -211,7 +211,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   public async simulate(
     account: CreditAccountData,
     preview: PartialLiquidationPreviewWithFallback,
-  ): Promise<SimulateContractReturnType> {
+  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
     const logger = this.caLogger(account);
     if (preview.fallback) {
       if (!this.#fallback) {
@@ -226,7 +226,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
   async #simulate(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ): Promise<SimulateContractReturnType> {
+  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
     const liquidator = this.liquidatorForCA(account);
     if (!liquidator) {
       throw new Error(

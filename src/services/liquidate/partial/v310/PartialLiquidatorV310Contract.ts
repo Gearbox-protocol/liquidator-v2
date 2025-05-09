@@ -97,7 +97,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   public async partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ): Promise<SimulateContractReturnType> {
+  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.address,

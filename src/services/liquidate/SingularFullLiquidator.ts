@@ -47,18 +47,17 @@ export default class SingularFullLiquidator extends SingularLiquidator<FullLiqui
   public async simulate(
     account: CreditAccountData,
     preview: FullLiquidationPreview,
-  ): Promise<SimulateContractReturnType> {
+  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
     const { args } = decodeFunctionData({
       abi: iCreditFacadeV3Abi,
       data: preview.rawTx.callData,
     });
-    // TODO: create view action for simulateRawTx with abis for exceptions
     return this.client.pub.simulateContract({
       account: this.client.account,
       abi: [...iCreditFacadeV3Abi, ...exceptionsAbis],
       address: account.creditFacade,
       functionName: "liquidateCreditAccount",
       args: args as any,
-    }) as any;
+    });
   }
 }

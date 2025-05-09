@@ -67,7 +67,7 @@ export interface IPartialLiquidatorContract {
   partialLiquidateAndConvert: (
     account: CreditAccountData,
     preview: PartialLiquidationPreview,
-  ) => Promise<SimulateContractReturnType>;
+  ) => Promise<SimulateContractReturnType<unknown[], any, any>>;
 }
 
 export interface IPartialLiqudatorContractFactory {
