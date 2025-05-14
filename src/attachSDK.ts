@@ -76,8 +76,11 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
         logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       } catch {}
     });
+    const mcs = new Set(
+      sdk.marketRegister.marketConfigurators.map(mc => mc.address),
+    );
     // load second time with hook
-    await sdk.marketRegister.loadMarkets(config.marketConfigurators);
+    await sdk.marketRegister.loadMarkets(Array.from(mcs));
   }
   const service = new CreditAccountsService(sdk, {
     batchSize: config.compressorBatchSize,

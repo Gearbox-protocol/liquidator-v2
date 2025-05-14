@@ -48,10 +48,11 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * Market configurators addresses to attach SDK
    */
-  marketConfigurators: z
-    .string()
-    .transform(s => s.split(","))
-    .pipe(z.array(Address)),
+  marketConfigurators: stringArrayLike
+    .optional()
+    .pipe(z.array(Address))
+    .transform(a => (a.length ? a : undefined))
+    .optional(),
   /**
    * App name used in various messages to distinguish instances
    */
@@ -79,11 +80,14 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   jsonRpcProviders: stringArrayLike
     .optional()
     .pipe(z.array(z.string().url()))
+    .transform(a => (a.length ? a : undefined))
     .optional(),
   /**
    * Alchemy API keys to use
    */
-  alchemyKeys: stringArrayLike.optional(),
+  alchemyKeys: stringArrayLike
+    .transform(a => (a.length ? a : undefined))
+    .optional(),
   /**
    * Private key used to send liquidation transactions
    */
@@ -120,10 +124,11 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
    * Redstone gateways override
    * Set local caching proxies to avoid rate limiting in test environment
    */
-  redstoneGateways: z
-    .string()
+  redstoneGateways: stringArrayLike
     .optional()
-    .transform(s => (s ? s.split(",") : undefined)),
+    .pipe(z.array(z.string().url()))
+    .transform(a => (a.length ? a : undefined))
+    .optional(),
   /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
