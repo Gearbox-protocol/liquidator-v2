@@ -107,7 +107,7 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
    * Filter out all accounts with HF >= threshold during scan stage
    * Min HF is set to crash older versions, which had 10000 as 100%
    */
-  hfThreshold: z.coerce.bigint().min(1100n).max(MAX_UINT256).default(WAD),
+  hfThreshold: z.coerce.bigint().min(1_10_00n).max(MAX_UINT256).default(WAD),
   /**
    * Enable optimistic liquidations
    */
