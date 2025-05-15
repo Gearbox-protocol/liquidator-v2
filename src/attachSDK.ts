@@ -64,8 +64,10 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     marketConfigurators: config.marketConfigurators,
     chainId: config.chainId,
     networkType: config.network,
-    redstoneHistoricTimestamp: optimisticTimestamp,
-    redstoneGateways: config.redstoneGateways,
+    redstone: {
+      historicTimestamp: optimisticTimestamp,
+      gateways: config.redstoneGateways,
+    },
     logger,
   });
   if (config.optimistic) {
