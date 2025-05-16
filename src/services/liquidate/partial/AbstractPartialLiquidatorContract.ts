@@ -190,7 +190,7 @@ export abstract class AbstractPartialLiquidatorContract
           },
         ],
       });
-    const merkleRootURL = `https://dm.gearbox.finance/${this.config.network.toLowerCase()}_${merkelRoot}.json`;
+    const merkleRootURL = `https://dm.gearbox.fi/${this.config.network.toLowerCase()}_${merkelRoot}.json`;
     this.logger.debug(
       `merkle root: ${merkleRootURL}, degen distributor NFT: ${distributorNFT}, claimed: ${claimed}`,
     );
