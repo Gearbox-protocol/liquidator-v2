@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const stringArrayLike = z
   .union([z.string(), z.array(z.string())])
-  .transform(v => (typeof v === "string" ? [v] : v));
+  .transform(v => (typeof v === "string" ? v.split(",") : v));
 
 const booleanLike = z
   .any()
