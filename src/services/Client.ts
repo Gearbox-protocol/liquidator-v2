@@ -100,6 +100,7 @@ export default class Client {
   #anvilInfo: AnvilNodeInfo | null = null;
 
   #publicClient?: PublicClient;
+  #logsClient?: PublicClient;
 
   #walletClient?: WalletClient<Transport, Chain, PrivateKeyAccount, undefined>;
 
@@ -113,15 +114,7 @@ export default class Client {
   >;
 
   public async launch(): Promise<void> {
-    const { ethProviderRpcs, chainId, network, optimistic, privateKey } =
-      this.config;
-    const rpcs = ethProviderRpcs.map(url =>
-      http(url, {
-        timeout: optimistic ? 240_000 : 10_000,
-        retryCount: optimistic ? 3 : undefined,
-      }),
-    );
-    const transport = rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
+    const { chainId, network, optimistic, privateKey } = this.config;
     const chain = defineChain({
       ...CHAINS[network],
       id: chainId,
@@ -130,13 +123,19 @@ export default class Client {
     this.#publicClient = createPublicClient({
       cacheTime: 0,
       chain,
-      transport,
+      transport: this.#createTransport(),
+      pollingInterval: optimistic ? 25 : undefined,
+    });
+    this.#logsClient = createPublicClient({
+      cacheTime: 0,
+      chain,
+      transport: this.#createTransport(true),
       pollingInterval: optimistic ? 25 : undefined,
     });
     this.#walletClient = createWalletClient({
       account: privateKeyToAccount(privateKey),
       chain,
-      transport,
+      transport: this.#createTransport(),
       pollingInterval: optimistic ? 25 : undefined,
     });
     try {
@@ -148,7 +147,7 @@ export default class Client {
         AnvilRPCSchema
       >({
         mode: "anvil",
-        transport,
+        transport: this.#createTransport(),
         chain,
         pollingInterval: 25,
       });
@@ -310,6 +309,13 @@ export default class Client {
     return this.#publicClient;
   }
 
+  public get logs(): PublicClient {
+    if (!this.#logsClient) {
+      throw new Error("logs client not initialized");
+    }
+    return this.#logsClient;
+  }
+
   public get wallet(): WalletClient<
     Transport,
     Chain,
@@ -353,5 +359,17 @@ export default class Client {
       throw new Error("cannot get anvil fork block");
     }
     return BigInt(n);
+  }
+
+  #createTransport(batch = false): Transport {
+    const { ethProviderRpcs, optimistic } = this.config;
+    const rpcs = ethProviderRpcs.map(url =>
+      http(url, {
+        timeout: optimistic ? 240_000 : 10_000,
+        retryCount: optimistic ? 3 : undefined,
+        batch,
+      }),
+    );
+    return rpcs.length > 1 && !optimistic ? fallback(rpcs) : rpcs[0];
   }
 }

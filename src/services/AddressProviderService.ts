@@ -7,7 +7,7 @@ import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { getLogsSafe } from "../utils/getLogsSafe.js";
+import { getLogsPaginated } from "../utils/getLogsPaginated.js";
 import type Client from "./Client.js";
 
 const AP_SERVICES = [
@@ -52,13 +52,14 @@ export class AddressProviderService {
 
     const toBlock = await this.client.pub.getBlockNumber();
 
-    const logs = await getLogsSafe(this.client.pub, {
+    const logs = await getLogsPaginated(this.client.logs, {
       address,
       event: getAbiItem({ abi: iAddressProviderV3Abi, name: "SetAddress" }),
       args: { key: AP_SERVICES.map(s => stringToHex(s, { size: 32 })) },
       fromBlock: AP_BLOCK_BY_NETWORK[this.config.network],
       toBlock,
       strict: true,
+      pageSize: this.config.logsPageSize,
     });
 
     for (const { args } of logs) {

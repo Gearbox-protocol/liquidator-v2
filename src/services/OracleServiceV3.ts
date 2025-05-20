@@ -14,7 +14,7 @@ import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
-import { getLogsSafe } from "../utils/getLogsSafe.js";
+import { getLogsPaginated } from "../utils/getLogsPaginated.js";
 import type { AddressProviderService } from "./AddressProviderService.js";
 import type Client from "./Client.js";
 
@@ -54,7 +54,7 @@ interface OracleEntry {
 
 const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
   Mainnet: 18797638n,
-  Optimism: 116864678n, // not deployed yet, arbitrary block here
+  Optimism: 118413958n,
   Arbitrum: 184650373n,
   Base: 12299805n, // not deployed yet, arbitrary block here
   Sonic: 8897028n, // not deployed yet, arbitrary block here
@@ -192,12 +192,13 @@ export default class OracleServiceV3 {
       return;
     }
     this.log.debug(`updating price feeds in [${this.#lastBlock}, ${toBlock}]`);
-    let logs = await getLogsSafe(this.client.pub, {
+    let logs = await getLogsPaginated(this.client.logs, {
       address: this.oracle,
       events: iPriceOracleV3EventsAbi,
       fromBlock: BigInt(this.#lastBlock),
       toBlock: BigInt(toBlock),
       strict: true,
+      pageSize: this.config.logsPageSize,
     });
     // sort logs by blockNumber ASC, logIndex ASC
     // on sonic sometimes events are not in order

@@ -5,10 +5,20 @@ import { createClassFromType, detectNetwork } from "../utils/index.js";
 import { envConfig } from "./env.js";
 import { ConfigSchema } from "./schema.js";
 
+// These limits work for DRPC and Alchemy
+const PAGE_SIZE: Record<NetworkType, bigint> = {
+  Mainnet: 100_000n,
+  Optimism: 500_000n,
+  Arbitrum: 500_000n,
+  Base: 500_000n,
+  Sonic: 500_000n,
+};
+
 interface DynamicConfig {
   readonly network: NetworkType;
   readonly chainId: number;
   readonly startBlock: bigint;
+  readonly logsPageSize: bigint;
 }
 
 const ConfigClass = createClassFromType<ConfigSchema & DynamicConfig>();
@@ -32,6 +42,7 @@ export class Config extends ConfigClass {
       startBlock,
       chainId: Number(chainId),
       network,
+      logsPageSize: PAGE_SIZE[network],
     });
   }
 
