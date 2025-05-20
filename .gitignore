@@ -5,6 +5,7 @@
 !.yarn/versions
 .DS_Store
 .env
+.env.*
 .history/
 .idea/
 .pnp.*
@@ -17,7 +18,6 @@ keys/*
 node_modules/
 typechain/
 
-/.env.local
 /logs/*.json
 *.log
 *.tsbuildinfo
