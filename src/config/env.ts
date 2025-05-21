@@ -15,6 +15,8 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   hfThreshold: "HF_TRESHOLD",
   jsonRpcProviders: "JSON_RPC_PROVIDERS",
   alchemyKeys: "ALCHEMY_KEYS",
+  drpcKeys: "DRPC_KEYS",
+  logsPageSize: "LOGS_PAGE_SIZE",
   restakingWorkaround: "RESTAKING_WORKAROUND",
   redstoneGateways: "REDSTONE_GATEWAYS",
   minBalance: "MIN_BALANCE",

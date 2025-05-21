@@ -51,7 +51,10 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   }
 
   const transport = createTransport({
-    alchemyKeys: config.alchemyKeys ?? [],
+    rpcProviders: [
+      { provider: "alchemy", keys: config.alchemyKeys ?? [] },
+      { provider: "drpc", keys: config.drpcKeys ?? [] },
+    ],
     rpcUrls: config.jsonRpcProviders ?? [],
     protocol: "http",
     network: config.network,

@@ -24,7 +24,10 @@ export class Config extends ConfigClass {
 
     const client = createPublicClient({
       transport: createTransport({
-        alchemyKeys: schema.alchemyKeys ?? [],
+        rpcProviders: [
+          { provider: "alchemy", keys: schema.alchemyKeys ?? [] },
+          { provider: "drpc", keys: schema.drpcKeys ?? [] },
+        ],
         rpcUrls: schema.jsonRpcProviders ?? [],
         protocol: "http",
         network: schema.network,

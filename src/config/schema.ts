@@ -89,6 +89,16 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
     .transform(a => (a.length ? a : undefined))
     .optional(),
   /**
+   * DRPC API keys to use
+   */
+  drpcKeys: stringArrayLike
+    .transform(a => (a.length ? a : undefined))
+    .optional(),
+  /**
+   * Max block range size for eth_getLogs
+   */
+  logsPageSize: bigintLike.optional(),
+  /**
    * Private key used to send liquidation transactions
    */
   privateKey: z
