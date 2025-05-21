@@ -47,6 +47,10 @@ export const ConfigSchema = z.object({
     .optional()
     .pipe(z.array(z.string().url()).min(1)),
   /**
+   * Page size in blocks for eth_getLogs, default to some network-specific value
+   */
+  logsPageSize: bigintLike.optional(),
+  /**
    * Private key used to send liquidation transactions
    */
   privateKey: z

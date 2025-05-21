@@ -42,7 +42,7 @@ export class Config extends ConfigClass {
       startBlock,
       chainId: Number(chainId),
       network,
-      logsPageSize: PAGE_SIZE[network],
+      logsPageSize: schema.logsPageSize || PAGE_SIZE[network],
     });
   }
 

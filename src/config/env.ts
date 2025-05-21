@@ -11,6 +11,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
   ethProviderRpcs: "JSON_RPC_PROVIDERS",
+  logsPageSize: "LOGS_PAGE_SIZE",
   hfThreshold: "HF_TRESHOLD",
   restakingWorkaround: "RESTAKING_WORKAROUND",
   minBalance: "MIN_BALANCE",
