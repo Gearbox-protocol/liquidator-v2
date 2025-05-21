@@ -59,16 +59,20 @@ export default class Client {
 
   public async launch(): Promise<void> {
     const {
-      jsonRpcProviders,
-      alchemyKeys,
+      jsonRpcProviders = [],
+      alchemyKeys = [],
+      drpcKeys = [],
       chainId,
       network,
       optimistic,
       privateKey,
     } = this.config;
     const transport = createTransport({
-      alchemyKeys: alchemyKeys ?? [],
-      rpcUrls: jsonRpcProviders ?? [],
+      rpcProviders: [
+        { provider: "alchemy", keys: alchemyKeys },
+        { provider: "drpc", keys: drpcKeys },
+      ],
+      rpcUrls: jsonRpcProviders,
       protocol: "http",
       network,
       timeout: optimistic ? 240_000 : 10_000,
