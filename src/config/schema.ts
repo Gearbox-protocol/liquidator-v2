@@ -123,6 +123,10 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
     .max(MAX_UINT256)
     .default(WAD - 1n), // 100% accounts are healthy, and credit account compressors filters by HF <= threshold
   /**
+   * Default numSplits for router v3.1 contract
+   */
+  numSplits: bigintLike.default(4n),
+  /**
    * Enable optimistic liquidations
    */
   optimistic: booleanLike.pipe(z.boolean().optional()),

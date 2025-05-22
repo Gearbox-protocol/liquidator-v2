@@ -13,6 +13,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
   hfThreshold: "HF_TRESHOLD",
+  numSplits: "NUM_SPLITS",
   jsonRpcProviders: "JSON_RPC_PROVIDERS",
   alchemyKeys: "ALCHEMY_KEYS",
   drpcKeys: "DRPC_KEYS",
