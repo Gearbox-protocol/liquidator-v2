@@ -81,8 +81,10 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
   });
   // trying to set default numSplits for router v3.1 contract
   const rV310 = sdk.addressProvider.getLatest(AP_ROUTER, VERSION_RANGE_310);
+  logger.warn(`rV310: ${rV310}`);
   if (rV310) {
     const router = sdk.contracts.get(rV310[0]);
+    logger.warn(`router: ${router} : ${router instanceof RouterV310Contract}`);
     if (router instanceof RouterV310Contract) {
       router.setDefaultNumSplits(config.numSplits);
       logger.info(
