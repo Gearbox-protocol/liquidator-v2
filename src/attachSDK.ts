@@ -1,8 +1,7 @@
+import type { RouterV310Contract } from "@gearbox-protocol/sdk";
 import {
-  AP_ROUTER,
   CreditAccountsService,
   GearboxSDK,
-  RouterV310Contract,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import { createTransport } from "@gearbox-protocol/sdk/dev";
@@ -80,18 +79,14 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     logger,
   });
   // trying to set default numSplits for router v3.1 contract
-  const rV310 = sdk.addressProvider.getLatest(AP_ROUTER, VERSION_RANGE_310);
-  logger.warn(`rV310: ${rV310}`);
-  if (rV310) {
-    const router = sdk.contracts.get(rV310[0]);
-    logger.warn(`router: ${router} : ${router instanceof RouterV310Contract}`);
-    if (router instanceof RouterV310Contract) {
-      router.setDefaultNumSplits(config.numSplits);
-      logger.info(
-        `set default numSplits to ${config.numSplits} on router ${rV310[0]}`,
-      );
-    }
-  }
+  try {
+    const router = sdk.routerFor(VERSION_RANGE_310) as RouterV310Contract;
+    router.setDefaultNumSplits(config.numSplits);
+    logger.info(
+      `set default numSplits to ${config.numSplits} on router ${router.address}`,
+    );
+  } catch {}
+
   if (config.optimistic) {
     // in optimistic mode, warp time if redstone timestamp does not match it
     sdk.priceFeeds.addHook("updatesGenerated", async ({ timestamp }) => {
