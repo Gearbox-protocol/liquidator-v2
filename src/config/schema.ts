@@ -125,7 +125,7 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * Default numSplits for router v3.1 contract
    */
-  numSplits: bigintLike.default(4n),
+  numSplits: bigintLike.default(10n),
   /**
    * Enable optimistic liquidations
    */
