@@ -30,6 +30,13 @@ export type GetLogsPaginatedParameters<
   pageSize: bigint;
 };
 
+/**
+ * Get logs in pages, to avoid rate limiting
+ * Must be used with client that has batching enabled
+ * @param client
+ * @param params
+ * @returns
+ */
 export async function getLogsPaginated<
   chain extends Chain | undefined,
   const abiEvent extends AbiEvent | undefined = undefined,
@@ -79,7 +86,14 @@ export async function getLogsPaginated<
       ),
     ),
   );
-  const events = responses.flat();
 
-  return events;
+  return responses.flat().sort((a, b) => {
+    if (a.blockNumber === b.blockNumber) {
+      return a.logIndex - b.logIndex;
+    } else if (a.blockNumber < b.blockNumber) {
+      return -1;
+    } else {
+      return 1;
+    }
+  });
 }
