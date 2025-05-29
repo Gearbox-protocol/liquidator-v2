@@ -35,7 +35,10 @@ class App {
     const msg = [
       `Launching liquidator v${version}`,
       this.config.swapToEth ? `with swapping via ${this.config.swapToEth}` : "",
-      this.config.optimistic ? "in OPTIMISTIC mode" : "",
+      "in",
+      this.config.optimistic ? "optimistic" : "",
+      this.config.liquidationMode,
+      "mode",
     ]
       .filter(Boolean)
       .join(" ");
