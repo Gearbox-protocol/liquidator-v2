@@ -13,7 +13,28 @@ const booleanLike = z
 
 const bigintLike = z.any().transform(v => BigInt(v));
 
-export const ConfigSchema = z.object({
+export const PartialV300ConfigSchema = z.object({
+  /**
+   * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
+   */
+  aavePartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for GHO credit managers
+   */
+  ghoPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for DOLA credit managers
+   */
+  dolaPartialLiquidatorAddress: Address.optional(),
+  /**
+   * Address of deployed partial liquidator contract for Sonic credit managers
+   */
+  siloPartialLiquidatorAddress: Address.optional(),
+});
+
+export type PartialV300ConfigSchema = z.infer<typeof PartialV300ConfigSchema>;
+
+export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * By default uses address provider from @gearbox-protocol/sdk-gov
    * Use this option to override address provider
@@ -94,30 +115,6 @@ export const ConfigSchema = z.object({
    * Usage: deploy them once from local machine then pass the address to production service
    */
   deployPartialLiquidatorContracts: booleanLike.pipe(z.boolean().optional()),
-  /**
-   * Address of deployed partial liquidator contract for all credit managers except for GHO-based
-   */
-  aavePartialLiquidatorAddress: Address.default(
-    "0x0d394114fe3a40a39690b7951bf536de7e8fbf4b",
-  ),
-  /**
-   * Address of deployed silo liquidator contract on Sonic
-   */
-  siloPartialLiquidatorAddress: Address.default(
-    "0x8437432977ace20b4fc27f3317c3a4567909b44f",
-  ),
-  /**
-   * Address of deployed partiali liquidator contract for GHO credit managers
-   */
-  ghoPartialLiquidatorAddress: Address.default(
-    "0x4c7c2b2115c392d98278ca7f2def992a08bb06f0",
-  ),
-  /**
-   * Address of deployed partiali liquidator contract for DOLA credit managers
-   */
-  dolaPartialLiquidatorAddress: Address.default(
-    "0xc1f60b2f3d41bb15738dd52906cdc1de96825ef3",
-  ),
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */
