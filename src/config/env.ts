@@ -23,6 +23,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   minBalance: "MIN_BALANCE",
   oneInchApiKey: "ONE_INCH_API_KEY",
   optimistic: "OPTIMISTIC",
+  liquidationMode: "LIQUIDATION_MODE",
   dryRun: "DRY_RUN",
   network: "NETWORK",
   optimisticTimestamp: "OPTIMISTIC_TIMESTAMP",

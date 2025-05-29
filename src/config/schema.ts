@@ -127,6 +127,10 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
    */
   numSplits: bigintLike.default(10n),
   /**
+   * Liquidator mode
+   */
+  liquidationMode: z.enum(["full", "partial", "batch"]).default("full"),
+  /**
    * Enable optimistic liquidations
    */
   optimistic: booleanLike.pipe(z.boolean().optional()),
