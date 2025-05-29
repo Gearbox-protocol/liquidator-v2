@@ -86,6 +86,10 @@ export const ConfigSchema = z.object({
     .optional()
     .transform(v => (v ? v.split(",") : undefined)),
   /**
+   * Liquidator mode
+   */
+  liquidationMode: z.enum(["full", "partial", "batch"]).default("full"),
+  /**
    * The serive can deploy partial liquidator contracts.
    * Usage: deploy them once from local machine then pass the address to production service
    */
@@ -93,19 +97,27 @@ export const ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for all credit managers except for GHO-based
    */
-  aavePartialLiquidatorAddress: Address.optional(),
+  aavePartialLiquidatorAddress: Address.default(
+    "0x0d394114fe3a40a39690b7951bf536de7e8fbf4b",
+  ),
   /**
    * Address of deployed silo liquidator contract on Sonic
    */
-  siloPartialLiquidatorAddress: Address.optional(),
+  siloPartialLiquidatorAddress: Address.default(
+    "0x8437432977ace20b4fc27f3317c3a4567909b44f",
+  ),
   /**
    * Address of deployed partiali liquidator contract for GHO credit managers
    */
-  ghoPartialLiquidatorAddress: Address.optional(),
+  ghoPartialLiquidatorAddress: Address.default(
+    "0x4c7c2b2115c392d98278ca7f2def992a08bb06f0",
+  ),
   /**
    * Address of deployed partiali liquidator contract for DOLA credit managers
    */
-  dolaPartialLiquidatorAddress: Address.optional(),
+  dolaPartialLiquidatorAddress: Address.default(
+    "0xc1f60b2f3d41bb15738dd52906cdc1de96825ef3",
+  ),
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */
@@ -118,7 +130,9 @@ export const ConfigSchema = z.object({
   /**
    * Address of deployed batch liquidator contract
    */
-  batchLiquidatorAddress: Address.optional(),
+  batchLiquidatorAddress: Address.default(
+    "0x215c0962089fd52ac8e6a30261f86fb55dd81139",
+  ),
   /**
    * Number of accounts to liquidate at once using batch liquidator
    */

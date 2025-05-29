@@ -8,6 +8,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   debugManagers: "DEBUG_MANAGERS",
   batchSize: "BATCH_SIZE",
   castBin: "CAST_BIN",
+  liquidationMode: "LIQUIDATION_MODE",
   deployPartialLiquidatorContracts: "DEPLOY_PARTIAL_LIQUIDATOR",
   deployBatchLiquidatorContracts: "DEPLOY_BATCH_LIQUIDATOR",
   ethProviderRpcs: "JSON_RPC_PROVIDERS",

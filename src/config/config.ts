@@ -47,18 +47,10 @@ export class Config extends ConfigClass {
   }
 
   public get isPartial(): boolean {
-    return !!(
-      this.aavePartialLiquidatorAddress ||
-      this.ghoPartialLiquidatorAddress ||
-      this.dolaPartialLiquidatorAddress ||
-      this.siloPartialLiquidatorAddress ||
-      this.deployPartialLiquidatorContracts
-    );
+    return this.liquidationMode === "partial";
   }
 
   public get isBatch(): boolean {
-    return !!(
-      this.deployBatchLiquidatorContracts || this.batchLiquidatorAddress
-    );
+    return this.liquidationMode === "batch";
   }
 }
