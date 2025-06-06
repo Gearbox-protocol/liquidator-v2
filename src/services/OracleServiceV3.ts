@@ -99,12 +99,8 @@ export default class OracleServiceV3 {
     this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
     this.#oracle = this.addressProvider.findService("PRICE_ORACLE", 300);
     this.log.debug(`starting oracle v3 at ${block}`);
-    const start = Date.now();
     await this.#updateFeeds(block);
-    const duration = Math.ceil((Date.now() - start) / 1000);
-    this.log.info(
-      `started with ${Object.keys(this.#feeds).length} tokens in ${duration}s`,
-    );
+    this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
     TxParser.addTokens(this.config.network);

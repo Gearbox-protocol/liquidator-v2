@@ -6,13 +6,13 @@ import { envConfig } from "./env.js";
 import type { PartialV300ConfigSchema } from "./schema.js";
 import { ConfigSchema } from "./schema.js";
 
-// These limits work for DRPC and Alchemy, and Chainstack
+// These limits work for DRPC and Alchemy
 const PAGE_SIZE: Record<NetworkType, bigint> = {
-  Mainnet: 10_000n,
-  Optimism: 10_000n,
-  Arbitrum: 10_000n,
-  Base: 10_000n,
-  Sonic: 10_000n,
+  Mainnet: 100_000n,
+  Optimism: 500_000n,
+  Arbitrum: 500_000n,
+  Base: 500_000n,
+  Sonic: 500_000n,
 };
 
 interface DynamicConfig {
