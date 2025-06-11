@@ -51,7 +51,58 @@ export class AddressProviderService {
       : "";
 
     const toBlock = await this.client.pub.getBlockNumber();
+    await this.#loadWithMulticall(address, toBlock);
 
+    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
+    TxParser.addAddressProvider(address);
+
+    this.log.info(
+      `Launched on ${this.config.network} (${this.config.chainId}) using address provider ${address}${overrideS}`,
+    );
+  }
+
+  // instead of loading events, which many rpc providers limit heavily, load versions 0 and 300-309 via multicall
+  async #loadWithMulticall(address: Address, toBlock: bigint): Promise<void> {
+    const entries: Array<[AddressProviderKey, bigint]> = [];
+    for (const s of AP_SERVICES) {
+      entries.push([s, 0n]);
+      for (let i = 300n; i <= 309n; i++) {
+        entries.push([s, i]);
+      }
+    }
+
+    const res = await this.client.pub.multicall({
+      contracts: entries.map(
+        ([s, v]) =>
+          ({
+            abi: iAddressProviderV3Abi,
+            address,
+            functionName: "getAddressOrRevert",
+            args: [stringToHex(s, { size: 32 }), v],
+          }) as const,
+      ),
+      allowFailure: true,
+      blockNumber: toBlock,
+    });
+
+    let cnt = 0;
+    for (let i = 0; i < res.length; i++) {
+      const [service, v] = entries[i];
+      const r = res[i];
+      if (r.status === "success") {
+        const versions = this.#addresses.get(service) ?? new Map();
+        versions.set(Number(v!), r.result);
+        this.#addresses.set(service, versions);
+        cnt++;
+      }
+    }
+
+    this.log.debug(`found ${cnt} entries`);
+  }
+
+  // old way, do not deprecate yet
+  // eslint-disable-next-line no-unused-private-class-members
+  async #launchFromLogs(address: Address, toBlock: bigint): Promise<void> {
     const logs = await getLogsPaginated(this.client.logs, {
       address,
       event: getAbiItem({ abi: iAddressProviderV3Abi, name: "SetAddress" }),
@@ -69,13 +120,7 @@ export class AddressProviderService {
       versions.set(Number(version!), value!);
       this.#addresses.set(service, versions);
     }
-
-    // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
-    TxParser.addAddressProvider(address);
-
-    this.log.info(
-      `Launched on ${this.config.network} (${this.config.chainId}) using address provider ${address}${overrideS} with ${logs.length} entries`,
-    );
+    this.log.debug(`found ${logs.length} logs`);
   }
 
   public findService(
