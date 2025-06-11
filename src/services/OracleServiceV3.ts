@@ -13,10 +13,14 @@ import type { CreditAccountData } from "../data/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
+import { json_parse } from "../utils/bigint-serializer.js";
 import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
 import { getLogsPaginated } from "../utils/getLogsPaginated.js";
 import type { AddressProviderService } from "./AddressProviderService.js";
 import type Client from "./Client.js";
+import oracleLogsArbitrum from "./data/oracle-logs-arbitrum.json" assert { type: "json" };
+import oracleLogsMainnet from "./data/oracle-logs-mainnet.json" assert { type: "json" };
+import oracleLogsOptimism from "./data/oracle-logs-optimism.json" assert { type: "json" };
 
 interface DataFeedMulticall {
   abi: typeof iRedstonePriceFeedAbi;
@@ -60,7 +64,7 @@ const ORACLE_START_BLOCK: Record<NetworkType, bigint> = {
   Sonic: 8897028n, // not deployed yet, arbitrary block here
 };
 
-type OracleEvent =
+type PriceFeedEvent =
   | Log<
       bigint,
       number,
@@ -75,6 +79,31 @@ type OracleEvent =
       ExtractAbiEvent<typeof iPriceOracleV3EventsAbi, "SetReservePriceFeed">,
       true
     >;
+
+type OracleEvent =
+  | PriceFeedEvent
+  | Log<
+      bigint,
+      number,
+      boolean,
+      ExtractAbiEvent<
+        typeof iPriceOracleV3EventsAbi,
+        "SetReservePriceFeedStatus"
+      >,
+      true
+    >;
+
+interface EventsCache {
+  fromBlock: bigint;
+  toBlock: bigint;
+  logs: OracleEvent[];
+}
+
+const EVENTS_CACHE: Partial<Record<NetworkType, EventsCache>> = {
+  Mainnet: json_parse(JSON.stringify(oracleLogsMainnet)),
+  Arbitrum: json_parse(JSON.stringify(oracleLogsArbitrum)),
+  Optimism: json_parse(JSON.stringify(oracleLogsOptimism)),
+};
 
 @DI.Injectable(DI.Oracle)
 export default class OracleServiceV3 {
@@ -96,9 +125,9 @@ export default class OracleServiceV3 {
   #feeds: Record<Address, OracleEntry> = {};
 
   public async launch(block: bigint): Promise<void> {
-    this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
     this.#oracle = this.addressProvider.findService("PRICE_ORACLE", 300);
     this.log.debug(`starting oracle v3 at ${block}`);
+    this.#loadCachedEvents();
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
 
@@ -200,6 +229,7 @@ export default class OracleServiceV3 {
       strict: true,
       pageSize: this.config.logsPageSize,
     });
+
     // sort logs by blockNumber ASC, logIndex ASC
     // on sonic sometimes events are not in order
     logs = logs.sort((a, b) => {
@@ -211,23 +241,45 @@ export default class OracleServiceV3 {
 
     this.log.debug(`found ${logs.length} oracle events`);
     for (const l of logs) {
-      switch (l.eventName) {
-        case "SetPriceFeed":
-          await this.#setPriceFeed(l);
-          break;
-        case "SetReservePriceFeed":
-          await this.#setPriceFeed(l);
-          break;
-        case "SetReservePriceFeedStatus":
-          this.#setFeedStatus(l);
-          break;
-      }
+      this.#processEvent(l);
     }
     await this.#loadRedstoneIds();
     this.#lastBlock = toBlock;
   }
 
-  async #setPriceFeed(e: OracleEvent): Promise<void> {
+  // this is temporary workaround to speed up loading
+  // we would not need to maintain it for long time, because 3.1 is coming
+  #loadCachedEvents(): void {
+    const cache = EVENTS_CACHE[this.config.network];
+    if (!cache) {
+      this.#lastBlock = ORACLE_START_BLOCK[this.config.network];
+      return;
+    }
+    const { toBlock, logs } = cache;
+    this.#lastBlock = toBlock;
+    for (const l of logs) {
+      this.#processEvent(l);
+    }
+    this.log.debug(
+      `loaded ${logs.length} cached events, last block ${toBlock}`,
+    );
+  }
+
+  #processEvent(l: OracleEvent): void {
+    switch (l.eventName) {
+      case "SetPriceFeed":
+        this.#setPriceFeed(l);
+        break;
+      case "SetReservePriceFeed":
+        this.#setPriceFeed(l);
+        break;
+      case "SetReservePriceFeedStatus":
+        this.#setFeedStatus(l);
+        break;
+    }
+  }
+
+  #setPriceFeed(e: PriceFeedEvent): void {
     const kind = e.eventName === "SetPriceFeed" ? "main" : "reserve";
     const token = e.args.token?.toLowerCase() as Address;
     if (!token) {
