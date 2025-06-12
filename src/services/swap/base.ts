@@ -21,6 +21,7 @@ export const WETH: Record<NetworkType, Address> = {
   Avalanche: "0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab",
   BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
   WorldChain: NOT_DEPLOYED,
+  Etherlink: NOT_DEPLOYED,
 };
 
 export default abstract class BaseSwapper {

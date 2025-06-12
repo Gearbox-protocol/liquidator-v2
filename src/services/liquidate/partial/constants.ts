@@ -14,6 +14,7 @@ export const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
   Avalanche: NOT_DEPLOYED,
   BNB: "0x6807dc923806fE8Fd134338EABCA509979a7e0cB",
   WorldChain: NOT_DEPLOYED,
+  Etherlink: NOT_DEPLOYED,
 };
 
 export const FLASH_MINTERS: Partial<

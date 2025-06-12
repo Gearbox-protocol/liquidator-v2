@@ -69,10 +69,10 @@ export default class Client {
     } = this.config;
     const transport = createTransport({
       rpcProviders: [
-        { provider: "alchemy", keys: alchemyKeys },
-        { provider: "drpc", keys: drpcKeys },
+        { provider: "alchemy", keys: alchemyKeys?.map(k => k.value) ?? [] },
+        { provider: "drpc", keys: drpcKeys?.map(k => k.value) ?? [] },
       ],
-      rpcUrls: jsonRpcProviders,
+      rpcUrls: jsonRpcProviders?.map(k => k.value) ?? [],
       protocol: "http",
       network,
       timeout: optimistic ? 240_000 : 10_000,
@@ -90,7 +90,7 @@ export default class Client {
       pollingInterval: optimistic ? 25 : undefined,
     });
     this.#walletClient = createWalletClient({
-      account: privateKeyToAccount(privateKey),
+      account: privateKeyToAccount(privateKey.value),
       chain,
       transport,
       pollingInterval: optimistic ? 25 : undefined,

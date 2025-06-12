@@ -80,7 +80,7 @@ export class ErrorHandler {
       return undefined;
     }
 
-    return this.#runCast(["run", "--rpc-url", anvilURL, hash]);
+    return this.#runCast(["run", "--rpc-url", anvilURL.value, hash]);
   }
 
   /**
@@ -99,7 +99,7 @@ export class ErrorHandler {
       return undefined;
     }
     if (e instanceof TransactionRevertedError) {
-      cast = ["run", "--rpc-url", anvilURL, e.receipt.transactionHash];
+      cast = ["run", "--rpc-url", anvilURL.value, e.receipt.transactionHash];
     } else {
       const exErr = e.walk(
         err => err instanceof ContractFunctionExecutionError,
@@ -117,7 +117,7 @@ export class ErrorHandler {
           "call",
           "--trace",
           "--rpc-url",
-          anvilURL,
+          anvilURL.value,
           ...(exErr.sender ? ["--from", exErr.sender] : []),
           exErr.contractAddress,
           // data,

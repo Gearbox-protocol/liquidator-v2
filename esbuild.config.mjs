@@ -7,7 +7,7 @@ build({
   platform: "node",
   format: "esm",
   outExtension: { ".js": ".mjs" },
-  target: ["node20"],
+  target: ["node22"],
   sourcemap: "external",
   banner: {
     js: `

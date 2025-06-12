@@ -13,7 +13,7 @@ export default class RestWriter
     }
     await axios.post(this.config.outEndpoint, this.content, {
       headers: {
-        ...JSON.parse(this.config.outHeaders),
+        ...JSON.parse(this.config.outHeaders.value),
         "content-type": "application/json",
       },
     });

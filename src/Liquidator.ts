@@ -1,5 +1,4 @@
-import attachSDK from "./attachSDK.js";
-import { Config } from "./config/index.js";
+import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
 import type Client from "./services/Client.js";
@@ -7,9 +6,8 @@ import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
 import type { Scanner } from "./services/Scanner.js";
 import type { ISwapper } from "./services/swap/index.js";
-import version from "./version.js";
 
-class App {
+export default class Liquidator {
   @Logger("App")
   log!: ILogger;
 
@@ -32,18 +30,6 @@ class App {
   swapper!: ISwapper;
 
   public async launch(): Promise<void> {
-    const msg = [
-      `Launching liquidator v${version}`,
-      this.config.swapToEth ? `with swapping via ${this.config.swapToEth}` : "",
-      "in",
-      this.config.optimistic ? "optimistic" : "",
-      this.config.liquidationMode,
-      "mode",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    this.log.info(msg);
-
     await this.client.launch();
 
     this.healthChecker.launch();
@@ -57,13 +43,4 @@ class App {
       process.exit(0);
     }
   }
-}
-
-export async function launchApp(): Promise<void> {
-  const config = await Config.load();
-  DI.set(DI.Config, config);
-  const service = await attachSDK();
-  DI.set(DI.CreditAccountService, service);
-  const app = new App();
-  await app.launch();
 }
