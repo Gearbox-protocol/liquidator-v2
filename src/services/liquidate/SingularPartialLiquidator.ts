@@ -257,6 +257,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
     try {
       logger.debug(
         {
+          contract: liquidatorAddr,
           tokenOut: `${symb} (${tokenOut})`,
           optimalAmount:
             formatBN(optimalAmount, decimals) + ` ${symb} (${optimalAmount})`,
