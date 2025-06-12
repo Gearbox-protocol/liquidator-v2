@@ -250,24 +250,27 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       tokenSymbolByAddress[cm.underlyingToken.toLowerCase()],
       getDecimals(cm.underlyingToken),
     ];
-    logger.debug(
-      {
-        tokenOut: `${symb} (${tokenOut})`,
-        optimalAmount:
-          formatBN(optimalAmount, decimals) + ` ${symb} (${optimalAmount})`,
-        flashLoanAmount:
-          formatBN(flashLoanAmount, uDec) + ` ${uSymb} (${flashLoanAmount})`,
-        repaidAmount:
-          formatBN(repaidAmount, uDec) + ` ${uSymb} (${repaidAmount})`,
-        isOptimalRepayable,
-      },
-      "found optimal liquidation",
-    );
     const connectors = this.pathFinder.getAvailableConnectors(
       cm.collateralTokens,
     );
 
     try {
+      logger.debug(
+        {
+          tokenOut: `${symb} (${tokenOut})`,
+          optimalAmount:
+            formatBN(optimalAmount, decimals) + ` ${symb} (${optimalAmount})`,
+          flashLoanAmount:
+            formatBN(flashLoanAmount, uDec) + ` ${uSymb} (${flashLoanAmount})`,
+          repaidAmount:
+            formatBN(repaidAmount, uDec) + ` ${uSymb} (${repaidAmount})`,
+          priceUpdates: priceUpdates.map(p => p.token),
+          connectors,
+          slippage: this.config.slippage.toString(),
+          isOptimalRepayable,
+        },
+        "calling previewPartialLiquidation",
+      );
       const { result: preview } = await this.client.pub.simulateContract({
         account: "0x0000000000000000000000000000000000000000",
         address: liquidatorAddr,
