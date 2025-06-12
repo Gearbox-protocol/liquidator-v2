@@ -17,6 +17,7 @@ import type {
   OptimalPartialLiquidation,
   RawPartialLiquidationPreview,
 } from "../types.js";
+import { humanizePreviewPartialLiquidation } from "../utils.js";
 import { V300_PARTIAL_LIQUIDATOR_BOTS } from "./constants.js";
 
 export default abstract class PartialLiquidatorV300Contract extends AbstractPartialLiquidatorContract {
@@ -129,6 +130,18 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     const connectors = this.sdk
       .routerFor(cm)
       .getAvailableConnectors(cm.creditManager.collateralTokens);
+
+    this.logger.debug(
+      humanizePreviewPartialLiquidation(
+        cm,
+        optimalLiquidation,
+        priceUpdates,
+        this.config.slippage,
+        this.address,
+        connectors,
+      ),
+      "calling previewPartialLiquidation",
+    );
 
     const { result: preview } = await this.client.pub.simulateContract({
       account: ADDRESS_0X0,

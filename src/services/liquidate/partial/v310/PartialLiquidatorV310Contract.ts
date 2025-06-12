@@ -15,6 +15,7 @@ import type {
   OptimalPartialLiquidation,
   RawPartialLiquidationPreview,
 } from "../types.js";
+import { humanizePreviewPartialLiquidation } from "../utils.js";
 
 export default abstract class PartialLiquidatorV310Contract extends AbstractPartialLiquidatorContract {
   constructor(name: string, router: Address, curator: Curator) {
@@ -74,6 +75,16 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     optimalLiquidation: OptimalPartialLiquidation,
     priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<RawPartialLiquidationPreview> {
+    this.logger.debug(
+      humanizePreviewPartialLiquidation(
+        cm,
+        optimalLiquidation,
+        priceUpdates,
+        this.config.slippage,
+        this.address,
+      ),
+      "calling previewPartialLiquidation",
+    );
     const { result: preview } = await this.client.pub.simulateContract({
       account: ADDRESS_0X0,
       address: this.address,

@@ -1,5 +1,6 @@
-import type { CreditSuite } from "@gearbox-protocol/sdk";
+import type { CreditSuite, OnDemandPriceUpdate } from "@gearbox-protocol/sdk";
 import { formatBN } from "@gearbox-protocol/sdk";
+import type { Address } from "abitype";
 
 import type { OptimalPartialLiquidation } from "./types.js";
 
@@ -24,5 +25,31 @@ export function humanizeOptimalLiquidation(
     repaidAmount:
       formatBN(data.repaidAmount, uDec) + ` ${uSymb} (${data.repaidAmount})`,
     isOptimalRepayable: data.isOptimalRepayable,
+  };
+}
+
+export function humanizePreviewPartialLiquidation(
+  cm: CreditSuite,
+  data: OptimalPartialLiquidation,
+  priceUpdates: Partial<OnDemandPriceUpdate>[],
+  slippage: number,
+  liquidatorContract: Address,
+  connectors?: Address[],
+): Record<string, any> {
+  const result = humanizeOptimalLiquidation(cm, data);
+  return {
+    ...result,
+    liquidatorContract,
+    connectors,
+    priceUpdates: priceUpdates.map(p => {
+      if (p.token) {
+        return p.token;
+      }
+      if (p.priceFeed) {
+        return p.priceFeed;
+      }
+      return "-";
+    }),
+    slippage: slippage.toString(),
   };
 }
