@@ -55,11 +55,17 @@ export class ErrorHandler {
         } catch {}
       }
 
+      const lowLevelError = error.walk();
+      let revertData = "";
+      if ("data" in lowLevelError) {
+        revertData = ` (revert: ${lowLevelError.data})`;
+      }
+
       return {
         // errorJson,
         traceFile,
-        shortMessage: `${error.name}: ${error.shortMessage}`,
-        longMessage: `${error.name}: ${error.message}`,
+        shortMessage: `${error.name}${revertData}: ${error.shortMessage}`,
+        longMessage: `${error.name}${revertData}: ${error.message}`,
       };
     }
     if (error instanceof Error) {
