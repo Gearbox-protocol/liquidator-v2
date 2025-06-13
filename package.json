@@ -18,7 +18,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@gearbox-protocol/cli-utils": "^5.36.5",
+    "@gearbox-protocol/cli-utils": "^5.36.7",
     "node-pty": "^1.0.0",
     "pino-pretty": "^13.0.0"
   },
