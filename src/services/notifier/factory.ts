@@ -14,7 +14,7 @@ export class NotifierFactory implements IFactory<INotifier, []> {
   produce(): INotifier {
     if (
       this.config.telegramBotToken &&
-      this.config.telegramAlersChannel &&
+      this.config.telegramAlertsChannel &&
       this.config.telegramNotificationsChannel
     ) {
       return new TelegramNotifier();

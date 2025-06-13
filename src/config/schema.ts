@@ -452,7 +452,7 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * Telegram channel where bot will post critical notifications
    */
-  telegramAlersChannel: z
+  telegramAlertsChannel: z
     .string()
     .startsWith("-")
     .optional()

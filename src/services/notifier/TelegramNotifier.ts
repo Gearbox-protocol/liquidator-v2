@@ -28,7 +28,7 @@ export default class TelegramNotifier implements INotifier {
   public alert(message: INotifierMessage): void {
     this.#sendToTelegram(
       message.markdown,
-      this.config.telegramAlersChannel!,
+      this.config.telegramAlertsChannel!,
       "alert",
     ).catch(console.error);
   }
