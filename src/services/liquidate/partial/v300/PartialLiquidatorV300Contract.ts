@@ -131,7 +131,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       .routerFor(cm)
       .getAvailableConnectors(cm.creditManager.collateralTokens);
 
-    this.logger.debug(
+    this.caLogger(ca).debug(
       humanizePreviewPartialLiquidation(
         cm,
         optimalLiquidation,

@@ -293,4 +293,14 @@ export abstract class AbstractPartialLiquidatorContract
   protected get owner(): Address {
     return this.client.wallet.account.address;
   }
+
+  protected caLogger(ca: CreditAccountData): ILogger {
+    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    return this.logger.child({
+      account: ca.creditAccount,
+      borrower: ca.owner,
+      manager: cm.name,
+      hf: ca.healthFactor,
+    });
+  }
 }

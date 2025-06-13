@@ -75,7 +75,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     optimalLiquidation: OptimalPartialLiquidation,
     priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<RawPartialLiquidationPreview> {
-    this.logger.debug(
+    this.caLogger(ca).debug(
       humanizePreviewPartialLiquidation(
         cm,
         optimalLiquidation,
