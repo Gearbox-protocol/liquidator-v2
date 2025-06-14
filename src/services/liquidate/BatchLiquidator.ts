@@ -136,6 +136,7 @@ export default class BatchLiquidator
       abi: iBatchLiquidatorAbi,
       functionName: "estimateBatch",
       args: [inputs],
+      gas: 550_000_000n,
     });
     // BatchLiquidator contract does not return onDemandPriceUpdate calls, need to prepend them manually:
     for (let i = 0; i < accounts.length; i++) {

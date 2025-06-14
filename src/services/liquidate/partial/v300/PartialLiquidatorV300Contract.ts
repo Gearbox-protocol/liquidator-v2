@@ -111,6 +111,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       address: this.address,
       functionName: "getOptimalLiquidation",
       args: [creditAccount, 10100n, priceUpdates],
+      gas: 550_000_000n,
     });
     return {
       tokenOut,
@@ -158,6 +159,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
         connectors,
         BigInt(this.config.slippage),
       ],
+      gas: 550_000_000n,
     });
 
     return preview;

@@ -5,14 +5,21 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Run liquidator",
       "type": "node",
       "request": "launch",
-      "name": "Run Liquidator V2",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/build/index.js",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": ["${workspaceFolder}/build/**/*.js"],
-      "envFile": "${workspaceFolder}/.env"
+      "program": "${workspaceFolder}/src/index.ts",
+      "envFile": "${workspaceFolder}/.env",
+      "runtimeExecutable": "tsx",
+      // "console": "integratedTerminal",
+      // "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std",
+      "skipFiles": [
+        // Node.js internal core modules
+        "<node_internals>/**"
+        // Ignore all dependencies (optional)
+        // "${workspaceFolder}/node_modules/**",
+      ]
     }
   ]
 }
