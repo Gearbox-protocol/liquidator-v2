@@ -2,7 +2,7 @@ import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import { type CreditAccountData, json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -58,7 +58,17 @@ export class ErrorHandler {
       const lowLevelError = error.walk();
       let revertData = "";
       if ("data" in lowLevelError) {
-        revertData = ` (revert: ${lowLevelError.data})`;
+        if (
+          lowLevelError.data &&
+          typeof lowLevelError.data === "object" &&
+          "errorName" in lowLevelError.data
+        ) {
+          revertData = ` (revert: ${lowLevelError.data.errorName})`;
+        } else {
+          revertData = ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
+        }
+      } else if ("raw" in lowLevelError) {
+        revertData = ` (revert: ${lowLevelError.raw})`;
       }
 
       return {
