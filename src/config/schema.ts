@@ -15,7 +15,7 @@ export const PartialV300ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
    */
-  aavePartialLiquidatorAddress: addressLike
+  aavePartialLiquidatorAddress: addressLike()
     .optional()
     .register(zommandRegistry, {
       flags: "--aave-partial-liquidator-address <address>",
@@ -26,7 +26,7 @@ export const PartialV300ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for GHO credit managers
    */
-  ghoPartialLiquidatorAddress: addressLike
+  ghoPartialLiquidatorAddress: addressLike()
     .optional()
     .register(zommandRegistry, {
       flags: "--gho-partial-liquidator-address <address>",
@@ -37,7 +37,7 @@ export const PartialV300ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for DOLA credit managers
    */
-  dolaPartialLiquidatorAddress: addressLike
+  dolaPartialLiquidatorAddress: addressLike()
     .optional()
     .register(zommandRegistry, {
       flags: "--dola-partial-liquidator-address <address>",
@@ -48,7 +48,7 @@ export const PartialV300ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for Nexo credit managers
    */
-  nexoPartialLiquidatorAddress: addressLike
+  nexoPartialLiquidatorAddress: addressLike()
     .optional()
     .register(zommandRegistry, {
       flags: "--nexo-partial-liquidator-address <address>",
@@ -59,7 +59,7 @@ export const PartialV300ConfigSchema = z.object({
   /**
    * Address of deployed partial liquidator contract for Sonic credit managers
    */
-  siloPartialLiquidatorAddress: addressLike
+  siloPartialLiquidatorAddress: addressLike()
     .optional()
     .register(zommandRegistry, {
       flags: "--silo-partial-liquidator-address <address>",
@@ -82,7 +82,7 @@ export const ConfigSchema = z.object({
    * By default uses address provider from @gearbox-protocol/sdk
    * Use this option to override address provider
    */
-  addressProvider: addressLike.optional().register(zommandRegistry, {
+  addressProvider: addressLike().optional().register(zommandRegistry, {
     flags: "--address-provider <address>",
     description:
       "Address provider override, uses default value from SDK otherwise",
@@ -91,7 +91,7 @@ export const ConfigSchema = z.object({
   /**
    * Market configurators addresses to attach SDK
    */
-  marketConfigurators: optionalAddressArrayLike.register(zommandRegistry, {
+  marketConfigurators: optionalAddressArrayLike().register(zommandRegistry, {
     flags: "--market-configurators <addresses...>",
     description:
       "Market configurators to use for the process, comma separated. Uses default value from SDK if not specified",
@@ -116,7 +116,7 @@ export const ConfigSchema = z.object({
   /**
    * Only check this account during local debug session
    */
-  debugAccount: addressLike.optional().register(zommandRegistry, {
+  debugAccount: addressLike().optional().register(zommandRegistry, {
     flags: "--debug-account <address>",
     description: "Only check this account during local debug session",
     env: "DEBUG_ACCOUNT",
@@ -124,7 +124,7 @@ export const ConfigSchema = z.object({
   /**
    * Only check this credit manager during local debug session
    */
-  debugManager: addressLike.optional().register(zommandRegistry, {
+  debugManager: addressLike().optional().register(zommandRegistry, {
     flags: "--debug-manager <address>",
     description: "Only check this credit manager during local debug session",
     env: "DEBUG_MANAGER",
@@ -142,7 +142,7 @@ export const ConfigSchema = z.object({
   /**
    * RPC providers to use
    */
-  jsonRpcProviders: stringArrayLike
+  jsonRpcProviders: stringArrayLike()
     .pipe(z.array(z.url().transform(CensoredURL.transform)))
     .transform(a => (a.length ? a : undefined))
     .optional()
@@ -154,7 +154,7 @@ export const ConfigSchema = z.object({
   /**
    * Alchemy API keys to use
    */
-  alchemyKeys: stringArrayLike
+  alchemyKeys: stringArrayLike()
     .pipe(z.array(z.string().transform(CensoredString.transform)))
     .transform(a => (a.length ? a : undefined))
     .optional()
@@ -166,7 +166,7 @@ export const ConfigSchema = z.object({
   /**
    * DRPC API keys to use
    */
-  drpcKeys: stringArrayLike
+  drpcKeys: stringArrayLike()
     .pipe(z.array(z.string().transform(CensoredString.transform)))
     .transform(a => (a.length ? a : undefined))
     .optional()
@@ -255,7 +255,7 @@ export const ConfigSchema = z.object({
   /**
    * Enable optimistic liquidations
    */
-  optimistic: boolLike.optional().register(zommandRegistry, {
+  optimistic: boolLike().optional().register(zommandRegistry, {
     flags: "--optimistic",
     description: "Enable optimistic liquidations",
     env: "OPTIMISTIC",
@@ -276,7 +276,7 @@ export const ConfigSchema = z.object({
   /**
    * Do not send transactions in non-optimistic mode, just log them
    */
-  dryRun: boolLike.optional().register(zommandRegistry, {
+  dryRun: boolLike().optional().register(zommandRegistry, {
     flags: "--dry-run",
     description:
       "Do not send transactions in non-optimistic mode, just log them",
@@ -286,7 +286,7 @@ export const ConfigSchema = z.object({
    * Redstone gateways override
    * Set local caching proxies to avoid rate limiting in test environment
    */
-  redstoneGateways: stringArrayLike
+  redstoneGateways: stringArrayLike()
     .pipe(z.array(z.url()))
     .transform(a => (a.length ? a : undefined))
     .optional()
@@ -299,7 +299,7 @@ export const ConfigSchema = z.object({
   /**
    * Fallback to use full liquidator when partial liquidator fails
    */
-  partialFallback: boolLike.optional().register(zommandRegistry, {
+  partialFallback: boolLike().optional().register(zommandRegistry, {
     flags: "--partial-fallback",
     description:
       "Fallback to use full liquidator when partial liquidator fails",
@@ -308,7 +308,7 @@ export const ConfigSchema = z.object({
   /**
    * Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens`
    */
-  optimalPartialHF: optionalAddressArrayLike.register(zommandRegistry, {
+  optimalPartialHF: optionalAddressArrayLike().register(zommandRegistry, {
     flags: "--optimal-partial-hf <tokens>",
     description:
       "Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens",
@@ -317,7 +317,7 @@ export const ConfigSchema = z.object({
   /**
    * Address of deployed batch liquidator contract
    */
-  batchLiquidatorAddress: addressLike.optional().register(zommandRegistry, {
+  batchLiquidatorAddress: addressLike().optional().register(zommandRegistry, {
     flags: "--batch-liquidator-address <address>",
     description: "Address of deployed batch liquidator contract",
     env: "BATCH_LIQUIDATOR_ADDRESS",
@@ -365,7 +365,7 @@ export const ConfigSchema = z.object({
   /**
    * Flag to enable less eager liquidations for LRT tokens
    */
-  restakingWorkaround: boolLike.optional().register(zommandRegistry, {
+  restakingWorkaround: boolLike().optional().register(zommandRegistry, {
     flags: "--restaking-workaround",
     description: "Flag to enable less eager liquidations for LRT tokens",
     env: "RESTAKING_WORKAROUND",
