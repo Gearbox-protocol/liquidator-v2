@@ -71,7 +71,8 @@ export const PartialV300ConfigSchema = z.object({
 
 export type PartialV300ConfigSchema = z.infer<typeof PartialV300ConfigSchema>;
 
-export const ConfigSchema = PartialV300ConfigSchema.extend({
+export const ConfigSchema = z.object({
+  ...PartialV300ConfigSchema.shape,
   network: z.enum(SUPPORTED_NETWORKS).register(zommandRegistry, {
     flags: "--network <network>",
     description: "Gearbox-supported network",
@@ -308,7 +309,7 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
    * Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens`
    */
   optimalPartialHF: optionalAddressArrayLike.register(zommandRegistry, {
-    flags: "--optimal-partial-hf <tokens...>",
+    flags: "--optimal-partial-hf <tokens>",
     description:
       "Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens",
     env: "OPTIMAL_PARTIAL_HF",
