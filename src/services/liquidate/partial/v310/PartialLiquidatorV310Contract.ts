@@ -42,9 +42,10 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   }
 
   public async getOptimalLiquidation(
-    creditAccount: Address,
+    ca: CreditAccountData,
     priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<OptimalPartialLiquidation> {
+    const optimalHF = this.getOptimalPartialHF(ca);
     const {
       result: [
         tokenOut,
@@ -58,7 +59,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
       abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
       address: this.address,
       functionName: "getOptimalLiquidation",
-      args: [creditAccount, 10100n, priceUpdates],
+      args: [ca.creditAccount, optimalHF, priceUpdates],
       gas: 550_000_000n,
     });
     return {

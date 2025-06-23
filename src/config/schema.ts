@@ -305,6 +305,15 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
     env: "PARTIAL_FALLBACK",
   }),
   /**
+   * Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens`
+   */
+  optimalPartialHF: optionalAddressArrayLike.register(zommandRegistry, {
+    flags: "--optimal-partial-hf <tokens...>",
+    description:
+      "Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens",
+    env: "OPTIMAL_PARTIAL_HF",
+  }),
+  /**
    * Address of deployed batch liquidator contract
    */
   batchLiquidatorAddress: addressLike.optional().register(zommandRegistry, {

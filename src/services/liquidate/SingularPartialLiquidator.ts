@@ -164,7 +164,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<Partia
       );
     }
     const optimalLiquidation = await liquidatorContract.getOptimalLiquidation(
-      ca.creditAccount,
+      ca,
       priceUpdates,
     );
     logger.debug(

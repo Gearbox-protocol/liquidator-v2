@@ -251,7 +251,7 @@ export abstract class AbstractPartialLiquidatorContract
   }
 
   public abstract getOptimalLiquidation(
-    creditAccount: Address,
+    ca: CreditAccountData,
     priceUpdates: OnDemandPriceUpdate[],
   ): Promise<OptimalPartialLiquidation>;
 
@@ -269,6 +269,18 @@ export abstract class AbstractPartialLiquidatorContract
 
   public get envVariables(): Record<string, string> {
     return {};
+  }
+
+  protected getOptimalPartialHF(ca: CreditAccountData): bigint {
+    let hf = 10100n;
+    for (const t of this.config.optimalPartialHF ?? []) {
+      if (ca.underlying === t) {
+        hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
+        break;
+      }
+    }
+    this.caLogger(ca).debug(`optimal HF is ${hf}`);
+    return hf;
   }
 
   protected set address(value: Address) {

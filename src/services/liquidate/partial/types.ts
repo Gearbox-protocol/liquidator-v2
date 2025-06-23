@@ -39,11 +39,11 @@ export interface IPartialLiquidatorContract {
   deploy: () => Promise<void>;
   /**
    * Cross-version call to getOptimalLiquidation on liquidator contracts for rouuters v300 and v310
-   * @param creditAccount
+   * @param ca
    * @param priceUpdates
    */
   getOptimalLiquidation: (
-    creditAccount: Address,
+    ca: CreditAccountData,
     priceUpdates: OnDemandPriceUpdate[],
   ) => Promise<OptimalPartialLiquidation>;
   /**
