@@ -1,0 +1,24 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
+  "extends": ["@gearbox-protocol/biome-config"],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!node_modules",
+      "!build",
+      "!output",
+      "!.yarn",
+      "!cache",
+      "!dist",
+      "!forge-out",
+      "!lib",
+      "!contracts"
+    ],
+    "ignoreUnknown": true
+  }
+}

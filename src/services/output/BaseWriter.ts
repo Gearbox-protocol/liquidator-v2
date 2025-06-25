@@ -16,7 +16,7 @@ export default class BaseWriter {
   optimistic!: OptimisticResults;
 
   protected get filename(): string {
-    let fname = this.config.outFileName;
+    const fname = this.config.outFileName;
     if (!fname) {
       throw new Error(`out file name not specified in config`);
     }

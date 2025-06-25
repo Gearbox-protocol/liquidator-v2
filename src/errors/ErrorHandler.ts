@@ -186,7 +186,7 @@ export class ErrorHandler {
     let longMessage = e.message;
     if (e.cause) {
       const cause = this.#unwrapCause(e.cause as Error);
-      longMessage = longMessage + "Cause: " + cause.longMessage;
+      longMessage = `${longMessage}Cause: ${cause.longMessage}`;
     }
     return { shortMessage, longMessage };
   }

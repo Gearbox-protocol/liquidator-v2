@@ -22,8 +22,7 @@ export function humanizeOptimalLiquidation(
     flashLoanAmount:
       formatBN(data.flashLoanAmount, uDec) +
       ` ${uSymb} (${data.flashLoanAmount})`,
-    repaidAmount:
-      formatBN(data.repaidAmount, uDec) + ` ${uSymb} (${data.repaidAmount})`,
+    repaidAmount: `${formatBN(data.repaidAmount, uDec)} ${uSymb} (${data.repaidAmount})`,
     isOptimalRepayable: data.isOptimalRepayable,
   };
 }

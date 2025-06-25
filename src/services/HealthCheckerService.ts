@@ -22,7 +22,7 @@ export default class HealthCheckerService {
   @DI.Inject(DI.Config)
   config!: Config;
 
-  #start = Math.round(new Date().valueOf() / 1000);
+  #start = Math.round(Date.now() / 1000);
   #id = nanoid();
 
   /**
@@ -48,7 +48,7 @@ export default class HealthCheckerService {
         try {
           res.writeHead(200, { "Content-Type": "text/plain" });
           res.end(this.#metrics());
-        } catch (ex) {
+        } catch (_ex) {
           res.writeHead(500, { "Content-Type": "text/plain" });
           res.end("error");
         }

@@ -131,7 +131,7 @@ export class Scanner {
         `filtered out ${before - accounts.length} restaking accounts`,
       );
     }
-    const time = Math.round((new Date().getTime() - start) / 1000);
+    const time = Math.round((Date.now() - start) / 1000);
     this.log.debug(
       `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,
     );

@@ -261,7 +261,7 @@ export default class BatchLiquidator
     if (!this.#batchLiquidator) {
       this.logger.debug("deploying batch liquidator");
 
-      let hash = await this.client.wallet.deployContract({
+      const hash = await this.client.wallet.deployContract({
         abi: batchLiquidatorAbi,
         bytecode: BatchLiquidator_bytecode,
         args: [this.#router],
@@ -320,7 +320,7 @@ export default class BatchLiquidator
       if (!accountsByOracle.has(oracle)) {
         accountsByOracle.set(oracle, []);
       }
-      accountsByOracle.get(oracle)!.push(ca);
+      accountsByOracle.get(oracle)?.push(ca);
     }
 
     // Sort accounts within each oracle by healthFactor bin ASC, debt DESC

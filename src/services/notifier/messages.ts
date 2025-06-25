@@ -87,7 +87,7 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
 
   public get markdown(): string {
     return md.build(
-      md`[${this.network}] balance of liquidator ${md.link(this.#wallet, etherscanUrl({ address: this.#wallet }, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
+      md`[${this.network}] balance of liquidator ${md.link(this.#wallet, etherscanUrl({ address: this.#wallet }, this.network))} is ${md.bold(`${formatBN(this.#balance, 18)} ETH`)} is below minumum of ${md.bold(`${formatBN(this.#minBalance, 18)} ETH`)}`,
     );
   }
 }
@@ -269,7 +269,7 @@ export class LiquidationErrorMessage
   ) {
     super({ ca });
     this.#strategyAdverb = strategyAdverb;
-    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
+    this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
     this.#callsHuman = callsHuman;
     this.#skipOnFailure = skipOnFailure
       ? "Will skip further liquidation attempts"
@@ -304,7 +304,7 @@ export class BatchLiquidationErrorMessage
   constructor(accounts: CreditAccountData[], error: string) {
     super({});
     this.#accounts = accounts;
-    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
+    this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
   }
 
   public get plain(): string {
@@ -321,13 +321,13 @@ Error: ${md.inlineCode(this.#error)}`,
 }
 
 function callsPlain(calls?: string[]): string {
-  return calls ? calls.map(c => " ➤ " + c).join("\n") : "-";
+  return calls ? calls.map(c => ` ➤ ${c}`).join("\n") : "-";
 }
 
 function callsMd(calls?: string[]): Markdown {
   return calls
     ? md.join(
-        calls.map(c => " ➤ " + c),
+        calls.map(c => ` ➤ ${c}`),
         "\n",
       )
     : // prettier-ignore

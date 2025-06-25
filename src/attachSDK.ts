@@ -36,7 +36,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     //
     // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
     // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
-    const nowMs = new Date().getTime();
+    const nowMs = Date.now();
     if (config.optimisticTimestamp) {
       optimisticTimestamp = config.optimisticTimestamp;
     } else {
