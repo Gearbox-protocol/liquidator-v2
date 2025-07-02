@@ -131,6 +131,18 @@ export class Scanner {
         `filtered out ${before - accounts.length} restaking accounts`,
       );
     }
+    if (this.config.ignoreAccounts) {
+      const before = accounts.length;
+      const ignoreAccounts = new Set(
+        this.config.ignoreAccounts?.map(a => a.toLowerCase()),
+      );
+      accounts = accounts.filter(
+        ca => !ignoreAccounts.has(ca.creditAccount.toLowerCase()),
+      );
+      this.log.debug(
+        `filtered out ${before - accounts.length} ignored accounts`,
+      );
+    }
     const time = Math.round((Date.now() - start) / 1000);
     this.log.debug(
       `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,

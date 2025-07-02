@@ -114,6 +114,14 @@ export const ConfigSchema = z.object({
     env: "PORT",
   }),
   /**
+   * These accounts will not be liquidated
+   */
+  ignoreAccounts: optionalAddressArrayLike().register(zommandRegistry, {
+    flags: "--ignore-accounts <addresses...>",
+    description: "These accounts will not be liquidated",
+    env: "IGNORE_ACCOUNTS",
+  }),
+  /**
    * Only check this account during local debug session
    */
   debugAccount: addressLike().optional().register(zommandRegistry, {
