@@ -51,6 +51,10 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
   /**
    * Only check these accounts during local debug session
    */
+  ignoreAccounts: stringArrayLike.optional().pipe(z.array(Address).optional()),
+  /**
+   * Only check these accounts during local debug session
+   */
   debugAccounts: stringArrayLike.optional().pipe(z.array(Address).optional()),
   /**
    * Only check these credit managers during local debug session
