@@ -84,23 +84,40 @@ export default class BatchLiquidator
         `processing batch of ${batch.length} for ${batch[0]?.cmName}: ${batch.map(ca => ca.addr)}`,
       );
       const snapshotId = await this.client.anvil.snapshot();
-      const { results, receipt } = await this.#liquidateBatch(
-        batch,
-        cms,
-        i,
-        batches.length,
-      );
-      const hasErrors = results.some(r => !!r.isError);
-      let traceId: string | undefined;
-      if (hasErrors && !!receipt) {
-        traceId = await this.errorHandler.saveTransactionTrace(
-          receipt.transactionHash,
+      try {
+        const { results, receipt } = await this.#liquidateBatch(
+          batch,
+          cms,
+          i,
+          batches.length,
         );
+        const hasErrors = results.some(r => !!r.isError);
+        let traceId: string | undefined;
+        if (hasErrors && !!receipt) {
+          traceId = await this.errorHandler.saveTransactionTrace(
+            receipt.transactionHash,
+          );
+        }
+        for (const r of results) {
+          this.optimistic.push({ ...r, traceFile: traceId });
+        }
+      } catch (e) {
+        const decoded = await this.errorHandler.explain(e);
+        this.logger.error(decoded, "cant liquidate");
+        for (const a of batch) {
+          this.optimistic.push({
+            ...this.newOptimisticResult(a),
+            isError: true,
+            error: `cannot liquidate: ${decoded.longMessage}`.replaceAll(
+              "\n",
+              "\\n",
+            ),
+            traceFile: decoded.traceFile,
+          });
+        }
+      } finally {
+        await this.client.anvil.revert({ id: snapshotId });
       }
-      for (const r of results) {
-        this.optimistic.push({ ...r, traceFile: traceId });
-      }
-      await this.client.anvil.revert({ id: snapshotId });
     }
     const success = this.optimistic.get().filter(r => !r.isError).length;
     this.logger.info(
