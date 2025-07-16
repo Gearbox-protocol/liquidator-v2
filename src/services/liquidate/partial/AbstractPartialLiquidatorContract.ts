@@ -1,9 +1,9 @@
 import type {
   CreditAccountData,
-  CreditAccountsService,
   CreditSuite,
   Curator,
   GearboxSDK,
+  ICreditAccountsService,
   OnDemandPriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0 } from "@gearbox-protocol/sdk";
@@ -32,7 +32,7 @@ export abstract class AbstractPartialLiquidatorContract
   config!: Config;
 
   @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: CreditAccountsService;
+  creditAccountService!: ICreditAccountsService;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -272,8 +272,8 @@ export abstract class AbstractPartialLiquidatorContract
   }
 
   protected getOptimalPartialHF(ca: CreditAccountData): bigint {
-    let hf = 10100n;
-    for (const t of this.config.optimalPartialHF ?? []) {
+    let hf = this.config.targetPartialHF;
+    for (const t of this.config.calculatePartialHF ?? []) {
       if (ca.underlying === t) {
         hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
         break;

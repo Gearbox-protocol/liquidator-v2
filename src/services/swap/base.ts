@@ -1,5 +1,5 @@
 import {
-  type CreditAccountsService,
+  type ICreditAccountsService,
   type NetworkType,
   NOT_DEPLOYED,
 } from "@gearbox-protocol/sdk";
@@ -22,6 +22,8 @@ export const WETH: Record<NetworkType, Address> = {
   BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
   WorldChain: NOT_DEPLOYED,
   Etherlink: NOT_DEPLOYED,
+  Hemi: NOT_DEPLOYED,
+  Lisk: NOT_DEPLOYED,
 };
 
 export default abstract class BaseSwapper {
@@ -32,7 +34,7 @@ export default abstract class BaseSwapper {
   client!: Client;
 
   @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: CreditAccountsService;
+  creditAccountService!: ICreditAccountsService;
 
   #network?: NetworkType;
   #wethAddr?: Address;

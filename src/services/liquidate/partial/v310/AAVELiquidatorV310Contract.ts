@@ -23,7 +23,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
       return undefined;
     }
     const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
-    if (!isAddress(aavePool)) {
+    if (!aavePool || !isAddress(aavePool)) {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";

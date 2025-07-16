@@ -1,7 +1,7 @@
 import type {
   CreditAccountData,
-  CreditAccountsService,
   GearboxSDK,
+  ICreditAccountsService,
   MultiCall,
 } from "@gearbox-protocol/sdk";
 import { filterDust } from "@gearbox-protocol/sdk";
@@ -26,7 +26,7 @@ export default abstract class AbstractLiquidator {
   logger!: ILogger;
 
   @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: CreditAccountsService;
+  creditAccountService!: ICreditAccountsService;
 
   @DI.Inject(DI.Notifier)
   notifier!: INotifier;

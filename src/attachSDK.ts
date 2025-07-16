@@ -1,6 +1,9 @@
-import type { RouterV310Contract } from "@gearbox-protocol/sdk";
+import type {
+  ICreditAccountsService,
+  RouterV310Contract,
+} from "@gearbox-protocol/sdk";
 import {
-  CreditAccountsService,
+  createCreditAccountService,
   GearboxSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
@@ -12,7 +15,7 @@ import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
 import { formatTs } from "./utils/index.js";
 
-export default async function attachSDK(): Promise<CreditAccountsService> {
+export default async function attachSDK(): Promise<ICreditAccountsService> {
   const config: Config = DI.get(DI.Config);
   const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
@@ -104,7 +107,7 @@ export default async function attachSDK(): Promise<CreditAccountsService> {
     // load second time with hook
     await sdk.marketRegister.loadMarkets(Array.from(mcs));
   }
-  const service = new CreditAccountsService(sdk, {
+  const service = createCreditAccountService(sdk, 310, {
     batchSize: config.compressorBatchSize,
   });
 

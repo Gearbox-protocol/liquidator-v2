@@ -1,6 +1,6 @@
 import type {
   CreditAccountData,
-  CreditAccountsService,
+  ICreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
 import { MAX_UINT256, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
@@ -36,7 +36,7 @@ export class Scanner {
   liquidatorService!: ILiquidatorService;
 
   @DI.Inject(DI.CreditAccountService)
-  caService!: CreditAccountsService;
+  caService!: ICreditAccountsService;
 
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;

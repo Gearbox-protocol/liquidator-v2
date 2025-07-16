@@ -314,13 +314,23 @@ export const ConfigSchema = z.object({
     env: "PARTIAL_FALLBACK",
   }),
   /**
-   * Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens`
+   * Desired HF after partial liquidation, with 4 decimals (100% = 10000)
    */
-  optimalPartialHF: optionalAddressArrayLike().register(zommandRegistry, {
-    flags: "--optimal-partial-hf <tokens>",
+  targetPartialHF: z.coerce.bigint().default(10100n).register(zommandRegistry, {
+    flags: "--target-partial-hf <hf>",
+    description:
+      "Desired HF after partial liquidation, with 4 decimals (100% = 10000)",
+    env: "TARGET_PARTIAL_HF",
+  }),
+  /**
+   * Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens
+   * Takes precedence over targetPartialHF
+   */
+  calculatePartialHF: optionalAddressArrayLike().register(zommandRegistry, {
+    flags: "--calculate-partial-hf <tokens>",
     description:
       "Optimal HF for partial liquidation will be calculated for accounts with following underlying tokens",
-    env: "OPTIMAL_PARTIAL_HF",
+    env: "CALCULATE_PARTIAL_HF",
   }),
   /**
    * Address of deployed batch liquidator contract

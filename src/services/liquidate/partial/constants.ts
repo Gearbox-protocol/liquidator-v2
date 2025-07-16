@@ -1,19 +1,12 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
-import { NOT_DEPLOYED } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
-export const AAVE_V3_LENDING_POOL: Record<NetworkType, Address> = {
+export const AAVE_V3_LENDING_POOL: Partial<Record<NetworkType, Address>> = {
   Mainnet: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
   Arbitrum: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
   Optimism: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
   Base: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-  Sonic: NOT_DEPLOYED,
-  MegaETH: NOT_DEPLOYED,
-  Monad: NOT_DEPLOYED,
-  Berachain: NOT_DEPLOYED,
-  Avalanche: NOT_DEPLOYED,
   BNB: "0x6807dc923806fE8Fd134338EABCA509979a7e0cB",
-  WorldChain: NOT_DEPLOYED,
   Etherlink: "0x3bD16D195786fb2F509f2E2D7F69920262EF114D",
 };
 
