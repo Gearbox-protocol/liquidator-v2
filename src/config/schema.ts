@@ -389,6 +389,14 @@ export const ConfigSchema = z.object({
     env: "RESTAKING_WORKAROUND",
   }),
   /**
+   * List of assets to keep on account after liquidation
+   */
+  keepAssets: optionalAddressArrayLike().register(zommandRegistry, {
+    flags: "--keep-assets <assets...>",
+    description: "List of assets to keep on account after liquidation",
+    env: "KEEP_ASSETS",
+  }),
+  /**
    * Use this mechanism to swap underlying token to ETH after the liquidation (abandoned feature)
    */
   swapToEth: z.enum(["1inch", "uniswap"]).optional().register(zommandRegistry, {

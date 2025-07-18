@@ -33,11 +33,12 @@ export default class SingularFullLiquidator extends SingularLiquidator<FullLiqui
   public async preview(ca: CreditAccountData): Promise<FullLiquidationPreview> {
     try {
       const { tx, routerCloseResult, calls } =
-        await this.creditAccountService.fullyLiquidate(
-          ca,
-          this.client.address,
-          BigInt(this.config.slippage),
-        );
+        await this.creditAccountService.fullyLiquidate({
+          account: ca,
+          to: this.client.address,
+          slippage: BigInt(this.config.slippage),
+          keepAssets: this.config.keepAssets,
+        });
       return { ...routerCloseResult, calls, rawTx: tx };
     } catch (e) {
       throw new Error("cant preview full liquidation", { cause: e });

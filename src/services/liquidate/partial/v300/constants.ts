@@ -6,4 +6,5 @@ export const V300_PARTIAL_LIQUIDATOR_BOTS: Record<Curator, Address> = {
   "Chaos Labs": "0x0f06c2bD612Ee7D52d4bC76Ce3BD7E95247AF2a9",
   cp0x: ADDRESS_0X0,
   Re7: ADDRESS_0X0,
+  Invariant: ADDRESS_0X0,
 };
