@@ -7,7 +7,6 @@ import {
   AaveLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
-import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import { type Address, isAddress } from "viem";
 
 import { AAVE_V3_LENDING_POOL } from "../constants.js";
@@ -47,9 +46,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   public async deploy(): Promise<void> {
-    const deployer = new Create2Deployer(this.sdk, this.client.wallet);
-
-    const { address: aaveFlTakerAddr } = await deployer.ensureExists({
+    const { address: aaveFlTakerAddr } = await this.deployer.ensureExists({
       abi: aaveFlTakerAbi,
       bytecode: AaveFLTaker_bytecode,
       // constructor(address _owner, address _aavePool)
@@ -57,13 +54,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     });
     this.logger.debug(`AaveFLTaker address: ${aaveFlTakerAddr}`);
 
-    const { address: liquidatorAddr } = await deployer.ensureExists({
-      abi: aaveLiquidatorAbi,
-      bytecode: AaveLiquidator_bytecode,
-      // constructor(address _owner, address _aavePool, address _aaveFLTaker)
-      args: [this.owner, this.#aavePool, aaveFlTakerAddr],
-    });
-    this.logger.debug(`AaveLiquidator address: ${liquidatorAddr}`);
+    const liquidatorAddr = await this.deployLiquidator(aaveFlTakerAddr);
 
     const isAllowed = await this.client.pub.readContract({
       address: aaveFlTakerAddr,
@@ -91,5 +82,16 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     }
 
     this.address = liquidatorAddr;
+  }
+
+  protected async deployLiquidator(flTaker: Address): Promise<Address> {
+    const { address } = await this.deployer.ensureExists({
+      abi: aaveLiquidatorAbi,
+      bytecode: AaveLiquidator_bytecode,
+      // constructor(address _owner, address _aavePool, address _aaveFLTaker)
+      args: [this.owner, this.#aavePool, flTaker],
+    });
+    this.logger.debug(`AaveLiquidator address: ${address}`);
+    return address;
   }
 }

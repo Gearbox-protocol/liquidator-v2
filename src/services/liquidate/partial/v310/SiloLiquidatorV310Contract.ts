@@ -7,7 +7,6 @@ import {
   SiloLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
 import { type CreditSuite, type Curator, hexEq } from "@gearbox-protocol/sdk";
-import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "viem";
 
 import { SONIC_USDCE_SILO, SONIC_WS_SILO } from "../constants.js";
@@ -34,8 +33,7 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   public async deploy(): Promise<void> {
-    const deployer = new Create2Deployer(this.sdk, this.client.wallet);
-    const { address: siloFLTakerAddr } = await deployer.ensureExists({
+    const { address: siloFLTakerAddr } = await this.deployer.ensureExists({
       abi: siloFlTakerAbi,
       bytecode: SiloFLTaker_bytecode,
       // constructor(address _owner)
@@ -44,13 +42,7 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     this.logger.debug(`fl taker address: ${siloFLTakerAddr}`);
     this.#siloFLTaker = siloFLTakerAddr;
 
-    const { address: liquidatorAddr } = await deployer.ensureExists({
-      abi: siloLiquidatorAbi,
-      bytecode: SiloLiquidator_bytecode,
-      // constructor(address _owner, address _siloFLTaker)
-      args: [this.owner, this.siloFLTaker],
-    });
-    this.logger.debug(`liquidator address: ${liquidatorAddr}`);
+    const liquidatorAddr = await this.deployLiquidator();
 
     // siloFLTaker.setTokenToSilo(tokenTestSuite.addressOf(TOKEN_USDC_e), SONIC_USDCE_SILO);
     // siloFLTaker.setTokenToSilo(tokenTestSuite.addressOf(TOKEN_wS), SONIC_WS_SILO);
@@ -119,5 +111,16 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
       throw new Error("SiloFLTaker is not deployed");
     }
     return this.#siloFLTaker;
+  }
+
+  protected async deployLiquidator(): Promise<Address> {
+    const { address } = await this.deployer.ensureExists({
+      abi: siloLiquidatorAbi,
+      bytecode: SiloLiquidator_bytecode,
+      // constructor(address _owner, address _siloFLTaker)
+      args: [this.owner, this.siloFLTaker],
+    });
+    this.logger.debug(`liquidator address: ${address}`);
+    return address;
   }
 }

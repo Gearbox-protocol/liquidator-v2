@@ -6,8 +6,15 @@ import type {
   OnDemandPriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import { type Address, parseAbi, type SimulateContractReturnType } from "viem";
-
+import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+import {
+  type Address,
+  type Chain,
+  type PrivateKeyAccount,
+  parseAbi,
+  type SimulateContractReturnType,
+  type Transport,
+} from "viem";
 import { exceptionsAbis } from "../../../../data/index.js";
 import type { PartialLiquidationPreview } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
@@ -18,8 +25,15 @@ import type {
 import { humanizePreviewPartialLiquidation } from "../utils.js";
 
 export default abstract class PartialLiquidatorV310Contract extends AbstractPartialLiquidatorContract {
+  protected readonly deployer: Create2Deployer<
+    Transport,
+    Chain,
+    PrivateKeyAccount
+  >;
+
   constructor(name: string, router: Address, curator: Curator) {
     super(name, 310, router, curator);
+    this.deployer = new Create2Deployer(this.sdk, this.client.wallet);
   }
 
   /**

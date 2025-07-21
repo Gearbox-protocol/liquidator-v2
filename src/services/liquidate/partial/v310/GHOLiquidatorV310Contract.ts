@@ -7,7 +7,6 @@ import {
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
-import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "viem";
 
 import { FLASH_MINTERS } from "../constants.js";
@@ -60,8 +59,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   public async deploy(): Promise<void> {
-    const deployer = new Create2Deployer(this.sdk, this.client.wallet);
-    const { address: ghoFMTakerAddr } = await deployer.ensureExists({
+    const { address: ghoFMTakerAddr } = await this.deployer.ensureExists({
       abi: ghoFmTakerAbi,
       bytecode: GhoFMTaker_bytecode,
       // constructor(address _owner, address _ghoFlashMinter, address _gho) {
@@ -82,18 +80,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
       `ensured GhoFMTaker`,
     );
 
-    const { address: liquidatorAddr } = await deployer.ensureExists({
-      abi: ghoLiquidatorAbi,
-      bytecode: GhoLiquidator_bytecode,
-      // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
-      args: [
-        this.owner,
-        this.#flashMinter,
-        ghoFMTakerAddr,
-        this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
-      ],
-    });
-    this.logger.debug(`ensured GHOLiquidator at ${liquidatorAddr}`);
+    const liquidatorAddr = await this.deployLiquidator(ghoFMTakerAddr);
 
     const isAllowed = await this.client.pub.readContract({
       address: ghoFMTakerAddr,
@@ -121,5 +108,21 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     }
 
     this.address = liquidatorAddr;
+  }
+
+  protected async deployLiquidator(ghoFMTaker: Address): Promise<Address> {
+    const { address } = await this.deployer.ensureExists({
+      abi: ghoLiquidatorAbi,
+      bytecode: GhoLiquidator_bytecode,
+      // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
+      args: [
+        this.owner,
+        this.#flashMinter,
+        ghoFMTaker,
+        this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
+      ],
+    });
+    this.logger.debug(`ensured GHOLiquidator at ${address}`);
+    return address;
   }
 }
