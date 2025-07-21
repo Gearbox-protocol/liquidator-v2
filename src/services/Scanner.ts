@@ -3,11 +3,11 @@ import type {
   ICreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
-import { MAX_UINT256, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, PERCENTAGE_FACTOR, WAD } from "@gearbox-protocol/sdk";
+import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
 import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
-
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -111,12 +111,16 @@ export class Scanner {
       accounts = acc ? [acc] : [];
     } else {
       let maxHealthFactor = this.config.hfThreshold;
+      let minHealthFactor = 0n;
       if (this.config.optimistic && this.config.liquidationMode === "partial") {
         maxHealthFactor = MAX_UINT256;
       }
+      if (this.config.liquidationMode === "deleverage") {
+        minHealthFactor = WAD;
+      }
       accounts = await this.caService.getCreditAccounts(
         {
-          minHealthFactor: 0n,
+          minHealthFactor,
           maxHealthFactor,
           includeZeroDebt: false,
           creditManager: this.config.debugManager,
@@ -143,9 +147,26 @@ export class Scanner {
         `filtered out ${before - accounts.length} ignored accounts`,
       );
     }
+
+    if (this.config.liquidationMode === "deleverage") {
+      const before = accounts.length;
+      accounts = await this.#filterDeleverageAccounts(
+        accounts,
+        this.config.partialLiquidationBot,
+        blockNumber,
+      );
+      this.log.debug(
+        `filtered out ${before - accounts.length} non-deleveragable accounts`,
+      );
+    }
+
     const time = Math.round((Date.now() - start) / 1000);
+    const verb =
+      this.config.liquidationMode === "deleverage"
+        ? "deleveragable"
+        : "liquidatable";
     this.log.debug(
-      `${accounts.length} accounts to liquidate${blockS}, time: ${time}s`,
+      `${accounts.length} accounts to ${verb}${blockS}, time: ${time}s`,
     );
 
     if (this.config.optimistic) {
@@ -228,6 +249,35 @@ export class Scanner {
       }
       return true;
     });
+  }
+
+  async #filterDeleverageAccounts(
+    accounts: CreditAccountData[],
+    partialLiquidationBot: Address,
+    blockNumber?: bigint,
+  ): Promise<CreditAccountData[]> {
+    const res = await this.client.pub.multicall({
+      contracts: accounts.map(
+        ca =>
+          ({
+            address: ca.creditAccount,
+            abi: iBotListV310Abi,
+            functionName: "getBotStatus",
+            args: [partialLiquidationBot, ca.creditAccount],
+          }) as const,
+      ),
+      allowFailure: true,
+      blockNumber,
+    });
+    const result: CreditAccountData[] = [];
+    for (let i = 0; i < accounts.length; i++) {
+      const ca = accounts[i];
+      const r = res[i];
+      if (r.status === "success" && !r.result[1]) {
+        result.push(ca);
+      }
+    }
+    return result;
   }
 
   public get lastUpdated(): bigint {
