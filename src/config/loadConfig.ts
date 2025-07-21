@@ -7,8 +7,6 @@ import type { ConfigSchema, PartialV300ConfigSchema } from "./schema.js";
 export interface Config extends ConfigSchema {
   readonly chainId: number;
   readonly startBlock: bigint;
-  readonly isPartial: boolean;
-  readonly isBatch: boolean;
 }
 
 export async function loadConfig(schema: ConfigSchema): Promise<Config> {
@@ -37,8 +35,6 @@ export async function loadConfig(schema: ConfigSchema): Promise<Config> {
     ...schema,
     startBlock,
     chainId: Number(chainId),
-    isPartial: schema.liquidationMode === "partial",
-    isBatch: schema.liquidationMode === "batch",
   };
 }
 

@@ -111,7 +111,7 @@ export class Scanner {
       accounts = acc ? [acc] : [];
     } else {
       let maxHealthFactor = this.config.hfThreshold;
-      if (this.config.optimistic && this.config.isPartial) {
+      if (this.config.optimistic && this.config.liquidationMode === "partial") {
         maxHealthFactor = MAX_UINT256;
       }
       accounts = await this.caService.getCreditAccounts(

@@ -13,12 +13,17 @@ export class LiquidatorFactory implements IFactory<ILiquidatorService, []> {
   config!: Config;
 
   produce(): ILiquidatorService {
-    if (this.config.isPartial) {
-      return new SingularPartialLiquidator();
+    switch (this.config.liquidationMode) {
+      case "full":
+        return new SingularFullLiquidator();
+      case "partial":
+        return new SingularPartialLiquidator();
+      case "batch":
+        return new BatchLiquidator();
+      default:
+        throw new Error(
+          `Invalid liquidation mode: ${this.config.liquidationMode}`,
+        );
     }
-    if (this.config.isBatch) {
-      return new BatchLiquidator();
-    }
-    return new SingularFullLiquidator();
   }
 }

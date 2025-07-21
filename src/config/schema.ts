@@ -253,11 +253,11 @@ export const ConfigSchema = z.object({
    * Liquidator mode
    */
   liquidationMode: z
-    .enum(["full", "partial", "batch"])
+    .enum(["full", "partial", "batch", "deleverage"])
     .default("full")
     .register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
-      description: "Liquidator mode (full/partial/batch)",
+      description: "Liquidator mode (full/partial/batch/deleverage)",
       env: "LIQUIDATION_MODE",
     }),
   /**
