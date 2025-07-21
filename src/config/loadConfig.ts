@@ -1,13 +1,19 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import { createTransport } from "@gearbox-protocol/sdk/dev";
 import { createPublicClient } from "viem";
+import type { CommonSchema } from "./common.js";
+import type { PartialV300ConfigSchema } from "./partial-liquidator.js";
+import type { ConfigSchema } from "./schema.js";
 
-import type { ConfigSchema, PartialV300ConfigSchema } from "./schema.js";
-
-export interface Config extends ConfigSchema {
+export type Config = ConfigSchema & {
   readonly chainId: number;
   readonly startBlock: bigint;
-}
+};
+
+export type LiqduiatorConfig<TSchema extends CommonSchema> = TSchema & {
+  readonly chainId: number;
+  readonly startBlock: bigint;
+};
 
 export async function loadConfig(schema: ConfigSchema): Promise<Config> {
   const client = createPublicClient({

@@ -1728,9 +1728,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.38.5":
-  version: 5.38.5
-  resolution: "@gearbox-protocol/cli-utils@npm:5.38.5"
+"@gearbox-protocol/cli-utils@npm:^5.39.0":
+  version: 5.39.0
+  resolution: "@gearbox-protocol/cli-utils@npm:5.39.0"
   dependencies:
     "@aws-sdk/client-secrets-manager": "npm:^3.848.0"
     "@aws-sdk/client-ssm": "npm:^3.849.0"
@@ -1739,7 +1739,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     yaml: "npm:^2.8.0"
     zod: "npm:^4.0.5"
-  checksum: 10c0/ef0c5dabd176bc197568faaf0bfebed9386f83050aa0b7e7e2aefe57e6d9fe21ccbadebbb72dacd1bd619e0d30b098d09bb483c5aad2c398e6c6f4f2a794b424
+  checksum: 10c0/b6e8118da439055494205ce64ab6f76d461cf53554b2bfd7674cfcc6c3d1fa67e9e53501cd0fbe4869b7c8d9fd1a6e61659616a392b0922f8da8c3241e6d736a
   languageName: node
   linkType: hard
 
@@ -1760,7 +1760,7 @@ __metadata:
     "@commitlint/cli": "npm:^19.8.1"
     "@commitlint/config-conventional": "npm:^19.8.1"
     "@gearbox-protocol/biome-config": "npm:^1.0.0"
-    "@gearbox-protocol/cli-utils": "npm:^5.38.5"
+    "@gearbox-protocol/cli-utils": "npm:^5.39.0"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.3"
     "@gearbox-protocol/sdk": "npm:8.10.1"

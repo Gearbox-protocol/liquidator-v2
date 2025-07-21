@@ -6,7 +6,7 @@ import {
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
-
+import type { PartialLiquidatorSchema } from "../../config/index.js";
 import {
   createPartialLiquidators,
   humanizeOptimalLiquidation,
@@ -20,7 +20,10 @@ import type {
   PartialLiquidationPreviewWithFallback,
 } from "./types.js";
 
-export default class SingularPartialLiquidator extends SingularLiquidator<PartialLiquidationPreviewWithFallback> {
+export default class SingularPartialLiquidator extends SingularLiquidator<
+  PartialLiquidationPreviewWithFallback,
+  PartialLiquidatorSchema
+> {
   protected readonly name = "partial";
   protected readonly adverb = "partially";
 

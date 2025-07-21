@@ -9,7 +9,11 @@ import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 
-import type { Config } from "../../config/index.js";
+import type {
+  CommonSchema,
+  Config,
+  LiqduiatorConfig,
+} from "../../config/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";
@@ -21,7 +25,7 @@ import type { ISwapper } from "../swap/index.js";
 import type { OptimisticResults } from "./OptimisiticResults.js";
 import type { StrategyPreview } from "./types.js";
 
-export default abstract class AbstractLiquidator {
+export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
   @Logger("Liquidator")
   logger!: ILogger;
 
@@ -32,7 +36,7 @@ export default abstract class AbstractLiquidator {
   notifier!: INotifier;
 
   @DI.Inject(DI.Config)
-  config!: Config;
+  config!: LiqduiatorConfig<TConfig>;
 
   @DI.Inject(DI.Output)
   outputWriter!: IOptimisticOutputWriter;

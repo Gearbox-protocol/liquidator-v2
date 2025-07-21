@@ -1,7 +1,7 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { decodeFunctionData, type SimulateContractReturnType } from "viem";
-
+import type { FullLiquidatorSchema } from "../../config/index.js";
 import { exceptionsAbis } from "../../data/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
@@ -9,7 +9,10 @@ import type {
   MakeLiquidatableResult,
 } from "./types.js";
 
-export default class SingularFullLiquidator extends SingularLiquidator<FullLiquidationPreview> {
+export default class SingularFullLiquidator extends SingularLiquidator<
+  FullLiquidationPreview,
+  FullLiquidatorSchema
+> {
   protected readonly name = "full";
   protected readonly adverb = "fully";
 

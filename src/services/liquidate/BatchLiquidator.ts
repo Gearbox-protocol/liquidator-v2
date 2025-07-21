@@ -17,7 +17,7 @@ import {
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { encodeFunctionData, parseEventLogs } from "viem";
-
+import type { BatchLiquidatorSchema } from "../../config/index.js";
 import {
   BatchLiquidationErrorMessage,
   BatchLiquidationFinishedMessage,
@@ -40,7 +40,7 @@ interface BatchLiquidationOutput {
 }
 
 export default class BatchLiquidator
-  extends AbstractLiquidator
+  extends AbstractLiquidator<BatchLiquidatorSchema>
   implements ILiquidatorService
 {
   #batchLiquidator?: Address;

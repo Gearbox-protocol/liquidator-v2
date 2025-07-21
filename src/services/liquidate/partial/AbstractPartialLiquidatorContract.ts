@@ -11,7 +11,11 @@ import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
 
-import type { Config } from "../../../config/index.js";
+import type {
+  Config,
+  LiqduiatorConfig,
+  PartialLiquidatorSchema,
+} from "../../../config/index.js";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
@@ -29,7 +33,7 @@ export abstract class AbstractPartialLiquidatorContract
   logger: ILogger;
 
   @DI.Inject(DI.Config)
-  config!: Config;
+  config!: LiqduiatorConfig<PartialLiquidatorSchema>;
 
   @DI.Inject(DI.CreditAccountService)
   creditAccountService!: ICreditAccountsService;

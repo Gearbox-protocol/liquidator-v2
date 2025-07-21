@@ -11,7 +11,7 @@ import {
   encodeFunctionData,
 } from "viem";
 
-import type { Config } from "../config/index.js";
+import type { CommonSchema } from "../config/index.js";
 import type { ILogger } from "../log/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
@@ -24,9 +24,9 @@ export interface ExplainedError {
 
 export class ErrorHandler {
   log: ILogger;
-  config: Config;
+  config: CommonSchema;
 
-  constructor(config: Config, log: ILogger) {
+  constructor(config: CommonSchema, log: ILogger) {
     this.config = config;
     this.log = log;
   }

@@ -1,7 +1,7 @@
 import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
-
+import type { CommonSchema } from "../../config/index.js";
 import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
@@ -14,8 +14,11 @@ import type {
   StrategyPreview,
 } from "./types.js";
 
-export default abstract class SingularLiquidator<T extends StrategyPreview>
-  extends AbstractLiquidator
+export default abstract class SingularLiquidator<
+    T extends StrategyPreview,
+    S extends CommonSchema,
+  >
+  extends AbstractLiquidator<S>
   implements ILiquidatorService
 {
   protected abstract readonly name: string;
