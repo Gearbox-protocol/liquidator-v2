@@ -7,7 +7,7 @@ export const FullLiquidatorSchema = z.object({
   /**
    * Liquidator mode
    */
-  liquidationMode: z.literal("full").register(zommandRegistry, {
+  liquidationMode: z.literal("full").optional().register(zommandRegistry, {
     flags: "--liquidation-mode <mode>",
     description: "Liquidator mode (full/partial/batch/deleverage)",
     env: "LIQUIDATION_MODE",

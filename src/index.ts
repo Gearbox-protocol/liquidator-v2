@@ -49,7 +49,7 @@ const program = new Zommand("liquidator-v2", {
     const msg = [
       `Launching liquidator v${version} in`,
       schema.optimistic ? "optimistic" : "",
-      schema.liquidationMode,
+      schema.liquidationMode ?? "full",
       "mode",
     ]
       .filter(Boolean)

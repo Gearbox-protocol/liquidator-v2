@@ -13,17 +13,17 @@ export class LiquidatorFactory implements IFactory<ILiquidatorService, []> {
   config!: Config;
 
   produce(): ILiquidatorService {
-    switch (this.config.liquidationMode) {
+    const liquidationMode = this.config.liquidationMode ?? "full";
+    switch (liquidationMode) {
       case "full":
         return new SingularFullLiquidator();
       case "partial":
+      case "deleverage":
         return new SingularPartialLiquidator();
       case "batch":
         return new BatchLiquidator();
       default:
-        throw new Error(
-          `Invalid liquidation mode: ${this.config.liquidationMode}`,
-        );
+        throw new Error(`Invalid liquidation mode: ${liquidationMode}`);
     }
   }
 }
