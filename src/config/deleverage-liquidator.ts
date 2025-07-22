@@ -1,5 +1,5 @@
 import { zommandRegistry } from "@gearbox-protocol/cli-utils";
-import { MAX_UINT256, WAD, ZodAddress } from "@gearbox-protocol/sdk";
+import { ZodAddress } from "@gearbox-protocol/sdk";
 import { z } from "zod/v4";
 import { CommonSchema } from "./common.js";
 
