@@ -23,20 +23,6 @@ export const DeleverageLiquidatorSchema = z.object({
       description: "Address of the partial liquidation bot (for deleverage)",
       env: "PARTIAL_LIQUIDATION_BOT",
     }),
-  /**
-   * Filter out all accounts with HF >= threshold during scan stage
-   * For deleverage bot, this cannot be less than 100% (1n ** 18n)
-   */
-  hfThreshold: z.coerce
-    .bigint()
-    .min(WAD + 1n)
-    .max(MAX_UINT256)
-    .register(zommandRegistry, {
-      flags: "--hf-threshold <threshold>",
-      description:
-        "Filter out all accounts with HF >= threshold during scan stage",
-      env: "HF_THRESHOLD",
-    }),
 });
 
 export type DeleverageLiquidatorSchema = z.infer<
