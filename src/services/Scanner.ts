@@ -61,18 +61,22 @@ export class Scanner {
       this.#maxHealthFactor = MAX_UINT256;
     }
     if (this.config.liquidationMode === "deleverage") {
-      this.#minHealthFactor = WAD;
-      // this.config.partialLiquidationBot
-      const botMinHealthFactor = await this.client.pub.readContract({
-        address: this.config.partialLiquidationBot,
-        abi: iPartialLiquidationBotV3Abi,
-        functionName: "minHealthFactor",
-      });
-      this.#maxHealthFactor =
-        (BigInt(botMinHealthFactor) * WAD) / PERCENTAGE_FACTOR;
-      this.log.info(
-        `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
-      );
+      if (this.config.optimistic) {
+        this.#minHealthFactor = 0n;
+        this.#maxHealthFactor = MAX_UINT256;
+      } else {
+        this.#minHealthFactor = WAD;
+        const botMinHealthFactor = await this.client.pub.readContract({
+          address: this.config.partialLiquidationBot,
+          abi: iPartialLiquidationBotV3Abi,
+          functionName: "minHealthFactor",
+        });
+        this.#maxHealthFactor =
+          (BigInt(botMinHealthFactor) * WAD) / PERCENTAGE_FACTOR;
+        this.log.info(
+          `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
+        );
+      }
     }
 
     // we should not pin block during optimistic liquidations
