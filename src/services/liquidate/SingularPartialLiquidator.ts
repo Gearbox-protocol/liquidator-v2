@@ -6,7 +6,10 @@ import {
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
-import type { PartialLiquidatorSchema } from "../../config/index.js";
+import type {
+  DeleverageLiquidatorSchema,
+  PartialLiquidatorSchema,
+} from "../../config/index.js";
 import {
   createPartialLiquidators,
   humanizeOptimalLiquidation,
@@ -22,7 +25,7 @@ import type {
 
 export default class SingularPartialLiquidator extends SingularLiquidator<
   PartialLiquidationPreviewWithFallback,
-  PartialLiquidatorSchema
+  PartialLiquidatorSchema | DeleverageLiquidatorSchema
 > {
   protected readonly name = "partial";
   protected readonly adverb = "partially";
@@ -36,12 +39,14 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
   public async launch(asFallback?: boolean): Promise<void> {
     await super.launch(asFallback);
 
-    if (this.config.partialFallback && !asFallback) {
-      this.#fallback = new SingularFullLiquidator();
-      this.logger.debug("launching full liquidator as fallback");
-      await this.#fallback.launch(true);
-    } else {
-      this.logger.debug("fallback to full mode disabled");
+    if (this.config.liquidationMode === "partial") {
+      if (this.config.partialFallback && !asFallback) {
+        this.#fallback = new SingularFullLiquidator();
+        this.logger.debug("launching full liquidator as fallback");
+        await this.#fallback.launch(true);
+      } else {
+        this.logger.debug("fallback to full mode disabled");
+      }
     }
 
     this.#liquidatorForCM = createPartialLiquidators(this.sdk);
@@ -90,7 +95,12 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
     }
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const newLTs = await calcLiquidatableLTs(this.sdk, ca, 9990n, logger);
+    const newLTs = await calcLiquidatableLTs(
+      this.sdk,
+      ca,
+      this.config.liquidationMode === "partial" ? 9990n : 10005n,
+      logger,
+    );
     const snapshotId = await this.client.anvil.snapshot();
     const anvil = createAnvilClient({
       chain: this.sdk.provider.chain,
