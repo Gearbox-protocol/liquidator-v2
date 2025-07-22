@@ -32,10 +32,9 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
   ) {
     super(name, 300, router, curator);
     this.#partialLiquidationBot = V300_PARTIAL_LIQUIDATOR_BOTS[curator];
-    if (this.config.liquidationMode === "deleverage") {
-      throw new Error("v300 is not supported in deleverage mode");
+    if (this.config.liquidationMode === "partial") {
+      this.configAddress = this.config[configAddress];
     }
-    this.configAddress = this.config[configAddress];
   }
 
   public async deploy(): Promise<void> {

@@ -27,17 +27,24 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
+    let result: AAVELiquidatorV300Contract | undefined;
     switch (symbol) {
       case "GHO":
       case "DOLA":
-        return undefined;
+        result = undefined;
+        break;
       default:
-        return new AAVELiquidatorV300Contract(
+        result = new AAVELiquidatorV300Contract(
           cm.router.address,
           curator,
           aavePool,
         );
+        break;
     }
+    // if (result?.config.liquidationMode === "deleverage") {
+    //   return undefined;
+    // }
+    return result;
   }
 
   constructor(router: Address, curator: Curator, aavePool: Address) {

@@ -25,7 +25,11 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
-    return new SiloLiquidatorV300Contract(cm.router.address, curator);
+    const result = new SiloLiquidatorV300Contract(cm.router.address, curator);
+    // if (result.config.liquidationMode === "deleverage") {
+    //   return undefined;
+    // }
+    return result;
   }
 
   constructor(router: Address, curator: Curator) {

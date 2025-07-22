@@ -28,23 +28,29 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
     if (!flashMinter) {
       return undefined;
     }
+    let result: GHOLiquidatorV300Contract | undefined;
     switch (symbol) {
       case "GHO":
-        return new GHOLiquidatorV300Contract(
+        result = new GHOLiquidatorV300Contract(
           cm.router.address,
           curator,
           "GHO",
           flashMinter,
         );
+        break;
       case "DOLA":
-        return new GHOLiquidatorV300Contract(
+        result = new GHOLiquidatorV300Contract(
           cm.router.address,
           curator,
           "DOLA",
           flashMinter,
         );
+        break;
     }
-    return undefined;
+    // if (result?.config.liquidationMode === "deleverage") {
+    //   return undefined;
+    // }
+    return result;
   }
 
   constructor(
