@@ -1,10 +1,12 @@
 import {
   ghoFmTakerAbi,
   ghoLiquidatorAbi,
+  ghoUnwinderAbi,
 } from "@gearbox-protocol/next-contracts/abi";
 import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
+  GhoUnwinder_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
@@ -80,7 +82,10 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
       `ensured GhoFMTaker`,
     );
 
-    const liquidatorAddr = await this.deployLiquidator(ghoFMTakerAddr);
+    const liquidatorAddr =
+      this.config.liquidationMode === "deleverage"
+        ? await this.#deployUnwinder(ghoFMTakerAddr)
+        : await this.#deployLiquidator(ghoFMTakerAddr);
 
     const isAllowed = await this.client.pub.readContract({
       address: ghoFMTakerAddr,
@@ -110,7 +115,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     this.address = liquidatorAddr;
   }
 
-  protected async deployLiquidator(ghoFMTaker: Address): Promise<Address> {
+  async #deployLiquidator(ghoFMTaker: Address): Promise<Address> {
     const { address } = await this.deployer.ensureExists({
       abi: ghoLiquidatorAbi,
       bytecode: GhoLiquidator_bytecode,
@@ -123,6 +128,23 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
       ],
     });
     this.logger.debug(`ensured GHOLiquidator at ${address}`);
+    return address;
+  }
+
+  async #deployUnwinder(ghoFMTaker: Address): Promise<Address> {
+    const { address } = await this.deployer.ensureExists({
+      abi: ghoUnwinderAbi,
+      bytecode: GhoUnwinder_bytecode,
+      // constructor(address _owner, address _plb, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
+      args: [
+        this.owner,
+        this.partialLiquidationBot,
+        this.#flashMinter,
+        ghoFMTaker,
+        this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
+      ],
+    });
+    this.logger.debug(`ensured GhoUnwinder at ${address}`);
     return address;
   }
 }

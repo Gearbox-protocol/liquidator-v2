@@ -1,10 +1,12 @@
 import {
   aaveFlTakerAbi,
   aaveLiquidatorAbi,
+  aaveUnwinderAbi,
 } from "@gearbox-protocol/next-contracts/abi";
 import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
+  AaveUnwinder_bytecode,
 } from "@gearbox-protocol/next-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import { type Address, isAddress } from "viem";
@@ -54,7 +56,10 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     });
     this.logger.debug(`AaveFLTaker address: ${aaveFlTakerAddr}`);
 
-    const liquidatorAddr = await this.deployLiquidator(aaveFlTakerAddr);
+    const liquidatorAddr =
+      this.config.liquidationMode === "deleverage"
+        ? await this.#deployUnwinder(aaveFlTakerAddr)
+        : await this.#deployLiquidator(aaveFlTakerAddr);
 
     const isAllowed = await this.client.pub.readContract({
       address: aaveFlTakerAddr,
@@ -84,7 +89,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     this.address = liquidatorAddr;
   }
 
-  protected async deployLiquidator(flTaker: Address): Promise<Address> {
+  async #deployLiquidator(flTaker: Address): Promise<Address> {
     const { address } = await this.deployer.ensureExists({
       abi: aaveLiquidatorAbi,
       bytecode: AaveLiquidator_bytecode,
@@ -92,6 +97,17 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
       args: [this.owner, this.#aavePool, flTaker],
     });
     this.logger.debug(`AaveLiquidator address: ${address}`);
+    return address;
+  }
+
+  async #deployUnwinder(flTaker: Address): Promise<Address> {
+    const { address } = await this.deployer.ensureExists({
+      abi: aaveUnwinderAbi,
+      bytecode: AaveUnwinder_bytecode,
+      // constructor(address _owner, address _plb, address _aavePool, address _aaveFLTaker
+      args: [this.owner, this.partialLiquidationBot, this.#aavePool, flTaker],
+    });
+    this.logger.debug(`AaveUnwinder address: ${address}`);
     return address;
   }
 }

@@ -54,7 +54,11 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
     let address = this.configAddress;
     if (!address) {
       this.logger.debug(
-        { aavePool: this.#aavePool, router: this.router, bot: this.bot },
+        {
+          aavePool: this.#aavePool,
+          router: this.router,
+          bot: this.partialLiquidationBot,
+        },
         "deploying partial liquidator",
       );
 
@@ -84,7 +88,12 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
       hash = await this.client.wallet.deployContract({
         abi: aaveLiquidatorAbi,
         bytecode: AaveLiquidator_bytecode,
-        args: [this.router, this.bot, this.#aavePool, aaveFlTakerAddr],
+        args: [
+          this.router,
+          this.partialLiquidationBot,
+          this.#aavePool,
+          aaveFlTakerAddr,
+        ],
       });
       this.logger.debug(`waiting for liquidator to deploy, tx hash: ${hash}`);
       const { contractAddress: liquidatorAddr } =

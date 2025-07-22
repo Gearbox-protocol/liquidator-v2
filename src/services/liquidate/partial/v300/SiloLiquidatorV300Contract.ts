@@ -39,7 +39,7 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
       this.logger.debug(
         {
           router: this.router,
-          bot: this.bot,
+          bot: this.partialLiquidationBot,
         },
         "deploying partial liquidator",
       );
@@ -71,7 +71,7 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
         abi: siloLiquidatorAbi,
         bytecode: SiloLiquidator_bytecode,
         // constructor(address _router, address _plb, address _siloFLTaker) AbstractLiquidator(_router, _plb) {
-        args: [this.router, this.bot, this.siloFLTaker],
+        args: [this.router, this.partialLiquidationBot, this.siloFLTaker],
       });
       this.logger.debug(
         `waiting for SiloLiquidator to deploy, tx hash: ${hash}`,

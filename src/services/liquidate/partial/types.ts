@@ -31,6 +31,7 @@ export interface IPartialLiquidatorContract {
   addCreditManager: (cm: CreditSuite) => void;
   /**
    * Registers credit manager addresses in liquidator contract if necessary
+   * Performs any async preload operations
    */
   configure: () => Promise<void>;
   /**

@@ -59,7 +59,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     ca: CreditAccountData,
     priceUpdates: Pick<OnDemandPriceUpdate, "data" | "priceFeed">[],
   ): Promise<OptimalPartialLiquidation> {
-    const optimalHF = this.getOptimalPartialHF(ca);
+    const optimalHF = this.getOptimalHealthFactor(ca);
     const {
       result: [
         tokenOut,
@@ -141,5 +141,14 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         preview.calls,
       ],
     });
+  }
+
+  protected get partialLiquidationBot(): Address {
+    if (this.config.liquidationMode === "deleverage") {
+      return this.config.partialLiquidationBot;
+    }
+    throw new Error(
+      "partial liquidation bot is only available in deleverage mode",
+    );
   }
 }

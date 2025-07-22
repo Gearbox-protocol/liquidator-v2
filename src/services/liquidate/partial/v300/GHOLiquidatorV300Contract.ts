@@ -70,7 +70,7 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
         {
           flashMinter: this.#flashMinter,
           router: this.router,
-          bot: this.bot,
+          bot: this.partialLiquidationBot,
           token: this.#token,
         },
         "deploying partial liquidator",
@@ -110,7 +110,7 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
         // address _router, address _plb, address _ghoFlashMinter, address _ghoFMTaker, address _gho
         args: [
           this.router,
-          this.bot,
+          this.partialLiquidationBot,
           this.#flashMinter,
           ghoFMTakerAddr,
           this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,

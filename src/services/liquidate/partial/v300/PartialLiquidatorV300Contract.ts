@@ -21,7 +21,7 @@ import { humanizePreviewPartialLiquidation } from "../utils.js";
 import { V300_PARTIAL_LIQUIDATOR_BOTS } from "./constants.js";
 
 export default abstract class PartialLiquidatorV300Contract extends AbstractPartialLiquidatorContract {
-  #bot: Address;
+  #partialLiquidationBot: Address;
   protected readonly configAddress?: Address;
 
   constructor(
@@ -31,7 +31,10 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     configAddress: keyof PartialV300ConfigSchema,
   ) {
     super(name, 300, router, curator);
-    this.#bot = V300_PARTIAL_LIQUIDATOR_BOTS[curator];
+    this.#partialLiquidationBot = V300_PARTIAL_LIQUIDATOR_BOTS[curator];
+    if (this.config.liquidationMode === "deleverage") {
+      throw new Error("v300 is not supported in deleverage mode");
+    }
     this.configAddress = this.config[configAddress];
   }
 
@@ -72,21 +75,23 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       await this.updateRouterAddress(this.router);
     }
 
-    if (!hexEq(this.bot, currentBot)) {
-      this.logger.warn(`need to update bot from ${currentBot} to ${this.bot}`);
+    if (!hexEq(this.partialLiquidationBot, currentBot)) {
+      this.logger.warn(
+        `need to update bot from ${currentBot} to ${this.partialLiquidationBot}`,
+      );
       const receipt = await this.client.simulateAndWrite({
         abi: iPartialLiquidatorAbi,
         address: this.address,
         functionName: "setPartialLiquidationBot",
-        args: [this.bot],
+        args: [this.partialLiquidationBot],
       });
       if (receipt.status === "reverted") {
         throw new Error(
-          `PartialLiquidator.setPartialLiquidationBot(${this.bot}) tx ${receipt.transactionHash} reverted`,
+          `PartialLiquidator.setPartialLiquidationBot(${this.partialLiquidationBot}) tx ${receipt.transactionHash} reverted`,
         );
       }
       this.logger.info(
-        `set bot to ${this.bot} in tx ${receipt.transactionHash}`,
+        `set bot to ${this.partialLiquidationBot} in tx ${receipt.transactionHash}`,
       );
     }
 
@@ -97,7 +102,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     ca: CreditAccountData,
     priceUpdates: Pick<OnDemandPriceUpdate, "data" | "token" | "reserve">[],
   ): Promise<OptimalPartialLiquidation> {
-    const optimalHF = this.getOptimalPartialHF(ca);
+    const optimalHF = this.getOptimalHealthFactor(ca);
     const {
       result: [
         tokenOut,
@@ -187,7 +192,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     });
   }
 
-  protected get bot(): Address {
-    return this.#bot;
+  protected get partialLiquidationBot(): Address {
+    return this.#partialLiquidationBot;
   }
 }

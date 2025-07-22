@@ -22,9 +22,11 @@ import {
 } from "./v310/index.js";
 
 const FACTORIES: IPartialLiqudatorContractFactory[] = [
+  // v300
   AAVELiquidatorV300Contract,
   GHOLiquidatorV300Contract,
   SiloLiquidatorV300Contract,
+  // v310
   AAVELiquidatorV310Contract,
   GHOLiquidatorV310Contract,
   SiloLiquidatorV310Contract,

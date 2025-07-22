@@ -5,7 +5,10 @@ import type {
 } from "@gearbox-protocol/sdk";
 import { MAX_UINT256, PERCENTAGE_FACTOR, WAD } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
-import { iCreditManagerV3Abi } from "@gearbox-protocol/types/abi";
+import {
+  iCreditManagerV3Abi,
+  iPartialLiquidationBotV3Abi,
+} from "@gearbox-protocol/types/abi";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
 import type { Config } from "../config/index.js";
@@ -42,6 +45,8 @@ export class Scanner {
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
   #lastUpdated = 0n;
+  #maxHealthFactor = MAX_UINT256;
+  #minHealthFactor = 0n;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -50,6 +55,26 @@ export class Scanner {
     }
 
     const block = await this.client.pub.getBlock();
+
+    this.#maxHealthFactor = this.config.hfThreshold;
+    if (this.config.optimistic && this.config.liquidationMode === "partial") {
+      this.#maxHealthFactor = MAX_UINT256;
+    }
+    if (this.config.liquidationMode === "deleverage") {
+      this.#minHealthFactor = WAD;
+      // this.config.partialLiquidationBot
+      const botMinHealthFactor = await this.client.pub.readContract({
+        address: this.config.partialLiquidationBot,
+        abi: iPartialLiquidationBotV3Abi,
+        functionName: "minHealthFactor",
+      });
+      this.#maxHealthFactor =
+        (BigInt(botMinHealthFactor) * WAD) / PERCENTAGE_FACTOR;
+      this.log.info(
+        `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
+      );
+    }
+
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.#updateAccounts(
@@ -110,18 +135,10 @@ export class Scanner {
       );
       accounts = acc ? [acc] : [];
     } else {
-      let maxHealthFactor = this.config.hfThreshold;
-      let minHealthFactor = 0n;
-      if (this.config.optimistic && this.config.liquidationMode === "partial") {
-        maxHealthFactor = MAX_UINT256;
-      }
-      if (this.config.liquidationMode === "deleverage") {
-        minHealthFactor = WAD;
-      }
       accounts = await this.caService.getCreditAccounts(
         {
-          minHealthFactor,
-          maxHealthFactor,
+          minHealthFactor: this.#minHealthFactor,
+          maxHealthFactor: this.#maxHealthFactor,
           includeZeroDebt: false,
           creditManager: this.config.debugManager,
         },

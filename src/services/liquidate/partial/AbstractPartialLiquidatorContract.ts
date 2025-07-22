@@ -6,13 +6,16 @@ import type {
   ICreditAccountsService,
   OnDemandPriceUpdate,
 } from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0 } from "@gearbox-protocol/sdk";
-import { iDegenDistributorV3Abi } from "@gearbox-protocol/types/abi";
+import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
+import {
+  iDegenDistributorV3Abi,
+  iPartialLiquidationBotV3Abi,
+} from "@gearbox-protocol/types/abi";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
 
 import type {
-  Config,
+  DeleverageLiquidatorSchema,
   LiqduiatorConfig,
   PartialLiquidatorSchema,
 } from "../../../config/index.js";
@@ -33,7 +36,9 @@ export abstract class AbstractPartialLiquidatorContract
   logger: ILogger;
 
   @DI.Inject(DI.Config)
-  config!: LiqduiatorConfig<PartialLiquidatorSchema>;
+  config!: LiqduiatorConfig<
+    PartialLiquidatorSchema | DeleverageLiquidatorSchema
+  >;
 
   @DI.Inject(DI.CreditAccountService)
   creditAccountService!: ICreditAccountsService;
@@ -45,6 +50,7 @@ export abstract class AbstractPartialLiquidatorContract
   #address?: Address;
   #router: Address;
   #creditManagers: CreditSuite[] = [];
+  #optimalDeleverageHF = new AddressMap<bigint>();
 
   public readonly name: string;
   public readonly curator: Curator;
@@ -86,6 +92,10 @@ export abstract class AbstractPartialLiquidatorContract
         );
         this.#registeredCMs[address.toLowerCase() as Address] = true;
       }
+    }
+
+    if (this.config.liquidationMode === "deleverage") {
+      await this.#setOptimalDeleverageHF();
     }
   }
 
@@ -271,20 +281,32 @@ export abstract class AbstractPartialLiquidatorContract
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType<unknown[], any, any>>;
 
+  protected abstract get partialLiquidationBot(): Address;
+
   public get envVariables(): Record<string, string> {
     return {};
   }
 
-  protected getOptimalPartialHF(ca: CreditAccountData): bigint {
-    let hf = this.config.targetPartialHF;
-    for (const t of this.config.calculatePartialHF ?? []) {
-      if (ca.underlying === t) {
-        hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
-        break;
+  /**
+   * Returns HF that credit account should have after deleverage or partial liquidation
+   * @param ca
+   * @returns
+   */
+  protected getOptimalHealthFactor(ca: CreditAccountData): bigint {
+    if (this.config.liquidationMode === "partial") {
+      let hf = this.config.targetPartialHF;
+      for (const t of this.config.calculatePartialHF ?? []) {
+        if (ca.underlying === t) {
+          hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
+          break;
+        }
       }
+      this.caLogger(ca).debug(`optimal HF is ${hf}`);
+      return hf;
+    } else if (this.config.liquidationMode === "deleverage") {
+      return this.#getOptimalDeleverageHF();
     }
-    this.caLogger(ca).debug(`optimal HF is ${hf}`);
-    return hf;
+    throw new Error("invalid liquidation mode");
   }
 
   protected set address(value: Address) {
@@ -318,5 +340,36 @@ export abstract class AbstractPartialLiquidatorContract
       manager: cm.name,
       hf: ca.healthFactor,
     });
+  }
+
+  async #setOptimalDeleverageHF(): Promise<void> {
+    if (this.#optimalDeleverageHF.has(this.partialLiquidationBot)) {
+      return;
+    }
+    const [minHealthFactor, maxHealthFactor] = await this.client.pub.multicall({
+      contracts: [
+        {
+          address: this.partialLiquidationBot,
+          abi: iPartialLiquidationBotV3Abi,
+          functionName: "minHealthFactor",
+        },
+        {
+          address: this.partialLiquidationBot,
+          abi: iPartialLiquidationBotV3Abi,
+          functionName: "maxHealthFactor",
+        },
+      ],
+      allowFailure: false,
+    });
+    const hf = BigInt(minHealthFactor + maxHealthFactor) / 2n;
+    this.#optimalDeleverageHF.upsert(this.partialLiquidationBot, hf);
+    this.logger.debug(`set optimal deleverage HF to ${hf}`);
+  }
+
+  #getOptimalDeleverageHF(): bigint {
+    if (!this.#optimalDeleverageHF.has(this.partialLiquidationBot)) {
+      throw new Error("optimal deleverage HF not configured");
+    }
+    return this.#optimalDeleverageHF.mustGet(this.partialLiquidationBot);
   }
 }
