@@ -170,14 +170,10 @@ export class Scanner {
     }
 
     if (this.config.liquidationMode === "deleverage") {
-      const before = accounts.length;
       accounts = await this.#filterDeleverageAccounts(
         accounts,
         this.config.partialLiquidationBot,
         blockNumber,
-      );
-      this.log.debug(
-        `filtered out ${before - accounts.length} non-deleveragable accounts`,
       );
     }
 
@@ -277,11 +273,18 @@ export class Scanner {
     partialLiquidationBot: Address,
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
+    const botList = this.caService.sdk.botListContract?.address;
+    if (!botList) {
+      this.log.warn(
+        "bot list contract not found, skipping deleverage accounts filtering",
+      );
+      return accounts;
+    }
     const res = await this.client.pub.multicall({
       contracts: accounts.map(
         ca =>
           ({
-            address: ca.creditAccount,
+            address: botList,
             abi: iBotListV310Abi,
             functionName: "getBotStatus",
             args: [partialLiquidationBot, ca.creditAccount],
@@ -291,13 +294,20 @@ export class Scanner {
       blockNumber,
     });
     const result: CreditAccountData[] = [];
+    let errored = 0;
     for (let i = 0; i < accounts.length; i++) {
       const ca = accounts[i];
       const r = res[i];
       if (r.status === "success" && !r.result[1]) {
         result.push(ca);
+      } else if (r.status === "failure") {
+        errored++;
       }
     }
+    this.log.debug(
+      { errored, before: accounts.length, after: result.length, botList },
+      "filtered accounts for deleverage",
+    );
     return result;
   }
 
