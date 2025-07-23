@@ -298,8 +298,11 @@ export class Scanner {
     for (let i = 0; i < accounts.length; i++) {
       const ca = accounts[i];
       const r = res[i];
-      if (r.status === "success" && !r.result[1]) {
-        result.push(ca);
+      if (r.status === "success") {
+        const [permissions, forbidden] = r.result;
+        if (!!permissions && !forbidden) {
+          result.push(ca);
+        }
       } else if (r.status === "failure") {
         errored++;
       }
