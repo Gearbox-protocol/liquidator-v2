@@ -25,6 +25,7 @@ export interface RawPartialLiquidationPreview {
 
 export interface IPartialLiquidatorContract {
   address: Address;
+  readonly isDeployed: boolean;
   name: string;
   version: number;
   envVariables: Record<string, string>;

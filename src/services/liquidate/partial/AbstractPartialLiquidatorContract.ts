@@ -46,7 +46,7 @@ export abstract class AbstractPartialLiquidatorContract
   @DI.Inject(DI.Client)
   client!: Client;
 
-  #registeredCMs: Record<Address, boolean> = {};
+  #registeredCMs = new AddressMap<boolean>();
   #address?: Address;
   #router: Address;
   #creditManagers: CreditSuite[] = [];
@@ -94,7 +94,7 @@ export abstract class AbstractPartialLiquidatorContract
         this.logger.debug(
           `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
-        this.#registeredCMs[address.toLowerCase() as Address] = true;
+        this.#registeredCMs.upsert(address, true);
       }
     }
 
@@ -259,12 +259,12 @@ export abstract class AbstractPartialLiquidatorContract
       this.logger.info(
         `registered credit manager ${name} (${address}) in tx ${receipt.transactionHash}`,
       );
-      this.#registeredCMs[address.toLowerCase() as Address] = true;
+      this.#registeredCMs.upsert(address, true);
     } catch (e) {
       this.logger.error(
         `failed to register credit manager ${name} (${address}): ${e}`,
       );
-      this.#registeredCMs[address.toLowerCase() as Address] = false;
+      this.#registeredCMs.upsert(address, false);
     }
   }
 

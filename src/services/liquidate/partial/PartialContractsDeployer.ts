@@ -43,7 +43,9 @@ export class PartialContractsDeployer extends SDKConstruct {
     const contracts = this.#createInstances();
 
     for (const contract of contracts) {
-      await contract.deploy();
+      if (!contract.isDeployed) {
+        await contract.deploy();
+      }
       await contract.configure();
     }
   }
