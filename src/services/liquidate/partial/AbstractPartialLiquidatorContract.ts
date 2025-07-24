@@ -51,6 +51,10 @@ export abstract class AbstractPartialLiquidatorContract
   #router: Address;
   #creditManagers: CreditSuite[] = [];
   #optimalDeleverageHF = new AddressMap<bigint>();
+  /**
+   * Mapping of internal creditManagers to creditAccounts
+   */
+  #creditAccounts = new AddressMap<Address>();
 
   public readonly name: string;
   public readonly curator: Curator;
@@ -73,17 +77,17 @@ export abstract class AbstractPartialLiquidatorContract
    * Registers credit manager addresses in liquidator contract if necessary
    */
   public async configure(): Promise<void> {
-    const cmToCa = await this.#getLiquidatorAccounts();
+    this.#creditAccounts = await this.#getLiquidatorAccounts();
 
     try {
-      await this.#claimDegenNFTs(cmToCa);
+      await this.#claimDegenNFTs();
     } catch (e) {
       this.logger.warn(`failed to obtain degen NFTs: ${e}`);
     }
 
     for (const cm of this.#creditManagers) {
       const { address, name } = cm.creditManager;
-      const ca = cmToCa[address];
+      const ca = this.#creditAccounts.get(address);
       if (ca === ADDRESS_0X0) {
         await this.#registerCM(cm);
       } else {
@@ -129,7 +133,7 @@ export abstract class AbstractPartialLiquidatorContract
    * Returns mapping [Credit Manager Address] => [Address of Partialidator's CA in this CM]
    * @returns
    */
-  async #getLiquidatorAccounts(): Promise<Record<Address, Address>> {
+  async #getLiquidatorAccounts(): Promise<AddressMap<Address>> {
     const results = await this.client.pub.multicall({
       allowFailure: false,
       contracts: this.#creditManagers.map(cm => ({
@@ -142,7 +146,7 @@ export abstract class AbstractPartialLiquidatorContract
       })),
     });
     this.logger.debug(`loaded ${results.length} liquidator credit accounts`);
-    return Object.fromEntries(
+    return new AddressMap(
       this.#creditManagers.map((cm, i) => [
         cm.creditManager.address,
         results[i],
@@ -152,16 +156,16 @@ export abstract class AbstractPartialLiquidatorContract
 
   /**
    * Claim NFT tokens as liquidator contract, so that the contract can open credit accounts in Degen NFT protected credit managers
-   * @param cmToCa
    * @returns
    */
-  async #claimDegenNFTs(cmToCa: Record<string, string>): Promise<void> {
+  async #claimDegenNFTs(): Promise<void> {
     const account = this.address;
     let nfts = 0;
     for (const cm of this.#creditManagers) {
       const { address, name } = cm.creditManager;
       const { degenNFT } = cm.creditFacade;
-      if (cmToCa[address] === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
+      const account = this.#creditAccounts.get(address);
+      if (account === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
         this.logger.debug(
           `need degen NFT ${degenNFT} for credit manager ${name}`,
         );
@@ -318,6 +322,10 @@ export abstract class AbstractPartialLiquidatorContract
       throw new Error("liquidator contract address not set");
     }
     return this.#address;
+  }
+
+  public get isDeployed(): boolean {
+    return !!this.#address;
   }
 
   protected get router(): Address {

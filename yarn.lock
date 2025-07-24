@@ -1728,9 +1728,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.39.3":
-  version: 5.39.3
-  resolution: "@gearbox-protocol/cli-utils@npm:5.39.3"
+"@gearbox-protocol/cli-utils@npm:^5.39.5":
+  version: 5.39.5
+  resolution: "@gearbox-protocol/cli-utils@npm:5.39.5"
   dependencies:
     "@aws-sdk/client-secrets-manager": "npm:^3.848.0"
     "@aws-sdk/client-ssm": "npm:^3.849.0"
@@ -1739,7 +1739,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     yaml: "npm:^2.8.0"
     zod: "npm:^4.0.5"
-  checksum: 10c0/343e78c4e0dcb0ffee986ab983a119f6618169cef1191ca85bf02cdf6fda41e235975c66f0782ae62e0bf22f39a7a20c49501d40ab33656b0e4ad75a1439843f
+  checksum: 10c0/96b329ad1a4b1dc38f567d741c01e12882c2b4a2c61bd2e36f7bf524860a3433c5689dd90f70d0bfd669576034058cc4e20401ca9997e3269fdcbe38bf3fcac6
   languageName: node
   linkType: hard
 
@@ -1760,10 +1760,10 @@ __metadata:
     "@commitlint/cli": "npm:^19.8.1"
     "@commitlint/config-conventional": "npm:^19.8.1"
     "@gearbox-protocol/biome-config": "npm:^1.0.0"
-    "@gearbox-protocol/cli-utils": "npm:^5.39.3"
+    "@gearbox-protocol/cli-utils": "npm:^5.39.5"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.4"
-    "@gearbox-protocol/sdk": "npm:8.12.0"
+    "@gearbox-protocol/sdk": "npm:8.12.3"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.1.0"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1785,7 +1785,7 @@ __metadata:
     typescript: "npm:^5.8.3"
     viem: "npm:^2.33.0"
     vitest: "npm:^3.2.4"
-    zod: "npm:^4.0.5"
+    zod: "npm:^4.0.8"
   languageName: unknown
   linkType: soft
 
@@ -1796,9 +1796,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:8.12.0":
-  version: 8.12.0
-  resolution: "@gearbox-protocol/sdk@npm:8.12.0"
+"@gearbox-protocol/sdk@npm:8.12.3":
+  version: 8.12.3
+  resolution: "@gearbox-protocol/sdk@npm:8.12.3"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1812,7 +1812,7 @@ __metadata:
     zod: "npm:^4.0.5"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/99d077327765b04dcea85cf405b8ecdbb67a74df6d8a49cc204d12e3324c4f8d7adb74f9a0c6fcec358311c9efbfb47c58a0223eee0517a57e9f9d5ca831a11e
+  checksum: 10c0/ff859f632ad6d4f25587f2c6f94af3cc7d7eba16019c07522cccf6e4e9ff8401b7d2a6b46e30f887cb0a479ea8b7d45f35a1ba2519fa78e5200b895d9e026df5
   languageName: node
   linkType: hard
 
@@ -4553,11 +4553,11 @@ __metadata:
   linkType: hard
 
 "jiti@npm:^2.4.1":
-  version: 2.5.0
-  resolution: "jiti@npm:2.5.0"
+  version: 2.5.1
+  resolution: "jiti@npm:2.5.1"
   bin:
     jiti: lib/jiti-cli.mjs
-  checksum: 10c0/62fa20669dbe038bf20f65bb2aa4a2c78d3c1a9c12e669cc93b7c2e61b8d85fa7363a4c927fceda35bc07e85195421abc7f878dd67a9bf1368cfe55da702f54a
+  checksum: 10c0/f0a38d7d8842cb35ffe883038166aa2d52ffd21f1a4fc839ae4076ea7301c22a1f11373f8fc52e2667de7acde8f3e092835620dd6f72a0fbe9296b268b0874bb
   languageName: node
   linkType: hard
 
@@ -4792,9 +4792,9 @@ __metadata:
   linkType: hard
 
 "loupe@npm:^3.1.0, loupe@npm:^3.1.4":
-  version: 3.1.4
-  resolution: "loupe@npm:3.1.4"
-  checksum: 10c0/5c2e6aefaad25f812d361c750b8cf4ff91d68de289f141d7c85c2ce9bb79eeefa06a93c85f7b87cba940531ed8f15e492f32681d47eed23842ad1963eb3a154d
+  version: 3.2.0
+  resolution: "loupe@npm:3.2.0"
+  checksum: 10c0/f572fd9e38db8d36ae9eede305480686e310d69bc40394b6842838ebc6c3860a0e35ab30182f33606ab2d8a685d9ff6436649269f8218a1c3385ca329973cb2c
   languageName: node
   linkType: hard
 
@@ -5269,7 +5269,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picomatch@npm:^4.0.2":
+"picomatch@npm:^4.0.2, picomatch@npm:^4.0.3":
   version: 4.0.3
   resolution: "picomatch@npm:4.0.3"
   checksum: 10c0/9582c951e95eebee5434f59e426cddd228a7b97a0161a375aed4be244bd3fe8e3a31b846808ea14ef2c8a2527a6eeab7b3946a67d5979e81694654f939473ae2
@@ -6062,13 +6062,13 @@ __metadata:
   linkType: hard
 
 "vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0":
-  version: 7.0.5
-  resolution: "vite@npm:7.0.5"
+  version: 7.0.6
+  resolution: "vite@npm:7.0.6"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.4.6"
     fsevents: "npm:~2.3.3"
-    picomatch: "npm:^4.0.2"
+    picomatch: "npm:^4.0.3"
     postcss: "npm:^8.5.6"
     rollup: "npm:^4.40.0"
     tinyglobby: "npm:^0.2.14"
@@ -6112,7 +6112,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/95fb7f393adc2d2428e0e033ed4ea599323118f645415c35db3df40bd2c5a2962b0b4c967f35cfb80ca04efb1eb51bdb5f4b63529bb5f9aa3603d9fbeb50543f
+  checksum: 10c0/3b14dfa661281b4843789884199ba2a9cca940a7666970036fe3fb1abff52b88e63e8be5ab419dd04d9f96c0415ee0f1e3ec8ebe357041648af7ccd8e348b6ad
   languageName: node
   linkType: hard
 
@@ -6342,9 +6342,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^4.0.5":
-  version: 4.0.5
-  resolution: "zod@npm:4.0.5"
-  checksum: 10c0/59449d731ca63849b6bcb14300aa6e2f042d440b3ed294b45c248519aec78780f85a5d1939a62c2ce82e9dc60afca77c8005e0a98d7517b0c2586d6c76940424
+"zod@npm:^4.0.5, zod@npm:^4.0.8":
+  version: 4.0.8
+  resolution: "zod@npm:4.0.8"
+  checksum: 10c0/a650a3fc01b6bc4d623cebad1ebcd7358a4465b57724cb3e1b9270cb8edbbf2a2ec86836118a551e214a80cb1dc74bbfa5ca5f735e0614d1bba784a5b6e830b0
   languageName: node
   linkType: hard

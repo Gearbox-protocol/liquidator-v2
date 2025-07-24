@@ -1,5 +1,4 @@
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import { TypedObjectUtils } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -11,9 +10,9 @@ import type {
   PartialLiquidatorSchema,
 } from "../../config/index.js";
 import {
-  createPartialLiquidators,
   humanizeOptimalLiquidation,
   type IPartialLiquidatorContract,
+  PartialContractsDeployer,
 } from "./partial/index.js";
 import SingularFullLiquidator from "./SingularFullLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";
@@ -30,11 +29,13 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
   protected readonly name = "partial";
   protected readonly adverb = "partially";
 
-  /**
-   * mapping of credit manager address to deployed partial liquidator
-   */
-  #liquidatorForCM: Record<Address, IPartialLiquidatorContract> = {};
   #fallback?: SingularFullLiquidator;
+  #deployer: PartialContractsDeployer;
+
+  constructor() {
+    super();
+    this.#deployer = new PartialContractsDeployer(this.sdk);
+  }
 
   public async launch(asFallback?: boolean): Promise<void> {
     await super.launch(asFallback);
@@ -48,34 +49,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         this.logger.debug("fallback to full mode disabled");
       }
     }
-
-    this.#liquidatorForCM = createPartialLiquidators(this.sdk);
-    const contracts = new Set<IPartialLiquidatorContract>();
-    for (const [cm, contract] of TypedObjectUtils.entries(
-      this.#liquidatorForCM,
-    )) {
-      this.logger.debug(
-        `Will use ${contract.name} for ${this.sdk.provider.addressLabels.get(cm)}`,
-      );
-      contracts.add(contract);
-    }
-    this.logger.debug(
-      `Need to deploy ${contracts.size} partial liquidator contracts: ${Array.from(
-        contracts,
-      )
-        .map(c => c.name)
-        .join(", ")}`,
-    );
-    let expectedEnv: Record<string, string> = {};
-    for (const contract of contracts) {
-      await contract.deploy();
-      await contract.configure();
-      expectedEnv = {
-        ...expectedEnv,
-        ...contract.envVariables,
-      };
-    }
-    this.logger.debug(expectedEnv, "expected env");
   }
 
   public async makeLiquidatable(
@@ -278,6 +251,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
   private liquidatorForCA(
     ca: CreditAccountData,
   ): IPartialLiquidatorContract | undefined {
-    return this.#liquidatorForCM[ca.creditManager];
+    return this.#deployer.getLiquidatorForCM(ca.creditManager);
   }
 }
