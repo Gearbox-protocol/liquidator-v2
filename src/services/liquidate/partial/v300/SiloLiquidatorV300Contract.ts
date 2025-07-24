@@ -121,8 +121,8 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
 
       address = liquidatorAddr;
     }
-    this.logger.info(`partial liquidator contract addesss: ${address}`);
     this.address = address;
+    this.logger.info(`partial liquidator contract addess: ${this.address}`);
   }
 
   async #setTokenToSilo(symbol: string, silo: Address): Promise<void> {
