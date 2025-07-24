@@ -158,7 +158,6 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
       address = liquidatorAddr;
     }
     this.address = address;
-    this.logger.info(`partial liquidator contract addess: ${this.address}`);
   }
 
   public override get envVariables(): Record<string, string> {

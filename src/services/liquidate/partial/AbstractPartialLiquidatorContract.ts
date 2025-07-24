@@ -324,11 +324,12 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected set address(value: Address) {
     this.#address = value;
+    this.logger.info(`partial liquidator contract address: ${this.#address}`);
   }
 
   public get address(): Address {
     if (!this.#address) {
-      throw new Error("liquidator contract address not set");
+      throw new Error(`liquidator contract address not set for ${this.name}`);
     }
     return this.#address;
   }
