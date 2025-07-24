@@ -49,6 +49,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         this.logger.debug("fallback to full mode disabled");
       }
     }
+
+    await this.#deployer.launch();
   }
 
   public async makeLiquidatable(
