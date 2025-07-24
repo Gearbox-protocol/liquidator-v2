@@ -71,7 +71,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       this.logger.warn(
         `need to update router from ${currentRouter} to ${this.router}`,
       );
-      await this.updateRouterAddress(this.router);
+      await this.configureRouterAddress(this.router);
     }
 
     if (!hexEq(this.partialLiquidationBot, currentBot)) {

@@ -49,7 +49,10 @@ export abstract class AbstractPartialLiquidatorContract
   #registeredCMs = new AddressMap<boolean>();
   #address?: Address;
   #router: Address;
-  #creditManagers: CreditSuite[] = [];
+  /**
+   * Credit managers for which async write operations (register, obtaining degen, etc...) are pending
+   */
+  #pendingCreditManagers: CreditSuite[] = [];
   #optimalDeleverageHF = new AddressMap<bigint>();
   /**
    * Mapping of internal creditManagers to creditAccounts
@@ -73,8 +76,16 @@ export abstract class AbstractPartialLiquidatorContract
     this.logger = DI.create(DI.Logger, this.name.replaceAll(" ", ""));
   }
 
+  public addCreditManager(cm: CreditSuite): void {
+    this.logger.debug(
+      `adding credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
+    );
+    this.#pendingCreditManagers.push(cm);
+  }
+
   /**
    * Registers credit manager addresses in liquidator contract if necessary
+   * Can be called multiple times, each time processes pending credit managers
    */
   public async configure(): Promise<void> {
     this.#creditAccounts = await this.#getLiquidatorAccounts();
@@ -85,7 +96,7 @@ export abstract class AbstractPartialLiquidatorContract
       this.logger.warn(`failed to obtain degen NFTs: ${e}`);
     }
 
-    for (const cm of this.#creditManagers) {
+    for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
       const ca = this.#creditAccounts.get(address);
       if (ca === ADDRESS_0X0) {
@@ -101,9 +112,14 @@ export abstract class AbstractPartialLiquidatorContract
     if (this.config.liquidationMode === "deleverage") {
       await this.#setOptimalDeleverageHF();
     }
+
+    this.logger.debug(
+      `configured ${this.#pendingCreditManagers.length} credit managers`,
+    );
+    this.#pendingCreditManagers = [];
   }
 
-  protected async updateRouterAddress(router: Address): Promise<void> {
+  protected async configureRouterAddress(router: Address): Promise<void> {
     const receipt = await this.client.simulateAndWrite({
       abi: parseAbi(["function setRouter(address newRouter)"]),
       address: this.address,
@@ -122,13 +138,6 @@ export abstract class AbstractPartialLiquidatorContract
 
   public abstract deploy(): Promise<void>;
 
-  public addCreditManager(cm: CreditSuite): void {
-    this.logger.debug(
-      `adding credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
-    );
-    this.#creditManagers.push(cm);
-  }
-
   /**
    * Returns mapping [Credit Manager Address] => [Address of Partialidator's CA in this CM]
    * @returns
@@ -136,7 +145,7 @@ export abstract class AbstractPartialLiquidatorContract
   async #getLiquidatorAccounts(): Promise<AddressMap<Address>> {
     const results = await this.client.pub.multicall({
       allowFailure: false,
-      contracts: this.#creditManagers.map(cm => ({
+      contracts: this.#pendingCreditManagers.map(cm => ({
         abi: parseAbi([
           "function cmToCA(address creditManager) view returns (address creditAccount)",
         ]),
@@ -147,7 +156,7 @@ export abstract class AbstractPartialLiquidatorContract
     });
     this.logger.debug(`loaded ${results.length} liquidator credit accounts`);
     return new AddressMap(
-      this.#creditManagers.map((cm, i) => [
+      this.#pendingCreditManagers.map((cm, i) => [
         cm.creditManager.address,
         results[i],
       ]),
@@ -161,7 +170,7 @@ export abstract class AbstractPartialLiquidatorContract
   async #claimDegenNFTs(): Promise<void> {
     const account = this.address;
     let nfts = 0;
-    for (const cm of this.#creditManagers) {
+    for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
       const { degenNFT } = cm.creditFacade;
       const account = this.#creditAccounts.get(address);
