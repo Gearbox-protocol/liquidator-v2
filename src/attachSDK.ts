@@ -7,13 +7,12 @@ import {
   GearboxSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
-import { createTransport } from "@gearbox-protocol/sdk/dev";
 
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
-import { formatTs } from "./utils/index.js";
+import { createTransport, formatTs } from "./utils/index.js";
 
 export default async function attachSDK(): Promise<ICreditAccountsService> {
   const config: Config = DI.get(DI.Config);
@@ -58,17 +57,7 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     );
   }
 
-  const transport = createTransport({
-    rpcProviders: [
-      {
-        provider: "alchemy",
-        keys: config.alchemyKeys?.map(k => k.value) ?? [],
-      },
-      { provider: "drpc", keys: config.drpcKeys?.map(k => k.value) ?? [] },
-    ],
-    rpcUrls: config.jsonRpcProviders?.map(k => k.value) ?? [],
-    protocol: "http",
-    network: config.network,
+  const transport = createTransport(config, {
     timeout: 600_000,
   });
 

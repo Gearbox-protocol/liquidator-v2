@@ -1,6 +1,6 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
-import { createTransport } from "@gearbox-protocol/sdk/dev";
 import { createPublicClient } from "viem";
+import { createTransport } from "../utils/index.js";
 import type { CommonSchema } from "./common.js";
 import type { PartialV300ConfigSchema } from "./partial-liquidator.js";
 import type { ConfigSchema } from "./schema.js";
@@ -17,18 +17,7 @@ export type LiqduiatorConfig<TSchema extends CommonSchema> = TSchema & {
 
 export async function loadConfig(schema: ConfigSchema): Promise<Config> {
   const client = createPublicClient({
-    transport: createTransport({
-      rpcProviders: [
-        {
-          provider: "alchemy",
-          keys: schema.alchemyKeys?.map(k => k.value) ?? [],
-        },
-        { provider: "drpc", keys: schema.drpcKeys?.map(k => k.value) ?? [] },
-      ],
-      rpcUrls: schema.jsonRpcProviders?.map(k => k.value) ?? [],
-      protocol: "http",
-      network: schema.network,
-    }),
+    transport: createTransport(schema),
     name: "preload client",
   });
 

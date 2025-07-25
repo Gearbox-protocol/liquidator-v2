@@ -99,6 +99,17 @@ export const CommonSchema = z.object({
       env: "JSON_RPC_PROVIDERS",
     }),
   /**
+   * RPC providers to use with their keys
+   */
+  enabledProviders: z
+    .array(z.enum(["alchemy", "drpc"]))
+    .default(["alchemy"])
+    .register(zommandRegistry, {
+      flags: "--enabled-providers <providers...>",
+      description: "keyed RPC providers to use, comma separated",
+      env: "ENABLED_PROVIDERS",
+    }),
+  /**
    * Alchemy API keys to use
    */
   alchemyKeys: stringArrayLike()

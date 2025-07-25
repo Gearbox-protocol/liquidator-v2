@@ -2,7 +2,7 @@ import { nextTick } from "node:process";
 
 import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type { AnvilClient, AnvilNodeInfo } from "@gearbox-protocol/sdk/dev";
-import { createAnvilClient, createTransport } from "@gearbox-protocol/sdk/dev";
+import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
 import type { Abi } from "abitype";
 import type {
   Address,
@@ -33,6 +33,7 @@ import { exceptionsAbis } from "../data/index.js";
 import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
+import { createTransport } from "../utils/index.js";
 import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
@@ -58,23 +59,8 @@ export default class Client {
   #testClient?: AnvilClient;
 
   public async launch(): Promise<void> {
-    const {
-      jsonRpcProviders = [],
-      alchemyKeys = [],
-      drpcKeys = [],
-      chainId,
-      network,
-      optimistic,
-      privateKey,
-    } = this.config;
-    const transport = createTransport({
-      rpcProviders: [
-        { provider: "alchemy", keys: alchemyKeys?.map(k => k.value) ?? [] },
-        { provider: "drpc", keys: drpcKeys?.map(k => k.value) ?? [] },
-      ],
-      rpcUrls: jsonRpcProviders?.map(k => k.value) ?? [],
-      protocol: "http",
-      network,
+    const { chainId, network, optimistic, privateKey } = this.config;
+    const transport = createTransport(this.config, {
       timeout: optimistic ? 240_000 : 10_000,
       retryCount: optimistic ? 3 : undefined,
     });
