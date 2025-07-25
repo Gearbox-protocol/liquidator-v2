@@ -60,7 +60,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     this.#flashMinter = flashMinter;
   }
 
-  public async deploy(): Promise<void> {
+  protected async deploy(): Promise<void> {
     const { address: ghoFMTakerAddr } = await this.deployer.ensureExists({
       abi: ghoFmTakerAbi,
       bytecode: GhoFMTaker_bytecode,

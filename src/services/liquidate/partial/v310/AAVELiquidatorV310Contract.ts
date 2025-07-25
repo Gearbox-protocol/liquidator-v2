@@ -47,7 +47,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     this.#aavePool = aavePool;
   }
 
-  public async deploy(): Promise<void> {
+  protected async deploy(): Promise<void> {
     const { address: aaveFlTakerAddr } = await this.deployer.ensureExists({
       abi: aaveFlTakerAbi,
       bytecode: AaveFLTaker_bytecode,

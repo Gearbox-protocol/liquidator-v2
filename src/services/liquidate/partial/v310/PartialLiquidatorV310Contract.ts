@@ -30,6 +30,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     Chain,
     PrivateKeyAccount
   >;
+  #setupComplete = false;
 
   constructor(name: string, router: Address, curator: Curator) {
     super(name, 310, router, curator);
@@ -39,19 +40,26 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   /**
    * Registers router, partial liquidation bot and credit manager addresses in liquidator contract if necessary
    */
-  public override async configure(): Promise<void> {
-    const currentRouter = await this.client.pub.readContract({
-      abi: parseAbi(["function router() view returns (address)"]),
-      address: this.address,
-      functionName: "router",
-    });
+  protected override async configure(): Promise<void> {
+    // call this only once at startup
+    // in theory, sdk router (which is passed as constructor arg) can change during runtime
+    // but it's very rare thing and it'll be breaking anyway, most likely
+    if (!this.#setupComplete) {
+      const currentRouter = await this.client.pub.readContract({
+        abi: parseAbi(["function router() view returns (address)"]),
+        address: this.address,
+        functionName: "router",
+      });
 
-    if (!hexEq(currentRouter, this.router)) {
-      this.logger.warn(
-        `need to update router from ${currentRouter} to ${this.router}`,
-      );
-      await this.configureRouterAddress(this.router);
+      if (!hexEq(currentRouter, this.router)) {
+        this.logger.warn(
+          `need to update router from ${currentRouter} to ${this.router}`,
+        );
+        await this.configureRouterAddress(this.router);
+      }
+      this.#setupComplete = true;
     }
+
     await super.configure();
   }
 

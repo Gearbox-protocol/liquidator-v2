@@ -50,6 +50,10 @@ export default class BatchLiquidator
     await this.#deployContract();
   }
 
+  public async syncState(_blockNumber: bigint): Promise<void> {
+    // do nothing
+  }
+
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
     if (!accounts.length) {
       return;

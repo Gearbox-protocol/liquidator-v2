@@ -50,7 +50,11 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
       }
     }
 
-    await this.#deployer.launch();
+    await this.#deployer.syncState();
+  }
+
+  public override async syncState(_blockNumber: bigint): Promise<void> {
+    await this.#deployer.syncState();
   }
 
   public async makeLiquidatable(

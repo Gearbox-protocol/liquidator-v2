@@ -39,19 +39,14 @@ export class PartialContractsDeployer extends SDKConstruct {
    **/
   #uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
 
-  public async launch(): Promise<void> {
-    const contracts = this.#createInstances();
-
-    for (const contract of contracts) {
-      if (!contract.isDeployed) {
-        await contract.deploy();
-      }
-      await contract.configure();
+  public async syncState(): Promise<void> {
+    this.#createInstances();
+    for (const contract of this.#liquidatorForCM.values()) {
+      await contract.syncState();
     }
   }
 
-  #createInstances(): IPartialLiquidatorContract[] {
-    const result = new Set<IPartialLiquidatorContract>();
+  #createInstances(): void {
     for (const cm of this.sdk.marketRegister.creditManagers) {
       if (this.#liquidatorForCM.has(cm.creditManager.address)) {
         continue;
@@ -87,7 +82,6 @@ export class PartialContractsDeployer extends SDKConstruct {
         this.#uniqueContracts[liquidatorForCM.name] = liquidatorForCM;
         this.#uniqueContracts[liquidatorForCM.name].addCreditManager(cm);
         this.#liquidatorForCM.upsert(cm.creditManager.address, liquidatorForCM);
-        result.add(this.#uniqueContracts[liquidatorForCM.name]);
         this.logger?.debug(
           `will use partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name}`,
         );
@@ -97,8 +91,6 @@ export class PartialContractsDeployer extends SDKConstruct {
         );
       }
     }
-
-    return Array.from(result);
   }
 
   public getLiquidatorForCM(

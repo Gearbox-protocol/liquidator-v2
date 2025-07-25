@@ -24,6 +24,10 @@ export default abstract class SingularLiquidator<
   protected abstract readonly name: string;
   protected abstract readonly adverb: string;
 
+  public async syncState(_blockNumber: bigint): Promise<void> {
+    // do nothing
+  }
+
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
     if (!accounts.length) {
       return;

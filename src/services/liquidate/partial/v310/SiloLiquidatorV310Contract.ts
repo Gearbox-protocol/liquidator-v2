@@ -34,7 +34,7 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     super("Silo", router, curator);
   }
 
-  public async deploy(): Promise<void> {
+  protected async deploy(): Promise<void> {
     const { address: siloFLTakerAddr } = await this.deployer.ensureExists({
       abi: siloFlTakerAbi,
       bytecode: SiloFLTaker_bytecode,

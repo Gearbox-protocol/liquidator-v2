@@ -23,6 +23,7 @@ import { V300_PARTIAL_LIQUIDATOR_BOTS } from "./constants.js";
 export default abstract class PartialLiquidatorV300Contract extends AbstractPartialLiquidatorContract {
   #partialLiquidationBot: Address;
   protected readonly configAddress?: Address;
+  #setupComplete = false;
 
   constructor(
     name: string,
@@ -37,7 +38,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     }
   }
 
-  public async deploy(): Promise<void> {
+  protected async deploy(): Promise<void> {
     if (this.configAddress) {
       this.logger.debug(`found address in config: ${this.configAddress}`);
     }
@@ -46,52 +47,57 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
   /**
    * Registers router, partial liquidation bot and credit manager addresses in liquidator contract if necessary
    */
-  public override async configure(): Promise<void> {
-    const [currentRouter, currentBot] = await this.client.pub.multicall({
-      contracts: [
-        {
-          // abi: iPartialLiquidatorAbi,
-          abi: parseAbi(["function router() view returns (address)"]),
-          address: this.address,
-          functionName: "router",
-        },
-        {
-          // abi: iPartialLiquidatorAbi,
-          abi: parseAbi([
-            "function partialLiquidationBot() view returns (address)",
-          ]),
-          address: this.address,
-          functionName: "partialLiquidationBot",
-        },
-      ],
-      allowFailure: false,
-    });
-
-    if (!hexEq(currentRouter, this.router)) {
-      this.logger.warn(
-        `need to update router from ${currentRouter} to ${this.router}`,
-      );
-      await this.configureRouterAddress(this.router);
-    }
-
-    if (!hexEq(this.partialLiquidationBot, currentBot)) {
-      this.logger.warn(
-        `need to update bot from ${currentBot} to ${this.partialLiquidationBot}`,
-      );
-      const receipt = await this.client.simulateAndWrite({
-        abi: iPartialLiquidatorAbi,
-        address: this.address,
-        functionName: "setPartialLiquidationBot",
-        args: [this.partialLiquidationBot],
+  protected override async configure(): Promise<void> {
+    // treat router address and bot address as immutable during runtime
+    // so we need to check them only once at startup
+    if (!this.#setupComplete) {
+      const [currentRouter, currentBot] = await this.client.pub.multicall({
+        contracts: [
+          {
+            // abi: iPartialLiquidatorAbi,
+            abi: parseAbi(["function router() view returns (address)"]),
+            address: this.address,
+            functionName: "router",
+          },
+          {
+            // abi: iPartialLiquidatorAbi,
+            abi: parseAbi([
+              "function partialLiquidationBot() view returns (address)",
+            ]),
+            address: this.address,
+            functionName: "partialLiquidationBot",
+          },
+        ],
+        allowFailure: false,
       });
-      if (receipt.status === "reverted") {
-        throw new Error(
-          `PartialLiquidator.setPartialLiquidationBot(${this.partialLiquidationBot}) tx ${receipt.transactionHash} reverted`,
+
+      if (!hexEq(currentRouter, this.router)) {
+        this.logger.warn(
+          `need to update router from ${currentRouter} to ${this.router}`,
+        );
+        await this.configureRouterAddress(this.router);
+      }
+
+      if (!hexEq(this.partialLiquidationBot, currentBot)) {
+        this.logger.warn(
+          `need to update bot from ${currentBot} to ${this.partialLiquidationBot}`,
+        );
+        const receipt = await this.client.simulateAndWrite({
+          abi: iPartialLiquidatorAbi,
+          address: this.address,
+          functionName: "setPartialLiquidationBot",
+          args: [this.partialLiquidationBot],
+        });
+        if (receipt.status === "reverted") {
+          throw new Error(
+            `PartialLiquidator.setPartialLiquidationBot(${this.partialLiquidationBot}) tx ${receipt.transactionHash} reverted`,
+          );
+        }
+        this.logger.info(
+          `set bot to ${this.partialLiquidationBot} in tx ${receipt.transactionHash}`,
         );
       }
-      this.logger.info(
-        `set bot to ${this.partialLiquidationBot} in tx ${receipt.transactionHash}`,
-      );
+      this.#setupComplete = true;
     }
 
     await super.configure();

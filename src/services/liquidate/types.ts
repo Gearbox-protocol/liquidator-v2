@@ -31,6 +31,7 @@ export type PartialLiquidationPreviewWithFallback =
 
 export interface ILiquidatorService {
   launch: (asFallback?: boolean) => Promise<void>;
+  syncState: (blockNumber: bigint) => Promise<void>;
   liquidate: (accounts: CreditAccountData[]) => Promise<void>;
   /**
    *

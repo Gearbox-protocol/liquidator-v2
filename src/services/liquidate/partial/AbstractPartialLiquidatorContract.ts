@@ -54,10 +54,6 @@ export abstract class AbstractPartialLiquidatorContract
    */
   #pendingCreditManagers: CreditSuite[] = [];
   #optimalDeleverageHF = new AddressMap<bigint>();
-  /**
-   * Mapping of internal creditManagers to creditAccounts
-   */
-  #creditAccounts = new AddressMap<Address>();
 
   public readonly name: string;
   public readonly curator: Curator;
@@ -83,22 +79,34 @@ export abstract class AbstractPartialLiquidatorContract
     this.#pendingCreditManagers.push(cm);
   }
 
+  public async syncState(): Promise<void> {
+    if (!this.isDeployed) {
+      await this.deploy();
+    }
+    await this.configure();
+  }
+
   /**
    * Registers credit manager addresses in liquidator contract if necessary
    * Can be called multiple times, each time processes pending credit managers
    */
-  public async configure(): Promise<void> {
-    this.#creditAccounts = await this.#getLiquidatorAccounts();
+  protected async configure(): Promise<void> {
+    if (this.#pendingCreditManagers.length === 0) {
+      return;
+    }
+    // only affects pending credit managers
+    // so it's safe to be used inside syncState
+    const creditAccounts = await this.#getLiquidatorAccounts();
 
     try {
-      await this.#claimDegenNFTs();
+      await this.#claimDegenNFTs(creditAccounts);
     } catch (e) {
       this.logger.warn(`failed to obtain degen NFTs: ${e}`);
     }
 
     for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
-      const ca = this.#creditAccounts.get(address);
+      const ca = creditAccounts.get(address);
       if (ca === ADDRESS_0X0) {
         await this.#registerCM(cm);
       } else {
@@ -110,6 +118,8 @@ export abstract class AbstractPartialLiquidatorContract
     }
 
     if (this.config.liquidationMode === "deleverage") {
+      // this operation is cached and will be called only once
+      // so it's safe to be used inside syncState
       await this.#setOptimalDeleverageHF();
     }
 
@@ -136,7 +146,7 @@ export abstract class AbstractPartialLiquidatorContract
     );
   }
 
-  public abstract deploy(): Promise<void>;
+  protected abstract deploy(): Promise<void>;
 
   /**
    * Returns mapping [Credit Manager Address] => [Address of Partialidator's CA in this CM]
@@ -167,13 +177,13 @@ export abstract class AbstractPartialLiquidatorContract
    * Claim NFT tokens as liquidator contract, so that the contract can open credit accounts in Degen NFT protected credit managers
    * @returns
    */
-  async #claimDegenNFTs(): Promise<void> {
+  async #claimDegenNFTs(creditAccounts: AddressMap<Address>): Promise<void> {
     const account = this.address;
     let nfts = 0;
     for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
       const { degenNFT } = cm.creditFacade;
-      const account = this.#creditAccounts.get(address);
+      const account = creditAccounts.get(address);
       if (account === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
         this.logger.debug(
           `need degen NFT ${degenNFT} for credit manager ${name}`,
@@ -334,7 +344,7 @@ export abstract class AbstractPartialLiquidatorContract
     return this.#address;
   }
 
-  public get isDeployed(): boolean {
+  protected get isDeployed(): boolean {
     return !!this.#address;
   }
 

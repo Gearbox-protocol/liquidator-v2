@@ -56,7 +56,7 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
     this.#aavePool = aavePool;
   }
 
-  public async deploy(): Promise<void> {
+  protected async deploy(): Promise<void> {
     await super.deploy();
     let address = this.configAddress;
     if (!address) {

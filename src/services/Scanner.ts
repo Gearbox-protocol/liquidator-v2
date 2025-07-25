@@ -111,6 +111,7 @@ export class Scanner {
         // and redstone price updates will be updated in credit account service calls
         skipPriceUpdate: true,
       });
+      await this.liquidatorService.syncState(blockNumber);
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
     } catch (e) {
