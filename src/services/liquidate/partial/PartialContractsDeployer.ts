@@ -80,7 +80,9 @@ export class PartialContractsDeployer extends SDKConstruct {
         liquidatorForCM =
           this.#uniqueContracts[liquidatorForCM.name] ?? liquidatorForCM;
         this.#uniqueContracts[liquidatorForCM.name] = liquidatorForCM;
-        this.#uniqueContracts[liquidatorForCM.name].addCreditManager(cm);
+        this.#uniqueContracts[
+          liquidatorForCM.name
+        ].queueCreditManagerRegistration(cm);
         this.#liquidatorForCM.upsert(cm.creditManager.address, liquidatorForCM);
         this.logger?.debug(
           `will use partial liquidator contract for ${cm.creditManager.name}: ${liquidatorForCM.name}`,

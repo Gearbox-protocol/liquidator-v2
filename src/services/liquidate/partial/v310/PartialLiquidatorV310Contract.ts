@@ -39,6 +39,14 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     this.deployer = new Create2Deployer(this.sdk, this.client.wallet);
   }
 
+  public override queueCreditManagerRegistration(cm: CreditSuite): void {
+    // For v310, credit managers are registered automatically, unless they have degen NFT
+    if (cm.creditFacade.degenNFT === ADDRESS_0X0) {
+      return;
+    }
+    super.queueCreditManagerRegistration(cm);
+  }
+
   /**
    * Registers router, partial liquidation bot and credit manager addresses in liquidator contract if necessary
    */

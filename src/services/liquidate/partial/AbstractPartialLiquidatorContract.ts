@@ -72,11 +72,11 @@ export abstract class AbstractPartialLiquidatorContract
     this.logger = DI.create(DI.Logger, this.name.replaceAll(" ", ""));
   }
 
-  public addCreditManager(cm: CreditSuite): void {
-    this.logger.debug(
-      `adding credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
-    );
+  public queueCreditManagerRegistration(cm: CreditSuite): void {
     this.#pendingCreditManagers.push(cm);
+    this.logger.debug(
+      `queued credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
+    );
   }
 
   public async syncState(): Promise<void> {
