@@ -10,6 +10,8 @@ import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import {
   type Address,
   type Chain,
+  encodeAbiParameters,
+  type Hex,
   type PrivateKeyAccount,
   parseAbi,
   type SimulateContractReturnType,
@@ -123,6 +125,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         priceUpdates,
         BigInt(this.config.slippage),
         4n, // TODO: splits
+        this.extraData,
       ],
       gas: 550_000_000n,
     });
@@ -147,6 +150,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         preview.flashLoanAmount,
         preview.priceUpdates,
         preview.calls,
+        this.extraData,
       ],
     });
   }
@@ -158,5 +162,11 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     throw new Error(
       "partial liquidation bot is only available in deleverage mode",
     );
+  }
+
+  protected get extraData(): Hex {
+    return this.config.liquidationMode === "deleverage"
+      ? encodeAbiParameters([{ type: "address" }], [this.partialLiquidationBot])
+      : "0x0";
   }
 }

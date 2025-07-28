@@ -104,8 +104,8 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address } = await this.deployer.ensureExists({
       abi: aaveUnwinderAbi,
       bytecode: AaveUnwinder_bytecode,
-      // constructor(address _owner, address _plb, address _aavePool, address _aaveFLTaker
-      args: [this.owner, this.partialLiquidationBot, this.#aavePool, flTaker],
+      // constructor(address _owner, address _aavePool, address _aaveFLTaker)
+      args: [this.owner, this.#aavePool, flTaker],
     });
     this.logger.debug(`AaveUnwinder address: ${address}`);
     return address;

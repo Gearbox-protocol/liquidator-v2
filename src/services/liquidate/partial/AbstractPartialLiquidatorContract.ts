@@ -304,6 +304,9 @@ export abstract class AbstractPartialLiquidatorContract
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType<unknown[], any, any>>;
 
+  /**
+   * Returns partial liquidation bot, or deleverage bot
+   */
   protected abstract get partialLiquidationBot(): Address;
 
   public get envVariables(): Record<string, string> {

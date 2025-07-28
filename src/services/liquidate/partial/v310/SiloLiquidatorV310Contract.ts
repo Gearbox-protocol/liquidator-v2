@@ -133,8 +133,8 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address } = await this.deployer.ensureExists({
       abi: siloUnwinderAbi,
       bytecode: SiloUnwinder_bytecode,
-      // constructor(address _owner, address _plb, address _siloFLTaker)
-      args: [this.owner, this.partialLiquidationBot, this.siloFLTaker],
+      // constructor(address _owner, address _siloFLTaker)
+      args: [this.owner, this.siloFLTaker],
     });
     this.logger.debug(`SiloUnwinder address: ${address}`);
     return address;

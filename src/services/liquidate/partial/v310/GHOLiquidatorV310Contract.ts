@@ -135,10 +135,9 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const { address } = await this.deployer.ensureExists({
       abi: ghoUnwinderAbi,
       bytecode: GhoUnwinder_bytecode,
-      // constructor(address _owner, address _plb, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
+      // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
       args: [
         this.owner,
-        this.partialLiquidationBot,
         this.#flashMinter,
         ghoFMTaker,
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,

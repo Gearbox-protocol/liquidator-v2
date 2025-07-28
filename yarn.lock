@@ -1762,7 +1762,7 @@ __metadata:
     "@gearbox-protocol/biome-config": "npm:^1.0.0"
     "@gearbox-protocol/cli-utils": "npm:^5.39.5"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.5"
+    "@gearbox-protocol/next-contracts": "npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.6"
     "@gearbox-protocol/sdk": "npm:8.12.3"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.1.0"
@@ -1789,10 +1789,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/next-contracts@npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.5":
-  version: 2.5.0-next.5
-  resolution: "@gearbox-protocol/liquidator-v2-contracts@npm:2.5.0-next.5"
-  checksum: 10c0/536ea82e0e64ceb5cd8058a246403382adee0c39e63535c54b108c17ea9730300af233b37b76cc7c89066de197560bc326255af1f8b2d3451d784866118161e8
+"@gearbox-protocol/next-contracts@npm:@gearbox-protocol/liquidator-v2-contracts@2.5.0-next.6":
+  version: 2.5.0-next.6
+  resolution: "@gearbox-protocol/liquidator-v2-contracts@npm:2.5.0-next.6"
+  checksum: 10c0/c1a1b5e6733cd9c6b4eb9f2a2476de5e5eabdfdf43493480b3f528a4fe1b2010cac288ab6c5985ee42a915c03b9edfd614e27679940ee10eca013215fc7f1813
   languageName: node
   linkType: hard
 
