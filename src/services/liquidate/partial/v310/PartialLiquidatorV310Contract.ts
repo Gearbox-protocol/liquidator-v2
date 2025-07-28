@@ -1,4 +1,4 @@
-import { iPartialLiquidatorAbi } from "@gearbox-protocol/next-contracts/abi";
+import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-contracts/abi";
 import type {
   CreditAccountData,
   CreditSuite,

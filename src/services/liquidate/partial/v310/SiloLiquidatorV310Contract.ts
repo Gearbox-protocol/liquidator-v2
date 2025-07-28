@@ -2,12 +2,12 @@ import {
   siloFlTakerAbi,
   siloLiquidatorAbi,
   siloUnwinderAbi,
-} from "@gearbox-protocol/next-contracts/abi";
+} from "@gearbox-protocol/liquidator-contracts/abi";
 import {
   SiloFLTaker_bytecode,
   SiloLiquidator_bytecode,
   SiloUnwinder_bytecode,
-} from "@gearbox-protocol/next-contracts/bytecode";
+} from "@gearbox-protocol/liquidator-contracts/bytecode";
 import { type CreditSuite, type Curator, hexEq } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 

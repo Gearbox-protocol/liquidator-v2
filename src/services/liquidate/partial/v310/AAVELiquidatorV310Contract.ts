@@ -2,12 +2,12 @@ import {
   aaveFlTakerAbi,
   aaveLiquidatorAbi,
   aaveUnwinderAbi,
-} from "@gearbox-protocol/next-contracts/abi";
+} from "@gearbox-protocol/liquidator-contracts/abi";
 import {
   AaveFLTaker_bytecode,
   AaveLiquidator_bytecode,
   AaveUnwinder_bytecode,
-} from "@gearbox-protocol/next-contracts/bytecode";
+} from "@gearbox-protocol/liquidator-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import { type Address, isAddress } from "viem";
 

@@ -2,12 +2,12 @@ import {
   ghoFmTakerAbi,
   ghoLiquidatorAbi,
   ghoUnwinderAbi,
-} from "@gearbox-protocol/next-contracts/abi";
+} from "@gearbox-protocol/liquidator-contracts/abi";
 import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
   GhoUnwinder_bytecode,
-} from "@gearbox-protocol/next-contracts/bytecode";
+} from "@gearbox-protocol/liquidator-contracts/bytecode";
 import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
