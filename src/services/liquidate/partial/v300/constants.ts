@@ -7,4 +7,5 @@ export const V300_PARTIAL_LIQUIDATOR_BOTS: Record<Curator, Address> = {
   cp0x: ADDRESS_0X0,
   Re7: ADDRESS_0X0,
   "Invariant Group": ADDRESS_0X0,
+  Tulipa: ADDRESS_0X0,
 };
