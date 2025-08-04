@@ -1,7 +1,6 @@
 import { createServer } from "node:http";
-
+import type { GearboxSDK, ICreditAccountsService } from "@gearbox-protocol/sdk";
 import { customAlphabet } from "nanoid";
-
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
@@ -22,6 +21,9 @@ export default class HealthCheckerService {
   @DI.Inject(DI.Config)
   config!: Config;
 
+  @DI.Inject(DI.CreditAccountService)
+  caService!: ICreditAccountsService;
+
   #start = Math.round(Date.now() / 1000);
   #id = nanoid();
 
@@ -39,9 +41,20 @@ export default class HealthCheckerService {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
-            start_time: this.#start,
-            block_number: this.scanner.lastUpdated,
+            startTime: this.#start,
             version,
+            network: this.config.network,
+            family: "liquidators",
+            liquidationMode: this.config.liquidationMode,
+
+            currentBlock: Number(this.sdk.currentBlock),
+            timestamp: Number(this.sdk.timestamp),
+            marketsConfigurators:
+              this.sdk.marketRegister.marketConfigurators.map(mc => mc.address),
+            pools: this.sdk.marketRegister.pools.map(p => p.pool.address),
+            creditManagers: this.sdk.marketRegister.creditManagers.map(
+              cm => cm.creditManager.address,
+            ),
           }),
         );
       } else if (req.url === "/metrics") {
@@ -100,5 +113,9 @@ start_time{${labels}} ${this.#start}
 block_number{${labels}} ${this.scanner.lastUpdated}
 
 `;
+  }
+
+  private get sdk(): GearboxSDK {
+    return this.caService.sdk;
   }
 }
