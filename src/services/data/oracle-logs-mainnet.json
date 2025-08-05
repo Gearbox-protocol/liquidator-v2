@@ -5,7 +5,7 @@
   },
   "toBlock": {
     "__type": "bigint",
-    "__value": "22684011"
+    "__value": "23076343"
   },
   "logs": [
     {
@@ -7200,6 +7200,29 @@
       ],
       "transactionHash": "0xac7a6c806c9afa3a172a3a9b6590879398825ce9b1963c25229a4cc38b32a2e1",
       "transactionIndex": 205
+    },
+    {
+      "eventName": "SetReservePriceFeedStatus",
+      "args": {
+        "token": "0x5E362eb2c0706Bd1d134689eC75176018385430B",
+        "active": true
+      },
+      "address": "0x599f585d1042a14aab194ac8031b2048defdfb85",
+      "blockHash": "0x2be68267739b407a7b92366a5b2d52535407933f1a747cbf29e7bff45a180763",
+      "blockNumber": {
+        "__type": "bigint",
+        "__value": "22838462"
+      },
+      "blockTimestamp": "0x68666c27",
+      "data": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "logIndex": 546,
+      "removed": false,
+      "topics": [
+        "0x8065e881e49e3c3c04dadba3c10e1abdd738d4aa4a7807b49dc5d4600ec62885",
+        "0x0000000000000000000000005e362eb2c0706bd1d134689ec75176018385430b"
+      ],
+      "transactionHash": "0xa3102556d716b63e1384d7e5dc57ef29ec7348093eb41769752cf930f24f1bb1",
+      "transactionIndex": 168
     }
   ]
 }

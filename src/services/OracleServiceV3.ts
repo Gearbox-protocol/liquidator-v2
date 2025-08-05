@@ -130,6 +130,7 @@ export default class OracleServiceV3 {
     this.#loadCachedEvents();
     await this.#updateFeeds(block);
     this.log.info(`started with ${Object.keys(this.#feeds).length} tokens`);
+    // await this.#saveEventsCache();
 
     // TODO: TxParser is really old and weird class, until we refactor it it's the best place to have this
     TxParser.addTokens(this.config.network);
@@ -265,7 +266,23 @@ export default class OracleServiceV3 {
     );
   }
 
+  // #eventsCache: OracleEvent[] = [];
+
+  // async #saveEventsCache(): Promise<void> {
+  //   const data = json_stringify({
+  //     fromBlock: ORACLE_START_BLOCK[this.config.network],
+  //     toBlock: this.#lastBlock,
+  //     logs: this.#eventsCache,
+  //   });
+  //   await writeFile(
+  //     `./oracle-logs-${this.config.network}.json`.toLowerCase(),
+  //     data,
+  //   );
+  //   process.exit(1);
+  // }
+
   #processEvent(l: OracleEvent): void {
+    // this.#eventsCache.push(l);
     switch (l.eventName) {
       case "SetPriceFeed":
         this.#setPriceFeed(l);
