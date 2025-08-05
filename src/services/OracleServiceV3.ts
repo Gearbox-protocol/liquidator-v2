@@ -18,9 +18,9 @@ import { TxParser } from "../utils/ethers-6-temp/txparser/index.js";
 import { getLogsPaginated } from "../utils/getLogsPaginated.js";
 import type { AddressProviderService } from "./AddressProviderService.js";
 import type Client from "./Client.js";
-import oracleLogsArbitrum from "./data/oracle-logs-arbitrum.json" assert { type: "json" };
-import oracleLogsMainnet from "./data/oracle-logs-mainnet.json" assert { type: "json" };
-import oracleLogsOptimism from "./data/oracle-logs-optimism.json" assert { type: "json" };
+import oracleLogsArbitrum from "./data/oracle-logs-arbitrum.json" with { type: "json" };
+import oracleLogsMainnet from "./data/oracle-logs-mainnet.json" with { type: "json" };
+import oracleLogsOptimism from "./data/oracle-logs-optimism.json" with { type: "json" };
 
 interface DataFeedMulticall {
   abi: typeof iRedstonePriceFeedAbi;
