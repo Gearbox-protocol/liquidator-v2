@@ -39,9 +39,14 @@ export default class HealthCheckerService {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
-            start_time: this.#start,
-            block_number: this.scanner.lastUpdated,
+            startTime: this.#start,
             version,
+            network: this.config.network,
+            family: "liquidators",
+            liquidationMode: this.config.liquidationMode,
+
+            currentBlock: Number(this.scanner.lastUpdated),
+            timestamp: Number(this.scanner.lastTimestamp),
           }),
         );
       } else if (req.url === "/metrics") {

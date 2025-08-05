@@ -70,6 +70,7 @@ export class Scanner {
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
   #lastUpdated = 0n;
+  #lastTimestamp = 0n;
   #errorHandler?: ErrorHandler;
 
   public async launch(): Promise<void> {
@@ -91,13 +92,13 @@ export class Scanner {
     // because during optimistic liquidations we need to call evm_mine to make redstone work
     await this.#updateAccounts(this.config.optimistic ? undefined : block);
     if (!this.config.optimistic) {
-      this.client.pub.watchBlockNumber({
-        onBlockNumber: n => this.#onBlock(n),
+      this.client.pub.watchBlocks({
+        onBlock: b => this.#onBlock(b.number, b.timestamp),
       });
     }
   }
 
-  async #onBlock(blockNumber: bigint): Promise<void> {
+  async #onBlock(blockNumber: bigint, timestamp: bigint): Promise<void> {
     if (this.#processing) {
       this.log.debug(
         `skipping block ${blockNumber}, still processing block ${this.#processing}`,
@@ -109,6 +110,7 @@ export class Scanner {
       await this.oracle.update(blockNumber);
       await this.#updateAccounts(blockNumber);
       this.#lastUpdated = blockNumber;
+      this.#lastTimestamp = timestamp;
     } catch (e) {
       this.log.error(
         new Error(`failed to process block ${blockNumber}`, { cause: e }),
@@ -538,6 +540,10 @@ export class Scanner {
 
   public get lastUpdated(): bigint {
     return this.#lastUpdated;
+  }
+
+  public get lastTimestamp(): bigint {
+    return this.#lastTimestamp;
   }
 }
 
