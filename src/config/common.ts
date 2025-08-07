@@ -102,8 +102,8 @@ export const CommonSchema = z.object({
    * RPC providers to use with their keys
    */
   enabledProviders: stringArrayLike()
-    .pipe(z.array(z.enum(["alchemy", "drpc"])))
-    .default(["alchemy"])
+    .pipe(z.array(z.enum(["alchemy", "drpc", "custom"])))
+    .default(["custom", "alchemy"])
     .register(zommandRegistry, {
       flags: "--enabled-providers <providers...>",
       description: "keyed RPC providers to use, comma separated",
