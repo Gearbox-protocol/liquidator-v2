@@ -1,11 +1,16 @@
 import { createServer } from "node:http";
-import type { GearboxSDK, ICreditAccountsService } from "@gearbox-protocol/sdk";
+import {
+  type GearboxSDK,
+  type ICreditAccountsService,
+  json_stringify,
+} from "@gearbox-protocol/sdk";
 import { customAlphabet } from "nanoid";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
 import version from "../version.js";
+import type Client from "./Client.js";
 import type { Scanner } from "./Scanner.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
@@ -24,6 +29,9 @@ export default class HealthCheckerService {
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
 
+  @DI.Inject(DI.Client)
+  client!: Client;
+
   #start = Math.round(Date.now() / 1000);
   #id = nanoid();
 
@@ -40,14 +48,15 @@ export default class HealthCheckerService {
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
-          JSON.stringify({
+          json_stringify({
             startTime: this.#start,
             version,
             network: this.config.network,
             family: "liquidators",
             liquidationMode: this.config.liquidationMode,
-
-            currentBlock: Number(this.sdk.currentBlock),
+            address: this.client.address,
+            balance: this.client.balance,
+            currentBlock: this.sdk.currentBlock,
             timestamp: Number(this.sdk.timestamp),
             marketsConfigurators:
               this.sdk.marketRegister.marketConfigurators.map(mc => mc.address),

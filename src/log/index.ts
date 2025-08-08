@@ -1,6 +1,6 @@
 import type { IFactory } from "di-at-home";
 import type { Logger as ILogger } from "pino";
-import { pino } from "pino";
+import pino from "pino";
 
 import { DI } from "../di.js";
 
