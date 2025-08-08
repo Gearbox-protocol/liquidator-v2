@@ -97,6 +97,8 @@ export default class Client {
   @Logger("Client")
   public logger!: ILogger;
 
+  #balance?: bigint;
+
   #anvilInfo: AnvilNodeInfo | null = null;
 
   #publicClient?: PublicClient;
@@ -294,6 +296,7 @@ export default class Client {
 
   async #checkBalance(): Promise<void> {
     const balance = await this.pub.getBalance({ address: this.address });
+    this.#balance = balance;
     this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
@@ -351,6 +354,10 @@ export default class Client {
 
   public get address(): Address {
     return this.wallet.account.address;
+  }
+
+  public get balance(): bigint | undefined {
+    return this.#balance;
   }
 
   public get anvilForkBlock(): bigint {

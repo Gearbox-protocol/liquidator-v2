@@ -6,7 +6,9 @@ import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
+import { json_stringify } from "../utils/index.js";
 import version from "../version.js";
+import type Client from "./Client.js";
 import type { Scanner } from "./scanner/index.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
@@ -21,6 +23,9 @@ export default class HealthCheckerService {
 
   @DI.Inject(DI.Config)
   config!: Config;
+
+  @DI.Inject(DI.Client)
+  client!: Client;
 
   #start = Math.round(new Date().valueOf() / 1000);
   #id = nanoid();
@@ -38,14 +43,15 @@ export default class HealthCheckerService {
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
-          JSON.stringify({
+          json_stringify({
             startTime: this.#start,
             version,
             network: this.config.network,
             family: "liquidators",
             liquidationMode: this.config.liquidationMode,
-
-            currentBlock: Number(this.scanner.lastUpdated),
+            address: this.client.address,
+            balance: this.client.balance,
+            currentBlock: this.scanner.lastUpdated,
             timestamp: Number(this.scanner.lastTimestamp),
           }),
         );
