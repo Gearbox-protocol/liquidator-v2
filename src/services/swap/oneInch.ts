@@ -38,7 +38,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     this.apiClient = axios.create({
       baseURL,
       headers: {
-        Authorization: `Bearer ${this.config.oneInchApiKey}`,
+        Authorization: `Bearer ${this.config.oneInchApiKey.value}`,
         accept: "application/json",
       },
     });
