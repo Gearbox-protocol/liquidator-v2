@@ -61,7 +61,8 @@ export default class Client {
   #balance?: bigint;
 
   public async launch(): Promise<void> {
-    const { chainId, network, optimistic, privateKey } = this.config;
+    const { chainId, network, optimistic, privateKey, pollingInterval } =
+      this.config;
     const transport = createTransport(this.config, {
       timeout: optimistic ? 240_000 : 10_000,
       retryCount: optimistic ? 3 : undefined,
@@ -75,7 +76,7 @@ export default class Client {
       cacheTime: 0,
       chain,
       transport,
-      pollingInterval: optimistic ? 25 : undefined,
+      pollingInterval: optimistic ? 25 : pollingInterval,
     });
     this.#walletClient = createWalletClient({
       account: privateKeyToAccount(privateKey.value),

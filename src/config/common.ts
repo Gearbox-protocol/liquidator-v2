@@ -146,6 +146,19 @@ export const CommonSchema = z.object({
       env: "LOGS_PAGE_SIZE",
     }),
   /**
+   * Polling interval in milliseconds, default to what's default in viem
+   */
+  pollingInterval: z.coerce
+    .number()
+    .nonnegative()
+    .optional()
+    .register(zommandRegistry, {
+      flags: "--polling-interval <interval>",
+      description:
+        "Polling interval in milliseconds, default to what's default in viem",
+      env: "POLLING_INTERVAL",
+    }),
+  /**
    * Private key used to send liquidation transactions
    */
   privateKey: z
