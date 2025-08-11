@@ -116,7 +116,8 @@ export default class Client {
   >;
 
   public async launch(): Promise<void> {
-    const { chainId, network, optimistic, privateKey } = this.config;
+    const { chainId, network, optimistic, privateKey, pollingInterval } =
+      this.config;
     const chain = defineChain({
       ...CHAINS[network],
       id: chainId,
@@ -126,13 +127,13 @@ export default class Client {
       cacheTime: 0,
       chain,
       transport: this.#createTransport(),
-      pollingInterval: optimistic ? 25 : undefined,
+      pollingInterval: optimistic ? 25 : pollingInterval,
     });
     this.#logsClient = createPublicClient({
       cacheTime: 0,
       chain,
       transport: this.#createTransport(true),
-      pollingInterval: optimistic ? 25 : undefined,
+      pollingInterval: optimistic ? 25 : pollingInterval,
     });
     this.#walletClient = createWalletClient({
       account: privateKeyToAccount(privateKey),

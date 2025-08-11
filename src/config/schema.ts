@@ -76,6 +76,10 @@ export const ConfigSchema = PartialV300ConfigSchema.extend({
    */
   logsPageSize: bigintLike.optional(),
   /**
+   * Polling interval in milliseconds, default to what's default in viem
+   */
+  pollingInterval: z.coerce.number().nonnegative().optional(),
+  /**
    * Private key used to send liquidation transactions
    */
   privateKey: z

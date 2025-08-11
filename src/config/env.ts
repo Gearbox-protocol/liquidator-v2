@@ -14,6 +14,7 @@ const envConfigMapping: Record<keyof ConfigSchema, string | string[]> = {
   ethProviderRpcs: "JSON_RPC_PROVIDERS",
   ignoreAccounts: "IGNORE_ACCOUNTS",
   logsPageSize: "LOGS_PAGE_SIZE",
+  pollingInterval: "POLLING_INTERVAL",
   hfThreshold: "HF_TRESHOLD",
   restakingWorkaround: "RESTAKING_WORKAROUND",
   minBalance: "MIN_BALANCE",
