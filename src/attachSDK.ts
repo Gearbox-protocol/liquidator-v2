@@ -72,7 +72,9 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
       gateways: config.redstoneGateways,
     },
     pyth: {
-      historicTimestamp: optimisticTimestamp,
+      historicTimestamp: optimisticTimestamp
+        ? Math.floor(optimisticTimestamp / 1000)
+        : undefined,
     },
     logger,
   });
