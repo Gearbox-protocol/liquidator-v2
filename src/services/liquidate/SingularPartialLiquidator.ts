@@ -155,6 +155,19 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
       );
     }
+    // TODO: remove or comment this, it's for debugging only
+    if (this.config.optimistic) {
+      const b = await this.client.pub.getBlock();
+      logger.debug(
+        {
+          blockNumber: Number(b.number),
+          blockTimestamp: Number(b.timestamp),
+          blockDelta: Number(b.number) - Number(this.sdk.currentBlock),
+          timestampDelta: Number(b.timestamp) - Number(this.sdk.timestamp),
+        },
+        "block before getOptimalLiquidation",
+      );
+    }
     const optimalLiquidation = await liquidatorContract.getOptimalLiquidation(
       ca,
       priceUpdates,
