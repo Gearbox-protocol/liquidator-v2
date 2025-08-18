@@ -20,5 +20,5 @@ export function formatTs(
   }
   const ts = typeof t === "object" ? ("ts" in t ? t.ts : t.timestamp) : t;
   const d = new Date(Number(ts) * 1000);
-  return `${format(d, "dd/MM/yy HH:mm:ss")} (${ts})`;
+  return `${format(d, "dd/MM/yy HH:mm:ss")} (${Number(ts)})`;
 }
