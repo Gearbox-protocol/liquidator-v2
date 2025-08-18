@@ -51,19 +51,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
     }
 
     await this.#deployer.syncState();
-    if (this.config.optimistic) {
-      const b = await this.client.pub.getBlock();
-      // TODO: remove or comment this, it's for debugging only
-      this.logger.debug(
-        {
-          blockNumber: Number(b.number),
-          blockTimestamp: Number(b.timestamp),
-          blockDelta: Number(b.number) - Number(this.sdk.currentBlock),
-          timestampDelta: Number(b.timestamp) - Number(this.sdk.timestamp),
-        },
-        "block post launch",
-      );
-    }
   }
 
   public override async syncState(_blockNumber: bigint): Promise<void> {
@@ -166,19 +153,6 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
     if (!liquidatorContract) {
       throw new Error(
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
-      );
-    }
-    // TODO: remove or comment this, it's for debugging only
-    if (this.config.optimistic) {
-      const b = await this.client.pub.getBlock();
-      logger.debug(
-        {
-          blockNumber: Number(b.number),
-          blockTimestamp: Number(b.timestamp),
-          blockDelta: Number(b.number) - Number(this.sdk.currentBlock),
-          timestampDelta: Number(b.timestamp) - Number(this.sdk.timestamp),
-        },
-        "block before getOptimalLiquidation",
       );
     }
     const optimalLiquidation = await liquidatorContract.getOptimalLiquidation(

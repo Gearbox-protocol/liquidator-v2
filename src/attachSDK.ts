@@ -71,6 +71,9 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
       historicTimestamp: optimisticTimestamp,
       gateways: config.redstoneGateways,
     },
+    pyth: {
+      historicTimestamp: optimisticTimestamp,
+    },
     logger,
   });
   // trying to set default numSplits for router v3.1 contract
