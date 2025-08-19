@@ -303,6 +303,14 @@ export const CommonSchema = z.object({
     env: "RESTAKING_WORKAROUND",
   }),
   /**
+   * Flag to enable less eager liquidations for LRT tokens
+   */
+  lskEthWorkaround: boolLike().optional().register(zommandRegistry, {
+    flags: "--lsk-eth-workaround",
+    description: "Flag to enable less eager liquidations for LRT tokens",
+    env: "LSKETH_WORKAROUND",
+  }),
+  /**
    * List of assets to keep on account after liquidation
    */
   keepAssets: optionalAddressArrayLike().register(zommandRegistry, {

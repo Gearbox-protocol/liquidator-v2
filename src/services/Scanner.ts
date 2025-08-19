@@ -3,7 +3,12 @@ import type {
   ICreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
-import { MAX_UINT256, PERCENTAGE_FACTOR, WAD } from "@gearbox-protocol/sdk";
+import {
+  hexEq,
+  MAX_UINT256,
+  PERCENTAGE_FACTOR,
+  WAD,
+} from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
 import {
   iCreditManagerV3Abi,
@@ -157,6 +162,13 @@ export class Scanner {
         `filtered out ${before - accounts.length} restaking accounts`,
       );
     }
+    if (this.config.lskEthWorkaround) {
+      const before = accounts.length;
+      accounts = await this.#filterLskETH(accounts);
+      this.log.debug(
+        `filtered out ${before - accounts.length} lskETH accounts`,
+      );
+    }
     if (this.config.ignoreAccounts) {
       const before = accounts.length;
       const ignoreAccounts = new Set(
@@ -267,6 +279,21 @@ export class Scanner {
       }
       return true;
     });
+  }
+
+  async #filterLskETH(
+    accounts: CreditAccountData[],
+  ): Promise<CreditAccountData[]> {
+    if (this.config.network !== "Lisk" || this.config.optimistic) {
+      return accounts;
+    }
+    // 0x1b10E2270780858923cdBbC9B5423e29fffD1A44 [lskETH]
+    return accounts.filter(
+      ca =>
+        !ca.tokens.some(t =>
+          hexEq(t.token, "0x1b10E2270780858923cdBbC9B5423e29fffD1A44"),
+        ),
+    );
   }
 
   async #filterDeleverageAccounts(
