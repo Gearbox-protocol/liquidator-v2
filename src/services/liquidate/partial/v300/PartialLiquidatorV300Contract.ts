@@ -3,7 +3,8 @@ import type {
   CreditAccountData,
   CreditSuite,
   Curator,
-  OnDemandPriceUpdate,
+  OnDemandPriceUpdates,
+  PriceUpdateV300,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -105,7 +106,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
 
   public async getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "token" | "reserve">[],
+    priceUpdates: OnDemandPriceUpdates,
   ): Promise<OptimalPartialLiquidation> {
     const optimalHF = this.getOptimalHealthFactor(ca);
     const {
@@ -121,7 +122,11 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
       address: this.address,
       functionName: "getOptimalLiquidation",
-      args: [ca.creditAccount, optimalHF, priceUpdates],
+      args: [
+        ca.creditAccount,
+        optimalHF,
+        priceUpdates.raw as PriceUpdateV300[] as any,
+      ],
       gas: 550_000_000n,
     });
     return {
@@ -137,7 +142,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: Pick<OnDemandPriceUpdate, "data" | "token" | "reserve">[],
+    priceUpdates: OnDemandPriceUpdates,
   ): Promise<RawPartialLiquidationPreview> {
     const connectors = this.sdk
       .routerFor(cm)
@@ -166,7 +171,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
         optimalLiquidation.tokenOut,
         optimalLiquidation.optimalAmount,
         optimalLiquidation.flashLoanAmount,
-        priceUpdates,
+        priceUpdates.raw as PriceUpdateV300[] as any,
         connectors,
         BigInt(this.config.slippage),
       ],
@@ -191,7 +196,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount,
-        preview.priceUpdates,
+        preview.priceUpdates as readonly PriceUpdateV300[],
         preview.calls,
       ],
     });

@@ -7,14 +7,18 @@ import {
   AP_ROUTER,
   type CreditAccountData,
   filterDust,
-  type OnDemandPriceUpdate,
+  type OnDemandPriceUpdates,
+  type PriceUpdateV300,
   VERSION_RANGE_300,
 } from "@gearbox-protocol/sdk";
 import {
   iCreditFacadeV3Abi,
   iCreditFacadeV3MulticallAbi,
 } from "@gearbox-protocol/types/abi";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
+import type {
+  OptimisticResult,
+  PriceUpdate,
+} from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 import { encodeFunctionData, parseEventLogs } from "viem";
 import type { BatchLiquidatorSchema } from "../../config/index.js";
@@ -148,7 +152,8 @@ export default class BatchLiquidator
     for (const ca of accounts) {
       // pathfinder returns input without price updates
       const input = this.#getEstimateBatchInput(ca);
-      input.priceUpdates = priceUpdatesByAccount[ca.creditAccount];
+      input.priceUpdates = priceUpdatesByAccount[ca.creditAccount]
+        .raw as PriceUpdateV300[];
       inputs.push(input);
     }
     const { result } = await this.client.pub.simulateContract({
@@ -163,16 +168,16 @@ export default class BatchLiquidator
     for (let i = 0; i < accounts.length; i++) {
       const ca = accounts[i];
       const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-      const updates = priceUpdatesByAccount[ca.creditAccount].map(
-        ({ token, reserve, data }) => ({
-          target: cm.creditFacade.address,
-          callData: encodeFunctionData({
-            abi: iCreditFacadeV3MulticallAbi,
-            functionName: "onDemandPriceUpdate",
-            args: [token, reserve, data],
-          }),
+      const updates = (
+        priceUpdatesByAccount[ca.creditAccount].raw as PriceUpdateV300[]
+      ).map(({ token, reserve, data }) => ({
+        target: cm.creditFacade.address,
+        callData: encodeFunctionData({
+          abi: iCreditFacadeV3MulticallAbi,
+          functionName: "onDemandPriceUpdate",
+          args: [token, reserve, data],
         }),
-      );
+      }));
       result[i].calls = [...updates, ...result[i].calls];
     }
 
@@ -265,7 +270,8 @@ export default class BatchLiquidator
         pathAmount: 0n,
         liquidatorPremium: batch[a.creditAccount]?.profit ?? 0n,
         liquidatorProfit: 0n, // cannot compute for single account
-        priceUpdates: priceUpdatesByAccount[a.creditAccount],
+        priceUpdates: priceUpdatesByAccount[a.creditAccount]
+          .raw as PriceUpdate[],
         isError: !liquidated.has(a.creditAccount),
         error: getError(a),
         batchId: `${index + 1}/${total}`,
@@ -379,7 +385,7 @@ export default class BatchLiquidator
    */
   async #batchLiquidationPreviewUpdates(
     accounts: CreditAccountData[],
-  ): Promise<Record<Address, OnDemandPriceUpdate[]>> {
+  ): Promise<Record<Address, OnDemandPriceUpdates>> {
     const tokensByAccount: Record<Address, Set<Address>> = {};
     for (const ca of accounts) {
       const accTokens = tokensByAccount[ca.creditAccount] ?? new Set<Address>();
@@ -393,13 +399,15 @@ export default class BatchLiquidator
     }
     const updates =
       await this.creditAccountService.getUpdateForAccounts(accounts);
-    const result: Record<Address, OnDemandPriceUpdate[]> = {};
+    const result: Record<Address, OnDemandPriceUpdates> = {};
     for (const ca of accounts) {
       const market = this.sdk.marketRegister.findByCreditManager(
         ca.creditManager,
       );
-      result[ca.creditAccount] =
-        market.priceOracle.onDemandPriceUpdates(updates);
+      result[ca.creditAccount] = market.priceOracle.onDemandPriceUpdates(
+        ca.creditFacade,
+        updates,
+      );
     }
     return result;
   }

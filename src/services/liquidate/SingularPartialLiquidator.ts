@@ -184,7 +184,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         assetOut: optimalLiquidation.tokenOut,
         amountOut: optimalLiquidation.optimalAmount,
         flashLoanAmount: optimalLiquidation.flashLoanAmount,
-        priceUpdates,
+        priceUpdates: priceUpdates.raw,
         calls: preview.calls.map(c => ({
           callData: c.callData,
           target: c.target,

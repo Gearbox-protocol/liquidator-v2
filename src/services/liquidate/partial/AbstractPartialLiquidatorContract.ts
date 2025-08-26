@@ -4,7 +4,7 @@ import type {
   Curator,
   GearboxSDK,
   ICreditAccountsService,
-  OnDemandPriceUpdate,
+  OnDemandPriceUpdates,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
 import {
@@ -289,14 +289,14 @@ export abstract class AbstractPartialLiquidatorContract
 
   public abstract getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: OnDemandPriceUpdates,
   ): Promise<OptimalPartialLiquidation>;
 
   public abstract previewPartialLiquidation(
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdate[],
+    priceUpdates: OnDemandPriceUpdates,
   ): Promise<RawPartialLiquidationPreview>;
 
   public abstract partialLiquidateAndConvert(

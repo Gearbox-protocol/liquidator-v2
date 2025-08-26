@@ -1,4 +1,9 @@
-import type { CreditSuite, OnDemandPriceUpdate } from "@gearbox-protocol/sdk";
+import type {
+  CreditSuite,
+  OnDemandPriceUpdates,
+  PriceUpdateV300,
+  PriceUpdateV310,
+} from "@gearbox-protocol/sdk";
 import { formatBN } from "@gearbox-protocol/sdk";
 import type { Address } from "abitype";
 
@@ -30,7 +35,7 @@ export function humanizeOptimalLiquidation(
 export function humanizePreviewPartialLiquidation(
   cm: CreditSuite,
   data: OptimalPartialLiquidation,
-  priceUpdates: Partial<OnDemandPriceUpdate>[],
+  priceUpdates: OnDemandPriceUpdates,
   slippage: number,
   liquidatorContract: Address,
   connectors?: Address[],
@@ -40,8 +45,10 @@ export function humanizePreviewPartialLiquidation(
     ...result,
     liquidatorContract,
     connectors,
-    priceUpdates: priceUpdates.map(p => {
-      if (p.token) {
+    priceUpdates: (
+      priceUpdates.raw as Array<PriceUpdateV300 | PriceUpdateV310>
+    ).map(p => {
+      if ("token" in p) {
         return p.token;
       }
       if (p.priceFeed) {
