@@ -63,6 +63,7 @@ export class Scanner {
     const block = await this.client.pub.getBlock();
 
     this.#maxHealthFactor = this.config.hfThreshold;
+    this.#minHealthFactor = this.config.optimistic ? 0n : 1n;
     if (this.config.optimistic && this.config.liquidationMode === "partial") {
       this.#maxHealthFactor = MAX_UINT256;
     }
