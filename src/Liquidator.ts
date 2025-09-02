@@ -42,5 +42,20 @@ export default class Liquidator {
       this.log.debug("saved optimistic liquidation output, exiting");
       process.exit(0);
     }
+
+    process.on("SIGTERM", async s => {
+      await this.#stop(s);
+    });
+    process.on("SIGINT", async s => {
+      await this.#stop(s);
+    });
+  }
+
+  async #stop(signal: string): Promise<void> {
+    this.log.info(`stopping on ${signal}`);
+    this.log.info("terminating");
+    await Promise.allSettled([this.healthChecker.stop(), this.scanner.stop()]);
+    this.log.info(`stopped by ${signal}`);
+    process.exit(0);
   }
 }

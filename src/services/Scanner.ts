@@ -52,6 +52,7 @@ export class Scanner {
   #lastUpdated = 0n;
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
+  #unwatch?: () => void;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -90,7 +91,7 @@ export class Scanner {
       this.config.optimistic ? undefined : block.number,
     );
     if (!this.config.optimistic) {
-      this.client.pub.watchBlocks({
+      this.#unwatch = this.client.pub.watchBlocks({
         onBlock: b => this.#onBlock(b),
         includeTransactions: false,
       });
@@ -344,5 +345,10 @@ export class Scanner {
 
   public get lastUpdated(): bigint {
     return this.#lastUpdated;
+  }
+
+  public async stop(): Promise<void> {
+    this.#unwatch?.();
+    this.log.info("stopped");
   }
 }

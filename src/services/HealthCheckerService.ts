@@ -1,4 +1,4 @@
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
 import {
   type GearboxSDK,
   type ICreditAccountsService,
@@ -34,6 +34,7 @@ export default class HealthCheckerService {
 
   #start = Math.round(Date.now() / 1000);
   #id = nanoid();
+  #server?: Server;
 
   /**
    * Launches health checker - simple web server
@@ -88,13 +89,19 @@ export default class HealthCheckerService {
       this.log.error(e);
     });
     server.unref();
-
-    process.on("SIGTERM", () => {
-      this.log.info("terminating");
-      server.close();
-    });
-
+    this.#server = server;
     this.log.info("launched");
+  }
+
+  public async stop(): Promise<void> {
+    this.log.info("stopping");
+    return new Promise(resolve => {
+      if (!this.#server) {
+        resolve();
+        return;
+      }
+      this.#server.close(() => resolve());
+    });
   }
 
   /**
