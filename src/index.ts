@@ -6,6 +6,7 @@ import "./services/liquidate/index.js";
 import "./services/output/index.js";
 import "./services/notifier/index.js";
 import "./services/swap/index.js";
+import "./MulticallSpy.js";
 
 import { setTimeout } from "node:timers/promises";
 

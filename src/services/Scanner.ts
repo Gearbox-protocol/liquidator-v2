@@ -19,6 +19,7 @@ import { getContract } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
+import type MulticallSpy from "../MulticallSpy.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 
@@ -45,6 +46,9 @@ export class Scanner {
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
+
+  @DI.Inject(DI.MulticallSpy)
+  multicallSpy!: MulticallSpy;
 
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
@@ -200,6 +204,10 @@ export class Scanner {
     this.log.debug(
       `${accounts.length} accounts to ${verb}${blockS}, time: ${time}s`,
     );
+
+    if (this.config.debugGetCreditAccounts && accounts.length > 0) {
+      await this.multicallSpy.dumpCalls();
+    }
 
     if (this.config.optimistic) {
       await this.liquidatorService.liquidateOptimistic(accounts);

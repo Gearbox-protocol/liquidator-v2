@@ -1719,12 +1719,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/biome-config@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@gearbox-protocol/biome-config@npm:1.0.0"
+"@gearbox-protocol/biome-config@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@gearbox-protocol/biome-config@npm:1.0.1"
   peerDependencies:
-    "@biomejs/biome": ^2.0.5
-  checksum: 10c0/e62b9c3dac5a4941ba074665718adc8b4a79af5be15da336be77cbcf64969a03b2624315f24be4d678b56935a8e37ce1c75c2875a158bb0c1cd5373a22eea8df
+    "@biomejs/biome": ^2.2.2
+  checksum: 10c0/517461a34a6ec07885083e7d93ba57197ebf11b019b563b88206e82fd0d773d454af43445bedfb9518d4b847e704327254b82532bfcecfeef40bcc0be98ab501
   languageName: node
   linkType: hard
 
@@ -1766,11 +1766,11 @@ __metadata:
     "@commander-js/extra-typings": "npm:^14.0.0"
     "@commitlint/cli": "npm:^19.8.1"
     "@commitlint/config-conventional": "npm:^19.8.1"
-    "@gearbox-protocol/biome-config": "npm:^1.0.0"
+    "@gearbox-protocol/biome-config": "npm:^1.0.1"
     "@gearbox-protocol/cli-utils": "npm:^5.45.14"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:8.26.4"
+    "@gearbox-protocol/sdk": "npm:8.26.6"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.3.0"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1796,9 +1796,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:8.26.4":
-  version: 8.26.4
-  resolution: "@gearbox-protocol/sdk@npm:8.26.4"
+"@gearbox-protocol/sdk@npm:8.26.6":
+  version: 8.26.6
+  resolution: "@gearbox-protocol/sdk@npm:8.26.6"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1812,7 +1812,7 @@ __metadata:
     zod: "npm:^4.1.1"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/d8f2264217bd27e5734dc813fedc2c4493769a7c9bc13bc72f2e2ef1267be0a6a17144144608d0072af3df6f058a851ac3122931bf6b680e90c8f27fb8ea5da0
+  checksum: 10c0/6d15f74b6ca8816881fc47bddbcc5e64a003eda492637f2aafdae463741d9a1ad815b51c6dbbb61c511a15c3bdfaa794e72d8f0ddf8e1a1ea5983ff19121c6b6
   languageName: node
   linkType: hard
 
