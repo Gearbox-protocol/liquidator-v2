@@ -1770,7 +1770,7 @@ __metadata:
     "@gearbox-protocol/cli-utils": "npm:^5.45.14"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:8.26.2"
+    "@gearbox-protocol/sdk": "npm:8.26.4"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.3.0"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1786,7 +1786,7 @@ __metadata:
     lint-staged: "npm:^16.1.6"
     nanoid: "npm:^5.1.5"
     node-pty: "npm:^1.0.0"
-    pino: "npm:^9.9.0"
+    pino: "npm:^9.9.1"
     pino-pretty: "npm:^13.1.1"
     tsx: "npm:4.20.5"
     typescript: "npm:^5.9.2"
@@ -1796,9 +1796,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:8.26.2":
-  version: 8.26.2
-  resolution: "@gearbox-protocol/sdk@npm:8.26.2"
+"@gearbox-protocol/sdk@npm:8.26.4":
+  version: 8.26.4
+  resolution: "@gearbox-protocol/sdk@npm:8.26.4"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1812,7 +1812,7 @@ __metadata:
     zod: "npm:^4.1.1"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/2d181ae18bfa3a3b75ea2f7c7c7fd929ac049d7691ab46232fbb436d5c87ec08d8e4d1d17b3de68c4ade25d133d198804e2390b4f780962bd1a1bcfd8a8e8481
+  checksum: 10c0/d8f2264217bd27e5734dc813fedc2c4493769a7c9bc13bc72f2e2ef1267be0a6a17144144608d0072af3df6f058a851ac3122931bf6b680e90c8f27fb8ea5da0
   languageName: node
   linkType: hard
 
@@ -5324,9 +5324,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino@npm:^9.9.0":
-  version: 9.9.0
-  resolution: "pino@npm:9.9.0"
+"pino@npm:^9.9.1":
+  version: 9.9.1
+  resolution: "pino@npm:9.9.1"
   dependencies:
     atomic-sleep: "npm:^1.0.0"
     fast-redact: "npm:^3.1.1"
@@ -5341,7 +5341,7 @@ __metadata:
     thread-stream: "npm:^3.0.0"
   bin:
     pino: bin.js
-  checksum: 10c0/e2b05d4b1cf73447648ec98d247fd0f1f8020a819ebc2c97fab7fa8b9efe2d1a82ebf674ed2489bb7a1d3a75350c044c776f124e9c29c004bfb133b9e2ac0871
+  checksum: 10c0/71fe3369ea80d66db847b715fc04a1a26df904a75fde861adcd549fdfca6b41365387b882e802c5663a6b4e9aeec7269e9956d66803ec2e191a35e0f15536014
   languageName: node
   linkType: hard
 
