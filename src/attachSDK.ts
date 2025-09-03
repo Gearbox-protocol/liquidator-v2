@@ -19,7 +19,8 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
   const config: Config = DI.get(DI.Config);
   const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
-  const multicallSpy: MulticallSpy = DI.get(DI.MulticallSpy);
+  const multicallSpy: MulticallSpy = DI.create(DI.MulticallSpy);
+  DI.set(DI.MulticallSpy, multicallSpy);
 
   await client.launch();
   let optimisticTimestamp: number | undefined;
