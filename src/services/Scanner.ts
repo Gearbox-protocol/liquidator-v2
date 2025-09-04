@@ -1,21 +1,26 @@
 import type {
   CreditAccountData,
+  CreditAccountServiceOptions,
+  GearboxSDK,
+  GetCreditAccountsOptions,
   ICreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
 import {
+  AbstractCreditAccountService,
   hexEq,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
   WAD,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
+import { getAlchemyUrl, getDrpcUrl } from "@gearbox-protocol/sdk/dev";
 import {
   iCreditManagerV3Abi,
   iPartialLiquidationBotV3Abi,
 } from "@gearbox-protocol/types/abi";
-import type { Address, Block } from "viem";
-import { getContract } from "viem";
+import type { Address, Block, PublicClient } from "viem";
+import { createPublicClient, getContract, http } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -53,6 +58,7 @@ export class Scanner {
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
   #unwatch?: () => void;
+  #diagnoster?: ScannerDiagnoster;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -84,6 +90,10 @@ export class Scanner {
           `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
         );
       }
+    }
+
+    if (this.config.debugScanner) {
+      this.#diagnoster = new ScannerDiagnoster();
     }
 
     // we should not pin block during optimistic liquidations
@@ -134,7 +144,7 @@ export class Scanner {
 
   /**
    * Loads new data and recompute all health factors
-   * @param blockNumber Fiex block for archive node which is needed to get data
+   * @param blockNumber Fixed block for archive node which is needed to get data
    */
   async #updateAccounts(blockNumber?: bigint): Promise<void> {
     const start = Date.now();
@@ -147,15 +157,14 @@ export class Scanner {
       );
       accounts = acc ? [acc] : [];
     } else {
-      accounts = await this.caService.getCreditAccounts(
-        {
-          minHealthFactor: this.#minHealthFactor,
-          maxHealthFactor: this.#maxHealthFactor,
-          includeZeroDebt: false,
-          creditManager: this.config.debugManager,
-        },
-        blockNumber,
-      );
+      const queue: GetCreditAccountsOptions = {
+        minHealthFactor: this.#minHealthFactor,
+        maxHealthFactor: this.#maxHealthFactor,
+        includeZeroDebt: false,
+        creditManager: this.config.debugManager,
+      };
+      accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+      await this.#diagnoster?.checkAccounts(accounts, queue, blockNumber);
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
@@ -351,5 +360,105 @@ export class Scanner {
   public async stop(): Promise<void> {
     this.#unwatch?.();
     this.log.info("stopped");
+  }
+}
+
+class ScannerDiagnoster {
+  @Logger("ScannerDiagnoster")
+  log!: ILogger;
+
+  @DI.Inject(DI.Config)
+  config!: Config;
+
+  @DI.Inject(DI.CreditAccountService)
+  caService!: ICreditAccountsService;
+
+  #drpc?: WorkaroundCAS;
+  #alchemy?: WorkaroundCAS;
+
+  constructor() {
+    if (this.config.drpcKeys?.length) {
+      const rpcURL = getDrpcUrl(
+        this.config.network,
+        this.config.drpcKeys[0].value,
+        "http",
+      );
+      if (rpcURL) {
+        this.#drpc = new WorkaroundCAS(this.caService.sdk, { rpcURL });
+      }
+    }
+    if (this.config.alchemyKeys?.length) {
+      const rpcURL = getAlchemyUrl(
+        this.config.network,
+        this.config.alchemyKeys[0].value,
+        "http",
+      );
+      if (rpcURL) {
+        this.#alchemy = new WorkaroundCAS(this.caService.sdk, { rpcURL });
+      }
+    }
+    if (!!this.#drpc && !!this.#alchemy) {
+      this.log.info("scanner diagnoster enabled");
+    }
+  }
+
+  public async checkAccounts(
+    accounts: CreditAccountData[],
+    queue: GetCreditAccountsOptions,
+    blockNumber?: bigint,
+  ): Promise<void> {
+    try {
+      if (!accounts.length || !blockNumber) {
+        return;
+      }
+      let [success, drpcSuccess, alchemySuccess] = [0, 0, 0];
+      for (const a of accounts) {
+        success += a.success ? 1 : 0;
+      }
+      this.log.debug(
+        `found ${accounts.length} liquidatable accounts (${success} successful) in block ${blockNumber}`,
+      );
+      if (!this.#drpc || !this.#alchemy) {
+        return;
+      }
+      const [drpcAccs, alchemyAccs] = await Promise.all([
+        this.#drpc.getCreditAccounts(queue, blockNumber),
+        this.#alchemy.getCreditAccounts(queue, blockNumber),
+      ]);
+      for (const a of drpcAccs) {
+        drpcSuccess += a.success ? 1 : 0;
+      }
+      for (const a of alchemyAccs) {
+        alchemySuccess += a.success ? 1 : 0;
+      }
+      this.log.debug(
+        `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful) in block ${blockNumber} with drpc`,
+      );
+      this.log.debug(
+        `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful) in block ${blockNumber} with alchemy`,
+      );
+    } catch (e) {
+      this.log.error(e);
+    }
+  }
+}
+
+interface WorkaroundCASOptions extends CreditAccountServiceOptions {
+  rpcURL: string;
+}
+
+class WorkaroundCAS extends AbstractCreditAccountService {
+  #client: PublicClient;
+
+  constructor(sdk: GearboxSDK, opts: WorkaroundCASOptions) {
+    super(sdk, opts);
+    this.#client = createPublicClient({
+      transport: http(opts.rpcURL, { timeout: 600_000 }),
+      chain: sdk.provider.chain,
+    });
+  }
+
+  public override get client(): PublicClient {
+    return this.#client;
   }
 }
