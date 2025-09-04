@@ -61,13 +61,12 @@ export const CommonSchema = z.object({
     env: "IGNORE_ACCOUNTS",
   }),
   /**
-   * Temporary flag to diagnose situations where compressor returns many accounts with HF = 0
+   * Enables debug workaround to diagnose scanner in prod
    */
-  debugGetCreditAccounts: boolLike().optional().register(zommandRegistry, {
-    flags: "--debug-get-credit-accounts",
-    description:
-      "Temporary flag to diagnose situations where compressor returns many accounts with HF = 0",
-    env: "DEBUG_GET_CREDIT_ACCOUNTS",
+  debugScanner: boolLike().optional().register(zommandRegistry, {
+    flags: "--debug-scanner",
+    description: "Enables debug workaround to diagnose scanner in prod",
+    env: "DEBUG_SCANNER",
   }),
   /**
    * Only check this account during local debug session
