@@ -24,6 +24,7 @@ import { createPublicClient, getContract, http } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
+import type MulticallSpy from "../MulticallSpy.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 
@@ -50,6 +51,9 @@ export class Scanner {
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
+
+  @DI.Inject(DI.MulticallSpy)
+  multicallSpy!: MulticallSpy;
 
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
@@ -164,7 +168,13 @@ export class Scanner {
         creditManager: this.config.debugManager,
       };
       accounts = await this.caService.getCreditAccounts(queue, blockNumber);
-      await this.#diagnoster?.checkAccounts(accounts, queue, blockNumber);
+      if (this.#diagnoster) {
+        accounts = await this.#diagnoster.checkAccounts(
+          accounts,
+          queue,
+          blockNumber,
+        );
+      }
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
@@ -406,39 +416,46 @@ class ScannerDiagnoster {
     accounts: CreditAccountData[],
     queue: GetCreditAccountsOptions,
     blockNumber?: bigint,
-  ): Promise<void> {
+  ): Promise<CreditAccountData[]> {
     try {
       if (!accounts.length || !blockNumber) {
-        return;
+        return accounts;
       }
-      let [success, drpcSuccess, alchemySuccess] = [0, 0, 0];
+      const numZeroHF = accounts.filter(a => a.healthFactor === 0n).length;
+      let [success, drpcSuccess, dprcZeroHF, alchemySuccess, alchemyZeroHF] = [
+        0, 0, 0, 0, 0,
+      ];
       for (const a of accounts) {
         success += a.success ? 1 : 0;
       }
       this.log.debug(
-        `found ${accounts.length} liquidatable accounts (${success} successful) in block ${blockNumber}`,
+        `found ${accounts.length} liquidatable accounts (${success} successful, ${numZeroHF} zero HF) in block ${blockNumber}`,
       );
-      if (!this.#drpc || !this.#alchemy) {
-        return;
+      if (!this.#drpc || !this.#alchemy || numZeroHF === 0) {
+        return accounts;
       }
       const [drpcAccs, alchemyAccs] = await Promise.all([
         this.#drpc.getCreditAccounts(queue, blockNumber),
         this.#alchemy.getCreditAccounts(queue, blockNumber),
       ]);
       for (const a of drpcAccs) {
+        dprcZeroHF += a.healthFactor === 0n ? 1 : 0;
         drpcSuccess += a.success ? 1 : 0;
       }
       for (const a of alchemyAccs) {
+        alchemyZeroHF += a.healthFactor === 0n ? 1 : 0;
         alchemySuccess += a.success ? 1 : 0;
       }
       this.log.debug(
-        `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful) in block ${blockNumber} with drpc`,
+        `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful, ${dprcZeroHF} zero HF) in block ${blockNumber} with drpc`,
       );
       this.log.debug(
-        `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful) in block ${blockNumber} with alchemy`,
+        `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful, ${alchemyZeroHF} zero HF) in block ${blockNumber} with alchemy`,
       );
+      return alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
     } catch (e) {
       this.log.error(e);
+      return accounts;
     }
   }
 }

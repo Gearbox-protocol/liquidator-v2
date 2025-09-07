@@ -11,6 +11,7 @@ import {
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
+import type MulticallSpy from "./MulticallSpy.js";
 import type Client from "./services/Client.js";
 import { createTransport, formatTs } from "./utils/index.js";
 
@@ -18,6 +19,8 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
   const config: Config = DI.get(DI.Config);
   const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
+  const multicallSpy: MulticallSpy = DI.create(DI.MulticallSpy);
+  DI.set(DI.MulticallSpy, multicallSpy);
 
   await client.launch();
   let optimisticTimestamp: number | undefined;
@@ -59,6 +62,12 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
 
   const transport = createTransport(config, {
     timeout: 600_000,
+    onFetchRequest: config.debugScanner
+      ? (r, o) => multicallSpy.multicallRequestSpy(r, o)
+      : undefined,
+    onFetchResponse: config.debugScanner
+      ? r => multicallSpy.multicallResponseSpy(r)
+      : undefined,
   });
 
   const sdk = await GearboxSDK.attach({
