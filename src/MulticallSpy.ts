@@ -80,6 +80,7 @@ export default class MulticallSpy {
           Body: JSON.stringify(this.#detectedCalls),
         }),
       );
+      this.log.debug(`uploaded to ${s3Url}`);
     } catch (e) {
       this.log.error(e, `failed to upload to ${s3Url}`);
     }

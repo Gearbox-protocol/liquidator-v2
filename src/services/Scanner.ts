@@ -19,7 +19,7 @@ import {
   iCreditManagerV3Abi,
   iPartialLiquidationBotV3Abi,
 } from "@gearbox-protocol/types/abi";
-import type { Address, Block, PublicClient } from "viem";
+import type { Address, Block, HttpTransportConfig, PublicClient } from "viem";
 import { createPublicClient, getContract, http } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
@@ -52,9 +52,6 @@ export class Scanner {
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
-
-  @DI.Inject(DI.MulticallSpy)
-  multicallSpy!: MulticallSpy;
 
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
@@ -387,6 +384,9 @@ class ScannerDiagnoster {
   @DI.Inject(DI.Notifier)
   notifier!: INotifier;
 
+  @DI.Inject(DI.MulticallSpy)
+  multicallSpy!: MulticallSpy;
+
   #drpc?: WorkaroundCAS;
   #alchemy?: WorkaroundCAS;
 
@@ -398,7 +398,17 @@ class ScannerDiagnoster {
         "http",
       );
       if (rpcURL) {
-        this.#drpc = new WorkaroundCAS(this.caService.sdk, { rpcURL });
+        this.#drpc = new WorkaroundCAS(this.caService.sdk, {
+          rpcURL,
+          rpcOptions: {
+            onFetchRequest: this.config.debugScanner
+              ? (r, o) => this.multicallSpy.multicallRequestSpy(r, o)
+              : undefined,
+            onFetchResponse: this.config.debugScanner
+              ? r => this.multicallSpy.multicallResponseSpy(r)
+              : undefined,
+          },
+        });
       }
     }
     if (this.config.alchemyKeys?.length) {
@@ -408,7 +418,17 @@ class ScannerDiagnoster {
         "http",
       );
       if (rpcURL) {
-        this.#alchemy = new WorkaroundCAS(this.caService.sdk, { rpcURL });
+        this.#alchemy = new WorkaroundCAS(this.caService.sdk, {
+          rpcURL,
+          rpcOptions: {
+            onFetchRequest: this.config.debugScanner
+              ? (r, o) => this.multicallSpy.multicallRequestSpy(r, o)
+              : undefined,
+            onFetchResponse: this.config.debugScanner
+              ? r => this.multicallSpy.multicallResponseSpy(r)
+              : undefined,
+          },
+        });
       }
     }
     if (!!this.#drpc && !!this.#alchemy) {
@@ -460,6 +480,7 @@ class ScannerDiagnoster {
         plain: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
         markdown: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
       });
+      await this.multicallSpy.dumpCalls();
       return alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
     } catch (e) {
       this.log.error(e);
@@ -470,6 +491,7 @@ class ScannerDiagnoster {
 
 interface WorkaroundCASOptions extends CreditAccountServiceOptions {
   rpcURL: string;
+  rpcOptions?: HttpTransportConfig;
 }
 
 class WorkaroundCAS extends AbstractCreditAccountService {
@@ -478,7 +500,10 @@ class WorkaroundCAS extends AbstractCreditAccountService {
   constructor(sdk: GearboxSDK, opts: WorkaroundCASOptions) {
     super(sdk, opts);
     this.#client = createPublicClient({
-      transport: http(opts.rpcURL, { timeout: 600_000 }),
+      transport: http(opts.rpcURL, {
+        timeout: 600_000,
+        ...opts.rpcOptions,
+      }),
       chain: sdk.provider.chain,
     });
   }
