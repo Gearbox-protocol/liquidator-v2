@@ -8,20 +8,27 @@ import {
   GhoLiquidator_bytecode,
   GhoUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import {
+  type CreditSuite,
+  type Curator,
+  isVersionRange,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import { FLASH_MINTERS } from "../constants.js";
 import PartialLiquidatorV310Contract from "./PartialLiquidatorV310Contract.js";
 
+type GhoLiquidatorToken = "DOLA" | "GHO" | "NECT";
+
 export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
-  #token: "DOLA" | "GHO";
+  #token: GhoLiquidatorToken;
   #flashMinter: Address;
 
   public static tryAttach(
     cm: CreditSuite,
   ): GHOLiquidatorV310Contract | undefined {
-    if (cm.router.version < 310 || cm.router.version > 319) {
+    if (!isVersionRange(cm.router.version, VERSION_RANGE_310)) {
       return undefined;
     }
     const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
@@ -45,6 +52,13 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
           "DOLA",
           flashMinter,
         );
+      case "NECT":
+        return new GHOLiquidatorV310Contract(
+          cm.router.address,
+          curator,
+          "NECT",
+          flashMinter,
+        );
     }
     return undefined;
   }
@@ -52,7 +66,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   constructor(
     router: Address,
     curator: Curator,
-    token: "DOLA" | "GHO",
+    token: GhoLiquidatorToken,
     flashMinter: Address,
   ) {
     super(token, router, curator);

@@ -17,6 +17,9 @@ export const FLASH_MINTERS: Partial<
     GHO: "0xb639D208Bcf0589D54FaC24E655C79EC529762B8",
     DOLA: "0x6C5Fdc0c53b122Ae0f15a863C349f3A481DE8f1F",
   },
+  Berachain: {
+    NECT: "0x1ce0a25d13ce4d52071ae7e02cf1f6606f4c79d3",
+  },
 };
 
 export const SONIC_USDCE_SILO: Address =
