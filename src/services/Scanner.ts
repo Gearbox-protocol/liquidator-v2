@@ -27,6 +27,7 @@ import { type ILogger, Logger } from "../log/index.js";
 import type MulticallSpy from "../MulticallSpy.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
+import type { INotifier } from "./notifier/index.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -383,6 +384,9 @@ class ScannerDiagnoster {
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
 
+  @DI.Inject(DI.Notifier)
+  notifier!: INotifier;
+
   #drpc?: WorkaroundCAS;
   #alchemy?: WorkaroundCAS;
 
@@ -452,6 +456,10 @@ class ScannerDiagnoster {
       this.log.debug(
         `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful, ${alchemyZeroHF} zero HF) in block ${blockNumber} with alchemy`,
       );
+      this.notifier.alert({
+        plain: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
+        markdown: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
+      });
       return alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
     } catch (e) {
       this.log.error(e);
