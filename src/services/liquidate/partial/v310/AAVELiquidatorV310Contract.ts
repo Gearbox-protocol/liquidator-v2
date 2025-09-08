@@ -8,10 +8,16 @@ import {
   AaveLiquidator_bytecode,
   AaveUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import {
+  type CreditSuite,
+  type Curator,
+  isVersionRange,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import { type Address, isAddress } from "viem";
 
 import { AAVE_V3_LENDING_POOL } from "../constants.js";
+import { mustGetCuratorName } from "../utils.js";
 import PartialLiquidatorV310Contract from "./PartialLiquidatorV310Contract.js";
 
 export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
@@ -20,14 +26,14 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): AAVELiquidatorV310Contract | undefined {
-    if (cm.router.version < 310 || cm.router.version > 319) {
+    if (!isVersionRange(cm.router.version, VERSION_RANGE_310)) {
       return undefined;
     }
     const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
     if (!aavePool || !isAddress(aavePool)) {
       return undefined;
     }
-    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const curator = mustGetCuratorName(cm);
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     switch (symbol) {
       case "GHO":

@@ -17,6 +17,7 @@ import {
 import type { Address } from "viem";
 
 import { FLASH_MINTERS } from "../constants.js";
+import { mustGetCuratorName } from "../utils.js";
 import PartialLiquidatorV310Contract from "./PartialLiquidatorV310Contract.js";
 
 type GhoLiquidatorToken = "DOLA" | "GHO" | "NECT";
@@ -31,7 +32,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     if (!isVersionRange(cm.router.version, VERSION_RANGE_310)) {
       return undefined;
     }
-    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const curator = mustGetCuratorName(cm);
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     const flashMinter = FLASH_MINTERS[cm.provider.networkType]?.[symbol];
     if (!flashMinter) {

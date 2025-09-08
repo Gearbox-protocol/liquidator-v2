@@ -29,7 +29,7 @@
     "@gearbox-protocol/cli-utils": "^5.45.15",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "8.27.7",
+    "@gearbox-protocol/sdk": "8.27.9",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^24.3.1",
     "@uniswap/sdk-core": "^7.7.2",
@@ -48,7 +48,7 @@
     "pino": "^9.9.4",
     "tsx": "4.20.5",
     "typescript": "^5.9.2",
-    "viem": "^2.37.3",
+    "viem": "^2.37.4",
     "vitest": "^3.2.4",
     "zod": "^4.1.5"
   },

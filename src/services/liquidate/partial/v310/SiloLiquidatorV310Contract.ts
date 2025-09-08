@@ -8,10 +8,17 @@ import {
   SiloLiquidator_bytecode,
   SiloUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
-import { type CreditSuite, type Curator, hexEq } from "@gearbox-protocol/sdk";
+import {
+  type CreditSuite,
+  type Curator,
+  hexEq,
+  isVersionRange,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import { SONIC_USDCE_SILO, SONIC_WS_SILO } from "../constants.js";
+import { mustGetCuratorName } from "../utils.js";
 import PartialLiquidatorV310Contract from "./PartialLiquidatorV310Contract.js";
 
 export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
@@ -20,13 +27,13 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): SiloLiquidatorV310Contract | undefined {
-    if (cm.router.version < 310 || cm.router.version > 319) {
+    if (!isVersionRange(cm.router.version, VERSION_RANGE_310)) {
       return undefined;
     }
     if (cm.provider.networkType !== "Sonic") {
       return undefined;
     }
-    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const curator = mustGetCuratorName(cm);
     return new SiloLiquidatorV310Contract(cm.router.address, curator);
   }
 

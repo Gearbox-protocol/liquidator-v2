@@ -6,10 +6,16 @@ import {
   GhoFMTaker_bytecode,
   GhoLiquidator_bytecode,
 } from "@gearbox-protocol/liquidator-v2-contracts/bytecode";
-import type { CreditSuite, Curator } from "@gearbox-protocol/sdk";
+import {
+  type CreditSuite,
+  type Curator,
+  isVersionRange,
+  VERSION_RANGE_300,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 import { FLASH_MINTERS } from "../constants.js";
+import { mustGetCuratorName } from "../utils.js";
 import PartialLiquidatorV300Contract from "./PartialLiquidatorV300Contract.js";
 
 export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
@@ -19,10 +25,10 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): GHOLiquidatorV300Contract | undefined {
-    if (cm.router.version < 300 || cm.router.version > 309) {
+    if (!isVersionRange(cm.router.version, VERSION_RANGE_300)) {
       return undefined;
     }
-    const curator = cm.name.includes("K3") ? "K3" : "Chaos Labs";
+    const curator = mustGetCuratorName(cm);
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     const flashMinter = FLASH_MINTERS[cm.provider.networkType]?.[symbol];
     if (!flashMinter) {

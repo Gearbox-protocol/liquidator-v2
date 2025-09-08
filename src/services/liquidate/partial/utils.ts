@@ -1,10 +1,11 @@
 import type {
   CreditSuite,
+  Curator,
   OnDemandPriceUpdates,
   PriceUpdateV300,
   PriceUpdateV310,
 } from "@gearbox-protocol/sdk";
-import { formatBN } from "@gearbox-protocol/sdk";
+import { formatBN, getCuratorName } from "@gearbox-protocol/sdk";
 import type { Address } from "abitype";
 
 import type { OptimalPartialLiquidation } from "./types.js";
@@ -58,4 +59,17 @@ export function humanizePreviewPartialLiquidation(
     }),
     slippage: slippage.toString(),
   };
+}
+
+export function mustGetCuratorName(cm: CreditSuite): Curator {
+  const curator = getCuratorName(
+    cm.marketConfigurator,
+    cm.provider.networkType,
+  );
+  if (!curator) {
+    throw new Error(
+      `unknown market configurator ${cm.marketConfigurator} on ${cm.provider.networkType}`,
+    );
+  }
+  return curator;
 }
