@@ -30,7 +30,7 @@ export default class MulticallSpy {
 
   public multicallRequestSpy: Required<HttpTransportConfig>["onFetchRequest"] =
     async request => {
-      if (!this.config.debugScanner) {
+      if (!this.config.debugScanner || this.config.optimistic) {
         return;
       }
       const data = (await request.json()) as EIP1193Parameters<PublicRpcSchema>;
@@ -45,9 +45,9 @@ export default class MulticallSpy {
 
   public multicallResponseSpy: Required<HttpTransportConfig>["onFetchResponse"] =
     async response => {
-      // if (!this.config.debugScanner) {
-      //   return;
-      // }
+      if (!this.config.debugScanner || this.config.optimistic) {
+        return;
+      }
       const copy = response.clone();
       const resp = await copy.json();
       const id = (resp as any).id as number;
@@ -55,11 +55,10 @@ export default class MulticallSpy {
       if (call) {
         call.headers = Object.fromEntries(response.headers.entries());
       }
-      console.log({ call });
     };
 
   public async dumpCalls(): Promise<void> {
-    if (!this.config.debugScanner) {
+    if (!this.config.debugScanner || this.config.optimistic) {
       return;
     }
     if (!this.config.outS3Bucket) {

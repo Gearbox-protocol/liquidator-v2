@@ -422,7 +422,7 @@ class ScannerDiagnoster {
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
     try {
-      if (!accounts.length || !blockNumber) {
+      if (!accounts.length || !blockNumber || this.config.optimistic) {
         return accounts;
       }
       const numZeroHF = accounts.filter(a => a.healthFactor === 0n).length;
