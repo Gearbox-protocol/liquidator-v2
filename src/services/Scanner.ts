@@ -401,12 +401,8 @@ class ScannerDiagnoster {
         this.#drpc = new WorkaroundCAS(this.caService.sdk, {
           rpcURL,
           rpcOptions: {
-            onFetchRequest: this.config.debugScanner
-              ? (r, o) => this.multicallSpy.multicallRequestSpy(r, o)
-              : undefined,
-            onFetchResponse: this.config.debugScanner
-              ? r => this.multicallSpy.multicallResponseSpy(r)
-              : undefined,
+            onFetchRequest: this.multicallSpy.spy.onFetchRequest,
+            onFetchResponse: this.multicallSpy.spy.onFetchResponse,
           },
         });
       }
@@ -421,12 +417,8 @@ class ScannerDiagnoster {
         this.#alchemy = new WorkaroundCAS(this.caService.sdk, {
           rpcURL,
           rpcOptions: {
-            onFetchRequest: this.config.debugScanner
-              ? (r, o) => this.multicallSpy.multicallRequestSpy(r, o)
-              : undefined,
-            onFetchResponse: this.config.debugScanner
-              ? r => this.multicallSpy.multicallResponseSpy(r)
-              : undefined,
+            onFetchRequest: this.multicallSpy.spy.onFetchRequest,
+            onFetchResponse: this.multicallSpy.spy.onFetchResponse,
           },
         });
       }
