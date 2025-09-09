@@ -94,9 +94,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.883.0":
-  version: 3.883.0
-  resolution: "@aws-sdk/client-s3@npm:3.883.0"
+"@aws-sdk/client-s3@npm:^3.884.0":
+  version: 3.884.0
+  resolution: "@aws-sdk/client-s3@npm:3.884.0"
   dependencies:
     "@aws-crypto/sha1-browser": "npm:5.2.0"
     "@aws-crypto/sha256-browser": "npm:5.2.0"
@@ -156,11 +156,11 @@ __metadata:
     "@types/uuid": "npm:^9.0.1"
     tslib: "npm:^2.6.2"
     uuid: "npm:^9.0.1"
-  checksum: 10c0/9afcc086599e205be82ca5c3693d8e2bf7581f1e5afbcf29d5f2c9c6d13b3bce966b7c2a484d2546ede9fa06d65e7631898c883d234436eced32705a00dc7ba4
+  checksum: 10c0/6a593ce77679b118e9d17ad62d2702b97deb2e196fb6f1734e83307856db370b5d94390e9bd54860c176b31334413d963ed5920403fab199dbd9f147ff479925
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-secrets-manager@npm:^3.882.0":
+"@aws-sdk/client-secrets-manager@npm:^3.883.0":
   version: 3.883.0
   resolution: "@aws-sdk/client-secrets-manager@npm:3.883.0"
   dependencies:
@@ -209,7 +209,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ssm@npm:^3.882.0":
+"@aws-sdk/client-ssm@npm:^3.883.0":
   version: 3.883.0
   resolution: "@aws-sdk/client-ssm@npm:3.883.0"
   dependencies:
@@ -1728,18 +1728,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.45.15":
-  version: 5.45.15
-  resolution: "@gearbox-protocol/cli-utils@npm:5.45.15"
+"@gearbox-protocol/cli-utils@npm:^5.45.16":
+  version: 5.45.16
+  resolution: "@gearbox-protocol/cli-utils@npm:5.45.16"
   dependencies:
-    "@aws-sdk/client-secrets-manager": "npm:^3.882.0"
-    "@aws-sdk/client-ssm": "npm:^3.882.0"
+    "@aws-sdk/client-secrets-manager": "npm:^3.883.0"
+    "@aws-sdk/client-ssm": "npm:^3.883.0"
     abitype: "npm:^1.1.0"
     commander: "npm:^14.0.0"
     lodash-es: "npm:^4.17.21"
     yaml: "npm:^2.8.1"
     zod: "npm:^4.1.5"
-  checksum: 10c0/cf55bb08dad487904e87d00bff5812e8097d16ef0672071058efef45e3fd0bb1b6418e4152b627f994c70e6a2e7edca0806aca634109f0553ef17183a692a697
+  checksum: 10c0/01e16d484dfa40a783a00e0c77e85897706cef33fe42a80be8278e42abe0d5aef650297278610eb1b957b0e33a1cc8b2e0df30f40174a5df4d0ad7d94115ee49
   languageName: node
   linkType: hard
 
@@ -1761,16 +1761,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@gearbox-protocol/liquidator-v2@workspace:."
   dependencies:
-    "@aws-sdk/client-s3": "npm:^3.883.0"
+    "@aws-sdk/client-s3": "npm:^3.884.0"
     "@biomejs/biome": "npm:^2.2.2"
     "@commander-js/extra-typings": "npm:^14.0.0"
     "@commitlint/cli": "npm:^19.8.1"
     "@commitlint/config-conventional": "npm:^19.8.1"
     "@gearbox-protocol/biome-config": "npm:^1.0.1"
-    "@gearbox-protocol/cli-utils": "npm:^5.45.15"
+    "@gearbox-protocol/cli-utils": "npm:^5.45.16"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:8.27.10"
+    "@gearbox-protocol/sdk": "npm:8.28.1"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.3.1"
     "@uniswap/sdk-core": "npm:^7.7.2"
@@ -1790,15 +1790,15 @@ __metadata:
     pino-pretty: "npm:^13.1.1"
     tsx: "npm:4.20.5"
     typescript: "npm:^5.9.2"
-    viem: "npm:^2.37.4"
+    viem: "npm:^2.37.5"
     vitest: "npm:^3.2.4"
     zod: "npm:^4.1.5"
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:8.27.10":
-  version: 8.27.10
-  resolution: "@gearbox-protocol/sdk@npm:8.27.10"
+"@gearbox-protocol/sdk@npm:8.28.1":
+  version: 8.28.1
+  resolution: "@gearbox-protocol/sdk@npm:8.28.1"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1812,7 +1812,7 @@ __metadata:
     zod: "npm:^4.1.1"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/9f35dcd84c52e476b841a33cc02bf65d481b8ef0b904485b4d08a42d00d7bd6a8d58729066f3dfb8af587ba6b0b16b23226fff4f6258e794aa38f538a5385559
+  checksum: 10c0/d82d6861757e9a9dd5cc112b7f607fda40ae48793a7b390da72701aed8f198101e93416311f2a8eda8de0f860f2fc15409c60685c7a7c43a3712eb46205dd774
   languageName: node
   linkType: hard
 
@@ -3114,11 +3114,11 @@ __metadata:
   linkType: hard
 
 "ansi-escapes@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "ansi-escapes@npm:7.0.0"
+  version: 7.1.0
+  resolution: "ansi-escapes@npm:7.1.0"
   dependencies:
     environment: "npm:^1.0.0"
-  checksum: 10c0/86e51e36fabef18c9c004af0a280573e828900641cea35134a124d2715e0c5a473494ab4ce396614505da77638ae290ff72dd8002d9747d2ee53f5d6bbe336be
+  checksum: 10c0/c3aeb677bb272213936e8b96250d742f4d3a17b8135189cc22295713392de84c40765599d16ad2d4e30db38283355e77c8be2aa0441b733c48d7fb960782fbe3
   languageName: node
   linkType: hard
 
@@ -6021,9 +6021,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.37.4":
-  version: 2.37.4
-  resolution: "viem@npm:2.37.4"
+"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.37.5":
+  version: 2.37.5
+  resolution: "viem@npm:2.37.5"
   dependencies:
     "@noble/curves": "npm:1.9.1"
     "@noble/hashes": "npm:1.8.0"
@@ -6038,7 +6038,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/6dee0f1673fbe7560ba3e73721e77f639e33878fe54c0b9f9440d7c45d880fbd5d4730c034414363746545289208f4d1458c73fe777588323da3c3d2993ace29
+  checksum: 10c0/18720013842312f32abecf9e51e1f02f3ee9a424b072583df763aa3d350ac5b91f171fcc24adfe4af365d8690c0c3c680c12a1d52eb97f6eacfde9476b717eb1
   languageName: node
   linkType: hard
 
