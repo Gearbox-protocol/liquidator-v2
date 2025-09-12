@@ -164,6 +164,9 @@ export class Scanner {
         maxHealthFactor: this.#maxHealthFactor,
         includeZeroDebt: false,
         creditManager: this.config.debugManager,
+        ignoreReservePrices:
+          this.config.liquidationMode !== "deleverage" &&
+          !this.config.updateReservePrices,
       };
       accounts = await this.caService.getCreditAccounts(queue, blockNumber);
       if (this.#diagnoster) {

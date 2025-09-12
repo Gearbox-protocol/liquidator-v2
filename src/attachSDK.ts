@@ -72,6 +72,7 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     marketConfigurators: config.marketConfigurators,
     chainId: config.chainId,
     networkType: config.network,
+    ignoreUpdateablePrices: true, // we'll perform price updates in credit account service calls
     redstone: {
       historicTimestamp: optimisticTimestamp,
       gateways: config.redstoneGateways,

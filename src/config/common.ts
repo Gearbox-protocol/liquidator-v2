@@ -303,6 +303,18 @@ export const CommonSchema = z.object({
       env: "SLIPPAGE",
     }),
   /**
+   * By default, reserve prices are not updated (except for deleverage mode)
+   */
+  updateReservePrices: z
+    .boolean()
+    .optional()
+    .default(false)
+    .register(zommandRegistry, {
+      flags: "--update-reserve-prices",
+      description: "Update reserve prices",
+      env: "UPDATE_RESERVE_PRICES",
+    }),
+  /**
    * Flag to enable less eager liquidations for LRT tokens
    */
   restakingWorkaround: boolLike().optional().register(zommandRegistry, {
