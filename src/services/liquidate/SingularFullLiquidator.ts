@@ -41,6 +41,7 @@ export default class SingularFullLiquidator extends SingularLiquidator<
           to: this.client.address,
           slippage: BigInt(this.config.slippage),
           keepAssets: this.config.keepAssets,
+          ignoreReservePrices: !this.config.updateReservePrices,
         });
       return { ...routerCloseResult, calls, rawTx: tx };
     } catch (e) {

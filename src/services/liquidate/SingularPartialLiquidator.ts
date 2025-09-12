@@ -144,11 +144,13 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const priceUpdates =
-      await this.creditAccountService.getOnDemandPriceUpdates(
-        ca.creditManager,
-        ca,
-        undefined,
-      );
+      await this.creditAccountService.getOnDemandPriceUpdates({
+        creditManager: ca.creditManager,
+        creditAccount: ca,
+        ignoreReservePrices:
+          !this.config.updateReservePrices &&
+          this.config.liquidationMode !== "deleverage",
+      });
     const liquidatorContract = this.liquidatorForCA(ca);
     if (!liquidatorContract) {
       throw new Error(
