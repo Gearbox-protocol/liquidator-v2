@@ -20,7 +20,7 @@
     "pino-pretty": "^13.1.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.887.0",
+    "@aws-sdk/client-s3": "^3.888.0",
     "@biomejs/biome": "^2.2.4",
     "@commander-js/extra-typings": "^14.0.0",
     "@commitlint/cli": "^19.8.1",
@@ -29,7 +29,7 @@
     "@gearbox-protocol/cli-utils": "^5.45.16",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "9.0.0",
+    "@gearbox-protocol/sdk": "9.0.1",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^24.3.1",
     "@uniswap/sdk-core": "^7.7.2",

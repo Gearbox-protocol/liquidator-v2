@@ -305,8 +305,7 @@ export const CommonSchema = z.object({
   /**
    * By default, reserve prices are not updated (except for deleverage mode)
    */
-  updateReservePrices: z
-    .boolean()
+  updateReservePrices: boolLike()
     .optional()
     .default(false)
     .register(zommandRegistry, {
