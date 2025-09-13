@@ -1,4 +1,7 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import {
+  type CreditAccountData,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
   createAnvilClient,
@@ -143,13 +146,16 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
   async #preview(ca: CreditAccountData): Promise<PartialLiquidationPreview> {
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
+    const ignoreReservePrices =
+      isV310 &&
+      !this.config.updateReservePrices &&
+      this.config.liquidationMode !== "deleverage";
     const priceUpdates =
       await this.creditAccountService.getOnDemandPriceUpdates({
         creditManager: ca.creditManager,
         creditAccount: ca,
-        ignoreReservePrices:
-          !this.config.updateReservePrices &&
-          this.config.liquidationMode !== "deleverage",
+        ignoreReservePrices,
       });
     const liquidatorContract = this.liquidatorForCA(ca);
     if (!liquidatorContract) {

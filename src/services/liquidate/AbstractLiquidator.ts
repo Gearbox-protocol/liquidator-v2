@@ -3,8 +3,9 @@ import type {
   GearboxSDK,
   ICreditAccountsService,
   MultiCall,
+  VersionRange,
 } from "@gearbox-protocol/sdk";
-import { filterDust } from "@gearbox-protocol/sdk";
+import { filterDust, isVersionRange } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
@@ -159,5 +160,15 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
       throw new Error("liquidator not launched");
     }
     return this.#errorHandler;
+  }
+
+  protected checkAccountVersion(
+    ca: CreditAccountData,
+    v: VersionRange,
+  ): boolean {
+    return isVersionRange(
+      this.sdk.contracts.mustGet(ca.creditFacade).version,
+      v,
+    );
   }
 }

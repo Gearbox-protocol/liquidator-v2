@@ -1,4 +1,7 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import {
+  type CreditAccountData,
+  VERSION_RANGE_310,
+} from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import { decodeFunctionData, type SimulateContractReturnType } from "viem";
 import type { FullLiquidatorSchema } from "../../config/index.js";
@@ -35,13 +38,15 @@ export default class SingularFullLiquidator extends SingularLiquidator<
 
   public async preview(ca: CreditAccountData): Promise<FullLiquidationPreview> {
     try {
+      const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
+      const ignoreReservePrices = !this.config.updateReservePrices && isV310;
       const { tx, routerCloseResult, calls } =
         await this.creditAccountService.fullyLiquidate({
           account: ca,
           to: this.client.address,
           slippage: BigInt(this.config.slippage),
           keepAssets: this.config.keepAssets,
-          ignoreReservePrices: !this.config.updateReservePrices,
+          ignoreReservePrices,
         });
       return { ...routerCloseResult, calls, rawTx: tx };
     } catch (e) {
