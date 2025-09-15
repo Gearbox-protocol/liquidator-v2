@@ -1778,9 +1778,9 @@ __metadata:
     "@gearbox-protocol/cli-utils": "npm:^5.45.17"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:9.0.1"
+    "@gearbox-protocol/sdk": "npm:9.0.4"
     "@gearbox-protocol/types": "npm:^1.14.8"
-    "@types/node": "npm:^24.4.0"
+    "@types/node": "npm:^24.5.0"
     "@uniswap/sdk-core": "npm:^7.7.2"
     "@uniswap/v3-sdk": "npm:^3.25.2"
     "@vlad-yakovlev/telegram-md": "npm:^2.1.0"
@@ -1804,9 +1804,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:9.0.1":
-  version: 9.0.1
-  resolution: "@gearbox-protocol/sdk@npm:9.0.1"
+"@gearbox-protocol/sdk@npm:9.0.4":
+  version: 9.0.4
+  resolution: "@gearbox-protocol/sdk@npm:9.0.4"
   dependencies:
     "@redstone-finance/evm-connector": "npm:^0.7.5"
     "@redstone-finance/protocol": "npm:^0.7.5"
@@ -1820,7 +1820,7 @@ __metadata:
     zod: "npm:^4.1.8"
   peerDependencies:
     axios: ^1.0.0
-  checksum: 10c0/17603590e88f7b6aeac77376233575eaa1721875be2b14d24c5551e71c06e4810450b4b8f13b6664d03a0c4d50063f9775a75afbcccc943a3f8785e6c37b4803
+  checksum: 10c0/cb5cc46cdabaeee379318746313106ed33645b02f75f3ca6fecc570bd2c3f10d4b46a62dc269a1500eeffed2f4931f78617e132e2bdf6995592017bec817e7d4
   languageName: node
   linkType: hard
 
@@ -2856,12 +2856,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^24.4.0":
+"@types/node@npm:*":
   version: 24.4.0
   resolution: "@types/node@npm:24.4.0"
   dependencies:
     undici-types: "npm:~7.11.0"
   checksum: 10c0/3aefa4c6b006b3478f2d28a48d830ab7350ce24efdaf352011418e3ee17ed7683ca9c0a1840e770685ce78f413344badafa91e034be02488efe2eb6b612bd542
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^24.5.0":
+  version: 24.5.0
+  resolution: "@types/node@npm:24.5.0"
+  dependencies:
+    undici-types: "npm:~7.12.0"
+  checksum: 10c0/c5beff68481e2cc667279a1478b34a1cfd048dbff914219cb5888967938d134907836b6c4d6d141dc862489cb09ef28f7d446c7a3b475181fd126c0fcd2916fa
   languageName: node
   linkType: hard
 
@@ -5985,6 +5994,13 @@ __metadata:
   version: 7.11.0
   resolution: "undici-types@npm:7.11.0"
   checksum: 10c0/24ff69baeaebc7d09f4dae68564df850b4ff561810148ff6c37d3fc64dd1460c55e59e604420495e73b1fb48594a1c98e69f6732086a24e01b88f2d926378af1
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~7.12.0":
+  version: 7.12.0
+  resolution: "undici-types@npm:7.12.0"
+  checksum: 10c0/326e455bbc0026db1d6b81c76a1cf10c63f7e2f9821db2e24fdc258f482814e5bfa8481f8910d07c68e305937c5c049610fdc441c5e8b7bb0daca7154fb8a306
   languageName: node
   linkType: hard
 

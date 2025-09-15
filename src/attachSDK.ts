@@ -62,8 +62,8 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
 
   const transport = createTransport(config, {
     timeout: 600_000,
-    onFetchRequest: multicallSpy.spy.onFetchRequest,
-    onFetchResponse: multicallSpy.spy.onFetchResponse,
+    onFetchRequest: multicallSpy.onFetchRequest,
+    onFetchResponse: multicallSpy.onFetchResponse,
   });
 
   const sdk = await GearboxSDK.attach({

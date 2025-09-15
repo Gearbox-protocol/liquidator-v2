@@ -404,8 +404,8 @@ class ScannerDiagnoster {
         this.#drpc = new WorkaroundCAS(this.caService.sdk, {
           rpcURL,
           rpcOptions: {
-            onFetchRequest: this.multicallSpy.spy.onFetchRequest,
-            onFetchResponse: this.multicallSpy.spy.onFetchResponse,
+            onFetchRequest: this.multicallSpy.onFetchRequest,
+            onFetchResponse: this.multicallSpy.onFetchResponse,
           },
         });
       }
@@ -420,8 +420,8 @@ class ScannerDiagnoster {
         this.#alchemy = new WorkaroundCAS(this.caService.sdk, {
           rpcURL,
           rpcOptions: {
-            onFetchRequest: this.multicallSpy.spy.onFetchRequest,
-            onFetchResponse: this.multicallSpy.spy.onFetchResponse,
+            onFetchRequest: this.multicallSpy.onFetchRequest,
+            onFetchResponse: this.multicallSpy.onFetchResponse,
           },
         });
       }
@@ -436,9 +436,10 @@ class ScannerDiagnoster {
     queue: GetCreditAccountsOptions,
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
+    let result = accounts;
     try {
       if (!accounts.length || !blockNumber || this.config.optimistic) {
-        return accounts;
+        return result;
       }
       const numZeroHF = accounts.filter(a => a.healthFactor === 0n).length;
       let [success, drpcSuccess, dprcZeroHF, alchemySuccess, alchemyZeroHF] = [
@@ -450,37 +451,39 @@ class ScannerDiagnoster {
       this.log.debug(
         `found ${accounts.length} liquidatable accounts (${success} successful, ${numZeroHF} zero HF) in block ${blockNumber}`,
       );
-      if (!this.#drpc || !this.#alchemy || numZeroHF === 0) {
-        return accounts;
+      if (numZeroHF === 0) {
+        return result;
       }
-      const [drpcAccs, alchemyAccs] = await Promise.all([
-        this.#drpc.getCreditAccounts(queue, blockNumber),
-        this.#alchemy.getCreditAccounts(queue, blockNumber),
-      ]);
-      for (const a of drpcAccs) {
-        dprcZeroHF += a.healthFactor === 0n ? 1 : 0;
-        drpcSuccess += a.success ? 1 : 0;
+      if (!!this.#drpc && !!this.#alchemy) {
+        const [drpcAccs, alchemyAccs] = await Promise.all([
+          this.#drpc.getCreditAccounts(queue, blockNumber),
+          this.#alchemy.getCreditAccounts(queue, blockNumber),
+        ]);
+        for (const a of drpcAccs) {
+          dprcZeroHF += a.healthFactor === 0n ? 1 : 0;
+          drpcSuccess += a.success ? 1 : 0;
+        }
+        for (const a of alchemyAccs) {
+          alchemyZeroHF += a.healthFactor === 0n ? 1 : 0;
+          alchemySuccess += a.success ? 1 : 0;
+        }
+        this.log.debug(
+          `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful, ${dprcZeroHF} zero HF) in block ${blockNumber} with drpc`,
+        );
+        this.log.debug(
+          `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful, ${alchemyZeroHF} zero HF) in block ${blockNumber} with alchemy`,
+        );
+        this.notifier.alert({
+          plain: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
+          markdown: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
+        });
+        result = alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
       }
-      for (const a of alchemyAccs) {
-        alchemyZeroHF += a.healthFactor === 0n ? 1 : 0;
-        alchemySuccess += a.success ? 1 : 0;
-      }
-      this.log.debug(
-        `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful, ${dprcZeroHF} zero HF) in block ${blockNumber} with drpc`,
-      );
-      this.log.debug(
-        `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful, ${alchemyZeroHF} zero HF) in block ${blockNumber} with alchemy`,
-      );
-      this.notifier.alert({
-        plain: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
-        markdown: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
-      });
       await this.multicallSpy.dumpCalls();
-      return alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
     } catch (e) {
       this.log.error(e);
-      return accounts;
     }
+    return result;
   }
 }
 

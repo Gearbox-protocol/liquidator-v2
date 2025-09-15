@@ -1,55 +1,110 @@
 import { join } from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { type EthCallRequest, EthCallSpy } from "@gearbox-protocol/sdk/dev";
+import {
+  type DetectedCall,
+  type EthCallRequest,
+  EthCallSpy,
+} from "@gearbox-protocol/sdk/dev";
+import {
+  decodeFunctionResult,
+  multicall3Abi,
+  parseAbi,
+  type RequiredBy,
+} from "viem";
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
-import { type ILogger, Logger } from "./log/index.js";
+import type { ILogger } from "./log/index.js";
+
+const multicallTimestampAbi = parseAbi([
+  "function getCurrentBlockTimestamp() public view returns (uint256 timestamp)",
+  "function getBlockNumber() public view returns (uint256 blockNumber)",
+]);
+
+interface SpiedCall extends DetectedCall {
+  multicall: {
+    blockNumber: string;
+    timestamp: string;
+  };
+}
 
 /**
  * This is temporary solution to diagnose bug where compressor occasionally returns many accounts with HF = 0
  */
 @DI.Injectable(DI.MulticallSpy)
-export default class MulticallSpy {
-  @Logger("MulticallSpy")
-  log!: ILogger;
-
-  @DI.Inject(DI.Config)
-  config!: Config;
-
-  public readonly spy: EthCallSpy;
+export default class MulticallSpy extends EthCallSpy<SpiedCall> {
   #client = new S3Client({});
+  #log: ILogger;
+  #config: Config;
 
   constructor() {
-    this.spy = new EthCallSpy(
+    const log = DI.create(DI.Logger, "MulticallSpy");
+    const config = DI.get(DI.Config);
+    super(
       isGetCreditAccountsMulticall,
-      this.log,
-      this.config.debugScanner && !this.config.optimistic,
+      log,
+      config.debugScanner && !config.optimistic,
     );
+    this.#log = log;
+    this.#config = config;
   }
 
   public async dumpCalls(): Promise<void> {
-    if (!this.config.outS3Bucket) {
-      this.log.error("outS3Bucket is not set");
+    if (!this.#config.outS3Bucket) {
+      this.#log.error("outS3Bucket is not set");
       return;
     }
     const key = join(
-      this.config.outS3Prefix,
-      `getCreditAccounts_${this.spy.detectedBlock}.json`,
+      this.#config.outS3Prefix,
+      this.#config.network,
+      `getCreditAccounts_${this.detectedBlock}.json`,
     );
-    const s3Url = `s3://${this.config.outS3Bucket}/${key}`;
+    const s3Url = `s3://${this.#config.outS3Bucket}/${key}`;
     try {
-      this.log.debug(`uploading to ${s3Url}`);
+      this.#log.debug(`uploading to ${s3Url}`);
       await this.#client.send(
         new PutObjectCommand({
-          Bucket: this.config.outS3Bucket,
+          Bucket: this.#config.outS3Bucket,
           Key: key,
           ContentType: "application/json",
-          Body: JSON.stringify(this.spy.detectedCalls),
+          Body: JSON.stringify(this.detectedCalls),
         }),
       );
-      this.log.debug(`uploaded to ${s3Url}`);
+      this.#log.debug(`uploaded to ${s3Url}`);
     } catch (e) {
-      this.log.error(e, `failed to upload to ${s3Url}`);
+      this.#log.error(e, `failed to upload to ${s3Url}`);
+    }
+  }
+
+  protected override storeResponse(
+    call: RequiredBy<SpiedCall, "response" | "responseHeaders">,
+  ): void | Promise<void> {
+    super.storeResponse(call);
+    const result = call.response.result;
+    if (result) {
+      try {
+        const res = decodeFunctionResult({
+          abi: multicall3Abi,
+          data: result,
+          functionName: "aggregate3",
+        });
+        const [timestampEnc, blockNumberEnc] = res;
+        const timestamp = decodeFunctionResult({
+          abi: multicallTimestampAbi,
+          data: timestampEnc.returnData,
+          functionName: "getCurrentBlockTimestamp",
+        });
+        const blockNumber = decodeFunctionResult({
+          abi: multicallTimestampAbi,
+          data: blockNumberEnc.returnData,
+          functionName: "getBlockNumber",
+        });
+        call.multicall = {
+          blockNumber: blockNumber.toString(),
+          timestamp: timestamp.toString(),
+        };
+      } catch (e) {
+        this.#log.error(`failed to parse multicall response: ${e}`);
+      }
     }
   }
 }
