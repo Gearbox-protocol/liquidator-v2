@@ -69,7 +69,6 @@ export class Scanner {
     this.#notifyOnZeroHFAccounts = throttle(
       this.#notifyOnZeroHFAccounts,
       1000 * 60 * 5,
-      { edges: ["leading"] },
     );
   }
 
@@ -243,9 +242,6 @@ export class Scanner {
       zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
       if (zeroHFAccs.length > 0) {
-        this.log.warn(
-          `found ${zeroHFAccs.length} accounts with HF=0 on second attempt, skipping them`,
-        );
         accounts = accounts.filter(ca => ca.healthFactor !== 0n);
 
         const badTokens = new AddressSet();
@@ -256,9 +252,12 @@ export class Scanner {
             }
           }
         }
+        this.log.warn(
+          `found ${zeroHFAccs.length} accounts with HF=0 and ${badTokens.size} bad tokens on second attempt skipping them`,
+        );
         const badTokensStr = badTokens
           .asArray()
-          .map(t => this.caService.sdk.tokensMeta.get(t)?.symbol)
+          .map(t => this.caService.sdk.tokensMeta.get(t)?.symbol ?? t)
           .join(", ");
         this.log.warn(`bad tokens: ${badTokensStr}`);
         this.#notifyOnZeroHFAccounts(zeroHFAccs.length, badTokensStr);
@@ -405,6 +404,7 @@ export class Scanner {
   }
 
   #notifyOnZeroHFAccounts = (count: number, badTokens: string): void => {
+    this.log.debug("notifying on zero HF accounts");
     this.notifier.alert({
       plain: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
       markdown: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
