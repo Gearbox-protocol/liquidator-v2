@@ -24,10 +24,8 @@ import { createPublicClient, getContract, http } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
-import type MulticallSpy from "../MulticallSpy.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
-import type { INotifier } from "./notifier/index.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -60,7 +58,6 @@ export class Scanner {
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
   #unwatch?: () => void;
-  #diagnoster?: ScannerDiagnoster;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -92,10 +89,6 @@ export class Scanner {
           `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
         );
       }
-    }
-
-    if (this.config.debugScanner) {
-      this.#diagnoster = new ScannerDiagnoster();
     }
 
     // we should not pin block during optimistic liquidations
@@ -169,13 +162,6 @@ export class Scanner {
           !this.config.updateReservePrices,
       };
       accounts = await this.caService.getCreditAccounts(queue, blockNumber);
-      if (this.#diagnoster) {
-        accounts = await this.#diagnoster.checkAccounts(
-          accounts,
-          queue,
-          blockNumber,
-        );
-      }
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
@@ -371,142 +357,5 @@ export class Scanner {
   public async stop(): Promise<void> {
     this.#unwatch?.();
     this.log.info("stopped");
-  }
-}
-
-class ScannerDiagnoster {
-  @Logger("ScannerDiagnoster")
-  log!: ILogger;
-
-  @DI.Inject(DI.Config)
-  config!: Config;
-
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
-
-  @DI.Inject(DI.Notifier)
-  notifier!: INotifier;
-
-  @DI.Inject(DI.MulticallSpy)
-  multicallSpy!: MulticallSpy;
-
-  #drpc?: WorkaroundCAS;
-  #alchemy?: WorkaroundCAS;
-
-  constructor() {
-    if (this.config.drpcKeys?.length) {
-      const rpcURL = getDrpcUrl(
-        this.config.network,
-        this.config.drpcKeys[0].value,
-        "http",
-      );
-      if (rpcURL) {
-        this.#drpc = new WorkaroundCAS(this.caService.sdk, {
-          rpcURL,
-          rpcOptions: {
-            onFetchRequest: this.multicallSpy.onFetchRequest,
-            onFetchResponse: this.multicallSpy.onFetchResponse,
-          },
-        });
-      }
-    }
-    if (this.config.alchemyKeys?.length) {
-      const rpcURL = getAlchemyUrl(
-        this.config.network,
-        this.config.alchemyKeys[0].value,
-        "http",
-      );
-      if (rpcURL) {
-        this.#alchemy = new WorkaroundCAS(this.caService.sdk, {
-          rpcURL,
-          rpcOptions: {
-            onFetchRequest: this.multicallSpy.onFetchRequest,
-            onFetchResponse: this.multicallSpy.onFetchResponse,
-          },
-        });
-      }
-    }
-    if (!!this.#drpc && !!this.#alchemy) {
-      this.log.info("scanner diagnoster enabled");
-    }
-  }
-
-  public async checkAccounts(
-    accounts: CreditAccountData[],
-    queue: GetCreditAccountsOptions,
-    blockNumber?: bigint,
-  ): Promise<CreditAccountData[]> {
-    let result = accounts;
-    try {
-      if (!accounts.length || !blockNumber || this.config.optimistic) {
-        return result;
-      }
-      const numZeroHF = accounts.filter(a => a.healthFactor === 0n).length;
-      let [success, drpcSuccess, dprcZeroHF, alchemySuccess, alchemyZeroHF] = [
-        0, 0, 0, 0, 0,
-      ];
-      for (const a of accounts) {
-        success += a.success ? 1 : 0;
-      }
-      this.log.debug(
-        `found ${accounts.length} liquidatable accounts (${success} successful, ${numZeroHF} zero HF) in block ${blockNumber}`,
-      );
-      if (numZeroHF === 0) {
-        return result;
-      }
-      if (!!this.#drpc && !!this.#alchemy) {
-        const [drpcAccs, alchemyAccs] = await Promise.all([
-          this.#drpc.getCreditAccounts(queue, blockNumber),
-          this.#alchemy.getCreditAccounts(queue, blockNumber),
-        ]);
-        for (const a of drpcAccs) {
-          dprcZeroHF += a.healthFactor === 0n ? 1 : 0;
-          drpcSuccess += a.success ? 1 : 0;
-        }
-        for (const a of alchemyAccs) {
-          alchemyZeroHF += a.healthFactor === 0n ? 1 : 0;
-          alchemySuccess += a.success ? 1 : 0;
-        }
-        this.log.debug(
-          `found ${drpcAccs.length} liquidatable accounts (${drpcSuccess} successful, ${dprcZeroHF} zero HF) in block ${blockNumber} with drpc`,
-        );
-        this.log.debug(
-          `found ${alchemyAccs.length} liquidatable accounts (${alchemySuccess} successful, ${alchemyZeroHF} zero HF) in block ${blockNumber} with alchemy`,
-        );
-        this.notifier.alert({
-          plain: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
-          markdown: `Found ${numZeroHF} zero HF accounts in block ${blockNumber}, second pass ${dprcZeroHF} drpc, ${alchemyZeroHF} alchemy`,
-        });
-        result = alchemyZeroHF < dprcZeroHF ? alchemyAccs : drpcAccs;
-      }
-      await this.multicallSpy.dumpCalls();
-    } catch (e) {
-      this.log.error(e);
-    }
-    return result;
-  }
-}
-
-interface WorkaroundCASOptions extends CreditAccountServiceOptions {
-  rpcURL: string;
-  rpcOptions?: HttpTransportConfig;
-}
-
-class WorkaroundCAS extends AbstractCreditAccountService {
-  #client: PublicClient;
-
-  constructor(sdk: GearboxSDK, opts: WorkaroundCASOptions) {
-    super(sdk, opts);
-    this.#client = createPublicClient({
-      transport: http(opts.rpcURL, {
-        timeout: 600_000,
-        ...opts.rpcOptions,
-      }),
-      chain: sdk.provider.chain,
-    });
-  }
-
-  public override get client(): PublicClient {
-    return this.#client;
   }
 }

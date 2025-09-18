@@ -61,14 +61,6 @@ export const CommonSchema = z.object({
     env: "IGNORE_ACCOUNTS",
   }),
   /**
-   * Enables debug workaround to diagnose scanner in prod
-   */
-  debugScanner: boolLike().optional().register(zommandRegistry, {
-    flags: "--debug-scanner",
-    description: "Enables debug workaround to diagnose scanner in prod",
-    env: "DEBUG_SCANNER",
-  }),
-  /**
    * Only check this account during local debug session
    */
   debugAccount: addressLike().optional().register(zommandRegistry, {

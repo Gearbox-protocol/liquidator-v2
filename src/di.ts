@@ -13,7 +13,6 @@ const Injectables = {
   Scanner: "Scanner",
   Swapper: "Swapper",
   CreditAccountService: "CreditAccountService",
-  MulticallSpy: "MulticallSpy",
 } as const;
 
 export const DI = Object.assign(
@@ -33,7 +32,6 @@ export const DI = Object.assign(
     Scanner: [];
     Swapper: [];
     CreditAccountService: [];
-    MulticallSpy: [];
   }>(),
   Injectables,
 );
