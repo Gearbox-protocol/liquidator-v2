@@ -1,13 +1,10 @@
 import type {
   CreditAccountData,
-  CreditAccountServiceOptions,
-  GearboxSDK,
   GetCreditAccountsOptions,
   ICreditAccountsService,
   NetworkType,
 } from "@gearbox-protocol/sdk";
 import {
-  AbstractCreditAccountService,
   AddressSet,
   hexEq,
   MAX_UINT256,
@@ -15,14 +12,12 @@ import {
   WAD,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
-import { getAlchemyUrl, getDrpcUrl } from "@gearbox-protocol/sdk/dev";
 import {
   iCreditManagerV3Abi,
   iPartialLiquidationBotV3Abi,
 } from "@gearbox-protocol/types/abi";
-import { throttle } from "es-toolkit";
-import type { Address, Block, HttpTransportConfig, PublicClient } from "viem";
-import { createPublicClient, getContract, http } from "viem";
+import type { Address, Block } from "viem";
+import { getContract } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -64,13 +59,7 @@ export class Scanner {
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
   #unwatch?: () => void;
-
-  constructor() {
-    this.#notifyOnZeroHFAccounts = throttle(
-      this.#notifyOnZeroHFAccounts,
-      1000 * 60 * 5,
-    );
-  }
+  #lastZeroHFNotification = 0;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -403,13 +392,18 @@ export class Scanner {
     return result;
   }
 
-  #notifyOnZeroHFAccounts = (count: number, badTokens: string): void => {
+  #notifyOnZeroHFAccounts(count: number, badTokens: string): void {
+    const now = Date.now();
+    if (now - this.#lastZeroHFNotification < 1000 * 60 * 5) {
+      return;
+    }
+    this.#lastZeroHFNotification = now;
     this.log.debug("notifying on zero HF accounts");
     this.notifier.alert({
       plain: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
       markdown: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
     });
-  };
+  }
 
   public get lastUpdated(): bigint {
     return this.#lastUpdated;
