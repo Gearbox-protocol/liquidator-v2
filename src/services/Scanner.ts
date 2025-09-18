@@ -8,6 +8,7 @@ import type {
 } from "@gearbox-protocol/sdk";
 import {
   AbstractCreditAccountService,
+  AddressSet,
   hexEq,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
@@ -19,6 +20,7 @@ import {
   iCreditManagerV3Abi,
   iPartialLiquidationBotV3Abi,
 } from "@gearbox-protocol/types/abi";
+import { throttle } from "es-toolkit";
 import type { Address, Block, HttpTransportConfig, PublicClient } from "viem";
 import { createPublicClient, getContract, http } from "viem";
 import type { Config } from "../config/index.js";
@@ -26,6 +28,7 @@ import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
+import type { INotifier } from "./notifier/index.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -51,6 +54,9 @@ export class Scanner {
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
 
+  @DI.Inject(DI.Notifier)
+  notifier!: INotifier;
+
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
   #restakingMinHF?: bigint;
@@ -58,6 +64,14 @@ export class Scanner {
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
   #unwatch?: () => void;
+
+  constructor() {
+    this.#notifyOnZeroHFAccounts = throttle(
+      this.#notifyOnZeroHFAccounts,
+      1000 * 60 * 5,
+      { edges: ["leading"] },
+    );
+  }
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -161,7 +175,7 @@ export class Scanner {
           this.config.liquidationMode !== "deleverage" &&
           !this.config.updateReservePrices,
       };
-      accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+      accounts = await this.#getAllCreditAccounts(queue, blockNumber);
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
@@ -212,6 +226,46 @@ export class Scanner {
     } else {
       await this.liquidatorService.liquidate(accounts);
     }
+  }
+
+  async #getAllCreditAccounts(
+    queue: GetCreditAccountsOptions,
+    blockNumber?: bigint,
+  ): Promise<CreditAccountData[]> {
+    let accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+    let zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
+
+    if (zeroHFAccs.length > 0) {
+      this.log.warn(
+        `found ${zeroHFAccs.length} accounts with HF=0 on first attempt, retrying`,
+      );
+      accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+      zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
+
+      if (zeroHFAccs.length > 0) {
+        this.log.warn(
+          `found ${zeroHFAccs.length} accounts with HF=0 on second attempt, skipping them`,
+        );
+        accounts = accounts.filter(ca => ca.healthFactor !== 0n);
+
+        const badTokens = new AddressSet();
+        for (const ca of zeroHFAccs) {
+          for (const token of ca.tokens) {
+            if (!token.success) {
+              badTokens.add(token.token);
+            }
+          }
+        }
+        const badTokensStr = badTokens
+          .asArray()
+          .map(t => this.caService.sdk.tokensMeta.get(t)?.symbol)
+          .join(", ");
+        this.log.warn(`bad tokens: ${badTokensStr}`);
+        this.#notifyOnZeroHFAccounts(zeroHFAccs.length, badTokensStr);
+      }
+    }
+
+    return accounts;
   }
 
   async #setupRestakingWorkaround(): Promise<void> {
@@ -349,6 +403,13 @@ export class Scanner {
     );
     return result;
   }
+
+  #notifyOnZeroHFAccounts = (count: number, badTokens: string): void => {
+    this.notifier.alert({
+      plain: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
+      markdown: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
+    });
+  };
 
   public get lastUpdated(): bigint {
     return this.#lastUpdated;

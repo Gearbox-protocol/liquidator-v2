@@ -1789,6 +1789,7 @@ __metadata:
     axios-retry: "npm:^4.5.0"
     date-fns: "npm:^4.1.0"
     di-at-home: "npm:^0.0.7"
+    es-toolkit: "npm:^1.39.10"
     esbuild: "npm:^0.25.9"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.1.6"
@@ -3862,6 +3863,18 @@ __metadata:
     has-tostringtag: "npm:^1.0.2"
     hasown: "npm:^2.0.2"
   checksum: 10c0/ef2ca9ce49afe3931cb32e35da4dcb6d86ab02592cfc2ce3e49ced199d9d0bb5085fc7e73e06312213765f5efa47cc1df553a6a5154584b21448e9fb8355b1af
+  languageName: node
+  linkType: hard
+
+"es-toolkit@npm:^1.39.10":
+  version: 1.39.10
+  resolution: "es-toolkit@npm:1.39.10"
+  dependenciesMeta:
+    "@trivago/prettier-plugin-sort-imports@4.3.0":
+      unplugged: true
+    prettier-plugin-sort-re-exports@0.0.1:
+      unplugged: true
+  checksum: 10c0/244dd6be25bc8c7af9f085f5b9aae08169eca760fc7d4735020f8f711b6a572e0bf205400326fa85a7924e20747d315756dba1b3a5f0d2887231374ec3651a98
   languageName: node
   linkType: hard
 

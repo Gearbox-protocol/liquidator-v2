@@ -10,11 +10,7 @@ import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
 
-import type {
-  CommonSchema,
-  Config,
-  LiqduiatorConfig,
-} from "../../config/index.js";
+import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";
