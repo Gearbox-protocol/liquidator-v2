@@ -227,6 +227,9 @@ export class Scanner {
       this.log.warn(
         `found ${zeroHFAccs.length} accounts with HF=0 on first attempt, retrying`,
       );
+      if (this.config.optimistic) {
+        return accounts;
+      }
       accounts = await this.caService.getCreditAccounts(queue, blockNumber);
       zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
