@@ -1,6 +1,5 @@
 import type { NetworkType } from "@gearbox-protocol/sdk";
-import { createPublicClient } from "viem";
-import { createTransport } from "../utils/index.js";
+import { createPublicClient, type Transport } from "viem";
 import type { CommonSchema } from "./common.js";
 import type { PartialV300ConfigSchema } from "./partial-liquidator.js";
 import type { ConfigSchema } from "./schema.js";
@@ -15,22 +14,45 @@ export type LiqduiatorConfig<TSchema extends CommonSchema> = TSchema & {
   readonly startBlock: bigint;
 };
 
-export async function loadConfig(schema: ConfigSchema): Promise<Config> {
-  const client = createPublicClient({
-    transport: createTransport(schema),
-    name: "preload client",
-  });
+export class ConfigImplementation {
+  #startBlock?: bigint;
+  #chainId?: number;
 
-  const [startBlock, chainId] = await Promise.all([
-    client.getBlockNumber(),
-    client.getChainId(),
-  ]);
-  return {
-    ...partialLiquidatorsV300Defaults(schema.network),
-    ...schema,
-    startBlock,
-    chainId: Number(chainId),
-  };
+  constructor(schema: ConfigSchema) {
+    Object.assign(this, {
+      ...partialLiquidatorsV300Defaults(schema.network),
+      ...schema,
+    });
+  }
+
+  public async initialize(transport: Transport): Promise<void> {
+    const client = createPublicClient({
+      transport,
+      name: "preload client",
+    });
+
+    const [startBlock, chainId] = await Promise.all([
+      client.getBlockNumber(),
+      client.getChainId(),
+    ]);
+
+    this.#startBlock = startBlock;
+    this.#chainId = chainId;
+  }
+
+  public get startBlock(): bigint {
+    if (this.#startBlock === undefined) {
+      throw new Error("config not initialized");
+    }
+    return this.#startBlock;
+  }
+
+  public get chainId(): number {
+    if (this.#chainId === undefined) {
+      throw new Error("config not initialized");
+    }
+    return this.#chainId;
+  }
 }
 
 /**

@@ -1,23 +1,27 @@
+import type { ILogger } from "@gearbox-protocol/sdk";
 import {
-  createTransport as createTransportSDK,
   type ProviderConfig,
+  RevolverTransport,
 } from "@gearbox-protocol/sdk/dev";
-import type { HttpTransportConfig, Transport } from "viem";
+import { md } from "@vlad-yakovlev/telegram-md";
+import type { Transport } from "viem";
 import type { CommonSchema } from "../config/common.js";
+import type { INotifier } from "../services/notifier/index.js";
 
 export function createTransport(
   config: CommonSchema,
-  httpConfig?: HttpTransportConfig,
+  logger: ILogger,
+  notifier: INotifier,
 ): Transport {
   const { jsonRpcProviders, enabledProviders, alchemyKeys, drpcKeys, network } =
     config;
 
-  const rpcProviders: ProviderConfig[] = [];
+  const providers: ProviderConfig[] = [];
   for (const p of enabledProviders) {
     switch (p) {
       case "alchemy":
         if (alchemyKeys) {
-          rpcProviders.push({
+          providers.push({
             provider: "alchemy",
             keys: alchemyKeys.map(k => k.value) ?? [],
           });
@@ -25,7 +29,7 @@ export function createTransport(
         break;
       case "drpc":
         if (drpcKeys) {
-          rpcProviders.push({
+          providers.push({
             provider: "drpc",
             keys: drpcKeys.map(k => k.value) ?? [],
           });
@@ -33,7 +37,7 @@ export function createTransport(
         break;
       case "custom":
         if (jsonRpcProviders) {
-          rpcProviders.push({
+          providers.push({
             provider: "custom",
             keys: jsonRpcProviders.map(p => p.value) ?? [],
           });
@@ -41,10 +45,31 @@ export function createTransport(
         break;
     }
   }
-  return createTransportSDK({
-    rpcProviders,
-    protocol: "http",
+  return RevolverTransport.create({
+    providers,
     network,
-    ...httpConfig,
+    timeout: config.optimistic ? 240_000 : 10_000,
+    retryCount: config.optimistic ? 3 : undefined,
+    logger: logger?.child?.({ name: "transport" }),
+    onRotateSuccess: (oldT, newT, reason) => {
+      const reasonS = reason
+        ? `: ${reason.shortMessage} ${reason.details}`
+        : "";
+      notifier.alert({
+        plain: `Rotated rpc provider from ${oldT} to ${newT}${reasonS}`,
+        markdown:
+          md`Rotated rpc provider from ${md.bold(oldT)} to ${md.bold(newT)}${reasonS}`.toString(),
+      });
+    },
+    onRotateFailed: (oldT, reason) => {
+      const reasonS = reason
+        ? `: ${reason.shortMessage} ${reason.details}`
+        : "";
+      notifier.alert({
+        plain: `Failed to rotate rpc provider from ${oldT}${reasonS}`,
+        markdown:
+          md`Failed to rotate rpc provider from ${md.bold(oldT)}${reasonS}`.toString(),
+      });
+    },
   });
 }

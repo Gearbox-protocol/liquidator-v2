@@ -3,6 +3,7 @@ import { ContainerInstance } from "di-at-home";
 const Injectables = {
   Client: "Client",
   Config: "Config",
+  CreditAccountService: "CreditAccountService",
   Docker: "Docker",
   HealthChecker: "HealthChecker",
   Liquidator: "Liquidator",
@@ -12,7 +13,7 @@ const Injectables = {
   Output: "Output",
   Scanner: "Scanner",
   Swapper: "Swapper",
-  CreditAccountService: "CreditAccountService",
+  Transport: "Transport",
 } as const;
 
 export const DI = Object.assign(
@@ -20,6 +21,7 @@ export const DI = Object.assign(
     AddressProvider: [];
     Client: [];
     Config: [];
+    CreditAccountService: [];
     Docker: [];
     HealthChecker: [];
     Liquidator: [];
@@ -31,7 +33,7 @@ export const DI = Object.assign(
     Redstone: [];
     Scanner: [];
     Swapper: [];
-    CreditAccountService: [];
+    Transport: [];
   }>(),
   Injectables,
 );

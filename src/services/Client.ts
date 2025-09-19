@@ -1,7 +1,11 @@
 import { nextTick } from "node:process";
 
 import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
-import type { AnvilClient, AnvilNodeInfo } from "@gearbox-protocol/sdk/dev";
+import type {
+  AnvilClient,
+  AnvilNodeInfo,
+  RevolverTransportValue,
+} from "@gearbox-protocol/sdk/dev";
 import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
 import type { Abi } from "abitype";
 import type {
@@ -33,7 +37,6 @@ import { exceptionsAbis } from "../data/index.js";
 import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
-import { createTransport } from "../utils/index.js";
 import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
@@ -46,6 +49,9 @@ export default class Client {
 
   @DI.Inject(DI.Notifier)
   notifier!: INotifier;
+
+  @DI.Inject(DI.Transport)
+  transport!: Transport<"revolver", RevolverTransportValue>;
 
   @Logger("Client")
   public logger!: ILogger;
@@ -63,10 +69,6 @@ export default class Client {
   public async launch(): Promise<void> {
     const { chainId, network, optimistic, privateKey, pollingInterval } =
       this.config;
-    const transport = createTransport(this.config, {
-      timeout: optimistic ? 240_000 : 10_000,
-      retryCount: optimistic ? 3 : undefined,
-    });
     const chain = defineChain({
       ...chains[network],
       id: chainId,
@@ -75,18 +77,18 @@ export default class Client {
     this.#publicClient = createPublicClient({
       cacheTime: 0,
       chain,
-      transport,
+      transport: this.transport,
       pollingInterval: optimistic ? 25 : pollingInterval,
     });
     this.#walletClient = createWalletClient({
       account: privateKeyToAccount(privateKey.value),
       chain,
-      transport,
+      transport: this.transport,
       pollingInterval: optimistic ? 25 : undefined,
     });
     try {
       this.#testClient = createAnvilClient({
-        transport,
+        transport: this.transport,
         chain,
       });
       this.#anvilInfo = await this.#testClient.anvilNodeInfo();

@@ -7,17 +7,18 @@ import {
   GearboxSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
-
+import type { Transport } from "viem";
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
-import { createTransport, formatTs } from "./utils/index.js";
+import { formatTs } from "./utils/index.js";
 
 export default async function attachSDK(): Promise<ICreditAccountsService> {
   const config: Config = DI.get(DI.Config);
   const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
+  const transport: Transport = DI.get(DI.Transport);
 
   await client.launch();
   let optimisticTimestamp: number | undefined;
@@ -56,10 +57,6 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
       `will use optimistic timestamp: ${new Date(optimisticTimestamp)} (${optimisticTimestamp}, delta: ${deltaS}s)`,
     );
   }
-
-  const transport = createTransport(config, {
-    timeout: 600_000,
-  });
 
   const sdk = await GearboxSDK.attach({
     transport,

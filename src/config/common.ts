@@ -134,6 +134,19 @@ export const CommonSchema = z.object({
       env: "DRPC_KEYS",
     }),
   /**
+   * Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring
+   */
+  staleBlockThreshold: z.coerce
+    .number()
+    .nonnegative()
+    .default(120)
+    .register(zommandRegistry, {
+      flags: "--stale-block-threshold <threshold>",
+      description:
+        "Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring",
+      env: "STALE_BLOCK_THRESHOLD",
+    }),
+  /**
    * Max block range size for eth_getLogs
    */
   logsPageSize: z.coerce

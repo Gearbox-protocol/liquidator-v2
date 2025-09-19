@@ -16,9 +16,10 @@ import {
 } from "@gearbox-protocol/cli-utils";
 
 import attachSDK from "./attachSDK.js";
-import { ConfigSchema, loadConfig } from "./config/index.js";
+import { ConfigImplementation, ConfigSchema } from "./config/index.js";
 import { DI } from "./di.js";
 import Liquidator from "./Liquidator.js";
+import { createTransport } from "./utils/index.js";
 import version from "./version.js";
 
 Error.stackTraceLimit = Infinity;
@@ -56,8 +57,17 @@ const program = new Zommand("liquidator-v2", {
       .join(" ");
     logger.info(schema, msg);
 
-    const config = await loadConfig(schema);
+    const config = new ConfigImplementation(schema);
     DI.set(DI.Config, config);
+
+    const notifier = DI.create(DI.Notifier);
+    DI.set(DI.Notifier, notifier);
+
+    const transport = createTransport(schema, logger, notifier);
+    DI.set(DI.Transport, transport);
+
+    await config.initialize(transport);
+
     const service = await attachSDK();
     DI.set(DI.CreditAccountService, service);
     const app = new Liquidator();

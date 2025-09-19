@@ -1,3 +1,6 @@
+import type { ICreditAccountsService } from "@gearbox-protocol/sdk";
+import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
+import { BaseError, type PublicClient, type Transport } from "viem";
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
@@ -17,6 +20,9 @@ export default class Liquidator {
   @DI.Inject(DI.Scanner)
   scanner!: Scanner;
 
+  @DI.Inject(DI.CreditAccountService)
+  caService!: ICreditAccountsService;
+
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
 
@@ -28,6 +34,8 @@ export default class Liquidator {
 
   @DI.Inject(DI.Swapper)
   swapper!: ISwapper;
+
+  #staleBlockInterval?: NodeJS.Timeout;
 
   public async launch(): Promise<void> {
     await this.client.launch();
@@ -43,6 +51,18 @@ export default class Liquidator {
       process.exit(0);
     }
 
+    if (this.config.staleBlockThreshold > 0 && !this.config.optimistic) {
+      this.log.info(
+        `will check for stale blocks every ${this.config.staleBlockThreshold} seconds`,
+      );
+      this.#staleBlockInterval = setInterval(
+        () => {
+          this.#checkStaleBlock();
+        },
+        Math.min(this.config.staleBlockThreshold * 1000, 60_000),
+      );
+    }
+
     process.on("SIGTERM", async s => {
       await this.#stop(s);
     });
@@ -56,6 +76,25 @@ export default class Liquidator {
     this.log.info("terminating");
     await Promise.allSettled([this.healthChecker.stop(), this.scanner.stop()]);
     this.log.info(`stopped by ${signal}`);
+    if (this.#staleBlockInterval) {
+      clearInterval(this.#staleBlockInterval);
+    }
     process.exit(0);
+  }
+
+  async #checkStaleBlock(): Promise<void> {
+    const timestamp = Number(this.caService.sdk.timestamp);
+    const now = Math.ceil(Date.now() / 1000);
+    const threshold = this.config.staleBlockThreshold;
+    if (now - timestamp > threshold) {
+      this.log.warn({ now, timestamp, threshold }, "stale block detected");
+      await (
+        this.caService.sdk.provider.publicClient as PublicClient<
+          Transport<"revolver", RevolverTransportValue>
+        >
+      ).transport.rotate(
+        new BaseError(`stale block detected: timestamp ${timestamp} at ${now}`),
+      );
+    }
   }
 }

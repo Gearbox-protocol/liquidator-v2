@@ -4,7 +4,9 @@ import {
   type ICreditAccountsService,
   json_stringify,
 } from "@gearbox-protocol/sdk";
+import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
 import { customAlphabet } from "nanoid";
+import type { PublicClient, Transport } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
@@ -65,6 +67,11 @@ export default class HealthCheckerService {
             creditManagers: this.sdk.marketRegister.creditManagers.map(
               cm => cm.creditManager.address,
             ),
+            providers: (
+              this.sdk.provider.publicClient as PublicClient<
+                Transport<"revolver", RevolverTransportValue>
+              >
+            ).transport.statuses(),
           }),
         );
       } else if (req.url === "/metrics") {
