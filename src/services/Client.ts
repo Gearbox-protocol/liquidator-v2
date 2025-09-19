@@ -28,6 +28,7 @@ import {
   defineChain,
   encodeFunctionData,
   formatEther,
+  http,
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -87,11 +88,20 @@ export default class Client {
       pollingInterval: optimistic ? 25 : undefined,
     });
     try {
-      this.#testClient = createAnvilClient({
-        transport: this.transport,
-        chain,
-      });
-      this.#anvilInfo = await this.#testClient.anvilNodeInfo();
+      const url = this.config.jsonRpcProviders?.[0]?.value;
+      if (url) {
+        this.#testClient = createAnvilClient({
+          transport: http(url, {
+            timeout: 240_000,
+            retryCount: 10,
+            batch: false,
+          }),
+          chain,
+          cacheTime: 0,
+          pollingInterval: 25,
+        });
+        this.#anvilInfo = await this.#testClient.anvilNodeInfo();
+      }
     } catch {}
     if (this.#anvilInfo) {
       this.logger.debug(`running on anvil, fork block: ${this.anvilForkBlock}`);
