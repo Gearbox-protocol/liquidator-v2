@@ -68,13 +68,13 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     redstone: {
       historicTimestamp: optimisticTimestamp,
       gateways: config.redstoneGateways,
-      ignoreMissingFeeds: config.optimistic,
+      ignoreMissingFeeds: config.optimistic || config.ignoreMissingFeeds,
     },
     pyth: {
       historicTimestamp: optimisticTimestamp
         ? Math.floor(optimisticTimestamp / 1000)
         : undefined,
-      ignoreMissingFeeds: config.optimistic,
+      ignoreMissingFeeds: config.optimistic || config.ignoreMissingFeeds,
     },
     logger,
   });

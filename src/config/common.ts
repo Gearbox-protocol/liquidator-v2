@@ -258,6 +258,14 @@ export const CommonSchema = z.object({
       env: "OPTIMISTIC_TIMESTAMP",
     }),
   /**
+   * Ignore missing feeds (redstone/pyth)
+   */
+  ignoreMissingFeeds: boolLike().optional().register(zommandRegistry, {
+    flags: "--ignore-missing-feeds",
+    description: "Ignore missing feeds (redstone/pyth)",
+    env: "IGNORE_MISSING_FEEDS",
+  }),
+  /**
    * Do not send transactions in non-optimistic mode, just log them
    */
   dryRun: boolLike().optional().register(zommandRegistry, {
