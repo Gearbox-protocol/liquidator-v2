@@ -20,16 +20,16 @@
     "pino-pretty": "^13.1.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.892.0",
+    "@aws-sdk/client-s3": "^3.896.0",
     "@biomejs/biome": "^2.2.4",
     "@commander-js/extra-typings": "^14.0.0",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@gearbox-protocol/biome-config": "^1.0.2",
-    "@gearbox-protocol/cli-utils": "^5.46.0",
+    "@gearbox-protocol/cli-utils": "^5.46.2",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "9.6.1",
+    "@gearbox-protocol/sdk": "9.9.1",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^24.5.2",
     "@uniswap/sdk-core": "^7.7.2",
@@ -42,15 +42,15 @@
     "di-at-home": "^0.0.7",
     "esbuild": "^0.25.10",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.6",
-    "nanoid": "^5.1.5",
+    "lint-staged": "^16.2.0",
+    "nanoid": "^5.1.6",
     "node-pty": "^1.0.0",
-    "pino": "^9.10.0",
+    "pino": "^9.11.0",
     "tsx": "4.20.5",
     "typescript": "^5.9.2",
-    "viem": "^2.37.6",
+    "viem": "^2.37.8",
     "vitest": "^3.2.4",
-    "zod": "^4.1.9"
+    "zod": "^4.1.11"
   },
   "commitlint": {
     "extends": [

@@ -24,6 +24,7 @@ export const WETH: Record<NetworkType, Address> = {
   Etherlink: NOT_DEPLOYED,
   Hemi: NOT_DEPLOYED,
   Lisk: NOT_DEPLOYED,
+  Plasma: NOT_DEPLOYED,
 };
 
 export default abstract class BaseSwapper {
