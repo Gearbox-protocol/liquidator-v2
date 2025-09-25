@@ -29,7 +29,7 @@
     "@gearbox-protocol/cli-utils": "^5.46.2",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "9.9.1",
+    "@gearbox-protocol/sdk": "9.9.2",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^24.5.2",
     "@uniswap/sdk-core": "^7.7.2",
