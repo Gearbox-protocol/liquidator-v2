@@ -123,7 +123,7 @@ export class Scanner {
         // we don't need this
         // if there're new price feeds, syncState will pick them up anyway
         // and redstone price updates will be updated in credit account service calls
-        skipPriceUpdate: true,
+        ignoreUpdateablePrices: true,
       });
       await this.liquidatorService.syncState(blockNumber);
       await this.#updateAccounts(blockNumber);
