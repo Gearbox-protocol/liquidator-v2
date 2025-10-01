@@ -65,7 +65,7 @@ export default class Client {
 
   #testClient?: AnvilClient;
 
-  #balance?: bigint;
+  #balance?: { value: bigint; healthy: boolean };
 
   public async launch(): Promise<void> {
     const { chainId, network, optimistic, privateKey, pollingInterval } =
@@ -239,7 +239,10 @@ export default class Client {
 
   async #checkBalance(): Promise<void> {
     const balance = await this.pub.getBalance({ address: this.address });
-    this.#balance = balance;
+    this.#balance = {
+      value: balance,
+      healthy: !!this.config.minBalance && balance >= this.config.minBalance,
+    };
     this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
@@ -285,7 +288,7 @@ export default class Client {
     return this.wallet.account.address;
   }
 
-  public get balance(): bigint | undefined {
+  public get balance(): { value: bigint; healthy: boolean } | undefined {
     return this.#balance;
   }
 

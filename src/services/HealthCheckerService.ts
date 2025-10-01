@@ -47,6 +47,9 @@ export default class HealthCheckerService {
     }
 
     const server = createServer(async (req, res) => {
+      const timestamp = Number(this.sdk.timestamp);
+      const now = Math.ceil(Date.now() / 1000);
+      const threshold = this.config.staleBlockThreshold;
       // Routing
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -60,7 +63,10 @@ export default class HealthCheckerService {
             address: this.client.address,
             balance: this.client.balance,
             currentBlock: this.sdk.currentBlock,
-            timestamp: Number(this.sdk.timestamp),
+            timestamp: {
+              value: timestamp,
+              healthy: !!threshold && now - timestamp <= threshold,
+            },
             marketsConfigurators:
               this.sdk.marketRegister.marketConfigurators.map(mc => mc.address),
             pools: this.sdk.marketRegister.pools.map(p => p.pool.address),
