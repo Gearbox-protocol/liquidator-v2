@@ -38,6 +38,7 @@ import { exceptionsAbis } from "../data/index.js";
 import { DI } from "../di.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
+import type { StatusCode } from "../utils/index.js";
 import type { INotifier } from "./notifier/index.js";
 import { LowBalanceMessage } from "./notifier/index.js";
 
@@ -65,7 +66,7 @@ export default class Client {
 
   #testClient?: AnvilClient;
 
-  #balance?: { value: bigint; healthy: boolean };
+  #balance?: { value: bigint; status: StatusCode };
 
   public async launch(): Promise<void> {
     const { chainId, network, optimistic, privateKey, pollingInterval } =
@@ -241,7 +242,10 @@ export default class Client {
     const balance = await this.pub.getBalance({ address: this.address });
     this.#balance = {
       value: balance,
-      healthy: !!this.config.minBalance && balance >= this.config.minBalance,
+      status:
+        !this.config.minBalance || balance >= this.config.minBalance
+          ? "healthy"
+          : "alert",
     };
     this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
@@ -288,7 +292,7 @@ export default class Client {
     return this.wallet.account.address;
   }
 
-  public get balance(): { value: bigint; healthy: boolean } | undefined {
+  public get balance(): { value: bigint; status: StatusCode } | undefined {
     return this.#balance;
   }
 

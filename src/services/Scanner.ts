@@ -60,6 +60,7 @@ export class Scanner {
   #minHealthFactor = 0n;
   #unwatch?: () => void;
   #lastZeroHFNotification = 0;
+  #liquidatableAccounts = 0;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
@@ -208,6 +209,7 @@ export class Scanner {
     this.log.debug(
       `${accounts.length} accounts to ${verb}${blockS}, time: ${time}s`,
     );
+    this.#liquidatableAccounts = accounts.length;
 
     if (this.config.optimistic) {
       await this.liquidatorService.liquidateOptimistic(accounts);
@@ -410,6 +412,10 @@ export class Scanner {
 
   public get lastUpdated(): bigint {
     return this.#lastUpdated;
+  }
+
+  public get liquidatableAccounts(): number {
+    return this.#liquidatableAccounts;
   }
 
   public async stop(): Promise<void> {

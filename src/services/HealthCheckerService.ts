@@ -11,6 +11,7 @@ import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
+import { maxStatusCode, type StatusCode } from "../utils/index.js";
 import version from "../version.js";
 import type Client from "./Client.js";
 import type { Scanner } from "./Scanner.js";
@@ -47,39 +48,10 @@ export default class HealthCheckerService {
     }
 
     const server = createServer(async (req, res) => {
-      const timestamp = Number(this.sdk.timestamp);
-      const now = Math.ceil(Date.now() / 1000);
-      const threshold = this.config.staleBlockThreshold;
       // Routing
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          json_stringify({
-            startTime: this.#start,
-            version,
-            network: this.config.network,
-            family: "liquidators",
-            liquidationMode: this.config.liquidationMode,
-            address: this.client.address,
-            balance: this.client.balance,
-            currentBlock: this.sdk.currentBlock,
-            timestamp: {
-              value: timestamp,
-              healthy: !!threshold && now - timestamp <= threshold,
-            },
-            marketsConfigurators:
-              this.sdk.marketRegister.marketConfigurators.map(mc => mc.address),
-            pools: this.sdk.marketRegister.pools.map(p => p.pool.address),
-            creditManagers: this.sdk.marketRegister.creditManagers.map(
-              cm => cm.creditManager.address,
-            ),
-            providers: (
-              this.sdk.provider.publicClient as PublicClient<
-                Transport<"revolver", RevolverTransportValue>
-              >
-            ).transport.statuses(),
-          }),
-        );
+        res.end(json_stringify(this.#healthStatus));
       } else if (req.url === "/metrics") {
         try {
           res.writeHead(200, { "Content-Type": "text/plain" });
@@ -104,6 +76,54 @@ export default class HealthCheckerService {
     server.unref();
     this.#server = server;
     this.log.info("launched");
+  }
+
+  get #healthStatus() {
+    const timestamp = Number(this.sdk.timestamp);
+    const now = Math.ceil(Date.now() / 1000);
+    const threshold = this.config.staleBlockThreshold;
+    const result = {
+      status: "healthy" as StatusCode,
+      startTime: this.#start,
+      version,
+      network: this.config.network,
+      family: "liquidators",
+      liquidationMode: this.config.liquidationMode,
+      address: this.client.address,
+      balance: this.client.balance,
+      currentBlock: this.sdk.currentBlock,
+      timestamp: {
+        value: timestamp,
+        status: (!!threshold && now - timestamp <= threshold
+          ? "healthy"
+          : "alert") as StatusCode,
+      },
+      marketsConfigurators: this.sdk.marketRegister.marketConfigurators.map(
+        mc => mc.address,
+      ),
+      pools: this.sdk.marketRegister.pools.map(p => p.pool.address),
+      creditManagers: this.sdk.marketRegister.creditManagers.map(
+        cm => cm.creditManager.address,
+      ),
+      liquidatableAccounts: {
+        value: this.scanner.liquidatableAccounts,
+        status: (this.scanner.liquidatableAccounts > 0
+          ? "alert"
+          : "healthy") as StatusCode,
+      },
+      providers: (
+        this.sdk.provider.publicClient as PublicClient<
+          Transport<"revolver", RevolverTransportValue>
+        >
+      ).transport.statuses(),
+    };
+    result.status = maxStatusCode(
+      result.status,
+      result.timestamp.status,
+      result.balance?.status,
+      result.liquidatableAccounts.status,
+    );
+    return result;
   }
 
   public async stop(): Promise<void> {
