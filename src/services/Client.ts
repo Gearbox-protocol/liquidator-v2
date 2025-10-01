@@ -97,7 +97,7 @@ export default class Client {
   @Logger("Client")
   public logger!: ILogger;
 
-  #balance?: bigint;
+  #balance?: {value: bigint; status: string };
 
   #anvilInfo: AnvilNodeInfo | null = null;
 
@@ -297,7 +297,10 @@ export default class Client {
 
   async #checkBalance(): Promise<void> {
     const balance = await this.pub.getBalance({ address: this.address });
-    this.#balance = balance;
+    this.#balance = {
+      value: balance,
+      status: balance < this.config.minBalance ? "alert" : "healthy",
+    };
     this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
@@ -357,7 +360,7 @@ export default class Client {
     return this.wallet.account.address;
   }
 
-  public get balance(): bigint | undefined {
+  public get balance(): { value: bigint; status: string } | undefined {
     return this.#balance;
   }
 

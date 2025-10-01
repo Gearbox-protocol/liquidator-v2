@@ -43,17 +43,7 @@ export default class HealthCheckerService {
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
-          json_stringify({
-            startTime: this.#start,
-            version,
-            network: this.config.network,
-            family: "liquidators",
-            liquidationMode: this.config.liquidationMode,
-            address: this.client.address,
-            balance: this.client.balance,
-            currentBlock: this.scanner.lastUpdated,
-            timestamp: Number(this.scanner.lastTimestamp),
-          }),
+          json_stringify(this.#healthStatus),
         );
       } else if (req.url === "/metrics") {
         try {
@@ -84,6 +74,30 @@ export default class HealthCheckerService {
     });
 
     this.log.info("launched");
+  }
+
+  get #healthStatus() {
+    const balanceOk = !this.client.balance || this.client.balance.status === "healthy";
+    const now = Math.ceil(Date.now() / 1000)
+    const timestamp = Number(this.scanner.lastTimestamp);
+    const timestampOk = now - timestamp <= 120;
+    const status = (balanceOk && timestampOk) ? "healthy" : "alert";
+
+    return {
+      status,
+      startTime: this.#start,
+      version,
+      network: this.config.network,
+      family: "liquidators",
+      liquidationMode: this.config.liquidationMode,
+      address: this.client.address,
+      balance: this.client.balance,
+      currentBlock: this.scanner.lastUpdated,
+      timestamp: {
+        value: timestamp,
+        status: timestampOk ? "healthy" : "alert",
+      }
+    }
   }
 
   /**
