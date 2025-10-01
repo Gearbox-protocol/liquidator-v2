@@ -13,8 +13,15 @@ export function createTransport(
   logger: ILogger,
   notifier: INotifier,
 ): Transport {
-  const { jsonRpcProviders, enabledProviders, alchemyKeys, drpcKeys, network } =
-    config;
+  const {
+    jsonRpcProviders,
+    enabledProviders,
+    alchemyKeys,
+    drpcKeys,
+    ankrKeys,
+    thirdwebKeys,
+    network,
+  } = config;
 
   const providers: ProviderConfig[] = [];
   for (const p of enabledProviders) {
@@ -32,6 +39,22 @@ export function createTransport(
           providers.push({
             provider: "drpc",
             keys: drpcKeys.map(k => k.value) ?? [],
+          });
+        }
+        break;
+      case "ankr":
+        if (ankrKeys) {
+          providers.push({
+            provider: "ankr",
+            keys: ankrKeys.map(k => k.value) ?? [],
+          });
+        }
+        break;
+      case "thirdweb":
+        if (thirdwebKeys) {
+          providers.push({
+            provider: "thirdweb",
+            keys: thirdwebKeys.map(k => k.value) ?? [],
           });
         }
         break;

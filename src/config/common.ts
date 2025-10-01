@@ -2,7 +2,6 @@ import {
   addressLike,
   boolLike,
   CensoredString,
-  CensoredURL,
   optionalAddressArrayLike,
   stringArrayLike,
   zommandRegistry,
@@ -10,8 +9,10 @@ import {
 import { MAX_UINT256, SUPPORTED_NETWORKS, WAD } from "@gearbox-protocol/sdk";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
+import { ProvidersSchema } from "./providers-schema.js";
 
 export const CommonSchema = z.object({
+  ...ProvidersSchema.shape,
   network: z.enum(SUPPORTED_NETWORKS).register(zommandRegistry, {
     flags: "--network <network>",
     description: "Gearbox-supported network",
@@ -86,53 +87,6 @@ export const CommonSchema = z.object({
       "Path to foundry/cast binary, so that we can create tree-like traces in case of errors",
     env: "CAST_BIN",
   }),
-  /**
-   * RPC providers to use
-   */
-  jsonRpcProviders: stringArrayLike()
-    .pipe(z.array(z.url().transform(CensoredURL.transform)))
-    .transform(a => (a.length ? a : undefined))
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--json-rpc-providers <urls...>",
-      description: "RPC providers to use, comma separated",
-      env: "JSON_RPC_PROVIDERS",
-    }),
-  /**
-   * RPC providers to use with their keys
-   */
-  enabledProviders: stringArrayLike()
-    .pipe(z.array(z.enum(["alchemy", "drpc", "custom"])))
-    .default(["custom", "alchemy"])
-    .register(zommandRegistry, {
-      flags: "--enabled-providers <providers...>",
-      description: "keyed RPC providers to use, comma separated",
-      env: "ENABLED_PROVIDERS",
-    }),
-  /**
-   * Alchemy API keys to use
-   */
-  alchemyKeys: stringArrayLike()
-    .pipe(z.array(z.string().transform(CensoredString.transform)))
-    .transform(a => (a.length ? a : undefined))
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--alchemy-keys <keys...>",
-      description: "Alchemy API keys to use, comma separated",
-      env: "ALCHEMY_KEYS",
-    }),
-  /**
-   * DRPC API keys to use
-   */
-  drpcKeys: stringArrayLike()
-    .pipe(z.array(z.string().transform(CensoredString.transform)))
-    .transform(a => (a.length ? a : undefined))
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--drpc-keys <keys...>",
-      description: "DRPC API keys to use, comma separated",
-      env: "DRPC_KEYS",
-    }),
   /**
    * Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring
    */
