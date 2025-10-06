@@ -205,7 +205,7 @@ export class Scanner {
     const verb =
       this.config.liquidationMode === "deleverage"
         ? "deleveragable"
-        : "liquidatable";
+        : "liquidate";
     this.log.debug(
       `${accounts.length} accounts to ${verb}${blockS}, time: ${time}s`,
     );
