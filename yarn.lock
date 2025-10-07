@@ -1684,9 +1684,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.49.2":
-  version: 5.49.2
-  resolution: "@gearbox-protocol/cli-utils@npm:5.49.2"
+"@gearbox-protocol/cli-utils@npm:^5.49.3":
+  version: 5.49.3
+  resolution: "@gearbox-protocol/cli-utils@npm:5.49.3"
   dependencies:
     "@aws-sdk/client-secrets-manager": "npm:^3.901.0"
     "@aws-sdk/client-ssm": "npm:^3.901.0"
@@ -1695,14 +1695,14 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     yaml: "npm:^2.8.1"
     zod: "npm:^4.1.12"
-  checksum: 10c0/92ef8cdff92e3ce934e0f65f5f6cd1cf9079a118b45dfff38ec8575306ee2b22f11248074c854b2c97ed7fb7c93cf0aa3e2211dc0f589690073feef636a8bb3e
+  checksum: 10c0/9f4e839d20f507e83dbc3dfddb5094cd9bfe34c53b1573dcc62fabf9ade48f80b7ab8318b5f09824eaec97de81bd02c6dc65935b24a855b67afa3b3099e0b671
   languageName: node
   linkType: hard
 
 "@gearbox-protocol/liquidator-contracts@npm:^1.36.0-experimental.41":
-  version: 1.36.0-experimental.56
-  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.56"
-  checksum: 10c0/7070d60d96546c436082be23adaa0064a9faba66545a5b643d3a18941979821feb2abe1932244bfb92dd04d4194a2d3abd79447356045024ca2aff5b78a2abea
+  version: 1.36.0-experimental.58
+  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.58"
+  checksum: 10c0/064e440bae1639359194c4f19dda4ffe5f0b2dfd4c632e4c0d15f6b9f958a40d3e628dc879af0b18eb78205264a69f0702ba6a7821a9037d00b91ee573351cac
   languageName: node
   linkType: hard
 
@@ -1723,7 +1723,7 @@ __metadata:
     "@commitlint/cli": "npm:^20.1.0"
     "@commitlint/config-conventional": "npm:^20.0.0"
     "@gearbox-protocol/biome-config": "npm:^1.0.4"
-    "@gearbox-protocol/cli-utils": "npm:^5.49.2"
+    "@gearbox-protocol/cli-utils": "npm:^5.49.3"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/sdk": "npm:9.11.1"
@@ -1746,7 +1746,7 @@ __metadata:
     pino-pretty: "npm:^13.1.1"
     tsx: "npm:4.20.6"
     typescript: "npm:^5.9.3"
-    viem: "npm:^2.37.13"
+    viem: "npm:^2.38.0"
     vitest: "npm:^3.2.4"
     zod: "npm:^4.1.12"
   languageName: unknown
@@ -4121,11 +4121,11 @@ __metadata:
   linkType: hard
 
 "get-tsconfig@npm:^4.7.5":
-  version: 4.10.1
-  resolution: "get-tsconfig@npm:4.10.1"
+  version: 4.11.0
+  resolution: "get-tsconfig@npm:4.11.0"
   dependencies:
     resolve-pkg-maps: "npm:^1.0.0"
-  checksum: 10c0/7f8e3dabc6a49b747920a800fb88e1952fef871cdf51b79e98db48275a5de6cdaf499c55ee67df5fa6fe7ce65f0063e26de0f2e53049b408c585aa74d39ffa21
+  checksum: 10c0/cccf65c8434cecbf24cf581a2d40f635c7bbf98e4bc241abd39d8a9990f2053bb5e8ed41496ed445a3a073a33ff716b531d99a71330e56cfac593e42d6adbd17
   languageName: node
   linkType: hard
 
@@ -5472,11 +5472,11 @@ __metadata:
   linkType: hard
 
 "semver@npm:^7.3.5, semver@npm:^7.6.0":
-  version: 7.7.2
-  resolution: "semver@npm:7.7.2"
+  version: 7.7.3
+  resolution: "semver@npm:7.7.3"
   bin:
     semver: bin/semver.js
-  checksum: 10c0/aca305edfbf2383c22571cb7714f48cadc7ac95371b4b52362fb8eeffdfbc0de0669368b82b2b15978f8848f01d7114da65697e56cd8c37b0dab8c58e543f9ea
+  checksum: 10c0/4afe5c986567db82f44c8c6faef8fe9df2a9b1d98098fc1721f57c696c4c21cebd572f297fc21002f81889492345b8470473bc6f4aff5fb032a6ea59ea2bc45e
   languageName: node
   linkType: hard
 
@@ -5885,9 +5885,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.37.13":
-  version: 2.37.13
-  resolution: "viem@npm:2.37.13"
+"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.38.0":
+  version: 2.38.0
+  resolution: "viem@npm:2.38.0"
   dependencies:
     "@noble/curves": "npm:1.9.1"
     "@noble/hashes": "npm:1.8.0"
@@ -5902,7 +5902,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/6412b3dda526ceae9fa281a5d63ac09f70054da0828bc2d3773badfb7c7206d80219e0934e439e3430d49eed952484c4c6657c286f4587037566878ecd87a282
+  checksum: 10c0/65d13718f6dd8f2de282c147c13700b7c057d855c02641ff1268a57f57963437df1f5bb71fb93e6df547d5e0a880990a9bea497ab2cbc26e89d0bf3e65976f6d
   languageName: node
   linkType: hard
 

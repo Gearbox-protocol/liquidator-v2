@@ -26,7 +26,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@gearbox-protocol/biome-config": "^1.0.4",
-    "@gearbox-protocol/cli-utils": "^5.49.2",
+    "@gearbox-protocol/cli-utils": "^5.49.3",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
     "@gearbox-protocol/sdk": "9.11.1",
@@ -48,7 +48,7 @@
     "pino": "^10.0.0",
     "tsx": "4.20.6",
     "typescript": "^5.9.3",
-    "viem": "^2.37.13",
+    "viem": "^2.38.0",
     "vitest": "^3.2.4",
     "zod": "^4.1.12"
   },
