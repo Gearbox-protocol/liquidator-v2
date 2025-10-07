@@ -3,7 +3,11 @@ import {
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
-import { decodeFunctionData, type SimulateContractReturnType } from "viem";
+import {
+  BaseError,
+  decodeFunctionData,
+  type SimulateContractReturnType,
+} from "viem";
 import type { FullLiquidatorSchema } from "../../config/index.js";
 import { exceptionsAbis } from "../../data/index.js";
 import SingularLiquidator from "./SingularLiquidator.js";
@@ -50,7 +54,9 @@ export default class SingularFullLiquidator extends SingularLiquidator<
         });
       return { ...routerCloseResult, calls, rawTx: tx };
     } catch (e) {
-      throw new Error("cant preview full liquidation", { cause: e });
+      throw new BaseError("cant preview full liquidation", {
+        cause: e as Error,
+      });
     }
   }
 
