@@ -1,6 +1,7 @@
 import {
   type CreditAccountData,
   VERSION_RANGE_310,
+  WAD,
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeV3Abi } from "@gearbox-protocol/types/abi";
 import {
@@ -10,6 +11,7 @@ import {
 } from "viem";
 import type { FullLiquidatorSchema } from "../../config/index.js";
 import { exceptionsAbis } from "../../data/index.js";
+import { isCreditAccountNotLiquidatableException } from "../../errors/isCreditAccountNotLiquidatableException.js";
 import SingularLiquidator from "./SingularLiquidator.js";
 import type {
   FullLiquidationPreview,
@@ -68,12 +70,31 @@ export default class SingularFullLiquidator extends SingularLiquidator<
       abi: iCreditFacadeV3Abi,
       data: preview.rawTx.callData,
     });
-    return this.client.pub.simulateContract({
-      account: this.client.account,
-      abi: [...iCreditFacadeV3Abi, ...exceptionsAbis],
-      address: account.creditFacade,
-      functionName: "liquidateCreditAccount",
-      args: args as any,
-    });
+    try {
+      const result = await this.client.pub.simulateContract({
+        account: this.client.account,
+        abi: [...iCreditFacadeV3Abi, ...exceptionsAbis],
+        address: account.creditFacade,
+        functionName: "liquidateCreditAccount",
+        args: args as any,
+      });
+      return result as unknown as SimulateContractReturnType<
+        unknown[],
+        any,
+        any
+      >;
+    } catch (e) {
+      // in optimistic mode, it's possible to encounter accounts with underlying only and HF > 0
+      if (
+        this.config.optimistic &&
+        account.healthFactor > WAD &&
+        isCreditAccountNotLiquidatableException(e as Error)
+      ) {
+        throw new Error("warning: credit account is not liquidatable", {
+          cause: e,
+        });
+      }
+      throw e;
+    }
   }
 }
