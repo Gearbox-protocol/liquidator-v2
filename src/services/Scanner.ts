@@ -23,7 +23,7 @@ import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
-import type { INotifier } from "./notifier/index.js";
+import { type INotifier, ZeroHFAccountsMessage } from "./notifier/index.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -406,10 +406,7 @@ export class Scanner {
     }
     this.#lastZeroHFNotification = now;
     this.log.debug("notifying on zero HF accounts");
-    this.notifier.alert({
-      plain: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
-      markdown: `found ${count} accounts with HF=0, bad tokens: ${badTokens}`,
-    });
+    this.notifier.alert(new ZeroHFAccountsMessage(count, badTokens));
   }
 
   public get lastUpdated(): bigint {

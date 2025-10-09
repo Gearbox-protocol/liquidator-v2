@@ -3,10 +3,13 @@ import {
   type ProviderConfig,
   RevolverTransport,
 } from "@gearbox-protocol/sdk/dev";
-import { md } from "@vlad-yakovlev/telegram-md";
 import type { Transport } from "viem";
 import type { CommonSchema } from "../config/common.js";
-import type { INotifier } from "../services/notifier/index.js";
+import {
+  type INotifier,
+  ProviderRotationErrorMessage,
+  ProviderRotationSuccessMessage,
+} from "../services/notifier/index.js";
 
 export function createTransport(
   config: CommonSchema,
@@ -75,24 +78,10 @@ export function createTransport(
     retryCount: config.optimistic ? 3 : undefined,
     logger: logger?.child?.({ name: "transport" }),
     onRotateSuccess: (oldT, newT, reason) => {
-      const reasonS = reason
-        ? `: ${reason.shortMessage} ${reason.details}`
-        : "";
-      notifier.alert({
-        plain: `Rotated rpc provider from ${oldT} to ${newT}${reasonS}`,
-        markdown:
-          md`Rotated rpc provider from ${md.bold(oldT)} to ${md.bold(newT)}${reasonS}`.toString(),
-      });
+      notifier.notify(new ProviderRotationSuccessMessage(oldT, newT, reason));
     },
     onRotateFailed: (oldT, reason) => {
-      const reasonS = reason
-        ? `: ${reason.shortMessage} ${reason.details}`
-        : "";
-      notifier.alert({
-        plain: `Failed to rotate rpc provider from ${oldT}${reasonS}`,
-        markdown:
-          md`Failed to rotate rpc provider from ${md.bold(oldT)}${reasonS}`.toString(),
-      });
+      notifier.alert(new ProviderRotationErrorMessage(oldT, reason));
     },
   });
 }

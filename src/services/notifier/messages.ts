@@ -3,7 +3,7 @@ import { etherscanUrl, formatBN } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import type { Address, TransactionReceipt } from "viem";
+import type { Address, BaseError, TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
@@ -316,6 +316,80 @@ Error: ${this.#error}`;
     return md.build(
       md`❌ [${this.network}] failed to batch-liquidate ${this.#accounts.length} accounts
 Error: ${md.inlineCode(this.#error)}`,
+    );
+  }
+}
+
+export class ProviderRotationSuccessMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #oldT: string;
+  #newT: string;
+  #reason: string;
+
+  constructor(oldT: string, newT: string, reason?: BaseError) {
+    super({});
+    this.#oldT = oldT;
+    this.#newT = newT;
+    this.#reason = reason ? `: ${reason.shortMessage} ${reason.details}` : "";
+  }
+
+  public get plain(): string {
+    return `[${this.network}] rotated rpc provider from ${this.#oldT} to ${this.#newT}${this.#reason}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] rotated rpc provider from ${md.bold(this.#oldT)} to ${md.bold(this.#newT)}${this.#reason}`,
+    );
+  }
+}
+
+export class ProviderRotationErrorMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #oldT: string;
+  #reason: string;
+
+  constructor(oldT: string, reason?: BaseError) {
+    super({});
+    this.#oldT = oldT;
+    this.#reason = reason ? `: ${reason.shortMessage} ${reason.details}` : "";
+  }
+
+  public get plain(): string {
+    return `[${this.network}] failed to rotate rpc provider from ${this.#oldT}${this.#reason}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] failed to rotate rpc provider from ${md.bold(this.#oldT)}${this.#reason}`,
+    );
+  }
+}
+
+export class ZeroHFAccountsMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #count: number;
+  #badTokens: string;
+
+  constructor(count: number, badTokens: string) {
+    super({});
+    this.#count = count;
+    this.#badTokens = badTokens;
+  }
+
+  public get plain(): string {
+    return `[${this.network}] found ${this.#count} accounts with HF=0, bad tokens: ${this.#badTokens}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] found ${this.#count} accounts with HF=0, bad tokens: ${this.#badTokens}`,
     );
   }
 }
