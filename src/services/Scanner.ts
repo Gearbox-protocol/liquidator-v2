@@ -11,7 +11,7 @@ import {
   PERCENTAGE_FACTOR,
   WAD,
 } from "@gearbox-protocol/sdk";
-import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/v310";
+import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import {
   iCreditManagerV3Abi,
   iPartialLiquidationBotV3Abi,

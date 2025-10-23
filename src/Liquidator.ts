@@ -89,7 +89,7 @@ export default class Liquidator {
     if (now - timestamp > threshold) {
       this.log.warn({ now, timestamp, threshold }, "stale block detected");
       await (
-        this.caService.sdk.provider.publicClient as PublicClient<
+        this.caService.client as unknown as PublicClient<
           Transport<"revolver", RevolverTransportValue>
         >
       ).transport.rotate(

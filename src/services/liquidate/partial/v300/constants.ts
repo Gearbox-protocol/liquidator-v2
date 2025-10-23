@@ -10,4 +10,6 @@ export const V300_PARTIAL_LIQUIDATOR_BOTS: Record<Curator, Address> = {
   Tulipa: ADDRESS_0X0,
   "M11 Credit": ADDRESS_0X0,
   kpk: ADDRESS_0X0,
+  Hyperithm: ADDRESS_0X0,
+  "Edge UltraYield": ADDRESS_0X0,
 };

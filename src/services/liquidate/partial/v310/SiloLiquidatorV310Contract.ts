@@ -30,7 +30,7 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     if (!isVersionRange(cm.router.version, VERSION_RANGE_310)) {
       return undefined;
     }
-    if (cm.provider.networkType !== "Sonic") {
+    if (cm.networkType !== "Sonic") {
       return undefined;
     }
     const curator = mustGetCuratorName(cm);

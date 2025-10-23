@@ -29,7 +29,7 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
     if (!isVersionRange(cm.router.version, VERSION_RANGE_300)) {
       return undefined;
     }
-    const aavePool = AAVE_V3_LENDING_POOL[cm.provider.networkType];
+    const aavePool = AAVE_V3_LENDING_POOL[cm.networkType];
     if (!aavePool || !isAddress(aavePool)) {
       return undefined;
     }

@@ -112,7 +112,7 @@ export default class HealthCheckerService {
           : "healthy") as StatusCode,
       },
       providers: (
-        this.sdk.provider.publicClient as PublicClient<
+        this.sdk.client as unknown as PublicClient<
           Transport<"revolver", RevolverTransportValue>
         >
       ).transport.statuses(),

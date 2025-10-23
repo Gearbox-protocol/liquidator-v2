@@ -5,6 +5,7 @@ import {
 import {
   calcLiquidatableLTs,
   createAnvilClient,
+  extendAnvilClient,
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -84,10 +85,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
       logger,
     );
     const snapshotId = await this.client.anvil.snapshot();
-    const anvil = createAnvilClient({
-      chain: this.sdk.provider.chain,
-      transport: this.sdk.provider.transport,
-    });
+    const anvil = extendAnvilClient(this.sdk.client);
 
     await setLTs(anvil, cm.state, newLTs, logger);
     const updCa = await this.creditAccountService.getCreditAccountData(

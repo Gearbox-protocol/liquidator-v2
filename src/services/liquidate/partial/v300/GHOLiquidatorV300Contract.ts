@@ -30,7 +30,7 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
     }
     const curator = mustGetCuratorName(cm);
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
-    const flashMinter = FLASH_MINTERS[cm.provider.networkType]?.[symbol];
+    const flashMinter = FLASH_MINTERS[cm.networkType]?.[symbol];
     if (!flashMinter) {
       return undefined;
     }
