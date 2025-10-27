@@ -1682,9 +1682,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.53.2":
-  version: 5.53.2
-  resolution: "@gearbox-protocol/cli-utils@npm:5.53.2"
+"@gearbox-protocol/cli-utils@npm:^5.53.4":
+  version: 5.53.4
+  resolution: "@gearbox-protocol/cli-utils@npm:5.53.4"
   dependencies:
     "@aws-sdk/client-secrets-manager": "npm:^3.914.0"
     "@aws-sdk/client-ssm": "npm:^3.914.0"
@@ -1693,7 +1693,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     yaml: "npm:^2.8.1"
     zod: "npm:^4.1.12"
-  checksum: 10c0/c2ba20897c8fb118e1bc81f953f9a54f2a2684f8cd162cf4ace443c8c398a4a0820854b3d56e8313ea7c862b915b96e4d8b5bfe5e808b00639ae2aa0c53a5f20
+  checksum: 10c0/32c5218dab6c1e21111d6900657217c2606c824ed71b888454d622a38fcd50526de68da6b1056ae665d25826767877d1ddc453cd1dc35a962c05d6b01fc8e161
   languageName: node
   linkType: hard
 
@@ -1728,10 +1728,10 @@ __metadata:
     "@commitlint/cli": "npm:^20.1.0"
     "@commitlint/config-conventional": "npm:^20.0.0"
     "@gearbox-protocol/biome-config": "npm:^1.0.7"
-    "@gearbox-protocol/cli-utils": "npm:^5.53.2"
+    "@gearbox-protocol/cli-utils": "npm:^5.53.4"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:10.2.0"
+    "@gearbox-protocol/sdk": "npm:10.2.1"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.9.1"
     "@uniswap/sdk-core": "npm:^7.8.0"
@@ -1757,9 +1757,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:10.2.0":
-  version: 10.2.0
-  resolution: "@gearbox-protocol/sdk@npm:10.2.0"
+"@gearbox-protocol/sdk@npm:10.2.1":
+  version: 10.2.1
+  resolution: "@gearbox-protocol/sdk@npm:10.2.1"
   dependencies:
     "@gearbox-protocol/integrations-v3": "npm:1.49.0"
     "@redstone-finance/evm-connector": "npm:^0.9.0"
@@ -1776,7 +1776,7 @@ __metadata:
   peerDependencies:
     axios: ^1.0.0
     viem-deal: ^2.0.4
-  checksum: 10c0/15b4164f390914b92b3ea48985309f106f959db2704cbd50c0af5147dcdbb86bbc65b5c83a0c68fa39346317dc5611b5765dcecf4d51984cef83a0fb2de1cfeb
+  checksum: 10c0/29335dc92c362c8eb84ebb31b6ad46d9341d464d36526a02730e761049c3e82ee6022f9fac96dbf67d414c607a1aeac22186850b2e0716877fa801eec02a7f42
   languageName: node
   linkType: hard
 
