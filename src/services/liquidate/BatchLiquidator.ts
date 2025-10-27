@@ -6,7 +6,7 @@ import { BatchLiquidator_bytecode } from "@gearbox-protocol/liquidator-v2-contra
 import {
   AP_ROUTER,
   type CreditAccountData,
-  filterDust,
+  filterDustUSD,
   type OnDemandPriceUpdates,
   type PriceUpdateV300,
   VERSION_RANGE_300,
@@ -258,7 +258,7 @@ export default class BatchLiquidator
         callsHuman: this.sdk.parseMultiCall([
           ...(batch[a.creditAccount]?.calls ?? []),
         ]),
-        balancesBefore: filterDust(a),
+        balancesBefore: filterDustUSD({ account: a, sdk: this.sdk }),
         balancesAfter: {},
         hfBefore: a.healthFactor,
         hfAfter: 0n,

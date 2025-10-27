@@ -5,7 +5,7 @@ import type {
   MultiCall,
   VersionRange,
 } from "@gearbox-protocol/sdk";
-import { filterDust, isVersionRange } from "@gearbox-protocol/sdk";
+import { filterDustUSD, isVersionRange } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
@@ -65,7 +65,7 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
       creditManager: acc.creditManager,
       borrower: acc.owner,
       account: acc.creditAccount,
-      balancesBefore: filterDust(acc),
+      balancesBefore: filterDustUSD({ account: acc, sdk: this.sdk }),
       hfBefore: BigInt(acc.healthFactor),
       balancesAfter: {},
       hfAfter: 0n,
@@ -108,7 +108,7 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
     if (!ca) {
       throw new Error(`account ${acc.creditAccount} not found`);
     }
-    result.balancesAfter = filterDust(ca);
+    result.balancesAfter = filterDustUSD({ account: ca, sdk: this.sdk });
     result.hfAfter = ca.healthFactor;
 
     const balanceAfter = await this.getExecutorBalance(ca.underlying);
