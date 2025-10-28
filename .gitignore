@@ -21,8 +21,6 @@ typechain/
 /logs/*.json
 *.log
 *.tsbuildinfo
-.eslintcache
-.eslint.local.json
 
 # Optimistic output
 /output

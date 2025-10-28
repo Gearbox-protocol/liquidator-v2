@@ -28,7 +28,7 @@ export default class TelegramNotifier implements INotifier {
   public alert(message: INotifierMessage): void {
     this.#sendToTelegram(
       message.markdown,
-      this.config.telegramAlersChannel!,
+      this.config.telegramAlertsChannel!,
       "alert",
     ).catch(console.error);
   }
@@ -72,7 +72,7 @@ export default class TelegramNotifier implements INotifier {
   private get client(): AxiosInstance {
     if (!this.#client) {
       this.#client = axios.create({
-        baseURL: `https://api.telegram.org/bot${this.config.telegramBotToken!}/sendMessage`,
+        baseURL: `https://api.telegram.org/bot${this.config.telegramBotToken?.value}/sendMessage`,
         headers: {
           "Content-Type": "application/json",
         },

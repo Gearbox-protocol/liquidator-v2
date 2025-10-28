@@ -1,8 +1,7 @@
+import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
-
-import type { CreditAccountData } from "../../data/index.js";
-import { TxParserHelper } from "../../utils/ethers-6-temp/txparser/index.js";
+import type { CommonSchema } from "../../config/index.js";
 import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
@@ -15,12 +14,19 @@ import type {
   StrategyPreview,
 } from "./types.js";
 
-export default abstract class SingularLiquidator<T extends StrategyPreview>
-  extends AbstractLiquidator
+export default abstract class SingularLiquidator<
+    T extends StrategyPreview,
+    S extends CommonSchema,
+  >
+  extends AbstractLiquidator<S>
   implements ILiquidatorService
 {
   protected abstract readonly name: string;
   protected abstract readonly adverb: string;
+
+  public async syncState(_blockNumber: bigint): Promise<void> {
+    // do nothing
+  }
 
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
     if (!accounts.length) {
@@ -36,14 +42,14 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     accounts: CreditAccountData[],
   ): Promise<void> {
     const total = accounts.length;
-    const debugS = this.config.debugAccounts ? "selective " : " ";
+    const debugS = this.config.debugAccount ? "selective " : "";
     this.logger.info(`${debugS}optimistic liquidation for ${total} accounts`);
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
       const result = await this.#liquidateOneOptimistic(acc);
       const status = result.isError ? "FAIL" : "OK";
-      const msg = `[${i + 1}/${total}] ${acc.addr} in ${acc.creditManager} ${status}`;
+      const msg = `[${i + 1}/${total}] ${acc.creditAccount} in ${acc.creditManager} ${status}`;
       if (result.isError) {
         this.logger.warn(msg);
       } else {
@@ -57,12 +63,8 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   }
 
   async #liquidateOne(ca: CreditAccountData): Promise<void> {
-    const logger = this.logger.child({
-      account: ca.addr,
-      borrower: ca.borrower,
-      manager: ca.managerName,
-    });
-    if (this.skipList.has(ca.addr)) {
+    const logger = this.caLogger(ca);
+    if (this.skipList.has(ca.creditAccount)) {
       this.logger.warn("skipping this account");
       return;
     }
@@ -72,7 +74,9 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     let preview: T | undefined;
     try {
       preview = await this.preview(ca);
-      pathHuman = TxParserHelper.parseMultiCall(preview);
+      pathHuman = this.creditAccountService.sdk.parseMultiCall(
+        preview.calls as MultiCall[],
+      );
       logger.debug({ pathHuman }, "path found");
 
       const { request } = await this.simulate(ca, preview);
@@ -83,14 +87,12 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       );
     } catch (e) {
       const decoded = await this.errorHandler.explain(e, ca);
-      logger.error(decoded, "cant liquidate");
+      logger.error(`cant liquidate: ${decoded.shortMessage}`);
       if (preview?.skipOnFailure) {
-        this.skipList.add(ca.addr);
+        this.skipList.add(ca.creditAccount);
         this.logger.warn("adding to skip list");
       }
-      // mechanism to be less annoyed with telegram spam
-      const severity = this.getAlertBucket(ca).chooseSeverity();
-      this.notifier[severity](
+      this.notifier.alert(
         new LiquidationErrorMessage(
           ca,
           this.adverb,
@@ -104,24 +106,20 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
 
   async #liquidateOneOptimistic(
     acc: CreditAccountData,
-  ): Promise<OptimisticResult> {
-    const logger = this.logger.child({
-      account: acc.addr,
-      borrower: acc.borrower,
-      manager: acc.managerName,
-    });
+  ): Promise<OptimisticResult<bigint>> {
+    const logger = this.caLogger(acc);
     let snapshotId: Hex | undefined;
     let result = this.newOptimisticResult(acc);
     const start = Date.now();
     try {
-      const balanceBefore = await this.getExecutorBalance(acc.underlyingToken);
+      const balanceBefore = await this.getExecutorBalance(acc.underlying);
       const mlRes = await this.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
       const preview = await this.preview(acc);
-      logger.debug({ pathHuman: result.callsHuman }, "path found");
       result = this.updateAfterPreview(result, preview);
+      logger.debug({ pathHuman: result.callsHuman }, "path found");
 
       const { request } = await this.simulate(acc, preview);
 
@@ -146,13 +144,11 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
       );
       // swap underlying back to ETH
       await this.swapper.swap(
-        acc.underlyingToken,
+        acc.underlying,
         balanceBefore.underlying + BigInt(result.liquidatorPremium),
       );
-      const balanceAfter = await this.getExecutorBalance(acc.underlyingToken);
-      result.liquidatorProfit = (balanceAfter.eth - balanceBefore.eth).toString(
-        10,
-      );
+      const balanceAfter = await this.getExecutorBalance(acc.underlying);
+      result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
     } catch (e: any) {
       const decoded = await this.errorHandler.explain(e, acc, true);
       result.traceFile = decoded.traceFile;
@@ -160,7 +156,7 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
         "\n",
         "\\n",
       );
-      logger.error({ decoded }, "cannot liquidate");
+      logger.error(`cannot liquidate: ${decoded.shortMessage}`);
     }
 
     result.duration = Date.now() - start;
@@ -184,9 +180,18 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult>;
 
+  /**
+   * Gathers all data required to generate transaction that liquidates account
+   * @param ca
+   */
   abstract preview(ca: CreditAccountData): Promise<T>;
   /**
-   * Simulates liquidation
+   * Using data gathered by preview step, simulates transaction.
+   * That is, nothing is actually written, but the gas is estimated, for example.
+   * In optimistic mode, we create snapshot after that state so that all the loaded storage slots are not reverted on next account.
+   *
+   * Returned transaction data then can be used to send actual transaction.
+   * Gas manipulations can be made thanks to estimation data returned by simulate call.
    * @param account
    * @param preview
    * @returns
@@ -194,5 +199,5 @@ export default abstract class SingularLiquidator<T extends StrategyPreview>
   abstract simulate(
     account: CreditAccountData,
     preview: T,
-  ): Promise<SimulateContractReturnType>;
+  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
 }

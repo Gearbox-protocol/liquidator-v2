@@ -1,26 +1,14 @@
-import type {
-  iBatchLiquidatorAbi,
-  iPartialLiquidatorAbi,
-  iPriceHelperAbi,
-} from "@gearbox-protocol/liquidator-v2-contracts/abi";
+import type { iBatchLiquidatorAbi } from "@gearbox-protocol/liquidator-v2-contracts/abi";
 import type { AbiParameterToPrimitiveType, ExtractAbiFunction } from "abitype";
-import type { GetContractReturnType, PublicClient } from "viem";
 
 import type { ArrayElementType } from "../../utils/index.js";
 
-export type IPriceHelperContract = GetContractReturnType<
-  typeof iPriceHelperAbi,
-  PublicClient
->;
-
-export type IPartialLiquidatorContract = GetContractReturnType<
-  typeof iPartialLiquidatorAbi,
-  PublicClient
->;
-
-export type TokenPriceInfo = ArrayElementType<
+export type EstimateBatchInput = ArrayElementType<
   AbiParameterToPrimitiveType<
-    ExtractAbiFunction<typeof iPriceHelperAbi, "previewTokens">["outputs"]["0"]
+    ExtractAbiFunction<
+      typeof iBatchLiquidatorAbi,
+      "estimateBatch"
+    >["inputs"]["0"]
   >
 >;
 

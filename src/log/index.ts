@@ -1,6 +1,6 @@
 import type { IFactory } from "di-at-home";
 import type { Logger as ILogger } from "pino";
-import { pino } from "pino";
+import pino from "pino";
 
 import { DI } from "../di.js";
 
@@ -14,6 +14,7 @@ class LoggerFactory implements IFactory<ILogger, [string]> {
       level: process.env.LOG_LEVEL ?? "debug",
       base: { executionId },
       formatters: {
+        bindings: () => ({}),
         level: label => {
           return {
             level: label,

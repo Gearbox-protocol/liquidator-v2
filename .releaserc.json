@@ -12,6 +12,11 @@
       "name": "beta",
       "channel": "beta",
       "prerelease": "beta"
+    },
+    {
+      "name": "next",
+      "channel": "next",
+      "prerelease": "next"
     }
   ],
   "plugins": [

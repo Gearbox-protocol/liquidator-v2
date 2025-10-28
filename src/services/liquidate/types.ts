@@ -1,36 +1,15 @@
-import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
-import type { Address, Hash, Hex } from "viem";
-
 import type {
   CreditAccountData,
   MultiCall,
-  PriceOnDemand,
-} from "../../data/index.js";
-import type { PathFinderCloseResult } from "../../utils/ethers-6-temp/pathfinder/index.js";
+  RawTx,
+} from "@gearbox-protocol/sdk";
+import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
+import type { Address, Hex } from "viem";
 
-export interface PriceOnDemandExtras extends PriceOnDemand {
-  /**
-   * Price feed address
-   */
-  address: Address;
-  dataFeedId: string;
-  /**
-   * In case when token in PriceOnDemand is ticker, this will be the original token
-   * Otherwise they are the same
-   */
-  originalToken: Address;
-  ts: number;
-  reserve: boolean;
-}
-
-export interface PriceUpdate {
-  token: Address;
-  data: `0x${string}`;
-  reserve: boolean;
-}
-
-export interface FullLiquidationPreview extends PathFinderCloseResult {
-  priceUpdates: PriceUpdate[];
+export interface FullLiquidationPreview extends StrategyPreview {
+  amount: bigint;
+  minAmount: bigint;
+  rawTx: RawTx;
 }
 
 export interface PartialLiquidationPreview {
@@ -39,7 +18,7 @@ export interface PartialLiquidationPreview {
   amountOut: bigint;
   flashLoanAmount: bigint;
   underlyingBalance: bigint;
-  priceUpdates: PriceUpdate[];
+  priceUpdates: unknown[];
   skipOnFailure?: boolean;
 }
 
@@ -51,6 +30,7 @@ export type PartialLiquidationPreviewWithFallback =
 
 export interface ILiquidatorService {
   launch: (asFallback?: boolean) => Promise<void>;
+  syncState: (blockNumber: bigint) => Promise<void>;
   liquidate: (accounts: CreditAccountData[]) => Promise<void>;
   /**
    *
@@ -62,7 +42,7 @@ export interface ILiquidatorService {
 }
 
 export interface StrategyPreview {
-  calls: MultiCall[];
+  calls: readonly MultiCall[];
   underlyingBalance: bigint;
   /**
    * Asset in case of partial liquidation
@@ -76,7 +56,6 @@ export interface StrategyPreview {
    * Falsh loan amount in case of partial liquidation
    */
   flashLoanAmount?: bigint;
-  priceUpdates?: PriceUpdate[];
   /**
    * If true, will not attempt to liquidate this account again
    */
@@ -85,18 +64,5 @@ export interface StrategyPreview {
 
 export interface MakeLiquidatableResult {
   snapshotId?: Hex;
-  partialLiquidationCondition?: PartialLiquidationCondition;
-}
-
-export interface MerkleDistributorInfo {
-  merkleRoot: Hash;
-  tokenTotal: string;
-  claims: Record<
-    Address,
-    {
-      index: number;
-      amount: string;
-      proof: Hash[];
-    }
-  >;
+  partialLiquidationCondition?: PartialLiquidationCondition<bigint>;
 }

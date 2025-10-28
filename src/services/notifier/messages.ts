@@ -1,14 +1,12 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { formatBN } from "@gearbox-protocol/sdk-gov";
+import type { CreditAccountData, NetworkType } from "@gearbox-protocol/sdk";
+import { etherscanUrl, formatBN } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import type { Address, TransactionReceipt } from "viem";
+import type { Address, BaseError, TransactionReceipt } from "viem";
 
 import type { Config } from "../../config/index.js";
-import type { CreditAccountData } from "../../data/index.js";
 import { DI } from "../../di.js";
-import { etherscanUrl } from "../../utils/index.js";
 import version from "../../version.js";
 import type { INotifierMessage } from "./types.js";
 
@@ -39,7 +37,7 @@ class BaseMessage {
     if (!this.ca) {
       throw new Error(`credit account not specified`);
     }
-    return md.link(this.ca?.addr, this.caPlain);
+    return md.link(this.ca?.creditAccount, this.caPlain);
   }
 
   protected get cmPlain(): string {
@@ -53,7 +51,7 @@ class BaseMessage {
     if (!this.ca) {
       throw new Error(`credit account not specified`);
     }
-    return md.link(this.ca.cmName, this.cmPlain);
+    return md.link(this.ca.creditManager, this.cmPlain);
   }
 
   protected get receiptPlain(): string {
@@ -89,7 +87,7 @@ export class LowBalanceMessage extends BaseMessage implements INotifierMessage {
 
   public get markdown(): string {
     return md.build(
-      md`[${this.network}] balance of liquidator ${md.link(this.#wallet, etherscanUrl({ address: this.#wallet }, this.network))} is ${md.bold(formatBN(this.#balance, 18) + " ETH")} is below minumum of ${md.bold(formatBN(this.#minBalance, 18) + " ETH")}`,
+      md`[${this.network}] balance of liquidator ${md.link(this.#wallet, etherscanUrl({ address: this.#wallet }, this.network))} is ${md.bold(`${formatBN(this.#balance, 18)} ETH`)} is below minumum of ${md.bold(`${formatBN(this.#minBalance, 18)} ETH`)}`,
     );
   }
 }
@@ -204,7 +202,10 @@ export class BatchLiquidationFinishedMessage
   #liquidated: number;
   #notLiquidated: number;
 
-  constructor(receipt: TransactionReceipt, results: OptimisticResult[]) {
+  constructor(
+    receipt: TransactionReceipt,
+    results: OptimisticResult<bigint>[],
+  ) {
     super({ receipt });
     this.#liquidated = results.filter(r => !r.isError).length;
     this.#notLiquidated = results.filter(r => !!r.isError).length;
@@ -268,7 +269,7 @@ export class LiquidationErrorMessage
   ) {
     super({ ca });
     this.#strategyAdverb = strategyAdverb;
-    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
+    this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
     this.#callsHuman = callsHuman;
     this.#skipOnFailure = skipOnFailure
       ? "Will skip further liquidation attempts"
@@ -303,7 +304,7 @@ export class BatchLiquidationErrorMessage
   constructor(accounts: CreditAccountData[], error: string) {
     super({});
     this.#accounts = accounts;
-    this.#error = error.length > 128 ? error.slice(0, 128) + "..." : error;
+    this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
   }
 
   public get plain(): string {
@@ -319,14 +320,88 @@ Error: ${md.inlineCode(this.#error)}`,
   }
 }
 
+export class ProviderRotationSuccessMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #oldT: string;
+  #newT: string;
+  #reason: string;
+
+  constructor(oldT: string, newT: string, reason?: BaseError) {
+    super({});
+    this.#oldT = oldT;
+    this.#newT = newT;
+    this.#reason = reason ? `: ${reason.shortMessage} ${reason.details}` : "";
+  }
+
+  public get plain(): string {
+    return `[${this.network}] rotated rpc provider from ${this.#oldT} to ${this.#newT}${this.#reason}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] rotated rpc provider from ${md.bold(this.#oldT)} to ${md.bold(this.#newT)}${this.#reason}`,
+    );
+  }
+}
+
+export class ProviderRotationErrorMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #oldT: string;
+  #reason: string;
+
+  constructor(oldT: string, reason?: BaseError) {
+    super({});
+    this.#oldT = oldT;
+    this.#reason = reason ? `: ${reason.shortMessage} ${reason.details}` : "";
+  }
+
+  public get plain(): string {
+    return `[${this.network}] failed to rotate rpc provider from ${this.#oldT}${this.#reason}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] failed to rotate rpc provider from ${md.bold(this.#oldT)}${this.#reason}`,
+    );
+  }
+}
+
+export class ZeroHFAccountsMessage
+  extends BaseMessage
+  implements INotifierMessage
+{
+  #count: number;
+  #badTokens: string;
+
+  constructor(count: number, badTokens: string) {
+    super({});
+    this.#count = count;
+    this.#badTokens = badTokens;
+  }
+
+  public get plain(): string {
+    return `[${this.network}] found ${this.#count} accounts with HF=0, bad tokens: ${this.#badTokens}`;
+  }
+
+  public get markdown(): string {
+    return md.build(
+      md`[${this.network}] found ${this.#count} accounts with HF=0, bad tokens: ${this.#badTokens}`,
+    );
+  }
+}
+
 function callsPlain(calls?: string[]): string {
-  return calls ? calls.map(c => " ➤ " + c).join("\n") : "-";
+  return calls ? calls.map(c => ` ➤ ${c}`).join("\n") : "-";
 }
 
 function callsMd(calls?: string[]): Markdown {
   return calls
     ? md.join(
-        calls.map(c => " ➤ " + c),
+        calls.map(c => ` ➤ ${c}`),
         "\n",
       )
     : // prettier-ignore

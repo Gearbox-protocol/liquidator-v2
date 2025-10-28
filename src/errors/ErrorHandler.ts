@@ -1,7 +1,8 @@
 import events from "node:events";
-import { createWriteStream, writeFileSync } from "node:fs";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
 
+import { type CreditAccountData, json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -10,10 +11,8 @@ import {
   encodeFunctionData,
 } from "viem";
 
-import type { Config } from "../config/index.js";
-import type { CreditAccountData } from "../data/index.js";
+import type { CommonSchema } from "../config/index.js";
 import type { ILogger } from "../log/index.js";
-import { json_stringify } from "../utils/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
 export interface ExplainedError {
@@ -25,9 +24,9 @@ export interface ExplainedError {
 
 export class ErrorHandler {
   log: ILogger;
-  config: Config;
+  config: CommonSchema;
 
-  constructor(config: Config, log: ILogger) {
+  constructor(config: CommonSchema, log: ILogger) {
     this.config = config;
     this.log = log;
   }
@@ -37,28 +36,52 @@ export class ErrorHandler {
     context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
-    const logger = this.#caLogger(context);
+    // const logger = this.#caLogger(context);
 
     if (error instanceof BaseError) {
-      const errorJson = `${nanoid()}.json`;
-      const errorFile = path.resolve(this.config.outDir, errorJson);
-      const asStr = json_stringify(error);
-      writeFileSync(errorFile, asStr, "utf-8");
-      logger.debug(`saved original error to ${errorFile}`);
+      // let errorJson: string | undefined;
+      // try {
+      //   const asStr = json_stringify(error);
+      //   const errorJson = `${nanoid()}.json`;
+      //   const errorFile = path.resolve(this.config.outDir, errorJson);
+      //   writeFileSync(errorFile, asStr, "utf-8");
+      //   logger.debug(`saved original error to ${errorFile}`);
+      // } catch {}
 
       let traceFile: string | undefined;
       if (saveTrace) {
-        traceFile = await this.#saveErrorTrace(error, context);
+        try {
+          traceFile = await this.#saveErrorTrace(error, context);
+        } catch {}
+      }
+
+      const lowLevelError = error.walk();
+      let revertData = "";
+      if ("data" in lowLevelError) {
+        if (
+          lowLevelError.data &&
+          typeof lowLevelError.data === "object" &&
+          "errorName" in lowLevelError.data
+        ) {
+          revertData = ` (revert: ${lowLevelError.data.errorName})`;
+        } else {
+          revertData = ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
+        }
+      } else if ("raw" in lowLevelError) {
+        revertData = ` (revert: ${lowLevelError.raw})`;
       }
 
       return {
-        errorJson,
+        // errorJson,
         traceFile,
-        shortMessage: error.shortMessage,
-        longMessage: error.message,
+        shortMessage: `${error.name}${revertData}: ${error.shortMessage}`,
+        longMessage: `${error.name}${revertData}: ${error.message}`,
       };
     }
-    const longMessage = error instanceof Error ? error.message : `${error}`;
+    if (error instanceof Error) {
+      return this.#unwrapCause(error);
+    }
+    const longMessage = `${error}`;
     const shortMessage = longMessage.split("\n")[0].slice(0, 128);
     return {
       longMessage,
@@ -67,12 +90,13 @@ export class ErrorHandler {
   }
 
   public async saveTransactionTrace(hash: string): Promise<string | undefined> {
-    return this.#runCast([
-      "run",
-      "--rpc-url",
-      this.config.ethProviderRpcs[0],
-      hash,
-    ]);
+    // this only works for anvil, so we expect jsonRpcProviders to be set
+    const anvilURL = this.config.jsonRpcProviders?.[0];
+    if (!anvilURL) {
+      return undefined;
+    }
+
+    return this.#runCast(["run", "--rpc-url", anvilURL.value, hash]);
   }
 
   /**
@@ -85,13 +109,13 @@ export class ErrorHandler {
     context?: CreditAccountData,
   ): Promise<string | undefined> {
     let cast: string[] = [];
+    // this only works for anvil, so we expect jsonRpcProviders to be set
+    const anvilURL = this.config.jsonRpcProviders?.[0];
+    if (!anvilURL) {
+      return undefined;
+    }
     if (e instanceof TransactionRevertedError) {
-      cast = [
-        "run",
-        "--rpc-url",
-        this.config.ethProviderRpcs[0],
-        e.receipt.transactionHash,
-      ];
+      cast = ["run", "--rpc-url", anvilURL.value, e.receipt.transactionHash];
     } else {
       const exErr = e.walk(
         err => err instanceof ContractFunctionExecutionError,
@@ -109,10 +133,13 @@ export class ErrorHandler {
           "call",
           "--trace",
           "--rpc-url",
-          this.config.ethProviderRpcs[0],
+          anvilURL.value,
+          ...(exErr.sender ? ["--from", exErr.sender] : []),
           exErr.contractAddress,
-          data,
+          // data,
         ];
+        this.#caLogger(context).debug(`calling cast ${cast.join(" ")} <data>`);
+        cast.push(data);
       }
     }
     if (!cast.length) {
@@ -154,11 +181,21 @@ export class ErrorHandler {
     }
   }
 
+  #unwrapCause(e: Error): Pick<ExplainedError, "longMessage" | "shortMessage"> {
+    const shortMessage = e.message.split("\n")[0].slice(0, 128);
+    let longMessage = e.message;
+    if (e.cause) {
+      const cause = this.#unwrapCause(e.cause as Error);
+      longMessage = `${longMessage}Cause: ${cause.longMessage}`;
+    }
+    return { shortMessage, longMessage };
+  }
+
   #caLogger(ca?: CreditAccountData): ILogger {
     return ca
       ? this.log.child({
-          account: ca.addr,
-          manager: ca.managerName,
+          account: ca.creditAccount,
+          manager: ca.creditManager, // TODO: credit manager name
         })
       : this.log;
   }

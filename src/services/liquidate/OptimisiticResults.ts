@@ -4,13 +4,13 @@ import { DI } from "../../di.js";
 
 @DI.Injectable(DI.OptimisticResults)
 export class OptimisticResults {
-  #results: OptimisticResult[] = [];
+  #results: OptimisticResult<bigint>[] = [];
 
-  public push(result: OptimisticResult): void {
+  public push(result: OptimisticResult<bigint>): void {
     this.#results.push(result);
   }
 
-  public get(): OptimisticResult[] {
+  public get(): OptimisticResult<bigint>[] {
     return this.#results;
   }
 }

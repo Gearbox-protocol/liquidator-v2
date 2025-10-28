@@ -7,5 +7,7 @@ export function createClassFromType<T>() {
     constructor(args: T) {
       Object.assign(this, args);
     }
-  } as new (args: T) => T;
+  } as new (
+    args: T,
+  ) => T;
 }

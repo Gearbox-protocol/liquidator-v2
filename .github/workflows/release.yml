@@ -6,6 +6,7 @@ on:
       - "main"
       - "next"
       - "beta"
+      - "next"
   workflow_dispatch:
 
 env:
@@ -18,6 +19,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Use Latest Corepack
+        run: |
+          echo "Before: corepack version => $(corepack --version || echo 'not installed')"
+          npm install -g corepack@latest
+          echo "After : corepack version => $(corepack --version)"
+          corepack enable
+          yarn --version
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3

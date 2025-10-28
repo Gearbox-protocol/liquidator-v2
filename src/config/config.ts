@@ -1,59 +1,57 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import { createPublicClient, http } from "viem";
+import type { NetworkType } from "@gearbox-protocol/sdk";
+import { createPublicClient, type Transport } from "viem";
+import type { CommonSchema } from "./common.js";
+import type { PartialV300ConfigSchema } from "./partial-liquidator.js";
+import type { ConfigSchema } from "./schema.js";
 
-import { createClassFromType, detectNetwork } from "../utils/index.js";
-import { envConfig } from "./env.js";
-import type { PartialV300ConfigSchema } from "./schema.js";
-import { ConfigSchema } from "./schema.js";
-
-// These limits work for DRPC and Alchemy
-const PAGE_SIZE: Record<NetworkType, bigint> = {
-  Mainnet: 100_000n,
-  Optimism: 500_000n,
-  Arbitrum: 500_000n,
-  Base: 500_000n,
-  Sonic: 500_000n,
-};
-
-interface DynamicConfig {
-  readonly network: NetworkType;
+export type Config = ConfigSchema & {
   readonly chainId: number;
   readonly startBlock: bigint;
-  readonly logsPageSize: bigint;
-}
+};
 
-const ConfigClass = createClassFromType<ConfigSchema & DynamicConfig>();
+export type LiqduiatorConfig<TSchema extends CommonSchema> = TSchema & {
+  readonly chainId: number;
+  readonly startBlock: bigint;
+};
 
-export class Config extends ConfigClass {
-  static async load(): Promise<Config> {
-    const schema = ConfigSchema.parse(envConfig);
+export class ConfigImplementation {
+  #startBlock?: bigint;
+  #chainId?: number;
 
+  constructor(schema: ConfigSchema) {
+    Object.assign(this, {
+      ...partialLiquidatorsV300Defaults(schema.network),
+      ...schema,
+    });
+  }
+
+  public async initialize(transport: Transport): Promise<void> {
     const client = createPublicClient({
-      transport: http(schema.ethProviderRpcs[0]),
-      name: "detect network client",
+      transport,
+      name: "preload client",
     });
 
-    const [startBlock, chainId, network] = await Promise.all([
+    const [startBlock, chainId] = await Promise.all([
       client.getBlockNumber(),
       client.getChainId(),
-      detectNetwork(client),
     ]);
-    return new Config({
-      ...partialLiquidatorsV300Defaults(network),
-      ...schema,
-      startBlock,
-      chainId: Number(chainId),
-      network,
-      logsPageSize: schema.logsPageSize || PAGE_SIZE[network],
-    });
+
+    this.#startBlock = startBlock;
+    this.#chainId = chainId;
   }
 
-  public get isPartial(): boolean {
-    return this.liquidationMode === "partial";
+  public get startBlock(): bigint {
+    if (this.#startBlock === undefined) {
+      throw new Error("config not initialized");
+    }
+    return this.#startBlock;
   }
 
-  public get isBatch(): boolean {
-    return this.liquidationMode === "batch";
+  public get chainId(): number {
+    if (this.#chainId === undefined) {
+      throw new Error("config not initialized");
+    }
+    return this.#chainId;
   }
 }
 
@@ -71,22 +69,18 @@ function partialLiquidatorsV300Defaults(
     case "Mainnet": {
       return {
         aavePartialLiquidatorAddress:
-          "0x0d394114fe3a40a39690b7951bf536de7e8fbf4b",
+          "0x0d398d80007c25ef876617add3abd72e8923cb25",
         ghoPartialLiquidatorAddress:
-          "0x4c7c2b2115c392d98278ca7f2def992a08bb06f0",
+          "0x7db905514894416e4acf3309d779ef869d7ed4f0",
         dolaPartialLiquidatorAddress:
-          "0xc1f60b2f3d41bb15738dd52906cdc1de96825ef3",
+          "0x38f932ff91f8af058cb37f2be35b094aec538c83",
+        nexoPartialLiquidatorAddress:
+          "0x5f404db7cf74825772f73e8f5d2d762bd2bd9594",
       };
     }
-    case "Arbitrum": {
+    case "Sonic": {
       return {
-        aavePartialLiquidatorAddress:
-          "0x7268d7017a330816c69d056ec2e64a8d2c954fc0",
-      };
-    }
-    case "Optimism": {
-      return {
-        aavePartialLiquidatorAddress:
+        siloPartialLiquidatorAddress:
           "0x8437432977ace20b4fc27f3317c3a4567909b44f",
       };
     }

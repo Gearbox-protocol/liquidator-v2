@@ -12,4 +12,4 @@ export const exceptionsAbis = [
   ...iRedstoneErrorsAbi,
   ...ilpPriceFeedExceptionsAbi,
   ...iRouterV3ErrorsAbi,
-];
+] as const;

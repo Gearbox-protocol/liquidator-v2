@@ -1,15 +1,20 @@
-import { createServer } from "node:http";
-
+import { createServer, type Server } from "node:http";
+import {
+  type GearboxSDK,
+  type ICreditAccountsService,
+  json_stringify,
+} from "@gearbox-protocol/sdk";
+import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
 import { customAlphabet } from "nanoid";
-
+import type { PublicClient, Transport } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
-import { json_stringify } from "../utils/index.js";
+import { maxStatusCode, type StatusCode } from "../utils/index.js";
 import version from "../version.js";
 import type Client from "./Client.js";
-import type { Scanner } from "./scanner/index.js";
+import type { Scanner } from "./Scanner.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
 
@@ -24,11 +29,15 @@ export default class HealthCheckerService {
   @DI.Inject(DI.Config)
   config!: Config;
 
+  @DI.Inject(DI.CreditAccountService)
+  caService!: ICreditAccountsService;
+
   @DI.Inject(DI.Client)
   client!: Client;
 
-  #start = Math.round(new Date().valueOf() / 1000);
+  #start = Math.round(Date.now() / 1000);
   #id = nanoid();
+  #server?: Server;
 
   /**
    * Launches health checker - simple web server
@@ -42,14 +51,12 @@ export default class HealthCheckerService {
       // Routing
       if (req.url === "/") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          json_stringify(this.#healthStatus),
-        );
+        res.end(json_stringify(this.#healthStatus));
       } else if (req.url === "/metrics") {
         try {
           res.writeHead(200, { "Content-Type": "text/plain" });
           res.end(this.#metrics());
-        } catch (ex) {
+        } catch (_ex) {
           res.writeHead(500, { "Content-Type": "text/plain" });
           res.end("error");
         }
@@ -67,24 +74,16 @@ export default class HealthCheckerService {
       this.log.error(e);
     });
     server.unref();
-
-    process.on("SIGTERM", () => {
-      this.log.info("terminating");
-      server.close();
-    });
-
+    this.#server = server;
     this.log.info("launched");
   }
 
   get #healthStatus() {
-    const balanceOk = !this.client.balance || this.client.balance.status === "healthy";
-    const now = Math.ceil(Date.now() / 1000)
-    const timestamp = Number(this.scanner.lastTimestamp);
-    const timestampOk = now - timestamp <= 120;
-    const status = (balanceOk && timestampOk) ? "healthy" : "alert";
-
-    return {
-      status,
+    const timestamp = Number(this.sdk.timestamp);
+    const now = Math.ceil(Date.now() / 1000);
+    const threshold = this.config.staleBlockThreshold;
+    const result = {
+      status: "healthy" as StatusCode,
       startTime: this.#start,
       version,
       network: this.config.network,
@@ -92,12 +91,50 @@ export default class HealthCheckerService {
       liquidationMode: this.config.liquidationMode,
       address: this.client.address,
       balance: this.client.balance,
-      currentBlock: this.scanner.lastUpdated,
+      currentBlock: this.sdk.currentBlock,
       timestamp: {
         value: timestamp,
-        status: timestampOk ? "healthy" : "alert",
+        status: (!!threshold && now - timestamp <= threshold
+          ? "healthy"
+          : "alert") as StatusCode,
+      },
+      marketsConfigurators: this.sdk.marketRegister.marketConfigurators.map(
+        mc => mc.address,
+      ),
+      pools: this.sdk.marketRegister.pools.map(p => p.pool.address),
+      creditManagers: this.sdk.marketRegister.creditManagers.map(
+        cm => cm.creditManager.address,
+      ),
+      liquidatableAccounts: {
+        value: this.scanner.liquidatableAccounts,
+        status: (this.scanner.liquidatableAccounts > 0
+          ? "alert"
+          : "healthy") as StatusCode,
+      },
+      providers: (
+        this.sdk.client as unknown as PublicClient<
+          Transport<"revolver", RevolverTransportValue>
+        >
+      ).transport.statuses(),
+    };
+    result.status = maxStatusCode(
+      result.status,
+      result.timestamp.status,
+      result.balance?.status,
+      result.liquidatableAccounts.status,
+    );
+    return result;
+  }
+
+  public async stop(): Promise<void> {
+    this.log.info("stopping");
+    return new Promise(resolve => {
+      if (!this.#server) {
+        resolve();
+        return;
       }
-    }
+      this.#server.close(() => resolve());
+    });
   }
 
   /**
@@ -125,5 +162,9 @@ start_time{${labels}} ${this.#start}
 block_number{${labels}} ${this.scanner.lastUpdated}
 
 `;
+  }
+
+  private get sdk(): GearboxSDK {
+    return this.caService.sdk;
   }
 }

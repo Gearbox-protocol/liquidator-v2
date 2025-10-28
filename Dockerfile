@@ -1,4 +1,4 @@
-FROM node:22.14 as dev
+FROM node:22.13 AS dev
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -7,22 +7,24 @@ WORKDIR /app
 COPY . .
 
 RUN --mount=type=cache,id=yarn,target=/root/.yarn \
- yarn install --frozen-lockfile --ignore-engines \
- && yarn build
+    corepack enable \
+    && yarn install --immutable \
+    && yarn build
 
 # Production npm modules
 
-FROM node:22.14 as prod
+FROM node:22.13 AS prod
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
 WORKDIR /app
 
-COPY --from=dev /app/package.json /app
+COPY --from=dev /app/package.json /app/yarn.lock /app/.yarnrc.yml /app/
 COPY --from=dev /app/build/ /app/build
 
 RUN --mount=type=cache,id=yarn,target=/root/.yarn \
-    yarn install --production --frozen-lockfile --ignore-engines
+    corepack enable \
+    && yarn workspaces focus --all --production
 
 # Install foundy
 ENV FOUNDRY_DIR=/root/.foundry

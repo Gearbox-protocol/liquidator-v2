@@ -1,8 +1,8 @@
+import { json_stringify } from "@gearbox-protocol/sdk";
+
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
-import type { ILogger } from "../../log/index.js";
-import { Logger } from "../../log/index.js";
-import { json_stringify } from "../../utils/bigint-serializer.js";
+import { type ILogger, Logger } from "../../log/index.js";
 import type { OptimisticResults } from "../liquidate/index.js";
 
 export default class BaseWriter {
@@ -16,7 +16,7 @@ export default class BaseWriter {
   optimistic!: OptimisticResults;
 
   protected get filename(): string {
-    let fname = this.config.outFileName;
+    const fname = this.config.outFileName;
     if (!fname) {
       throw new Error(`out file name not specified in config`);
     }

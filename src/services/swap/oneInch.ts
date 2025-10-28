@@ -1,10 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk-gov";
-import {
-  CHAINS,
-  formatBN,
-  getDecimals,
-  tokenSymbolByAddress,
-} from "@gearbox-protocol/sdk-gov";
+import { chains, formatBN, type NetworkType } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
@@ -40,11 +34,11 @@ export default class OneInch extends BaseSwapper implements ISwapper {
     if (!this.config.oneInchApiKey) {
       throw new Error("1inch API key not provided");
     }
-    const baseURL = `https://api.1inch.dev/swap/v6.0/${CHAINS[network]}`;
+    const baseURL = `https://api.1inch.dev/swap/v6.0/${chains[network].id}`;
     this.apiClient = axios.create({
       baseURL,
       headers: {
-        Authorization: `Bearer ${this.config.oneInchApiKey}`,
+        Authorization: `Bearer ${this.config.oneInchApiKey.value}`,
         accept: "application/json",
       },
     });
@@ -67,11 +61,16 @@ export default class OneInch extends BaseSwapper implements ISwapper {
   }
 
   public async swap(tokenAddr: Address, amount: bigint): Promise<void> {
-    const amnt = formatBN(amount, getDecimals(tokenAddr));
+    const [symb, decimals] = [
+      this.creditAccountService.sdk.tokensMeta.symbol(tokenAddr),
+      this.creditAccountService.sdk.tokensMeta.decimals(tokenAddr),
+    ];
+
+    const amnt = formatBN(amount, decimals);
     let transactionHash: string | undefined;
     if (amount <= 10n) {
       this.log.debug(
-        `skip swapping ${amount} ${tokenSymbolByAddress[tokenAddr]} back to ETH: amount to small`,
+        `skip swapping ${amount} ${symb} back to ETH: amount to small`,
       );
       return;
     }
@@ -80,9 +79,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         // WETH is unwrapped during liquidation (convertWETH flag)
         return;
       }
-      this.log.debug(
-        `swapping ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
-      );
+      this.log.debug(`swapping ${amnt} ${symb} back to ETH`);
       await this.client.simulateAndWrite({
         abi: ierc20MetadataAbi,
         address: tokenAddr,
@@ -113,9 +110,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
         hash: transactionHash,
         timeout: 120_000,
       });
-      this.log.debug(
-        `swapped ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH`,
-      );
+      this.log.debug(`swapped ${amnt} ${symb} back to ETH`);
     } catch (e) {
       let info: any;
       if (axios.isAxiosError(e)) {
@@ -123,7 +118,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       }
       info = info || `${e}`;
       const error = new OneInchError(
-        `failed to swap ${amnt} ${tokenSymbolByAddress[tokenAddr]} back to ETH: ${info}`,
+        `failed to swap ${amnt} ${symb} back to ETH: ${info}`,
       );
       error.transactionHash = transactionHash;
       throw error;
