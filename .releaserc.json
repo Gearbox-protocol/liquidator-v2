@@ -4,19 +4,12 @@
       "name": "main"
     },
     {
-      "name": "next",
-      "channel": "next",
-      "prerelease": "next"
-    },
-    {
       "name": "beta",
       "channel": "beta",
       "prerelease": "beta"
     },
     {
-      "name": "next",
-      "channel": "next",
-      "prerelease": "next"
+      "name": "+([0-9])?(.{+([0-9]),x}).x"
     }
   ],
   "plugins": [
