@@ -9,10 +9,8 @@ import {
 import {
   type CreditSuite,
   type Curator,
-  getCuratorName,
   isVersionRange,
   VERSION_RANGE_300,
-  VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import { type Address, isAddress } from "viem";
 

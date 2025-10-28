@@ -78,6 +78,18 @@ function partialLiquidatorsV300Defaults(
           "0x5f404db7cf74825772f73e8f5d2d762bd2bd9594",
       };
     }
+    case "Arbitrum": {
+      return {
+        aavePartialLiquidatorAddress:
+          "0x7268d7017a330816c69d056ec2e64a8d2c954fc0",
+      };
+    }
+    case "Optimism": {
+      return {
+        aavePartialLiquidatorAddress:
+          "0x8437432977ace20b4fc27f3317c3a4567909b44f",
+      };
+    }
     case "Sonic": {
       return {
         siloPartialLiquidatorAddress:
