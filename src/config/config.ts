@@ -81,13 +81,13 @@ function partialLiquidatorsV300Defaults(
     case "Arbitrum": {
       return {
         aavePartialLiquidatorAddress:
-          "0x7268d7017a330816c69d056ec2e64a8d2c954fc0",
+          "0x5bcda0692a9a8f8f7f89083a0cd1e2ed33092405",
       };
     }
     case "Optimism": {
       return {
         aavePartialLiquidatorAddress:
-          "0x8437432977ace20b4fc27f3317c3a4567909b44f",
+          "0x04ef22f9791c99490d4e4b642602b1a02d585803",
       };
     }
     case "Sonic": {
