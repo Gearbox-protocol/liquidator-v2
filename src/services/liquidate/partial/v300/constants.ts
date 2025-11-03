@@ -12,4 +12,5 @@ export const V300_PARTIAL_LIQUIDATOR_BOTS: Record<Curator, Address> = {
   kpk: ADDRESS_0X0,
   Hyperithm: ADDRESS_0X0,
   "Edge UltraYield": ADDRESS_0X0,
+  TelosC: ADDRESS_0X0,
 };

@@ -3,13 +3,13 @@ import {
   boolLike,
   CensoredString,
   optionalAddressArrayLike,
+  ProvidersSchema,
   stringArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
 import { MAX_UINT256, SUPPORTED_NETWORKS, WAD } from "@gearbox-protocol/sdk";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
-import { ProvidersSchema } from "./providers-schema.js";
 
 export const CommonSchema = z.object({
   ...ProvidersSchema.shape,
