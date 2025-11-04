@@ -1,9 +1,5 @@
 import { createRevolverTransport } from "@gearbox-protocol/cli-utils";
 import type { ILogger } from "@gearbox-protocol/sdk";
-import {
-  type ProviderConfig,
-  RevolverTransport,
-} from "@gearbox-protocol/sdk/dev";
 import type { Transport } from "viem";
 import type { CommonSchema } from "../config/common.js";
 import {
@@ -17,7 +13,7 @@ export function createTransport(
   logger: ILogger,
   notifier: INotifier,
 ): Transport {
-  return createRevolverTransport(config.network, config, {
+  return createRevolverTransport(config, {
     timeout: config.optimistic ? 240_000 : 10_000,
     retryCount: config.optimistic ? 3 : undefined,
     logger: logger?.child?.({ name: "transport" }),
@@ -27,5 +23,6 @@ export function createTransport(
     onRotateFailed: (oldT, reason) => {
       notifier.alert(new ProviderRotationErrorMessage(oldT, reason));
     },
+    selectionStrategy: "ordered",
   });
 }

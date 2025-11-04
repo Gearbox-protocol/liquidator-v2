@@ -26,10 +26,10 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@gearbox-protocol/biome-config": "^1.0.9",
-    "@gearbox-protocol/cli-utils": "^5.57.0",
+    "@gearbox-protocol/cli-utils": "^5.57.3",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.41",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "10.4.3",
+    "@gearbox-protocol/sdk": "10.5.0",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^24.10.0",
     "@uniswap/sdk-core": "^7.8.0",
@@ -49,7 +49,7 @@
     "tsx": "4.20.6",
     "typescript": "^5.9.3",
     "viem": "^2.38.6",
-    "vitest": "^4.0.6",
+    "vitest": "^4.0.7",
     "zod": "^4.1.12"
   },
   "commitlint": {

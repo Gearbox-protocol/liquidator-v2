@@ -7,17 +7,12 @@ import {
   stringArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
-import { MAX_UINT256, SUPPORTED_NETWORKS, WAD } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
 
 export const CommonSchema = z.object({
   ...ProvidersSchema.shape,
-  network: z.enum(SUPPORTED_NETWORKS).register(zommandRegistry, {
-    flags: "--network <network>",
-    description: "Gearbox-supported network",
-    env: "NETWORK",
-  }),
   /**
    * By default uses address provider from @gearbox-protocol/sdk
    * Use this option to override address provider
