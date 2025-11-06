@@ -13,14 +13,17 @@ export const FullLiquidatorSchema = z.object({
     env: "LIQUIDATION_MODE",
   }),
   /**
-   * If true, try to liquidate with loss policy in case of bad debt
+   * Whether we should apply loss policy on full liquidation of accounts with bad debt
    */
-  applyLossPolicy: boolLike().optional().register(zommandRegistry, {
-    flags: "--apply-loss-policy",
-    description:
-      "If true, try to liquidate with loss policy in case of bad debt",
-    env: "APPLY_LOSS_POLICY",
-  }),
+  lossPolicy: z
+    .enum(["only", "never", "fallback"])
+    .default("never")
+    .register(zommandRegistry, {
+      flags: "--loss-policy <when>",
+      description:
+        "Whether we should apply loss policy on full liquidation of accounts with bad debt",
+      env: "LOSS_POLICY",
+    }),
 });
 
 export type FullLiquidatorSchema = z.infer<typeof FullLiquidatorSchema>;

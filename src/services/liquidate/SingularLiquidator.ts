@@ -1,31 +1,68 @@
-import type { CreditAccountData, MultiCall } from "@gearbox-protocol/sdk";
+import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
-import type { Hex, SimulateContractReturnType } from "viem";
-import type { CommonSchema } from "../../config/index.js";
+import type { Hex } from "viem";
+import type {
+  CommonSchema,
+  FullLiquidatorSchema,
+  PartialLiquidatorSchema,
+} from "../../config/index.js";
 import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
   LiquidationSuccessMessage,
 } from "../notifier/index.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
-import type {
-  ILiquidatorService,
-  MakeLiquidatableResult,
-  StrategyPreview,
-} from "./types.js";
+import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
+import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
+import type { ILiquidationStrategy, ILiquidatorService } from "./types.js";
 
-export default abstract class SingularLiquidator<
-    T extends StrategyPreview,
-    S extends CommonSchema,
-  >
-  extends AbstractLiquidator<S>
+export default class SingularLiquidator
+  extends AbstractLiquidator<CommonSchema>
   implements ILiquidatorService
 {
-  protected abstract readonly name: string;
-  protected abstract readonly adverb: string;
+  #strategies: ILiquidationStrategy[] = [];
+
+  constructor() {
+    super();
+    const add = (s: any) => {
+      this.#strategies.push(s);
+    };
+    switch (this.config.liquidationMode) {
+      case "full": {
+        const cfg = this.config as unknown as FullLiquidatorSchema;
+        switch (cfg.lossPolicy) {
+          case "only":
+            add(new LiquidationStrategyFull("loss policy", true));
+            break;
+          case "never":
+            add(new LiquidationStrategyFull("full", false));
+            break;
+          case "fallback":
+            add(new LiquidationStrategyFull("loss policy", true));
+            add(new LiquidationStrategyFull("full fallback", false));
+            break;
+        }
+        break;
+      }
+      case "deleverage":
+      case "partial": {
+        const cfg = this.config as unknown as PartialLiquidatorSchema;
+        add(new LiquidationStrategyPartial());
+        if (cfg.partialFallback) {
+          add(new LiquidationStrategyFull("full fallback"));
+        }
+        break;
+      }
+    }
+  }
+
+  override async launch(): Promise<void> {
+    await super.launch();
+    await Promise.all(this.#strategies.map(s => s.launch()));
+  }
 
   public async syncState(_blockNumber: bigint): Promise<void> {
-    // do nothing
+    await Promise.all(this.#strategies.map(s => s.syncState(_blockNumber)));
   }
 
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
@@ -65,42 +102,52 @@ export default abstract class SingularLiquidator<
   async #liquidateOne(ca: CreditAccountData): Promise<void> {
     const logger = this.caLogger(ca);
     if (this.skipList.has(ca.creditAccount)) {
-      this.logger.warn("skipping this account");
+      logger.warn("skipping this account");
       return;
     }
-    logger.info(`begin ${this.name} liquidation: HF = ${ca.healthFactor}`);
-    this.notifier.notify(new LiquidationStartMessage(ca, this.name));
     let pathHuman: string[] | undefined;
-    let preview: T | undefined;
-    try {
-      preview = await this.preview(ca);
-      pathHuman = this.creditAccountService.sdk.parseMultiCall(
-        preview.calls as MultiCall[],
-      );
-      logger.debug({ pathHuman }, "path found");
+    let skipOnFailure = false;
 
-      const { request } = await this.simulate(ca, preview);
-      const receipt = await this.client.liquidate(request, logger);
+    this.notifier.notify(new LiquidationStartMessage(ca));
 
-      this.notifier.alert(
-        new LiquidationSuccessMessage(ca, this.adverb, receipt, pathHuman),
-      );
-    } catch (e) {
-      const decoded = await this.errorHandler.explain(e, ca);
-      logger.error(`cant liquidate: ${decoded.shortMessage}`);
-      if (preview?.skipOnFailure) {
-        this.skipList.add(ca.creditAccount);
-        this.logger.warn("adding to skip list");
+    for (const s of this.#strategies) {
+      try {
+        const preview = await s.preview(ca);
+        skipOnFailure ||= !!preview.skipOnFailure;
+        pathHuman = this.creditAccountService.sdk.parseMultiCall([
+          ...preview.calls,
+        ]);
+        logger.debug({ pathHuman }, "path found");
+
+        const { request } = await s.simulate(ca, preview);
+        const receipt = await this.client.liquidate(request, logger);
+        if (receipt.status === "success") {
+          this.notifier.alert(
+            new LiquidationSuccessMessage(ca, s.name, receipt, pathHuman),
+          );
+          return;
+        } else {
+          throw new Error(
+            `liquidation tx reverted: ${receipt.transactionHash}`,
+          );
+        }
+      } catch (e) {
+        const decoded = await this.errorHandler.explain(e, ca);
+        logger.error(`cant liquidate with ${s.name}: ${decoded.shortMessage}`);
+        this.notifier.alert(
+          new LiquidationErrorMessage(
+            ca,
+            s.name,
+            decoded.shortMessage,
+            pathHuman,
+          ),
+        );
       }
-      this.notifier.alert(
-        new LiquidationErrorMessage(
-          ca,
-          this.adverb,
-          decoded.shortMessage,
-          pathHuman,
-          preview?.skipOnFailure,
-        ),
-      );
+    }
+
+    if (skipOnFailure) {
+      this.skipList.add(ca.creditAccount);
+      logger.warn("adding to skip list");
     }
   }
 
@@ -113,15 +160,15 @@ export default abstract class SingularLiquidator<
     const start = Date.now();
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlying);
-      const mlRes = await this.makeLiquidatable(acc);
+      const mlRes = await this.#optimisticStrategy.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId }, "previewing...");
-      const preview = await this.preview(acc);
+      const preview = await this.#optimisticStrategy.preview(acc);
       result = this.updateAfterPreview(result, preview);
       logger.debug({ pathHuman: result.callsHuman }, "path found");
 
-      const { request } = await this.simulate(acc, preview);
+      const { request } = await this.#optimisticStrategy.simulate(acc, preview);
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
       // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
@@ -169,35 +216,10 @@ export default abstract class SingularLiquidator<
     return result;
   }
 
-  /**
-   * For optimistic liquidations only: create conditions that make this account liquidatable
-   * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result
-   * Id strategy does not support this, return undefined
-   * @param ca
-   * @returns evm snapshotId or underfined
-   */
-  abstract makeLiquidatable(
-    ca: CreditAccountData,
-  ): Promise<MakeLiquidatableResult>;
-
-  /**
-   * Gathers all data required to generate transaction that liquidates account
-   * @param ca
-   */
-  abstract preview(ca: CreditAccountData): Promise<T>;
-  /**
-   * Using data gathered by preview step, simulates transaction.
-   * That is, nothing is actually written, but the gas is estimated, for example.
-   * In optimistic mode, we create snapshot after that state so that all the loaded storage slots are not reverted on next account.
-   *
-   * Returned transaction data then can be used to send actual transaction.
-   * Gas manipulations can be made thanks to estimation data returned by simulate call.
-   * @param account
-   * @param preview
-   * @returns
-   */
-  abstract simulate(
-    account: CreditAccountData,
-    preview: T,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
+  get #optimisticStrategy(): ILiquidationStrategy {
+    if (this.config.optimistic && this.#strategies.length !== 1) {
+      throw new Error("optimistic mode requires exactly one strategy");
+    }
+    return this.#strategies[0];
+  }
 }

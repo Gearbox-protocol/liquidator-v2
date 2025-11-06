@@ -1,39 +1,53 @@
 import {
   type CreditAccountData,
+  type GearboxSDK,
+  type ICreditAccountsService,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import {
   calcLiquidatableLTs,
-  createAnvilClient,
   extendAnvilClient,
   setLTs,
 } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
 import type {
   DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
   PartialLiquidatorSchema,
 } from "../../config/index.js";
+import { DI } from "../../di.js";
+import { type ILogger, Logger } from "../../log/index.js";
+import type Client from "../Client.js";
+import AccountHelper from "./AccountHelper.js";
 import {
   humanizeOptimalLiquidation,
   type IPartialLiquidatorContract,
   PartialContractsDeployer,
 } from "./partial/index.js";
-import SingularFullLiquidator from "./SingularFullLiquidator.js";
-import SingularLiquidator from "./SingularLiquidator.js";
 import type {
+  ILiquidationStrategy,
   MakeLiquidatableResult,
   PartialLiquidationPreview,
-  PartialLiquidationPreviewWithFallback,
 } from "./types.js";
 
-export default class SingularPartialLiquidator extends SingularLiquidator<
-  PartialLiquidationPreviewWithFallback,
-  PartialLiquidatorSchema | DeleverageLiquidatorSchema
-> {
-  protected readonly name = "partial";
-  protected readonly adverb = "partially";
+export default class LiquidationStrategyPartial
+  extends AccountHelper
+  implements ILiquidationStrategy<PartialLiquidationPreview>
+{
+  @DI.Inject(DI.CreditAccountService)
+  creditAccountService!: ICreditAccountsService;
 
-  #fallback?: SingularFullLiquidator;
+  @DI.Inject(DI.Config)
+  config!: LiqduiatorConfig<
+    PartialLiquidatorSchema | DeleverageLiquidatorSchema
+  >;
+
+  @DI.Inject(DI.Client)
+  client!: Client;
+
+  @Logger("PartialStrategy")
+  logger!: ILogger;
+
   #deployer: PartialContractsDeployer;
 
   constructor() {
@@ -41,23 +55,15 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
     this.#deployer = new PartialContractsDeployer(this.sdk);
   }
 
-  public async launch(asFallback?: boolean): Promise<void> {
-    await super.launch(asFallback);
+  public get name(): string {
+    return "partial";
+  }
 
-    if (this.config.liquidationMode === "partial") {
-      if (this.config.partialFallback && !asFallback) {
-        this.#fallback = new SingularFullLiquidator();
-        this.logger.debug("launching full liquidator as fallback");
-        await this.#fallback.launch(true);
-      } else {
-        this.logger.debug("fallback to full mode disabled");
-      }
-    }
-
+  public async launch(): Promise<void> {
     await this.#deployer.syncState();
   }
 
-  public override async syncState(_blockNumber: bigint): Promise<void> {
+  public async syncState(_blockNumber: bigint): Promise<void> {
     await this.#deployer.syncState();
   }
 
@@ -71,7 +77,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
       throw new Error("warning: zero-debt account");
     }
     this.#assertReserveFeeds(ca);
-    if (!this.liquidatorForCA(ca)) {
+    if (!this.#liquidatorForCA(ca)) {
       throw new Error(
         "warning: account's credit manager is not registered in partial liquidator",
       );
@@ -85,9 +91,8 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
       logger,
     );
     const snapshotId = await this.client.anvil.snapshot();
-    const anvil = extendAnvilClient(this.sdk.client);
 
-    await setLTs(anvil, cm.state, newLTs, logger);
+    await setLTs(this.client.anvil, cm.state, newLTs, logger);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
@@ -119,29 +124,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
 
   public async preview(
     ca: CreditAccountData,
-  ): Promise<PartialLiquidationPreviewWithFallback> {
-    const logger = this.caLogger(ca);
-    try {
-      const partial = await this.#preview(ca);
-      return {
-        ...partial,
-        fallback: false,
-      };
-    } catch (e) {
-      if (this.#fallback) {
-        logger.debug(`partial preview failed: ${e}`);
-        logger.debug("previewing with fallback liquidator");
-        const result = await this.#fallback.preview(ca);
-        return {
-          ...result,
-          fallback: true,
-        };
-      }
-      throw e;
-    }
-  }
-
-  async #preview(ca: CreditAccountData): Promise<PartialLiquidationPreview> {
+  ): Promise<PartialLiquidationPreview> {
     const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
@@ -155,7 +138,7 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         creditAccount: ca,
         ignoreReservePrices,
       });
-    const liquidatorContract = this.liquidatorForCA(ca);
+    const liquidatorContract = this.#liquidatorForCA(ca);
     if (!liquidatorContract) {
       throw new Error(
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
@@ -208,30 +191,30 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
 
   public async simulate(
     account: CreditAccountData,
-    preview: PartialLiquidationPreviewWithFallback,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    const logger = this.caLogger(account);
-    if (preview.fallback) {
-      if (!this.#fallback) {
-        throw new Error("fallback liquidator is not launched");
-      }
-      logger.debug("simulating with fallback liquidator");
-      return this.#fallback.simulate(account, preview);
-    }
-    return this.#simulate(account, preview);
-  }
-
-  async #simulate(
-    account: CreditAccountData,
     preview: PartialLiquidationPreview,
   ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    const liquidator = this.liquidatorForCA(account);
+    const liquidator = this.#liquidatorForCA(account);
     if (!liquidator) {
       throw new Error(
         `no partial liquidator contract found for account ${account.creditAccount} in ${account.creditManager}`,
       );
     }
     return liquidator.partialLiquidateAndConvert(account, preview);
+  }
+
+  protected get sdk(): GearboxSDK {
+    return this.creditAccountService.sdk;
+  }
+
+  /**
+   * Depending on credit manager underlying token, different partial liquidator contract should be used
+   * @param ca
+   * @returns
+   */
+  #liquidatorForCA(
+    ca: CreditAccountData,
+  ): IPartialLiquidatorContract | undefined {
+    return this.#deployer.getLiquidatorForCM(ca.creditManager);
   }
 
   /**
@@ -253,16 +236,5 @@ export default class SingularPartialLiquidator extends SingularLiquidator<
         );
       }
     }
-  }
-
-  /**
-   * Depending on credit manager underlying token, different partial liquidator contract should be used
-   * @param ca
-   * @returns
-   */
-  private liquidatorForCA(
-    ca: CreditAccountData,
-  ): IPartialLiquidatorContract | undefined {
-    return this.#deployer.getLiquidatorForCM(ca.creditManager);
   }
 }
