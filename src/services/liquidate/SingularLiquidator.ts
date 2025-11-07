@@ -27,22 +27,23 @@ export default class SingularLiquidator
     const add = (s: any) => {
       this.#strategies.push(s);
     };
-    switch (this.config.liquidationMode) {
+    const liquidationMode = this.config.liquidationMode ?? "full";
+    switch (liquidationMode) {
       case "full": {
         const cfg = this.config as unknown as FullLiquidatorSchema;
         switch (cfg.lossPolicy) {
           case "only":
             add(new LiquidationStrategyFull("loss policy", true));
-            break;
+            return;
           case "never":
             add(new LiquidationStrategyFull("full", false));
-            break;
+            return;
           case "fallback":
             add(new LiquidationStrategyFull("loss policy", true));
             add(new LiquidationStrategyFull("full fallback", false));
-            break;
+            return;
         }
-        break;
+        return;
       }
       case "deleverage":
       case "partial": {
@@ -51,13 +52,16 @@ export default class SingularLiquidator
         if (cfg.partialFallback) {
           add(new LiquidationStrategyFull("full fallback"));
         }
-        break;
+        return;
       }
     }
   }
 
   override async launch(): Promise<void> {
     await super.launch();
+    this.logger.info(
+      `launching strategies: ${this.#strategies.map(s => s.name).join(", ")}`,
+    );
     await Promise.all(this.#strategies.map(s => s.launch()));
   }
 
