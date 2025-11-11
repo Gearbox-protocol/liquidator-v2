@@ -224,7 +224,7 @@ export default class BatchLiquidator
       functionName: "liquidateBatch",
       args: [liquidateBatchInput, this.client.address],
     });
-    const receipt = await this.client.liquidate(request as any, this.logger); // TODO: types
+    const receipt = await this.client.liquidate(request as any); // TODO: types
     this.logger.debug(
       { tx: receipt.transactionHash, gasUsed: receipt.gasUsed },
       "liquidated batch",

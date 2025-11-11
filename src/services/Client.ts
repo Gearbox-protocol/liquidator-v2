@@ -114,12 +114,11 @@ export default class Client {
 
   public async liquidate(
     request: SimulateContractReturnType["request"],
-    logger: ILogger,
   ): Promise<TransactionReceipt> {
     if (this.config.dryRun && !this.config.optimistic) {
       throw new Error("dry run mode");
     }
-    logger.debug("sending liquidation tx");
+    this.logger.debug("sending liquidation tx");
     const { abi, address, args, dataSuffix, functionName, ...rest } = request;
     const data = encodeFunctionData({
       abi,
@@ -135,7 +134,7 @@ export default class Client {
     if (maxPriorityFeePerGas && maxFeePerGas) {
       req.maxPriorityFeePerGas = 10n * maxPriorityFeePerGas;
       req.maxFeePerGas = 2n * maxFeePerGas + req.maxPriorityFeePerGas;
-      logger.debug(
+      this.logger.debug(
         {
           maxFeePerGas: req.maxFeePerGas,
           maxPriorityFeePerGas: req.maxPriorityFeePerGas,
@@ -151,9 +150,9 @@ export default class Client {
       serializedTransaction,
     });
     const { data: _data, to, value, account, ...params } = req;
-    logger.debug({ hash, ...params }, "sent transaction");
+    this.logger.debug({ hash, ...params }, "sent transaction");
     const receipt = await this.#waitForTransactionReceipt(hash);
-    logger.debug({ hash, status: receipt.status }, "received receipt");
+    this.logger.debug({ hash, status: receipt.status }, "received receipt");
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});

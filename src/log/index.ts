@@ -5,14 +5,26 @@ import pino from "pino";
 import { DI } from "../di.js";
 
 @DI.Factory(DI.Logger)
-class LoggerFactory implements IFactory<ILogger, [string]> {
+export class LoggerFactory implements IFactory<ILogger, [string]> {
   #logger: ILogger;
+  static #logContext: Record<string, any> = {};
+
+  public static setLogContext(context: Record<string, any>): void {
+    LoggerFactory.#logContext = context;
+  }
+
+  public static clearLogContext(): void {
+    LoggerFactory.#logContext = {};
+  }
 
   constructor() {
     const executionId = process.env.EXECUTION_ID?.split(":").pop();
     this.#logger = pino({
       level: process.env.LOG_LEVEL ?? "debug",
       base: { executionId },
+      mixin: () => ({
+        ...LoggerFactory.#logContext,
+      }),
       formatters: {
         bindings: () => ({}),
         level: label => {

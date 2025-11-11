@@ -36,14 +36,4 @@ export default abstract class AccountHelper {
       (ca.debt + ca.accruedInterest) * PERCENTAGE_FACTOR
     );
   }
-
-  protected caLogger(ca: CreditAccountData): ILogger {
-    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    return this.logger.child({
-      account: ca.creditAccount,
-      borrower: ca.owner,
-      manager: cm.name,
-      hf: ca.healthFactor,
-    });
-  }
 }

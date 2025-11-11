@@ -94,8 +94,7 @@ export default class LiquidationStrategyFull
     const to = this.sdk.tokensMeta.formatBN(cs.underlying, newDebt, {
       symbol: true,
     });
-    const logger = this.caLogger(ca);
-    logger.debug(`artificially increasing debt by ${by} to ${to}`);
+    this.logger.debug(`artificially increasing debt by ${by} to ${to}`);
     const snapshotId = await this.client.anvil.snapshot();
 
     await this.#setDebt(ca, newDebt);
@@ -168,7 +167,7 @@ export default class LiquidationStrategyFull
         ca.creditAccount,
       );
       ca = upd ?? ca;
-      this.caLogger(ca).debug(
+      this.logger.debug(
         { hf: ca.healthFactor, badDebt: this.hasBadDebt(ca) },
         `re-read credit account data`,
       );

@@ -1,3 +1,4 @@
+import { access } from "node:fs";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex } from "viem";
@@ -6,6 +7,7 @@ import type {
   FullLiquidatorSchema,
   PartialLiquidatorSchema,
 } from "../../config/index.js";
+import { LoggerFactory } from "../../log/index.js";
 import {
   LiquidationErrorMessage,
   LiquidationStartMessage,
@@ -75,7 +77,9 @@ export default class SingularLiquidator
     }
     this.logger.warn(`Need to liquidate ${accounts.length} accounts`);
     for (const ca of accounts) {
+      LoggerFactory.setLogContext({ account: ca.creditAccount });
       await this.#liquidateOne(ca);
+      LoggerFactory.clearLogContext();
     }
   }
 
@@ -88,7 +92,9 @@ export default class SingularLiquidator
 
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
+      LoggerFactory.setLogContext({ account: acc.creditAccount });
       const result = await this.#liquidateOneOptimistic(acc);
+      LoggerFactory.clearLogContext();
       const status = result.isError ? "FAIL" : "OK";
       const msg = `[${i + 1}/${total}] ${acc.creditAccount} in ${acc.creditManager} ${status}`;
       if (result.isError) {
@@ -104,9 +110,17 @@ export default class SingularLiquidator
   }
 
   async #liquidateOne(ca: CreditAccountData): Promise<void> {
-    const logger = this.caLogger(ca);
+    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    this.logger.debug(
+      {
+        borrower: ca.owner,
+        manager: cm.name,
+        hf: ca.healthFactor,
+      },
+      "liquidating account",
+    );
     if (this.skipList.has(ca.creditAccount)) {
-      logger.warn("skipping this account");
+      this.logger.warn("skipping this account");
       return;
     }
     let pathHuman: string[] | undefined;
@@ -121,10 +135,10 @@ export default class SingularLiquidator
         pathHuman = this.creditAccountService.sdk.parseMultiCall([
           ...preview.calls,
         ]);
-        logger.debug({ pathHuman }, "path found");
+        this.logger.debug({ pathHuman }, "path found");
 
         const { request } = await s.simulate(ca, preview);
-        const receipt = await this.client.liquidate(request, logger);
+        const receipt = await this.client.liquidate(request);
         if (receipt.status === "success") {
           this.notifier.alert(
             new LiquidationSuccessMessage(ca, s.name, receipt, pathHuman),
@@ -137,7 +151,9 @@ export default class SingularLiquidator
         }
       } catch (e) {
         const decoded = await this.errorHandler.explain(e, ca);
-        logger.error(`cant liquidate with ${s.name}: ${decoded.shortMessage}`);
+        this.logger.error(
+          `cant liquidate with ${s.name}: ${decoded.shortMessage}`,
+        );
         this.notifier.alert(
           new LiquidationErrorMessage(
             ca,
@@ -151,14 +167,22 @@ export default class SingularLiquidator
 
     if (skipOnFailure) {
       this.skipList.add(ca.creditAccount);
-      logger.warn("adding to skip list");
+      this.logger.warn("adding to skip list");
     }
   }
 
   async #liquidateOneOptimistic(
     acc: CreditAccountData,
   ): Promise<OptimisticResult<bigint>> {
-    const logger = this.caLogger(acc);
+    const cm = this.sdk.marketRegister.findCreditManager(acc.creditManager);
+    this.logger.debug(
+      {
+        borrower: acc.owner,
+        manager: cm.name,
+        hf: acc.healthFactor,
+      },
+      "liquidating account",
+    );
     let snapshotId: Hex | undefined;
     let result = this.newOptimisticResult(acc);
     const start = Date.now();
@@ -167,10 +191,10 @@ export default class SingularLiquidator
       const mlRes = await this.#optimisticStrategy.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
-      logger.debug({ snapshotId }, "previewing...");
+      this.logger.debug({ snapshotId }, "previewing...");
       const preview = await this.#optimisticStrategy.preview(acc);
       result = this.updateAfterPreview(result, preview);
-      logger.debug({ pathHuman: result.callsHuman }, "path found");
+      this.logger.debug({ pathHuman: result.callsHuman }, "path found");
 
       const { request } = await this.#optimisticStrategy.simulate(acc, preview);
 
@@ -180,10 +204,10 @@ export default class SingularLiquidator
         snapshotId = await this.client.anvil.snapshot();
       }
       // ------ Actual liquidation (write request start here) -----
-      const receipt = await this.client.liquidate(request, logger);
-      logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
+      const receipt = await this.client.liquidate(request);
+      this.logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
       result.isError = receipt.status === "reverted";
-      logger.debug(
+      this.logger.debug(
         `Liquidation tx receipt: status=${receipt.status}, gas=${receipt.cumulativeGasUsed.toString()}`,
       );
       // ------ End of actual liquidation
@@ -207,7 +231,7 @@ export default class SingularLiquidator
         "\n",
         "\\n",
       );
-      logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+      this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
     }
 
     result.duration = Date.now() - start;

@@ -82,24 +82,23 @@ export default class LiquidationStrategyPartial
         "warning: account's credit manager is not registered in partial liquidator",
       );
     }
-    const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const newLTs = await calcLiquidatableLTs(
       this.sdk,
       ca,
       this.config.liquidationMode === "partial" ? 9990n : 10005n,
-      logger,
+      this.logger,
     );
     const snapshotId = await this.client.anvil.snapshot();
 
-    await setLTs(this.client.anvil, cm.state, newLTs, logger);
+    await setLTs(this.client.anvil, cm.state, newLTs, this.logger);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
     if (!updCa) {
       throw new Error(`cannot find credit account ${ca.creditAccount}`);
     }
-    logger.debug({
+    this.logger.debug({
       hfNew: updCa.healthFactor.toString(),
       hfOld: ca.healthFactor.toString(),
     });
@@ -125,7 +124,6 @@ export default class LiquidationStrategyPartial
   public async preview(
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreview> {
-    const logger = this.caLogger(ca);
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
     const ignoreReservePrices =
@@ -148,7 +146,7 @@ export default class LiquidationStrategyPartial
       ca,
       priceUpdates,
     );
-    logger.debug(
+    this.logger.debug(
       humanizeOptimalLiquidation(cm, optimalLiquidation),
       "found optimal liquidation",
     );
