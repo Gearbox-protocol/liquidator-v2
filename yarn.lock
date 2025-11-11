@@ -1914,7 +1914,7 @@ __metadata:
     "@gearbox-protocol/cli-utils": "npm:^5.58.3"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.41"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:11.0.0-next.1"
+    "@gearbox-protocol/sdk": "npm:11.0.0-next.2"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.10.0"
     "@uniswap/sdk-core": "npm:^7.9.0"
@@ -1940,9 +1940,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:11.0.0-next.1":
-  version: 11.0.0-next.1
-  resolution: "@gearbox-protocol/sdk@npm:11.0.0-next.1"
+"@gearbox-protocol/sdk@npm:11.0.0-next.2":
+  version: 11.0.0-next.2
+  resolution: "@gearbox-protocol/sdk@npm:11.0.0-next.2"
   dependencies:
     "@gearbox-protocol/integrations-v3": "npm:1.49.0"
     "@redstone-finance/evm-connector": "npm:^0.9.0"
@@ -1959,7 +1959,7 @@ __metadata:
   peerDependencies:
     axios: ^1.0.0
     viem-deal: ^2.0.4
-  checksum: 10c0/ae8daf593601971ba0417cd9f0187089950f751a1cfc74e22c8a04aa11cdb3441ca581a21df4da1bfa056e9902bdab774f72d07c83b287c15b1f8dc039067416
+  checksum: 10c0/4eaf994e20c129c3238985e43439d4f9c44d868edf771ef21d0bca09294807cdea3d7fc0de4d5adcdf90d9e8cb49b675aabfad3d2cf78800109ff66d20592831
   languageName: node
   linkType: hard
 
