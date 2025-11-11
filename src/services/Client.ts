@@ -1,6 +1,6 @@
 import { nextTick } from "node:process";
 
-import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type {
   AnvilClient,
   AnvilNodeInfo,
@@ -134,17 +134,31 @@ export default class Client {
     if (maxPriorityFeePerGas && maxFeePerGas) {
       req.maxPriorityFeePerGas = 10n * maxPriorityFeePerGas;
       req.maxFeePerGas = 2n * maxFeePerGas + req.maxPriorityFeePerGas;
-      this.logger.debug(
-        {
-          maxFeePerGas: req.maxFeePerGas,
-          maxPriorityFeePerGas: req.maxPriorityFeePerGas,
-        },
-        `increase gas fees`,
-      );
     }
     if (gas) {
       req.gas = (gas * (GAS_X + PERCENTAGE_FACTOR)) / PERCENTAGE_FACTOR;
     }
+    const txCost = req.gas * req.maxFeePerGas + (req.value ?? 0n);
+    this.logger.debug(
+      {
+        maxFeePerGas: req.maxFeePerGas,
+        maxPriorityFeePerGas: req.maxPriorityFeePerGas,
+        gas: req.gas,
+        txCost,
+      },
+      `increase gas fees`,
+    );
+
+    if (this.#balance && txCost > this.#balance.value) {
+      this.logger.warn(
+        {
+          txCost,
+          balance: this.#balance.value,
+        },
+        `transaction cost ${formatBN(txCost, 18)} exceeds balance (${formatBN(this.#balance.value, 18)} ETH)`,
+      );
+    }
+
     const serializedTransaction = await this.wallet.signTransaction(req);
     const hash = await this.wallet.sendRawTransaction({
       serializedTransaction,
