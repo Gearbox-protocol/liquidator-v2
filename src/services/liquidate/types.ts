@@ -80,6 +80,7 @@ export interface ILiquidationStrategy<
 
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
+  isApplicable: (ca: CreditAccountData) => boolean;
   /**
    * For optimistic liquidations only: create conditions that make this account liquidatable
    * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result

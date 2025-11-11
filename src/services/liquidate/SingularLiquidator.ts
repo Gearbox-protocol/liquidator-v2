@@ -129,6 +129,10 @@ export default class SingularLiquidator
     this.notifier.notify(new LiquidationStartMessage(ca));
 
     for (const s of this.#strategies) {
+      if (!s.isApplicable(ca)) {
+        this.logger.debug(`strategy ${s.name} is not applicable`);
+        continue;
+      }
       try {
         const preview = await s.preview(ca);
         skipOnFailure ||= !!preview.skipOnFailure;

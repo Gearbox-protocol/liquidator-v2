@@ -67,6 +67,10 @@ export default class LiquidationStrategyPartial
     await this.#deployer.syncState();
   }
 
+  public isApplicable(_ca: CreditAccountData): boolean {
+    return true;
+  }
+
   public async makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
