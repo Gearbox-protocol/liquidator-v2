@@ -14,6 +14,7 @@ import type {
   ContractFunctionArgs,
   ContractFunctionName,
   EncodeFunctionDataParameters,
+  FeeValuesEIP1559,
   PrivateKeyAccount,
   PublicClient,
   SimulateContractParameters,
@@ -68,6 +69,8 @@ export default class Client {
 
   #balance?: { value: bigint; status: StatusCode };
 
+  #gasFees: { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint } = {};
+
   public async launch(): Promise<void> {
     const { chainId, network, optimistic, privateKey, pollingInterval } =
       this.config;
@@ -110,6 +113,10 @@ export default class Client {
       this.logger.debug("running on real rpc");
     }
     await this.#checkBalance();
+    if (this.config.optimistic) {
+      this.#gasFees = await this.pub.estimateFeesPerGas();
+      this.logger.debug(this.#gasFees, "optimistic gas fees");
+    }
   }
 
   public async liquidate(
@@ -126,6 +133,7 @@ export default class Client {
       functionName,
     } as EncodeFunctionDataParameters);
     const req = await this.wallet.prepareTransactionRequest({
+      ...(this.#gasFees as any),
       ...rest,
       to: request.address,
       data,
