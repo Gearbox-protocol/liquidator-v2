@@ -9,6 +9,7 @@ import {
 import {
   iCreditFacadeV310Abi,
   iCreditManagerV310Abi,
+  iPoolV310Abi,
 } from "@gearbox-protocol/sdk/abi/310/generated";
 import {
   type Address,
@@ -27,6 +28,7 @@ import { exceptionsAbis } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { isCreditAccountNotLiquidatableException } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
+import { replaceStorage } from "../../utils/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
 import type {
@@ -79,16 +81,16 @@ export default class LiquidationStrategyFull
     // see hasBadDebt for the formula
     const cs = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const discount = BigInt(cs.creditManager.liquidationDiscount);
-    let toBadDebt =
+    let increaseBy =
       (totalValue * discount) / PERCENTAGE_FACTOR - accruedInterest - debt;
-    if (toBadDebt < 0n) {
+    if (increaseBy < 0n) {
       // already has bad debt, nothing to do
       return {};
     }
-    toBadDebt = (105n * toBadDebt) / 100n;
-    const newDebt = debt + toBadDebt;
+    increaseBy = (105n * increaseBy) / 100n;
+    const newDebt = debt + increaseBy;
 
-    const by = this.sdk.tokensMeta.formatBN(cs.underlying, toBadDebt, {
+    const by = this.sdk.tokensMeta.formatBN(cs.underlying, increaseBy, {
       symbol: true,
     });
     const to = this.sdk.tokensMeta.formatBN(cs.underlying, newDebt, {
@@ -97,7 +99,7 @@ export default class LiquidationStrategyFull
     this.logger.debug(`artificially increasing debt by ${by} to ${to}`);
     const snapshotId = await this.client.anvil.snapshot();
 
-    await this.#setDebt(ca, newDebt);
+    await this.#setDebt(ca, increaseBy, newDebt);
     const updCa = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
@@ -110,52 +112,41 @@ export default class LiquidationStrategyFull
     };
   }
 
-  async #setDebt(ca: CreditAccountData, newDebt: bigint): Promise<void> {
-    const newDebtHex = numberToHex(newDebt, { size: 32 });
-    const { accessList } = await this.client.anvil.createAccessList({
-      to: ca.creditManager,
-      data: encodeFunctionData({
-        abi: iCreditManagerV310Abi,
-        functionName: "creditAccountInfo",
-        args: [ca.creditAccount],
-      }),
+  async #setDebt(
+    ca_: CreditAccountData,
+    increaseBy: bigint,
+    newDebt: bigint,
+  ): Promise<void> {
+    const { creditAccount, creditManager } = ca_;
+    const { pool } = this.sdk.marketRegister.findByCreditManager(creditManager);
+    await replaceStorage(this.client.anvil, {
+      address: creditManager,
+      abi: iCreditManagerV310Abi,
+      functionName: "creditAccountInfo",
+      args: [creditAccount],
+      value: newDebt,
+      slotMatch: (readVal, newVal) => readVal[0] === newVal,
     });
-
-    for (const { address: address_, storageKeys } of accessList) {
-      // Address needs to be lower-case to work with setStorageAt.
-      const address = address_.toLowerCase() as Address;
-
-      for (const slot of storageKeys) {
-        try {
-          const [debtVal] = await readContract(this.client.anvil, {
-            abi: iCreditManagerV310Abi,
-            address: ca.creditManager,
-            functionName: "creditAccountInfo",
-            args: [ca.creditAccount],
-            stateOverride: [
-              {
-                address,
-                stateDiff: [
-                  {
-                    slot,
-                    value: newDebtHex,
-                  },
-                ],
-              },
-            ],
-          });
-
-          if (debtVal === newDebt) {
-            await this.client.anvil.setStorageAt({
-              address: ca.creditManager,
-              index: slot,
-              value: newDebtHex,
-            });
-            return;
-          }
-        } catch {}
-      }
-    }
+    const newTotalBorrowed = pool.pool.totalBorrowed + increaseBy;
+    await replaceStorage(this.client.anvil, {
+      address: pool.pool.address,
+      abi: iPoolV310Abi,
+      functionName: "totalBorrowed",
+      args: [],
+      value: newTotalBorrowed,
+      slotMatch: (readVal, newVal) => readVal === newVal,
+    });
+    const newManagerBorrowed =
+      pool.pool.creditManagerDebtParams.mustGet(creditManager).borrowed +
+      increaseBy;
+    await replaceStorage(this.client.anvil, {
+      address: pool.pool.address,
+      abi: iPoolV310Abi,
+      functionName: "creditManagerBorrowed",
+      args: [creditManager],
+      value: newManagerBorrowed,
+      slotMatch: (readVal, newVal) => readVal === newVal,
+    });
   }
 
   public isApplicable(ca: CreditAccountData): boolean {
