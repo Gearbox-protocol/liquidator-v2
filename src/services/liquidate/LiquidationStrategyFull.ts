@@ -11,15 +11,12 @@ import {
   iCreditManagerV310Abi,
   iPoolV310Abi,
 } from "@gearbox-protocol/sdk/abi/310/generated";
+import { replaceStorage } from "@gearbox-protocol/sdk/dev";
 import {
-  type Address,
   BaseError,
   decodeFunctionData,
-  encodeFunctionData,
-  numberToHex,
   type SimulateContractReturnType,
 } from "viem";
-import { readContract } from "viem/actions";
 import type {
   FullLiquidatorSchema,
   LiqduiatorConfig,
@@ -28,7 +25,6 @@ import { exceptionsAbis } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { isCreditAccountNotLiquidatableException } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
-import { replaceStorage } from "../../utils/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
 import type {
