@@ -414,6 +414,18 @@ export const CommonSchema = z.object({
         "Telegram channel where bot will post non-critical notifications",
       env: "TELEGRAM_NOTIFICATIONS_CHANNEL",
     }),
+  /**
+   * Notification cooldown in minutes
+   */
+  notificationCooldown: z.coerce
+    .number()
+    .nonnegative()
+    .default(4 * 60)
+    .register(zommandRegistry, {
+      flags: "--notification-cooldown <cooldown>",
+      description: "Notification cooldown in minutes",
+      env: "NOTIFICATION_COOLDOWN",
+    }),
 });
 
 export type CommonSchema = z.infer<typeof CommonSchema>;

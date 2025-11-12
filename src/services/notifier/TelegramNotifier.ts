@@ -5,7 +5,8 @@ import axiosRetry, {
   isNetworkError,
   isRetryableError,
 } from "axios-retry";
-
+import { ObliviousSet } from "oblivious-set";
+import { Address } from "viem";
 import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
 import type { ILogger } from "../../log/index.js";
@@ -24,8 +25,22 @@ export default class TelegramNotifier implements INotifier {
     link_preview_options: { is_disabled: true },
   };
   #client?: AxiosInstance;
+  #cooldowns: ObliviousSet<string>;
+
+  constructor() {
+    this.#cooldowns = new ObliviousSet(
+      this.config.notificationCooldown * 1000 * 60,
+    );
+  }
+
+  public setCooldown(key: string): void {
+    this.#cooldowns.add(key);
+  }
 
   public alert(message: INotifierMessage): void {
+    if (message.key && this.#cooldowns.has(message.key)) {
+      return;
+    }
     this.#sendToTelegram(
       message.markdown,
       this.config.telegramAlertsChannel!,
@@ -34,6 +49,9 @@ export default class TelegramNotifier implements INotifier {
   }
 
   public notify(message: INotifierMessage): void {
+    if (message.key && this.#cooldowns.has(message.key)) {
+      return;
+    }
     this.#sendToTelegram(
       message.markdown,
       this.config.telegramNotificationsChannel!,

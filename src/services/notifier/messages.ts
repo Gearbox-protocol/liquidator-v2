@@ -31,6 +31,10 @@ class BaseMessage {
     this.receipt = opts.receipt;
   }
 
+  public get key(): string | undefined {
+    return this.ca?.creditAccount.toLowerCase();
+  }
+
   protected get caPlain(): string {
     if (!this.ca) {
       throw new Error(`credit account not specified`);

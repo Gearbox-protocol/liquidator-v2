@@ -1,4 +1,3 @@
-import { access } from "node:fs";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex } from "viem";
@@ -80,6 +79,8 @@ export default class SingularLiquidator
       LoggerFactory.setLogContext({ account: ca.creditAccount });
       await this.#liquidateOne(ca);
       LoggerFactory.clearLogContext();
+      // success or no, silence the notifier for this account for a while
+      this.notifier.setCooldown(ca.creditAccount.toLowerCase());
     }
   }
 

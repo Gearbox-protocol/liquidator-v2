@@ -13,4 +13,8 @@ export default class ConsoleNotifier implements INotifier {
   public notify(message: INotifierMessage): void {
     this.log.info(message.plain);
   }
+
+  public setCooldown(key: string): void {
+    // No-op
+  }
 }

@@ -1930,6 +1930,7 @@ __metadata:
     lint-staged: "npm:^16.2.6"
     nanoid: "npm:^5.1.6"
     node-pty: "npm:^1.0.0"
+    oblivious-set: "npm:^2.0.0"
     pino: "npm:^10.1.0"
     pino-pretty: "npm:^13.1.2"
     tsx: "npm:4.20.6"
@@ -5230,6 +5231,13 @@ __metadata:
   version: 3.0.0
   resolution: "normalize-path@npm:3.0.0"
   checksum: 10c0/e008c8142bcc335b5e38cf0d63cfd39d6cf2d97480af9abdbe9a439221fd4d749763bab492a8ee708ce7a194bb00c9da6d0a115018672310850489137b3da046
+  languageName: node
+  linkType: hard
+
+"oblivious-set@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "oblivious-set@npm:2.0.0"
+  checksum: 10c0/04f681153ca9818fbc74912a28f6ecb4b766d928894d73534f5c43c6ef277ecc249feaaf03e6faa3484cc5fe4bc2c5fd59c07bd67490244b833f8180ac9cc5eb
   languageName: node
   linkType: hard
 
