@@ -3,9 +3,8 @@ import type {
   GearboxSDK,
   ICreditAccountsService,
   MultiCall,
-  VersionRange,
 } from "@gearbox-protocol/sdk";
-import { filterDustUSD, isVersionRange } from "@gearbox-protocol/sdk";
+import { filterDustUSD } from "@gearbox-protocol/sdk";
 import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Address, TransactionReceipt } from "viem";
@@ -19,10 +18,13 @@ import type Client from "../Client.js";
 import { type INotifier, StartedMessage } from "../notifier/index.js";
 import type { IOptimisticOutputWriter } from "../output/index.js";
 import type { ISwapper } from "../swap/index.js";
+import AccountHelper from "./AccountHelper.js";
 import type { OptimisticResults } from "./OptimisiticResults.js";
-import type { StrategyPreview } from "./types.js";
+import type { LiquidationPreview } from "./types.js";
 
-export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
+export default abstract class AbstractLiquidator<
+  TConfig extends CommonSchema,
+> extends AccountHelper {
   @Logger("Liquidator")
   logger!: ILogger;
 
@@ -81,7 +83,7 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
 
   protected updateAfterPreview(
     result: OptimisticResult<bigint>,
-    preview: StrategyPreview,
+    preview: LiquidationPreview,
   ): OptimisticResult<bigint> {
     return {
       ...result,
@@ -137,16 +139,6 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
     return { eth, underlying };
   }
 
-  protected caLogger(ca: CreditAccountData): ILogger {
-    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    return this.logger.child({
-      account: ca.creditAccount,
-      borrower: ca.owner,
-      manager: cm.name,
-      hf: ca.healthFactor,
-    });
-  }
-
   protected get sdk(): GearboxSDK {
     return this.creditAccountService.sdk;
   }
@@ -156,15 +148,5 @@ export default abstract class AbstractLiquidator<TConfig extends CommonSchema> {
       throw new Error("liquidator not launched");
     }
     return this.#errorHandler;
-  }
-
-  protected checkAccountVersion(
-    ca: CreditAccountData,
-    v: VersionRange,
-  ): boolean {
-    return isVersionRange(
-      this.sdk.contracts.mustGet(ca.creditFacade).version,
-      v,
-    );
   }
 }

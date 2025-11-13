@@ -1,6 +1,6 @@
 import { nextTick } from "node:process";
 
-import { chains, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
+import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type {
   AnvilClient,
   AnvilNodeInfo,
@@ -14,6 +14,7 @@ import type {
   ContractFunctionArgs,
   ContractFunctionName,
   EncodeFunctionDataParameters,
+  FeeValuesEIP1559,
   PrivateKeyAccount,
   PublicClient,
   SimulateContractParameters,
@@ -68,6 +69,8 @@ export default class Client {
 
   #balance?: { value: bigint; status: StatusCode };
 
+  #gasFees: { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint } = {};
+
   public async launch(): Promise<void> {
     const { chainId, network, optimistic, privateKey, pollingInterval } =
       this.config;
@@ -110,16 +113,19 @@ export default class Client {
       this.logger.debug("running on real rpc");
     }
     await this.#checkBalance();
+    if (this.config.optimistic) {
+      this.#gasFees = await this.pub.estimateFeesPerGas();
+      this.logger.debug(this.#gasFees, "optimistic gas fees");
+    }
   }
 
   public async liquidate(
     request: SimulateContractReturnType["request"],
-    logger: ILogger,
   ): Promise<TransactionReceipt> {
     if (this.config.dryRun && !this.config.optimistic) {
       throw new Error("dry run mode");
     }
-    logger.debug("sending liquidation tx");
+    this.logger.debug("sending liquidation tx");
     const { abi, address, args, dataSuffix, functionName, ...rest } = request;
     const data = encodeFunctionData({
       abi,
@@ -127,6 +133,7 @@ export default class Client {
       functionName,
     } as EncodeFunctionDataParameters);
     const req = await this.wallet.prepareTransactionRequest({
+      ...(this.#gasFees as any),
       ...rest,
       to: request.address,
       data,
@@ -135,25 +142,39 @@ export default class Client {
     if (maxPriorityFeePerGas && maxFeePerGas) {
       req.maxPriorityFeePerGas = 10n * maxPriorityFeePerGas;
       req.maxFeePerGas = 2n * maxFeePerGas + req.maxPriorityFeePerGas;
-      logger.debug(
-        {
-          maxFeePerGas: req.maxFeePerGas,
-          maxPriorityFeePerGas: req.maxPriorityFeePerGas,
-        },
-        `increase gas fees`,
-      );
     }
     if (gas) {
       req.gas = (gas * (GAS_X + PERCENTAGE_FACTOR)) / PERCENTAGE_FACTOR;
     }
+    const txCost = req.gas * req.maxFeePerGas + (req.value ?? 0n);
+    this.logger.debug(
+      {
+        maxFeePerGas: req.maxFeePerGas,
+        maxPriorityFeePerGas: req.maxPriorityFeePerGas,
+        gas: req.gas,
+        txCost,
+      },
+      `increase gas fees`,
+    );
+
+    if (this.#balance && txCost > this.#balance.value) {
+      this.logger.warn(
+        {
+          txCost,
+          balance: this.#balance.value,
+        },
+        `transaction cost ${formatBN(txCost, 18)} exceeds balance (${formatBN(this.#balance.value, 18)} ETH)`,
+      );
+    }
+
     const serializedTransaction = await this.wallet.signTransaction(req);
     const hash = await this.wallet.sendRawTransaction({
       serializedTransaction,
     });
     const { data: _data, to, value, account, ...params } = req;
-    logger.debug({ hash, ...params }, "sent transaction");
+    this.logger.debug({ hash, ...params }, "sent transaction");
     const receipt = await this.#waitForTransactionReceipt(hash);
-    logger.debug({ hash, status: receipt.status }, "received receipt");
+    this.logger.debug({ hash, status: receipt.status }, "received receipt");
     if (!this.config.optimistic) {
       nextTick(() => {
         this.#checkBalance().catch(() => {});

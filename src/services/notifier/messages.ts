@@ -1,5 +1,10 @@
 import type { CreditAccountData, NetworkType } from "@gearbox-protocol/sdk";
-import { etherscanUrl, formatBN } from "@gearbox-protocol/sdk";
+import {
+  etherscanUrl,
+  formatBN,
+  PERCENTAGE_FACTOR,
+  WAD,
+} from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
@@ -24,6 +29,10 @@ class BaseMessage {
     this.network = (DI.get(DI.Config) as Config).network;
     this.ca = opts.ca;
     this.receipt = opts.receipt;
+  }
+
+  public get key(): string | undefined {
+    return this.ca?.creditAccount.toLowerCase();
   }
 
   protected get caPlain(): string {
@@ -66,6 +75,16 @@ class BaseMessage {
       throw new Error(`receipt not specified`);
     }
     return md.link(this.receipt.transactionHash, this.receiptPlain);
+  }
+
+  protected get withHF(): string {
+    if (!this.ca) {
+      return "";
+    }
+    const hfStr = (
+      Number((this.ca.healthFactor * PERCENTAGE_FACTOR) / WAD) / 100_00
+    ).toString(10);
+    return `with HF ${hfStr}`;
   }
 }
 
@@ -125,20 +144,17 @@ export class LiquidationStartMessage
   extends BaseMessage
   implements INotifierMessage
 {
-  #strategyName: string;
-
-  constructor(ca: CreditAccountData, strategyName: string) {
+  constructor(ca: CreditAccountData) {
     super({ ca });
-    this.#strategyName = strategyName;
   }
 
   public get plain(): string {
-    return `[${this.network}] begin ${this.#strategyName} liquidation of ${this.caPlain} in ${this.cmPlain} with HF ${this.ca?.healthFactor}`;
+    return `[${this.network}] begin liquidation of ${this.caPlain} ${this.withHF} in ${this.cmPlain}`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`[${this.network}] begin ${this.#strategyName} liquidation of ${this.caMd} with HF ${md.bold(this.ca?.healthFactor)} in credit manager ${this.cmMd}`,
+      md`[${this.network}] begin liquidation of ${this.caMd} ${this.withHF} in credit manager ${this.cmMd}`,
     );
   }
 }
@@ -257,40 +273,33 @@ export class LiquidationErrorMessage
 {
   #error: string;
   #callsHuman?: string[];
-  #strategyAdverb: string;
-  #skipOnFailure?: string;
+  #strategyName: string;
 
   constructor(
     ca: CreditAccountData,
-    strategyAdverb: string,
+    strategyName: string,
     error: string,
     callsHuman?: string[],
-    skipOnFailure?: boolean,
   ) {
     super({ ca });
-    this.#strategyAdverb = strategyAdverb;
+    this.#strategyName = strategyName;
     this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
     this.#callsHuman = callsHuman;
-    this.#skipOnFailure = skipOnFailure
-      ? "Will skip further liquidation attempts"
-      : "";
   }
 
   public get plain(): string {
-    return `❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caPlain} in credit manager ${this.cmPlain}      
+    return `❌ [${this.network}] ${this.#strategyName} liquidation failed for account ${this.caPlain} ${this.withHF} in credit manager ${this.cmPlain}      
 Error: ${this.#error}
 Path used:
-${callsPlain(this.#callsHuman)}
-${this.#skipOnFailure}`;
+${callsPlain(this.#callsHuman)}`;
   }
 
   public get markdown(): string {
     return md.build(
-      md`❌ [${this.network}] failed to ${this.#strategyAdverb} liquidate account ${this.caMd} in credit manager ${this.cmMd}
+      md`❌ [${this.network}] ${this.#strategyName} liquidation failed for account ${this.caMd} ${this.withHF} in credit manager ${this.cmMd}
 Error: ${md.inlineCode(this.#error)}
 Path used:
-${callsMd(this.#callsHuman)}
-${this.#skipOnFailure}`,
+${callsMd(this.#callsHuman)}`,
     );
   }
 }
