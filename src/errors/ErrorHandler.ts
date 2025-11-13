@@ -36,26 +36,23 @@ export class ErrorHandler {
     context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
-    // const logger = this.#caLogger(context);
-
     if (error instanceof BaseError) {
-      // let errorJson: string | undefined;
-      // try {
-      //   const asStr = json_stringify(error);
-      //   const errorJson = `${nanoid()}.json`;
-      //   const errorFile = path.resolve(this.config.outDir, errorJson);
-      //   writeFileSync(errorFile, asStr, "utf-8");
-      //   logger.debug(`saved original error to ${errorFile}`);
-      // } catch {}
-
       let traceFile: string | undefined;
       if (saveTrace) {
         try {
           traceFile = await this.#saveErrorTrace(error, context);
         } catch {}
       }
-
+      const shortMessages: string[] = [];
       const lowLevelError = error.walk();
+      error.walk(e => {
+        if (e instanceof BaseError) {
+          shortMessages.push(e.shortMessage);
+        } else if (e instanceof Error) {
+          shortMessages.push(e.message);
+        }
+        return false;
+      });
       let revertData = "";
       if ("data" in lowLevelError) {
         if (
@@ -74,7 +71,7 @@ export class ErrorHandler {
       return {
         // errorJson,
         traceFile,
-        shortMessage: `${error.name}${revertData}: ${error.shortMessage}`,
+        shortMessage: `${error.name}${revertData}: ${shortMessages.join(": ")}`,
         longMessage: `${error.name}${revertData}: ${error.message}`,
       };
     }
