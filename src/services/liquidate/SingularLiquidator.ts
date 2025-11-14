@@ -168,9 +168,7 @@ export default class SingularLiquidator
           );
           return;
         } else {
-          throw new Error(
-            `liquidation tx reverted: ${receipt.transactionHash}`,
-          );
+          throw new TransactionRevertedError(receipt);
         }
       } catch (e) {
         const decoded = await this.errorHandler.explain(e, ca);
