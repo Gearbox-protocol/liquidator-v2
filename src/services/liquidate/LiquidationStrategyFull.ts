@@ -66,7 +66,7 @@ export default class LiquidationStrategyFull
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
     if (!this.#applyLossPolicy) {
-      return {};
+      return { account: ca };
     }
     const { totalValue, debt, accruedInterest } = ca;
     if (!this.checkAccountVersion(ca, VERSION_RANGE_310)) {
@@ -81,7 +81,7 @@ export default class LiquidationStrategyFull
       (totalValue * discount) / PERCENTAGE_FACTOR - accruedInterest - debt;
     if (increaseBy < 0n) {
       // already has bad debt, nothing to do
-      return {};
+      return { account: ca };
     }
     increaseBy = (105n * increaseBy) / 100n;
     const newDebt = debt + increaseBy;
@@ -96,14 +96,15 @@ export default class LiquidationStrategyFull
     const snapshotId = await this.client.anvil.snapshot();
 
     await this.#setDebt(ca, increaseBy, newDebt);
-    const updCa = await this.creditAccountService.getCreditAccountData(
+    const account = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
-    if (!updCa || !this.hasBadDebt(updCa)) {
+    if (!account || !this.hasBadDebt(account)) {
       throw new Error("could not induce bad debt");
     }
 
     return {
+      account,
       snapshotId,
     };
   }
@@ -155,20 +156,7 @@ export default class LiquidationStrategyFull
     return true;
   }
 
-  public async preview(
-    ca_: CreditAccountData,
-  ): Promise<FullLiquidationPreview> {
-    let ca = ca_;
-    if (this.config.optimistic && this.#applyLossPolicy) {
-      const upd = await this.creditAccountService.getCreditAccountData(
-        ca.creditAccount,
-      );
-      ca = upd ?? ca;
-      this.logger.debug(
-        { hf: ca.healthFactor, badDebt: this.hasBadDebt(ca) },
-        `re-read credit account data`,
-      );
-    }
+  public async preview(ca: CreditAccountData): Promise<FullLiquidationPreview> {
     if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
       throw new Error("cannot apply loss policy: account has no bad debt");
     }

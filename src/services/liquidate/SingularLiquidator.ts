@@ -215,7 +215,7 @@ export default class SingularLiquidator
 
     for (const s of this.#strategies) {
       strategyResult = await this.#liquidateOneOptimisticStrategy(
-        acc,
+        ml.account,
         s,
         ml.snapshotId,
       );

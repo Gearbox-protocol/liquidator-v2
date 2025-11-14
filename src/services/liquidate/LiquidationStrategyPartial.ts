@@ -4,11 +4,7 @@ import {
   type ICreditAccountsService,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
-import {
-  calcLiquidatableLTs,
-  extendAnvilClient,
-  setLTs,
-} from "@gearbox-protocol/sdk/dev";
+import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
 import type {
   DeleverageLiquidatorSchema,
@@ -96,20 +92,21 @@ export default class LiquidationStrategyPartial
     const snapshotId = await this.client.anvil.snapshot();
 
     await setLTs(this.client.anvil, cm.state, newLTs, this.logger);
-    const updCa = await this.creditAccountService.getCreditAccountData(
+    const account = await this.creditAccountService.getCreditAccountData(
       ca.creditAccount,
     );
-    if (!updCa) {
+    if (!account) {
       throw new Error(`cannot find credit account ${ca.creditAccount}`);
     }
     this.logger.debug({
-      hfNew: updCa.healthFactor.toString(),
+      hfNew: account.healthFactor.toString(),
       hfOld: ca.healthFactor.toString(),
     });
     return {
+      account,
       snapshotId,
       partialLiquidationCondition: {
-        hfNew: updCa.healthFactor,
+        hfNew: account.healthFactor,
         ltChanges: Object.fromEntries(
           Object.entries(newLTs).map(([t, newLT]) => [
             t,

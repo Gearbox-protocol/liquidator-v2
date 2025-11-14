@@ -61,6 +61,10 @@ export interface ILiquidatorService {
 }
 
 export interface MakeLiquidatableResult {
+  /**
+   * Re-read after making account liquidatable
+   */
+  account: CreditAccountData;
   snapshotId?: Hex;
   partialLiquidationCondition?: PartialLiquidationCondition<bigint>;
 }
