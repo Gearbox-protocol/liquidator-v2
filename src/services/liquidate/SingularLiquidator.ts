@@ -31,7 +31,6 @@ import type {
 
 type OptimisticStrategyResult = {
   preview?: LiquidationPreview;
-  partialLiquidationCondition?: PartialLiquidationCondition<bigint>;
   receipt?: TransactionReceipt;
 } & ({ success: true } | { success: false; error: Error });
 
@@ -209,20 +208,23 @@ export default class SingularLiquidator
     let strategyResult: OptimisticStrategyResult | undefined;
 
     const balanceBefore = await this.getExecutorBalance(acc.underlying);
+
+    // make liquidatable using first strategy
+    const ml = await this.#strategies[0].makeLiquidatable(acc);
+    result.partialLiquidationCondition = ml.partialLiquidationCondition;
+
     for (const s of this.#strategies) {
-      if (!s.isApplicable(acc)) {
-        this.logger.debug(`strategy ${s.name} is not applicable`);
-        continue;
-      }
-      const strategyResult = await this.#liquidateOneOptimisticStrategy(acc, s);
+      strategyResult = await this.#liquidateOneOptimisticStrategy(
+        acc,
+        s,
+        ml.snapshotId,
+      );
       if (strategyResult.success) {
         break;
       }
     }
 
     if (strategyResult) {
-      result.partialLiquidationCondition =
-        strategyResult.partialLiquidationCondition;
       result.assetOut = strategyResult.preview?.assetOut;
       result.amountOut = strategyResult.preview?.amountOut;
       result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
@@ -279,14 +281,12 @@ export default class SingularLiquidator
   async #liquidateOneOptimisticStrategy(
     acc: CreditAccountData,
     strategy: ILiquidationStrategy,
+    snapshotId_: Hex | undefined,
   ): Promise<OptimisticStrategyResult> {
-    let snapshotId: Hex | undefined;
+    let snapshotId = snapshotId_;
     const logger = this.logger.child({ strategy: strategy.name });
     let result: OptimisticStrategyResult = { success: true };
     try {
-      const mlRes = await strategy.makeLiquidatable(acc);
-      snapshotId = mlRes.snapshotId;
-      result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
       logger.debug({ snapshotId, strategy: strategy.name }, "previewing...");
       result.preview = await strategy.preview(acc);
       logger.debug("preview successful");
