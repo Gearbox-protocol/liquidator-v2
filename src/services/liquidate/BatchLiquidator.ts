@@ -12,9 +12,9 @@ import {
   VERSION_RANGE_300,
 } from "@gearbox-protocol/sdk";
 import {
-  iCreditFacadeV3Abi,
-  iCreditFacadeV3MulticallAbi,
-} from "@gearbox-protocol/types/abi";
+  iCreditFacadeV300Abi,
+  iCreditFacadeV300MulticallAbi,
+} from "@gearbox-protocol/sdk/abi/v300";
 import type {
   OptimisticResult,
   PriceUpdate,
@@ -173,7 +173,7 @@ export default class BatchLiquidator
       ).map(({ token, reserve, data }) => ({
         target: cm.creditFacade.address,
         callData: encodeFunctionData({
-          abi: iCreditFacadeV3MulticallAbi,
+          abi: iCreditFacadeV300MulticallAbi,
           functionName: "onDemandPriceUpdate",
           args: [token, reserve, data],
         }),
@@ -231,7 +231,7 @@ export default class BatchLiquidator
     );
 
     const logs = parseEventLogs({
-      abi: iCreditFacadeV3Abi,
+      abi: iCreditFacadeV300Abi,
       eventName: "LiquidateCreditAccount",
       logs: receipt.logs,
     });

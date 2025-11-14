@@ -5,9 +5,8 @@ import type {
   MultiCall,
 } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
-import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
-import type { Address, TransactionReceipt } from "viem";
+import { type Address, erc20Abi, type TransactionReceipt } from "viem";
 
 import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
@@ -132,7 +131,7 @@ export default abstract class AbstractLiquidator<
       ? eth
       : await this.client.pub.readContract({
           address: underlyingToken,
-          abi: ierc20MetadataAbi,
+          abi: erc20Abi,
           functionName: "balanceOf",
           args: [this.client.address],
         });

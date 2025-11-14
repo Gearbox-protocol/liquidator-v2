@@ -12,10 +12,8 @@ import {
   WAD,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
-import {
-  iCreditManagerV3Abi,
-  iPartialLiquidationBotV3Abi,
-} from "@gearbox-protocol/types/abi";
+import { iCreditManagerV300Abi } from "@gearbox-protocol/sdk/abi/v300";
+import { iPartialLiquidationBotV310Abi } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
 import type { Config } from "../config/index.js";
@@ -89,7 +87,7 @@ export class Scanner {
         this.#minHealthFactor = WAD;
         const botMinHealthFactor = await this.client.pub.readContract({
           address: this.config.partialLiquidationBot,
-          abi: iPartialLiquidationBotV3Abi,
+          abi: iPartialLiquidationBotV310Abi,
           functionName: "minHealthFactor",
         });
         this.#maxHealthFactor =
@@ -188,12 +186,8 @@ export class Scanner {
     }
     if (this.config.ignoreAccounts) {
       const before = accounts.length;
-      const ignoreAccounts = new Set(
-        this.config.ignoreAccounts?.map(a => a.toLowerCase()),
-      );
-      accounts = accounts.filter(
-        ca => !ignoreAccounts.has(ca.creditAccount.toLowerCase()),
-      );
+      const ignoreAccounts = new AddressSet(this.config.ignoreAccounts);
+      accounts = accounts.filter(ca => !ignoreAccounts.has(ca.creditAccount));
       this.log.debug(
         `filtered out ${before - accounts.length} ignored accounts`,
       );
@@ -273,7 +267,7 @@ export class Scanner {
     if (this.#restakingCMAddr) {
       const ezETH = this.caService.sdk.tokensMeta.mustFindBySymbol("ezETH");
       const cm = getContract({
-        abi: iCreditManagerV3Abi,
+        abi: iCreditManagerV300Abi,
         address: this.#restakingCMAddr,
         client: this.client.pub,
       });

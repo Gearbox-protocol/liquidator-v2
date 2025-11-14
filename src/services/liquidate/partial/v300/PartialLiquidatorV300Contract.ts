@@ -7,11 +7,10 @@ import type {
   PriceUpdateV300,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
+import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
-
 import type { PartialV300ConfigSchema } from "../../../../config/index.js";
-import { exceptionsAbis } from "../../../../data/index.js";
 import type { PartialLiquidationPreview } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 import type {
@@ -119,7 +118,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
       ],
     } = await this.client.pub.simulateContract({
       account: this.client.account,
-      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      abi: [...iPartialLiquidatorAbi, ...errorAbis],
       address: this.address,
       functionName: "getOptimalLiquidation",
       args: [
@@ -163,7 +162,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     const { result: preview } = await this.client.pub.simulateContract({
       account: ADDRESS_0X0,
       address: this.address,
-      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      abi: [...iPartialLiquidatorAbi, ...errorAbis],
       functionName: "previewPartialLiquidation",
       args: [
         ca.creditManager,
@@ -188,7 +187,7 @@ export default abstract class PartialLiquidatorV300Contract extends AbstractPart
     return this.client.pub.simulateContract({
       account: this.client.account,
       address: this.address,
-      abi: [...iPartialLiquidatorAbi, ...exceptionsAbis],
+      abi: [...iPartialLiquidatorAbi, ...errorAbis],
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,

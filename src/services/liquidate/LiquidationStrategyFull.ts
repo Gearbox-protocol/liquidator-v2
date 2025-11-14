@@ -11,6 +11,7 @@ import {
   iCreditManagerV310Abi,
   iPoolV310Abi,
 } from "@gearbox-protocol/sdk/abi/310/generated";
+import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import { replaceStorage } from "@gearbox-protocol/sdk/dev";
 import {
   BaseError,
@@ -21,7 +22,6 @@ import type {
   FullLiquidatorSchema,
   LiqduiatorConfig,
 } from "../../config/index.js";
-import { exceptionsAbis } from "../../data/index.js";
 import { DI } from "../../di.js";
 import { isCreditAccountNotLiquidatableException } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
@@ -203,7 +203,7 @@ export default class LiquidationStrategyFull
     try {
       const result = await this.client.pub.simulateContract({
         account: this.client.account,
-        abi: [...iCreditFacadeV310Abi, ...exceptionsAbis],
+        abi: [...iCreditFacadeV310Abi, ...errorAbis],
         address: account.creditFacade,
         functionName: "liquidateCreditAccount",
         args: args as any,

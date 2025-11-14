@@ -1,9 +1,8 @@
 import { chains, formatBN, type NetworkType } from "@gearbox-protocol/sdk";
-import { ierc20MetadataAbi } from "@gearbox-protocol/types/abi";
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import type { Address } from "viem";
+import { type Address, erc20Abi } from "viem";
 
 import type { ILogger } from "../../log/index.js";
 import { Logger } from "../../log/index.js";
@@ -81,7 +80,7 @@ export default class OneInch extends BaseSwapper implements ISwapper {
       }
       this.log.debug(`swapping ${amnt} ${symb} back to ETH`);
       await this.client.simulateAndWrite({
-        abi: ierc20MetadataAbi,
+        abi: erc20Abi,
         address: tokenAddr,
         functionName: "approve",
         args: [this.routerAddress, amount],

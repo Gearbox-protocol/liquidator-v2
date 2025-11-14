@@ -7,13 +7,10 @@ import type {
   OnDemandPriceUpdates,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
-import {
-  iDegenDistributorV3Abi,
-  iPartialLiquidationBotV3Abi,
-} from "@gearbox-protocol/types/abi";
+import { iDegenDistributorV300Abi } from "@gearbox-protocol/sdk/abi/iDegenDistributorV300";
+import { iPartialLiquidationBotV310Abi } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
-
 import type {
   DeleverageLiquidatorSchema,
   LiqduiatorConfig,
@@ -211,17 +208,17 @@ export abstract class AbstractPartialLiquidatorContract
         contracts: [
           {
             address: distributor,
-            abi: iDegenDistributorV3Abi,
+            abi: iDegenDistributorV300Abi,
             functionName: "degenNFT",
           },
           {
             address: distributor,
-            abi: iDegenDistributorV3Abi,
+            abi: iDegenDistributorV300Abi,
             functionName: "merkleRoot",
           },
           {
             address: distributor,
-            abi: iDegenDistributorV3Abi,
+            abi: iDegenDistributorV300Abi,
             functionName: "claimed",
             args: [account],
           },
@@ -245,7 +242,7 @@ export abstract class AbstractPartialLiquidatorContract
 
     const receipt = await this.client.simulateAndWrite({
       address: distributor,
-      abi: iDegenDistributorV3Abi,
+      abi: iDegenDistributorV300Abi,
       functionName: "claim",
       args: [
         BigInt(claims.index), // uint256 index,
@@ -381,12 +378,12 @@ export abstract class AbstractPartialLiquidatorContract
       contracts: [
         {
           address: this.partialLiquidationBot,
-          abi: iPartialLiquidationBotV3Abi,
+          abi: iPartialLiquidationBotV310Abi,
           functionName: "minHealthFactor",
         },
         {
           address: this.partialLiquidationBot,
-          abi: iPartialLiquidationBotV3Abi,
+          abi: iPartialLiquidationBotV310Abi,
           functionName: "maxHealthFactor",
         },
       ],
