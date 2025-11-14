@@ -1,11 +1,19 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
-import type { Hex } from "viem";
+import {
+  type CreditAccountData,
+  filterDustUSD,
+  type MultiCall,
+} from "@gearbox-protocol/sdk";
+import type {
+  OptimisticResult,
+  PartialLiquidationCondition,
+} from "@gearbox-protocol/types/optimist";
+import type { Hex, TransactionReceipt } from "viem";
 import type {
   CommonSchema,
   FullLiquidatorSchema,
   PartialLiquidatorSchema,
 } from "../../config/index.js";
+import { TransactionRevertedError } from "../../errors/index.js";
 import { LoggerFactory } from "../../log/index.js";
 import {
   LiquidationErrorMessage,
@@ -15,7 +23,17 @@ import {
 import AbstractLiquidator from "./AbstractLiquidator.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
-import type { ILiquidationStrategy, ILiquidatorService } from "./types.js";
+import type {
+  ILiquidationStrategy,
+  ILiquidatorService,
+  LiquidationPreview,
+} from "./types.js";
+
+type OptimisticStrategyResult = {
+  preview?: LiquidationPreview;
+  partialLiquidationCondition?: PartialLiquidationCondition<bigint>;
+  receipt?: TransactionReceipt;
+} & ({ success: true } | { success: false; error: Error });
 
 export default class SingularLiquidator
   extends AbstractLiquidator<CommonSchema>
@@ -188,20 +206,95 @@ export default class SingularLiquidator
       },
       "liquidating account",
     );
-    let snapshotId: Hex | undefined;
-    let result = this.newOptimisticResult(acc);
+    const result = this.newOptimisticResult(acc);
     const start = Date.now();
+    let strategyResult: OptimisticStrategyResult | undefined;
+
+    const balanceBefore = await this.getExecutorBalance(acc.underlying);
+    for (const s of this.#strategies) {
+      if (!s.isApplicable(acc)) {
+        this.logger.debug(`strategy ${s.name} is not applicable`);
+        continue;
+      }
+      const strategyResult = await this.#liquidateOneOptimisticStrategy(acc, s);
+      if (strategyResult.success) {
+        break;
+      }
+    }
+
+    if (strategyResult) {
+      result.partialLiquidationCondition =
+        strategyResult.partialLiquidationCondition;
+      result.assetOut = strategyResult.preview?.assetOut;
+      result.amountOut = strategyResult.preview?.amountOut;
+      result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
+      result.calls = strategyResult.preview?.calls as MultiCall[];
+      result.pathAmount = strategyResult.preview?.underlyingBalance ?? 0n;
+      result.callsHuman = this.creditAccountService.sdk.parseMultiCall([
+        ...(strategyResult.preview?.calls ?? []),
+      ]);
+      const ca = await this.creditAccountService.getCreditAccountData(
+        acc.creditAccount,
+      );
+      if (!ca) {
+        throw new Error(`account ${acc.creditAccount} not found`);
+      }
+      result.balancesAfter = filterDustUSD({ account: ca, sdk: this.sdk });
+      result.hfAfter = ca.healthFactor;
+      result.gasUsed = strategyResult.receipt?.gasUsed ?? 0n;
+      result.isError = !strategyResult.success;
+
+      await this.swapper.swap(
+        acc.underlying,
+        balanceBefore.underlying + result.liquidatorPremium,
+      );
+      const balanceAfter = await this.getExecutorBalance(acc.underlying);
+      result.liquidatorPremium =
+        balanceAfter.underlying - balanceBefore.underlying;
+      result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
+
+      if (strategyResult?.success === false) {
+        const decoded = await this.errorHandler.explain(
+          strategyResult.error,
+          acc,
+          true,
+        );
+        result.traceFile = decoded.traceFile;
+        result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
+          "\n",
+          "\\n",
+        );
+        this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+      }
+    } else {
+      result.isError = true;
+      result.error = "no applicable strategy found";
+      this.logger.error("no applicable strategy found");
+    }
+
+    result.duration = Date.now() - start;
+    this.optimistic.push(result);
+
+    return result;
+  }
+
+  async #liquidateOneOptimisticStrategy(
+    acc: CreditAccountData,
+    strategy: ILiquidationStrategy,
+  ): Promise<OptimisticStrategyResult> {
+    let snapshotId: Hex | undefined;
+    const logger = this.logger.child({ strategy: strategy.name });
+    let result: OptimisticStrategyResult = { success: true };
     try {
-      const balanceBefore = await this.getExecutorBalance(acc.underlying);
-      const mlRes = await this.#optimisticStrategy.makeLiquidatable(acc);
+      const mlRes = await strategy.makeLiquidatable(acc);
       snapshotId = mlRes.snapshotId;
       result.partialLiquidationCondition = mlRes.partialLiquidationCondition;
-      this.logger.debug({ snapshotId }, "previewing...");
-      const preview = await this.#optimisticStrategy.preview(acc);
-      result = this.updateAfterPreview(result, preview);
-      this.logger.debug({ pathHuman: result.callsHuman }, "path found");
+      logger.debug({ snapshotId, strategy: strategy.name }, "previewing...");
+      result.preview = await strategy.preview(acc);
+      logger.debug("preview successful");
 
-      const { request } = await this.#optimisticStrategy.simulate(acc, preview);
+      const { request } = await strategy.simulate(acc, result.preview);
+      logger.debug("simulate successful");
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
       // otherwise, not write requests has been made up to this point, and it's safe to take snapshot now
@@ -209,50 +302,21 @@ export default class SingularLiquidator
         snapshotId = await this.client.anvil.snapshot();
       }
       // ------ Actual liquidation (write request start here) -----
-      const receipt = await this.client.liquidate(request);
-      this.logger.debug(`Liquidation tx hash: ${receipt.transactionHash}`);
-      result.isError = receipt.status === "reverted";
-      this.logger.debug(
-        `Liquidation tx receipt: status=${receipt.status}, gas=${receipt.cumulativeGasUsed.toString()}`,
+      result.receipt = await this.client.liquidate(request);
+      logger.debug(
+        `Liquidation tx receipt: hash=${result.receipt.transactionHash}, status=${result.receipt.status}, gas=${result.receipt.cumulativeGasUsed.toString()}`,
       );
-      // ------ End of actual liquidation
-      result = await this.updateAfterLiquidation(
-        result,
-        acc,
-        balanceBefore.underlying,
-        receipt,
-      );
-      // swap underlying back to ETH
-      await this.swapper.swap(
-        acc.underlying,
-        balanceBefore.underlying + BigInt(result.liquidatorPremium),
-      );
-      const balanceAfter = await this.getExecutorBalance(acc.underlying);
-      result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
-    } catch (e: any) {
-      const decoded = await this.errorHandler.explain(e, acc, true);
-      result.traceFile = decoded.traceFile;
-      result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
-        "\n",
-        "\\n",
-      );
-      this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+      if (result.receipt.status !== "success") {
+        throw new TransactionRevertedError(result.receipt);
+      }
+    } catch (e) {
+      logger.error(e, "strategy failed");
+      result = { ...result, success: false, error: e as Error };
+    } finally {
+      if (snapshotId) {
+        await this.client.anvil.revert({ id: snapshotId });
+      }
     }
-
-    result.duration = Date.now() - start;
-    this.optimistic.push(result);
-
-    if (snapshotId) {
-      await this.client.anvil.revert({ id: snapshotId });
-    }
-
     return result;
-  }
-
-  get #optimisticStrategy(): ILiquidationStrategy {
-    if (this.config.optimistic && this.#strategies.length !== 1) {
-      throw new Error("optimistic mode requires exactly one strategy");
-    }
-    return this.#strategies[0];
   }
 }
