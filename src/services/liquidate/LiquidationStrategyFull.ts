@@ -23,7 +23,7 @@ import type {
   LiqduiatorConfig,
 } from "../../config/index.js";
 import { DI } from "../../di.js";
-import { isCreditAccountNotLiquidatableException } from "../../errors/index.js";
+import { isRevertedWith } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
@@ -215,14 +215,23 @@ export default class LiquidationStrategyFull
       >;
     } catch (e) {
       // in optimistic mode, it's possible to encounter accounts with underlying only and HF > 0
-      if (
-        this.config.optimistic &&
-        account.healthFactor > WAD &&
-        isCreditAccountNotLiquidatableException(e as Error)
-      ) {
-        throw new Error("warning: credit account is not liquidatable", {
-          cause: e,
-        });
+      if (this.config.optimistic) {
+        if (
+          account.healthFactor > WAD &&
+          isRevertedWith(e as Error, "0x234b893b") // CreditAccountNotLiquidatableException())
+        ) {
+          throw new Error("warning: credit account is not liquidatable", {
+            cause: e,
+          });
+        } else if (isRevertedWith(e as Error, "0x6b8c2b8c")) {
+          // CreditAccountNotLiquidatableWithLossException()
+          throw new Error(
+            "warning: credit account is not liquidatable with loss",
+            {
+              cause: e,
+            },
+          );
+        }
       }
       throw e;
     }
