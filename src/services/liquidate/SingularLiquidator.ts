@@ -207,69 +207,75 @@ export default class SingularLiquidator
     const start = Date.now();
     let strategyResult: OptimisticStrategyResult | undefined;
 
-    const balanceBefore = await this.getExecutorBalance(acc.underlying);
+    try {
+      const balanceBefore = await this.getExecutorBalance(acc.underlying);
 
-    // make liquidatable using first strategy
-    const ml = await this.#strategies[0].makeLiquidatable(acc);
-    result.partialLiquidationCondition = ml.partialLiquidationCondition;
+      // make liquidatable using first strategy
+      const ml = await this.#strategies[0].makeLiquidatable(acc);
+      result.partialLiquidationCondition = ml.partialLiquidationCondition;
 
-    for (const s of this.#strategies) {
-      strategyResult = await this.#liquidateOneOptimisticStrategy(
-        ml.account,
-        s,
-        ml.snapshotId,
-      );
-      if (strategyResult.success) {
-        break;
-      }
-    }
-
-    if (strategyResult) {
-      result.assetOut = strategyResult.preview?.assetOut;
-      result.amountOut = strategyResult.preview?.amountOut;
-      result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
-      result.calls = strategyResult.preview?.calls as MultiCall[];
-      result.pathAmount = strategyResult.preview?.underlyingBalance ?? 0n;
-      result.callsHuman = this.creditAccountService.sdk.parseMultiCall([
-        ...(strategyResult.preview?.calls ?? []),
-      ]);
-      const ca = await this.creditAccountService.getCreditAccountData(
-        acc.creditAccount,
-      );
-      if (!ca) {
-        throw new Error(`account ${acc.creditAccount} not found`);
-      }
-      result.balancesAfter = filterDustUSD({ account: ca, sdk: this.sdk });
-      result.hfAfter = ca.healthFactor;
-      result.gasUsed = strategyResult.receipt?.gasUsed ?? 0n;
-      result.isError = !strategyResult.success;
-
-      await this.swapper.swap(
-        acc.underlying,
-        balanceBefore.underlying + result.liquidatorPremium,
-      );
-      const balanceAfter = await this.getExecutorBalance(acc.underlying);
-      result.liquidatorPremium =
-        balanceAfter.underlying - balanceBefore.underlying;
-      result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
-
-      if (strategyResult?.success === false) {
-        const decoded = await this.errorHandler.explain(
-          strategyResult.error,
-          acc,
-          true,
+      for (const s of this.#strategies) {
+        strategyResult = await this.#liquidateOneOptimisticStrategy(
+          ml.account,
+          s,
+          ml.snapshotId,
         );
-        result.traceFile = decoded.traceFile;
-        result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
-          "\n",
-          "\\n",
-        );
-        this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+        if (strategyResult.success) {
+          break;
+        }
       }
-    } else {
+
+      if (strategyResult) {
+        result.assetOut = strategyResult.preview?.assetOut;
+        result.amountOut = strategyResult.preview?.amountOut;
+        result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
+        result.calls = strategyResult.preview?.calls as MultiCall[];
+        result.pathAmount = strategyResult.preview?.underlyingBalance ?? 0n;
+        result.callsHuman = this.creditAccountService.sdk.parseMultiCall([
+          ...(strategyResult.preview?.calls ?? []),
+        ]);
+        const ca = await this.creditAccountService.getCreditAccountData(
+          acc.creditAccount,
+        );
+        if (!ca) {
+          throw new Error(`account ${acc.creditAccount} not found`);
+        }
+        result.balancesAfter = filterDustUSD({ account: ca, sdk: this.sdk });
+        result.hfAfter = ca.healthFactor;
+        result.gasUsed = strategyResult.receipt?.gasUsed ?? 0n;
+        result.isError = !strategyResult.success;
+
+        await this.swapper.swap(
+          acc.underlying,
+          balanceBefore.underlying + result.liquidatorPremium,
+        );
+        const balanceAfter = await this.getExecutorBalance(acc.underlying);
+        result.liquidatorPremium =
+          balanceAfter.underlying - balanceBefore.underlying;
+        result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
+
+        if (strategyResult?.success === false) {
+          const decoded = await this.errorHandler.explain(
+            strategyResult.error,
+            acc,
+            true,
+          );
+          result.traceFile = decoded.traceFile;
+          result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
+            "\n",
+            "\\n",
+          );
+          this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+        }
+      } else {
+        result.isError = true;
+        result.error = "no applicable strategy found";
+        this.logger.error("no applicable strategy found");
+      }
+    } catch (e) {
       result.isError = true;
-      result.error = "no applicable strategy found";
-      this.logger.error("no applicable strategy found");
+      result.error = `${e}`;
+      this.logger.error(e, "cannot liquidate");
     }
 
     result.duration = Date.now() - start;
