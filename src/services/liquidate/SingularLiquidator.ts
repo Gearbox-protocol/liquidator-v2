@@ -3,10 +3,7 @@ import {
   filterDustUSD,
   type MultiCall,
 } from "@gearbox-protocol/sdk";
-import type {
-  OptimisticResult,
-  PartialLiquidationCondition,
-} from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, TransactionReceipt } from "viem";
 import type {
   CommonSchema,
@@ -32,7 +29,10 @@ import type {
 type OptimisticStrategyResult = {
   preview?: LiquidationPreview;
   receipt?: TransactionReceipt;
-} & ({ success: true } | { success: false; error: Error });
+} & (
+  | { success: true; state: CreditAccountData }
+  | { success: false; error: Error }
+);
 
 export default class SingularLiquidator
   extends AbstractLiquidator<CommonSchema>
@@ -234,14 +234,14 @@ export default class SingularLiquidator
         result.callsHuman = this.creditAccountService.sdk.parseMultiCall([
           ...(strategyResult.preview?.calls ?? []),
         ]);
-        const ca = await this.creditAccountService.getCreditAccountData(
-          acc.creditAccount,
-        );
-        if (!ca) {
-          throw new Error(`account ${acc.creditAccount} not found`);
+
+        if (strategyResult.success) {
+          result.balancesAfter = filterDustUSD({
+            account: strategyResult.state,
+            sdk: this.sdk,
+          });
+          result.hfAfter = strategyResult.state.healthFactor;
         }
-        result.balancesAfter = filterDustUSD({ account: ca, sdk: this.sdk });
-        result.hfAfter = ca.healthFactor;
         result.gasUsed = strategyResult.receipt?.gasUsed ?? 0n;
         result.isError = !strategyResult.success;
 
@@ -291,7 +291,7 @@ export default class SingularLiquidator
   ): Promise<OptimisticStrategyResult> {
     let snapshotId = snapshotId_;
     const logger = this.logger.child({ strategy: strategy.name });
-    let result: OptimisticStrategyResult = { success: true };
+    let result: OptimisticStrategyResult = { success: true, state: acc };
     try {
       logger.debug({ snapshotId, strategy: strategy.name }, "previewing...");
       result.preview = await strategy.preview(acc);
@@ -313,6 +313,15 @@ export default class SingularLiquidator
       if (result.receipt.status !== "success") {
         throw new TransactionRevertedError(result.receipt);
       }
+      const ca = await this.creditAccountService.getCreditAccountData(
+        acc.creditAccount,
+      );
+      if (!ca) {
+        throw new Error(
+          `account ${acc.creditAccount} not found after liquidation`,
+        );
+      }
+      result.state = ca;
     } catch (e) {
       logger.error(e, "strategy failed");
       result = { ...result, success: false, error: e as Error };
