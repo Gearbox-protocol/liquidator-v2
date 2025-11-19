@@ -17,7 +17,9 @@ import {
   LiquidationStartMessage,
   LiquidationSuccessMessage,
 } from "../notifier/index.js";
-import AbstractLiquidator from "./AbstractLiquidator.js";
+import AbstractLiquidator, {
+  type ExecutorBalance,
+} from "./AbstractLiquidator.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
 import type {
@@ -30,7 +32,7 @@ type OptimisticStrategyResult = {
   preview?: LiquidationPreview;
   receipt?: TransactionReceipt;
 } & (
-  | { success: true; state: CreditAccountData }
+  | { success: true; state: CreditAccountData; balancesAfter: ExecutorBalance }
   | { success: false; error: Error }
 );
 
@@ -241,18 +243,13 @@ export default class SingularLiquidator
             sdk: this.sdk,
           });
           result.hfAfter = strategyResult.state.healthFactor;
+          result.liquidatorPremium =
+            strategyResult.balancesAfter.underlying - balanceBefore.underlying;
+          result.liquidatorProfit =
+            strategyResult.balancesAfter.eth - balanceBefore.eth;
         }
         result.gasUsed = strategyResult.receipt?.gasUsed ?? 0n;
         result.isError = !strategyResult.success;
-
-        await this.swapper.swap(
-          acc.underlying,
-          balanceBefore.underlying + result.liquidatorPremium,
-        );
-        const balanceAfter = await this.getExecutorBalance(acc.underlying);
-        result.liquidatorPremium =
-          balanceAfter.underlying - balanceBefore.underlying;
-        result.liquidatorProfit = balanceAfter.eth - balanceBefore.eth;
 
         if (strategyResult?.success === false) {
           const decoded = await this.errorHandler.explain(
@@ -291,7 +288,11 @@ export default class SingularLiquidator
   ): Promise<OptimisticStrategyResult> {
     let snapshotId = snapshotId_;
     const logger = this.logger.child({ strategy: strategy.name });
-    let result: OptimisticStrategyResult = { success: true, state: acc };
+    let result: OptimisticStrategyResult = {
+      success: true,
+      state: acc,
+      balancesAfter: { eth: 0n, underlying: 0n },
+    };
     try {
       logger.debug({ snapshotId, strategy: strategy.name }, "previewing...");
       result.preview = await strategy.preview(acc);
@@ -322,6 +323,11 @@ export default class SingularLiquidator
         );
       }
       result.state = ca;
+      // await this.swapper.swap(
+      //   acc.underlying,
+      //   balanceBefore.underlying + result.liquidatorPremium,
+      // );
+      result.balancesAfter = await this.getExecutorBalance(acc.underlying);
     } catch (e) {
       logger.error(e, "strategy failed");
       result = { ...result, success: false, error: e as Error };
