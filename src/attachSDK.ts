@@ -58,8 +58,14 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     );
   }
 
+  let gasLimit: bigint | undefined | null = config.gasLimit;
+  if (config.gasLimit === -1n) {
+    gasLimit = null;
+  }
+
   const sdk = await GearboxSDK.attach({
     transport,
+    gasLimit,
     addressProvider: config.addressProvider,
     marketConfigurators: config.marketConfigurators,
     chainId: config.chainId,

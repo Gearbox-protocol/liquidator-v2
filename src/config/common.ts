@@ -215,6 +215,16 @@ export const CommonSchema = z.object({
     env: "IGNORE_MISSING_FEEDS",
   }),
   /**
+   * Explicitly set gas limit for SDK
+   * -1 to disable explicitly setting gas limit in SDK
+   * If not set, SDK will use default gas limit
+   */
+  gasLimit: z.coerce.bigint().optional().register(zommandRegistry, {
+    flags: "--gas-limit <limit>",
+    description: "Set gas limit for SDK",
+    env: "GAS_LIMIT",
+  }),
+  /**
    * Do not send transactions in non-optimistic mode, just log them
    */
   dryRun: boolLike().optional().register(zommandRegistry, {
