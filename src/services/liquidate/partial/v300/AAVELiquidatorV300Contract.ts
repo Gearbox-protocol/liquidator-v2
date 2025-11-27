@@ -47,9 +47,6 @@ export class AAVELiquidatorV300Contract extends PartialLiquidatorV300Contract {
         );
         break;
     }
-    // if (result?.config.liquidationMode === "deleverage") {
-    //   return undefined;
-    // }
     return result;
   }
 

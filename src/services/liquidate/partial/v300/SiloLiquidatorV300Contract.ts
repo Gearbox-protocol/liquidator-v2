@@ -32,9 +32,6 @@ export class SiloLiquidatorV300Contract extends PartialLiquidatorV300Contract {
     }
     const curator = mustGetCuratorName(cm);
     const result = new SiloLiquidatorV300Contract(cm.router.address, curator);
-    // if (result.config.liquidationMode === "deleverage") {
-    //   return undefined;
-    // }
     return result;
   }
 
