@@ -11,7 +11,6 @@ import {
   iCreditManagerV310Abi,
   iPoolV310Abi,
 } from "@gearbox-protocol/sdk/abi/310/generated";
-import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import { replaceStorage } from "@gearbox-protocol/sdk/dev";
 import {
   BaseError,
@@ -23,7 +22,7 @@ import type {
   LiqduiatorConfig,
 } from "../../config/index.js";
 import { DI } from "../../di.js";
-import { isRevertedWith } from "../../errors/index.js";
+import { errorAbis, isRevertedWith } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";

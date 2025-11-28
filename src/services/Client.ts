@@ -1,7 +1,6 @@
 import { nextTick } from "node:process";
 
 import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
-import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import type {
   AnvilClient,
   AnvilNodeInfo,
@@ -36,6 +35,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
+import { errorAbis } from "../errors/abis.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type { StatusCode } from "../utils/index.js";

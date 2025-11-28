@@ -7,10 +7,10 @@ import type {
   PriceUpdateV300,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
 import type { PartialV300ConfigSchema } from "../../../../config/index.js";
+import { errorAbis } from "../../../../errors/index.js";
 import type { PartialLiquidationPreview } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 import type {

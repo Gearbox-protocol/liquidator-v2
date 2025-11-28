@@ -7,7 +7,6 @@ import type {
   PriceUpdateV310,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import { errorAbis } from "@gearbox-protocol/sdk/abi/errors";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import {
   type Address,
@@ -19,6 +18,7 @@ import {
   type SimulateContractReturnType,
   type Transport,
 } from "viem";
+import { errorAbis } from "../../../../errors/index.js";
 import type { PartialLiquidationPreview } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 import type {
