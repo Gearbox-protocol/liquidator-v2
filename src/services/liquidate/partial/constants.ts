@@ -27,3 +27,7 @@ export const SONIC_USDCE_SILO: Address =
   "0x322e1d5384aa4ED66AeCa770B95686271de61dc3";
 export const SONIC_WS_SILO: Address =
   "0xf55902DE87Bd80c6a35614b48d7f8B612a083C12";
+
+export const MORPHO: Partial<Record<NetworkType, Address>> = {
+  Monad: "0xD5D960E8C380B724a48AC59E2DfF1b2CB4a1eAee",
+};

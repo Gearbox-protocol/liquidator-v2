@@ -28,7 +28,7 @@
     "@commitlint/config-conventional": "^20.0.0",
     "@gearbox-protocol/biome-config": "^1.0.14",
     "@gearbox-protocol/cli-utils": "^5.60.6",
-    "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.66",
+    "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.67",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
     "@gearbox-protocol/sdk": "11.7.2",
     "@gearbox-protocol/types": "^1.14.8",

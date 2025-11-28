@@ -13,6 +13,7 @@ import {
 import {
   AAVELiquidatorV310Contract,
   GHOLiquidatorV310Contract,
+  MorphoLiquidatorV310Contract,
   SiloLiquidatorV310Contract,
 } from "./v310/index.js";
 
@@ -24,6 +25,7 @@ const FACTORIES: IPartialLiqudatorContractFactory[] = [
   // v310
   AAVELiquidatorV310Contract,
   GHOLiquidatorV310Contract,
+  MorphoLiquidatorV310Contract,
   SiloLiquidatorV310Contract,
 ];
 

@@ -1902,10 +1902,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/liquidator-contracts@npm:^1.36.0-experimental.66":
-  version: 1.36.0-experimental.66
-  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.66"
-  checksum: 10c0/9e59cda54d62aa45aca0838b304a3a5d9b480b83edbb977f5a5fbc7ee1a49acff609ba93c877c46ebe400b45a2d33ed6902838cb9c6f1ce152a4d2c9f04168c9
+"@gearbox-protocol/liquidator-contracts@npm:^1.36.0-experimental.67":
+  version: 1.36.0-experimental.67
+  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.67"
+  checksum: 10c0/aa67a877d040c0fde8844dc98a324f49628f683a143a4ca2e6e911a383853d4b8de01a05746cede2bdf0653d704eecb4ba4987c96c22b19d06658d6da60ed061
   languageName: node
   linkType: hard
 
@@ -1927,7 +1927,7 @@ __metadata:
     "@commitlint/config-conventional": "npm:^20.0.0"
     "@gearbox-protocol/biome-config": "npm:^1.0.14"
     "@gearbox-protocol/cli-utils": "npm:^5.60.6"
-    "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.66"
+    "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/sdk": "npm:11.7.2"
     "@gearbox-protocol/types": "npm:^1.14.8"
