@@ -1929,7 +1929,7 @@ __metadata:
     "@gearbox-protocol/cli-utils": "npm:^5.61.1"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:11.8.9"
+    "@gearbox-protocol/sdk": "npm:11.9.0-next.1"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^24.10.1"
     "@uniswap/sdk-core": "npm:^7.9.0"
@@ -1956,7 +1956,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:11.8.9, @gearbox-protocol/sdk@npm:>=11.8.4":
+"@gearbox-protocol/sdk@npm:11.9.0-next.1":
+  version: 11.9.0-next.1
+  resolution: "@gearbox-protocol/sdk@npm:11.9.0-next.1"
+  dependencies:
+    "@gearbox-protocol/integrations-v3": "npm:1.51.1"
+    "@redstone-finance/evm-connector": "npm:^0.9.0"
+    "@redstone-finance/protocol": "npm:^0.9.0"
+    "@redstone-finance/sdk": "npm:^0.9.0"
+    "@types/bn.js": "npm:^5.2.0"
+    abitype: "npm:^1.2.0"
+    bn.js: "npm:^5.2.2"
+    buffer: "npm:^6.0.3"
+    date-fns: "npm:^4.1.0"
+    decimal.js-light: "npm:^2.5.1"
+    viem: "npm:>=2.23.15 <3.0.0"
+    zod: "npm:^4.1.13"
+  peerDependencies:
+    axios: ^1.0.0
+    viem-deal: ^2.0.4
+  checksum: 10c0/de918806d248895fad503b203a3c07c7999b7367982a1d625cafb8fd7299a4a5669f97a44095644b1e123489d6e21a52e4d33407594422588a4aa64c11f14726
+  languageName: node
+  linkType: hard
+
+"@gearbox-protocol/sdk@npm:>=11.8.4":
   version: 11.8.9
   resolution: "@gearbox-protocol/sdk@npm:11.8.9"
   dependencies:

@@ -255,7 +255,7 @@ export default class BatchLiquidator
     };
     const results = accounts.map(
       (a): OptimisticResult<bigint> => ({
-        callsHuman: this.sdk.parseMultiCall([
+        callsHuman: this.sdk.stringifyMultiCall([
           ...(batch[a.creditAccount]?.calls ?? []),
         ]),
         balancesBefore: filterDustUSD({ account: a, sdk: this.sdk }),
