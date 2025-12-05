@@ -146,10 +146,10 @@ export default class LiquidationStrategyFull
   }
 
   public isApplicable(ca: CreditAccountData): boolean {
-    if (!this.checkAccountVersion(ca, VERSION_RANGE_310)) {
-      return false;
-    }
-    if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
+    if (
+      this.#applyLossPolicy &&
+      (!this.checkAccountVersion(ca, VERSION_RANGE_310) || !this.hasBadDebt(ca))
+    ) {
       return false;
     }
     return true;
