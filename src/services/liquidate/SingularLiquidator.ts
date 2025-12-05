@@ -1,4 +1,6 @@
 import {
+  AddressMap,
+  AddressSet,
   type CreditAccountData,
   filterDustUSD,
   type MultiCall,
@@ -263,6 +265,8 @@ export default class SingularLiquidator
             "\\n",
           );
           this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
+        } else {
+          this.#logBalancesChange(result.balancesBefore, result.balancesAfter);
         }
       } else {
         result.isError = true;
@@ -337,5 +341,23 @@ export default class SingularLiquidator
       }
     }
     return result;
+  }
+
+  #logBalancesChange(
+    prev_: Record<string, bigint>,
+    next_: Record<string, bigint>,
+  ): void {
+    const prev = AddressMap.fromRecord(prev_);
+    const next = AddressMap.fromRecord(next_);
+    const tokens = new AddressSet([...prev.keys(), ...next.keys()]);
+    const changes: Record<string, string>[] = [];
+    for (const t of tokens) {
+      const [prevB, nextB] = [prev.get(t), next.get(t)];
+      const before = this.sdk.tokensMeta.formatBN(t, prevB);
+      const after = this.sdk.tokensMeta.formatBN(t, nextB);
+      const symbol = this.sdk.tokensMeta.symbol(t);
+      changes.push({ symbol, before, after });
+    }
+    this.logger.debug(changes, "balances change");
   }
 }
