@@ -159,6 +159,12 @@ export default class LiquidationStrategyFull
     if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
       throw new Error("cannot apply loss policy: account has no bad debt");
     }
+    if (
+      this.#applyLossPolicy &&
+      !this.checkAccountVersion(ca, VERSION_RANGE_310)
+    ) {
+      throw new Error("cannot apply loss policy: version not supported");
+    }
     try {
       const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
       const ignoreReservePrices = !this.config.updateReservePrices && isV310;
