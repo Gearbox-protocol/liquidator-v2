@@ -169,6 +169,9 @@ export class Scanner {
           !this.config.updateReservePrices,
       };
       accounts = await this.#getAllCreditAccounts(queue, blockNumber);
+      if (accounts.length === 0) {
+        accounts = await this.#getExpiredCreditAccounts(blockNumber);
+      }
     }
     if (this.config.restakingWorkaround) {
       const before = accounts.length;
@@ -259,6 +262,64 @@ export class Scanner {
     }
 
     return accounts;
+  }
+
+  async #getExpiredCreditAccounts(
+    blockNumber?: bigint,
+  ): Promise<CreditAccountData[]> {
+    const timestamp = this.caService.sdk.timestamp;
+    const expiredCMs = new AddressSet();
+
+    for (const m of this.caService.sdk.marketRegister.markets) {
+      // nothing borrowed === no accounts
+      if (m.pool.pool.totalBorrowed === 0n) {
+        continue;
+      }
+      for (const cm of m.creditManagers) {
+        const borrowed =
+          m.pool.pool.creditManagerDebtParams.get(cm.creditManager.address)
+            ?.borrowed ?? 0n;
+        const expired =
+          cm.creditFacade.expirable &&
+          cm.creditFacade.expirationDate < timestamp;
+
+        if (expired && borrowed > 0n) {
+          expiredCMs.add(cm.creditManager.address);
+        }
+      }
+    }
+
+    if (expiredCMs.size === 0) {
+      return [];
+    }
+    this.log.info(`found ${expiredCMs.size} expired credit managers`);
+
+    let result: CreditAccountData[] = [];
+    if (this.config.optimistic) {
+      result = await this.caService.getCreditAccounts(
+        {
+          ignoreReservePrices: true,
+          minHealthFactor: 0n,
+          maxHealthFactor: MAX_UINT256,
+        },
+        blockNumber,
+      );
+      result = result.filter(ca => expiredCMs.has(ca.creditManager));
+    } else {
+      // we can take first expired credit manager, and continue with next one on next block
+      result = await this.caService.getCreditAccounts(
+        {
+          creditManager: expiredCMs.asArray()[0],
+          ignoreReservePrices: true,
+          minHealthFactor: 0n,
+          maxHealthFactor: MAX_UINT256,
+        },
+        blockNumber,
+      );
+    }
+
+    this.log.debug(`found ${result.length} expired credit accounts`);
+    return result;
   }
 
   async #setupRestakingWorkaround(): Promise<void> {
