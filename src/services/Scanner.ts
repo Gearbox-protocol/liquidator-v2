@@ -269,6 +269,7 @@ export class Scanner {
   ): Promise<CreditAccountData[]> {
     const timestamp = this.caService.sdk.timestamp;
     const expiredCMs = new AddressSet();
+    const expiredCmNames: string[] = [];
 
     for (const m of this.caService.sdk.marketRegister.markets) {
       // nothing borrowed === no accounts
@@ -279,12 +280,10 @@ export class Scanner {
         const borrowed =
           m.pool.pool.creditManagerDebtParams.get(cm.creditManager.address)
             ?.borrowed ?? 0n;
-        const expired =
-          cm.creditFacade.expirable &&
-          cm.creditFacade.expirationDate < timestamp;
 
-        if (expired && borrowed > 0n) {
+        if (cm.isExpired && borrowed > 0n) {
           expiredCMs.add(cm.creditManager.address);
+          expiredCmNames.push(`${m.pool.pool.name} - ${cm.creditManager.name}`);
         }
       }
     }
@@ -292,7 +291,6 @@ export class Scanner {
     if (expiredCMs.size === 0) {
       return [];
     }
-    this.log.info(`found ${expiredCMs.size} expired credit managers`);
 
     let result: CreditAccountData[] = [];
     if (this.config.optimistic) {
