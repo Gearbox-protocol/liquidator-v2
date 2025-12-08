@@ -231,5 +231,10 @@ export const errorAbis = [
     name: "WithdrawalsPaused",
     type: "error",
   },
+  {
+    inputs: [],
+    name: "SafeTransferFailed",
+    type: "error",
+  },
   ...sdkErrorAbis,
 ] as const;
