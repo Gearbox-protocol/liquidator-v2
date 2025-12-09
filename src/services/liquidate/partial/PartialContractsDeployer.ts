@@ -91,7 +91,7 @@ export class PartialContractsDeployer extends SDKConstruct {
         );
       } else {
         this.logger?.warn(
-          `could not find partial liquidator contract for ${cm.creditManager.name}`,
+          `could not find partial liquidator contract for ${cm.creditManager.name} (v${cm.creditManager.version})`,
         );
       }
     }
