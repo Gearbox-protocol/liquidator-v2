@@ -41,43 +41,12 @@ export default class LiquidationStrategyDeleverage
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
     if (!this.isApplicable(ca)) {
-      throw new Error("cannot deleverage: account is not applicable");
+      throw new Error("warning: deleverage is not supported for v300 accounts");
     }
     const result = await super.makeLiquidatable(ca);
     const { creditFacade } = this.sdk.marketRegister.findCreditManager(
       ca.creditManager,
     );
-
-    // await this.client.anvil.impersonateAccount({
-    //   address: creditFacade.botList,
-    // });
-
-    // const hash = await this.client.anvil.writeContract({
-    //   account: creditFacade.address,
-    //   chain: this.client.anvil.chain,
-    //   address: creditFacade.botList,
-    //   abi: iBotListV310Abi,
-    //   functionName: "setBotPermissions",
-    //   args: [
-    //     ca.creditAccount,
-    //     this.config.partialLiquidationBot,
-    //     DELEVERAGE_PERMISSIONS,
-    //   ],
-    // });
-    // this.logger.debug(
-    //   `set bot permissions for account ${ca.creditAccount} in tx ${hash}`,
-    // );
-    // const receipt = await this.client.pub.waitForTransactionReceipt({
-    //   hash,
-    // });
-    // if (receipt.status === "reverted") {
-    //   throw new Error(
-    //     `failed to set bot permissions for account ${ca.creditAccount} in tx ${hash}`,
-    //   );
-    // }
-    // await this.client.anvil.stopImpersonatingAccount({
-    //   address: creditFacade.botList,
-    // });
     await this.client.anvil.impersonateAccount({ address: ca.owner });
 
     const addBotCall: MultiCall = {
