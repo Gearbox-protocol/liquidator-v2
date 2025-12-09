@@ -485,6 +485,14 @@ export class Scanner {
     return this.#liquidatableAccounts;
   }
 
+  public get minHealthFactor(): bigint {
+    return this.#minHealthFactor;
+  }
+
+  public get maxHealthFactor(): bigint {
+    return this.#maxHealthFactor;
+  }
+
   public async stop(): Promise<void> {
     this.#unwatch?.();
     this.log.info("stopped");

@@ -92,6 +92,8 @@ export default class HealthCheckerService {
       address: this.client.address,
       balance: this.client.balance,
       currentBlock: this.sdk.currentBlock,
+      minHealthFactor: this.scanner.minHealthFactor,
+      maxHealthFactor: this.scanner.maxHealthFactor,
       timestamp: {
         value: timestamp,
         status: (!!threshold && now - timestamp <= threshold
