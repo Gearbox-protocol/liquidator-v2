@@ -22,6 +22,7 @@ import {
 import AbstractLiquidator, {
   type ExecutorBalance,
 } from "./AbstractLiquidator.js";
+import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
 import type {
@@ -68,6 +69,8 @@ export default class SingularLiquidator
         return;
       }
       case "deleverage":
+        add(new LiquidationStrategyDeleverage());
+        return;
       case "partial": {
         const cfg = this.config as unknown as PartialLiquidatorSchema;
         add(new LiquidationStrategyPartial());

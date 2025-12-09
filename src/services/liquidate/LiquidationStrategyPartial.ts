@@ -6,11 +6,7 @@ import {
 } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
-import type {
-  DeleverageLiquidatorSchema,
-  LiqduiatorConfig,
-  PartialLiquidatorSchema,
-} from "../../config/index.js";
+import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
@@ -34,9 +30,7 @@ export default class LiquidationStrategyPartial
   creditAccountService!: ICreditAccountsService;
 
   @DI.Inject(DI.Config)
-  config!: LiqduiatorConfig<
-    PartialLiquidatorSchema | DeleverageLiquidatorSchema
-  >;
+  config!: LiqduiatorConfig<CommonSchema>;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -86,7 +80,7 @@ export default class LiquidationStrategyPartial
     const newLTs = await calcLiquidatableLTs(
       this.sdk,
       ca,
-      this.config.liquidationMode === "partial" ? 9990n : 10005n,
+      this.optimisticHF(ca),
       this.logger,
     );
     const snapshotId = await this.client.anvil.snapshot();
@@ -126,16 +120,11 @@ export default class LiquidationStrategyPartial
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreview> {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
-    const ignoreReservePrices =
-      isV310 &&
-      !this.config.updateReservePrices &&
-      this.config.liquidationMode !== "deleverage";
     const priceUpdates =
       await this.creditAccountService.getOnDemandPriceUpdates({
         creditManager: ca.creditManager,
         creditAccount: ca,
-        ignoreReservePrices,
+        ignoreReservePrices: this.ignoreReservePrices(ca),
       });
     const liquidatorContract = this.#liquidatorForCA(ca);
     if (!liquidatorContract) {
@@ -235,5 +224,14 @@ export default class LiquidationStrategyPartial
         );
       }
     }
+  }
+
+  protected ignoreReservePrices(ca: CreditAccountData): boolean {
+    const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
+    return isV310 && !this.config.updateReservePrices;
+  }
+
+  protected optimisticHF(_ca: CreditAccountData): bigint {
+    return 9990n;
   }
 }

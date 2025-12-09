@@ -7,21 +7,24 @@ import type {
 import {
   AddressSet,
   hexEq,
+  isVersionRange,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
+  VERSION_RANGE_310,
   WAD,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { iCreditManagerV300Abi } from "@gearbox-protocol/sdk/abi/v300";
-import { iPartialLiquidationBotV310Abi } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
+import { DELEVERAGE_PERMISSIONS } from "../utils/permissions.js";
 import type Client from "./Client.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 import { type INotifier, ZeroHFAccountsMessage } from "./notifier/index.js";
+import { PartialLiquidationBotV310Contract } from "./PartialLiquidationBotV310Contract.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -80,20 +83,18 @@ export class Scanner {
       this.#maxHealthFactor = MAX_UINT256;
     }
     if (this.config.liquidationMode === "deleverage") {
+      const [botMinHealthFactor] = await PartialLiquidationBotV310Contract.get(
+        this.caService.sdk,
+        this.config.partialLiquidationBot,
+      ).loadHealthFactors();
       if (this.config.optimistic) {
         this.#minHealthFactor = 0n;
         this.#maxHealthFactor = MAX_UINT256;
       } else {
         this.#minHealthFactor = WAD;
-        const botMinHealthFactor = await this.client.pub.readContract({
-          address: this.config.partialLiquidationBot,
-          abi: iPartialLiquidationBotV310Abi,
-          functionName: "minHealthFactor",
-        });
-        this.#maxHealthFactor =
-          (BigInt(botMinHealthFactor) * WAD) / PERCENTAGE_FACTOR;
+        this.#maxHealthFactor = (botMinHealthFactor * WAD) / PERCENTAGE_FACTOR;
         this.log.info(
-          `deleverage bot max health factor is ${botMinHealthFactor / 100}%  (${this.#maxHealthFactor})`,
+          `deleverage bot max health factor is ${botMinHealthFactor / 100n}%  (${this.#maxHealthFactor})`,
         );
       }
     }
@@ -411,27 +412,33 @@ export class Scanner {
   }
 
   async #filterDeleverageAccounts(
-    accounts: CreditAccountData[],
+    accounts_: CreditAccountData[],
     partialLiquidationBot: Address,
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
-    const botList = this.caService.sdk.botListContract?.address;
-    if (!botList) {
-      this.log.warn(
-        "bot list contract not found, skipping deleverage accounts filtering",
-      );
-      return accounts;
+    if (this.config.optimistic) {
+      return accounts_;
     }
+
+    const accounts = accounts_.filter(ca => {
+      const cm = this.caService.sdk.marketRegister.findCreditManager(
+        ca.creditManager,
+      );
+      return isVersionRange(cm.creditFacade.version, VERSION_RANGE_310);
+    });
+
     const res = await this.client.pub.multicall({
-      contracts: accounts.map(
-        ca =>
-          ({
-            address: botList,
-            abi: iBotListV310Abi,
-            functionName: "getBotStatus",
-            args: [partialLiquidationBot, ca.creditAccount],
-          }) as const,
-      ),
+      contracts: accounts.map(ca => {
+        const cm = this.caService.sdk.marketRegister.findCreditManager(
+          ca.creditManager,
+        );
+        return {
+          address: cm.creditFacade.botList,
+          abi: iBotListV310Abi,
+          functionName: "getBotStatus",
+          args: [partialLiquidationBot, ca.creditAccount],
+        } as const;
+      }),
       allowFailure: true,
       blockNumber,
     });
@@ -442,7 +449,11 @@ export class Scanner {
       const r = res[i];
       if (r.status === "success") {
         const [permissions, forbidden] = r.result;
-        if (!!permissions && !forbidden) {
+        if (
+          !!permissions &&
+          !forbidden &&
+          (permissions & DELEVERAGE_PERMISSIONS) === DELEVERAGE_PERMISSIONS
+        ) {
           result.push(ca);
         }
       } else if (r.status === "failure") {
@@ -450,7 +461,7 @@ export class Scanner {
       }
     }
     this.log.debug(
-      { errored, before: accounts.length, after: result.length, botList },
+      { errored, before: accounts_.length, after: result.length },
       "filtered accounts for deleverage",
     );
     return result;
@@ -472,6 +483,14 @@ export class Scanner {
 
   public get liquidatableAccounts(): number {
     return this.#liquidatableAccounts;
+  }
+
+  public get minHealthFactor(): bigint {
+    return this.#minHealthFactor;
+  }
+
+  public get maxHealthFactor(): bigint {
+    return this.#maxHealthFactor;
   }
 
   public async stop(): Promise<void> {

@@ -13,7 +13,8 @@ import {
   VERSION_RANGE_300,
 } from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
-
+import type { Config } from "../../../../config/index.js";
+import { DI } from "../../../../di.js";
 import { FLASH_MINTERS } from "../constants.js";
 import { mustGetCuratorName } from "../utils.js";
 import PartialLiquidatorV300Contract from "./PartialLiquidatorV300Contract.js";
@@ -25,6 +26,10 @@ export class GHOLiquidatorV300Contract extends PartialLiquidatorV300Contract {
   public static tryAttach(
     cm: CreditSuite,
   ): GHOLiquidatorV300Contract | undefined {
+    const config: Config = DI.get(DI.Config);
+    if (config.liquidationMode === "deleverage") {
+      return undefined;
+    }
     if (!isVersionRange(cm.router.version, VERSION_RANGE_300)) {
       return undefined;
     }

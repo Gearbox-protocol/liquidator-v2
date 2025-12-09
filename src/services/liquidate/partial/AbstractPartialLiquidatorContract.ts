@@ -8,7 +8,6 @@ import type {
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
 import { iDegenDistributorV300Abi } from "@gearbox-protocol/sdk/abi/iDegenDistributorV300";
-import { iPartialLiquidationBotV310Abi } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
 import type {
@@ -19,6 +18,7 @@ import type {
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
+import { PartialLiquidationBotV310Contract } from "../../PartialLiquidationBotV310Contract.js";
 import type { PartialLiquidationPreview } from "../types.js";
 import type {
   IPartialLiquidatorContract,
@@ -88,6 +88,12 @@ export abstract class AbstractPartialLiquidatorContract
    * Can be called multiple times, each time processes pending credit managers
    */
   protected async configure(): Promise<void> {
+    if (this.config.liquidationMode === "deleverage") {
+      // this operation is cached and will be called only once
+      // so it's safe to be used inside syncState
+      await this.#setOptimalDeleverageHF();
+    }
+
     if (this.#pendingCreditManagers.length === 0) {
       return;
     }
@@ -112,12 +118,6 @@ export abstract class AbstractPartialLiquidatorContract
         );
         this.#registeredCMs.upsert(address, true);
       }
-    }
-
-    if (this.config.liquidationMode === "deleverage") {
-      // this operation is cached and will be called only once
-      // so it's safe to be used inside syncState
-      await this.#setOptimalDeleverageHF();
     }
 
     this.logger.debug(
@@ -374,21 +374,11 @@ export abstract class AbstractPartialLiquidatorContract
     if (this.#optimalDeleverageHF.has(this.partialLiquidationBot)) {
       return;
     }
-    const [minHealthFactor, maxHealthFactor] = await this.client.pub.multicall({
-      contracts: [
-        {
-          address: this.partialLiquidationBot,
-          abi: iPartialLiquidationBotV310Abi,
-          functionName: "minHealthFactor",
-        },
-        {
-          address: this.partialLiquidationBot,
-          abi: iPartialLiquidationBotV310Abi,
-          functionName: "maxHealthFactor",
-        },
-      ],
-      allowFailure: false,
-    });
+    const [minHealthFactor, maxHealthFactor] =
+      await PartialLiquidationBotV310Contract.get(
+        this.sdk,
+        this.partialLiquidationBot,
+      ).loadHealthFactors();
     const hf = BigInt(minHealthFactor + maxHealthFactor) / 2n;
     this.#optimalDeleverageHF.upsert(this.partialLiquidationBot, hf);
     this.logger.debug(`set optimal deleverage HF to ${hf}`);
