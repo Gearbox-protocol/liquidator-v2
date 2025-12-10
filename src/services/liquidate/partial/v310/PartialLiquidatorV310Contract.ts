@@ -170,7 +170,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
 
   protected get partialLiquidationBot(): Address {
     if (this.config.liquidationMode === "deleverage") {
-      return this.config.partialLiquidationBot;
+      return this.deleverage.bot.address;
     }
     throw new Error(
       "partial liquidation bot is only available in deleverage mode",

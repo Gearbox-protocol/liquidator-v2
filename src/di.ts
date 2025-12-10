@@ -14,6 +14,7 @@ const Injectables = {
   Scanner: "Scanner",
   Swapper: "Swapper",
   Transport: "Transport",
+  Deleverage: "Deleverage",
 } as const;
 
 export const DI = Object.assign(
@@ -34,6 +35,7 @@ export const DI = Object.assign(
     Scanner: [];
     Swapper: [];
     Transport: [];
+    Deleverage: [];
   }>(),
   Injectables,
 );

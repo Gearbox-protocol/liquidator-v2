@@ -18,7 +18,7 @@ import type {
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
-import { PartialLiquidationBotV310Contract } from "../../PartialLiquidationBotV310Contract.js";
+import type DeleverageService from "../../DeleverageService.js";
 import type { PartialLiquidationPreview } from "../types.js";
 import type {
   IPartialLiquidatorContract,
@@ -43,6 +43,9 @@ export abstract class AbstractPartialLiquidatorContract
   @DI.Inject(DI.Client)
   client!: Client;
 
+  @DI.Inject(DI.Deleverage)
+  deleverage!: DeleverageService;
+
   #registeredCMs = new AddressMap<boolean>();
   #address?: Address;
   #router: Address;
@@ -50,7 +53,6 @@ export abstract class AbstractPartialLiquidatorContract
    * Credit managers for which async write operations (register, obtaining degen, etc...) are pending
    */
   #pendingCreditManagers: CreditSuite[] = [];
-  #optimalDeleverageHF = new AddressMap<bigint>();
 
   public readonly name: string;
   public readonly curator: Curator;
@@ -88,12 +90,6 @@ export abstract class AbstractPartialLiquidatorContract
    * Can be called multiple times, each time processes pending credit managers
    */
   protected async configure(): Promise<void> {
-    if (this.config.liquidationMode === "deleverage") {
-      // this operation is cached and will be called only once
-      // so it's safe to be used inside syncState
-      await this.#setOptimalDeleverageHF();
-    }
-
     if (this.#pendingCreditManagers.length === 0) {
       return;
     }
@@ -327,7 +323,8 @@ export abstract class AbstractPartialLiquidatorContract
       this.caLogger(ca).debug(`optimal HF is ${hf}`);
       return hf;
     } else if (this.config.liquidationMode === "deleverage") {
-      return this.#getOptimalDeleverageHF();
+      const { minHealthFactor, maxHealthFactor } = this.deleverage.bot;
+      return BigInt(minHealthFactor + maxHealthFactor) / 2n;
     }
     throw new Error("invalid liquidation mode");
   }
@@ -368,26 +365,5 @@ export abstract class AbstractPartialLiquidatorContract
       manager: cm.name,
       hf: ca.healthFactor,
     });
-  }
-
-  async #setOptimalDeleverageHF(): Promise<void> {
-    if (this.#optimalDeleverageHF.has(this.partialLiquidationBot)) {
-      return;
-    }
-    const [minHealthFactor, maxHealthFactor] =
-      await PartialLiquidationBotV310Contract.get(
-        this.sdk,
-        this.partialLiquidationBot,
-      ).loadHealthFactors();
-    const hf = BigInt(minHealthFactor + maxHealthFactor) / 2n;
-    this.#optimalDeleverageHF.upsert(this.partialLiquidationBot, hf);
-    this.logger.debug(`set optimal deleverage HF to ${hf}`);
-  }
-
-  #getOptimalDeleverageHF(): bigint {
-    if (!this.#optimalDeleverageHF.has(this.partialLiquidationBot)) {
-      throw new Error("optimal deleverage HF not configured");
-    }
-    return this.#optimalDeleverageHF.mustGet(this.partialLiquidationBot);
   }
 }

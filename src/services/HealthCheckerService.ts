@@ -14,6 +14,7 @@ import { Logger } from "../log/index.js";
 import { maxStatusCode, type StatusCode } from "../utils/index.js";
 import version from "../version.js";
 import type Client from "./Client.js";
+import type DeleverageService from "./DeleverageService.js";
 import type { Scanner } from "./Scanner.js";
 
 const nanoid = customAlphabet("1234567890abcdef", 8);
@@ -31,6 +32,9 @@ export default class HealthCheckerService {
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
+
+  @DI.Inject(DI.Deleverage)
+  deleverage!: DeleverageService;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -113,6 +117,7 @@ export default class HealthCheckerService {
           ? "alert"
           : "healthy") as StatusCode,
       },
+      deleverage: this.deleverage.status,
       providers: (
         this.sdk.client as unknown as PublicClient<
           Transport<"revolver", RevolverTransportValue>
@@ -124,6 +129,7 @@ export default class HealthCheckerService {
       result.timestamp.status,
       result.balance?.status,
       result.liquidatableAccounts.status,
+      result.deleverage?.status,
     );
     return result;
   }

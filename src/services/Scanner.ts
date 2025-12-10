@@ -7,24 +7,20 @@ import type {
 import {
   AddressSet,
   hexEq,
-  isVersionRange,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
-  VERSION_RANGE_310,
   WAD,
 } from "@gearbox-protocol/sdk";
-import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { iCreditManagerV300Abi } from "@gearbox-protocol/sdk/abi/v300";
 import type { Address, Block } from "viem";
 import { getContract } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
-import { DELEVERAGE_PERMISSIONS } from "../utils/permissions.js";
 import type Client from "./Client.js";
+import type DeleverageService from "./DeleverageService.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 import { type INotifier, ZeroHFAccountsMessage } from "./notifier/index.js";
-import { PartialLiquidationBotV310Contract } from "./PartialLiquidationBotV310Contract.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -49,6 +45,9 @@ export class Scanner {
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
+
+  @DI.Inject(DI.Deleverage)
+  deleverage!: DeleverageService;
 
   @DI.Inject(DI.Notifier)
   notifier!: INotifier;
@@ -83,18 +82,22 @@ export class Scanner {
       this.#maxHealthFactor = MAX_UINT256;
     }
     if (this.config.liquidationMode === "deleverage") {
-      const [botMinHealthFactor] = await PartialLiquidationBotV310Contract.get(
-        this.caService.sdk,
-        this.config.partialLiquidationBot,
-      ).loadHealthFactors();
+      if (this.deleverage.bots.length === 0) {
+        this.log.error("no deleverage bots found");
+        // hang indefinitely
+        return;
+      }
+      // TODO: support multiple bots
       if (this.config.optimistic) {
         this.#minHealthFactor = 0n;
         this.#maxHealthFactor = MAX_UINT256;
       } else {
         this.#minHealthFactor = WAD;
-        this.#maxHealthFactor = (botMinHealthFactor * WAD) / PERCENTAGE_FACTOR;
+        this.#maxHealthFactor =
+          (BigInt(this.deleverage.bot.minHealthFactor) * WAD) /
+          PERCENTAGE_FACTOR;
         this.log.info(
-          `deleverage bot max health factor is ${botMinHealthFactor / 100n}%  (${this.#maxHealthFactor})`,
+          `deleverage bot max health factor is ${this.deleverage.bot.minHealthFactor / 100}%  (${this.#maxHealthFactor})`,
         );
       }
     }
@@ -198,18 +201,15 @@ export class Scanner {
     }
 
     if (this.config.liquidationMode === "deleverage") {
-      accounts = await this.#filterDeleverageAccounts(
+      accounts = await this.deleverage.filterDeleverageAccounts(
         accounts,
-        this.config.partialLiquidationBot,
         blockNumber,
       );
     }
 
     const time = Math.round((Date.now() - start) / 1000);
     const verb =
-      this.config.liquidationMode === "deleverage"
-        ? "deleveragable"
-        : "liquidate";
+      this.config.liquidationMode === "deleverage" ? "deleverage" : "liquidate";
     this.log.debug(
       `${accounts.length} accounts to ${verb}${blockS}, time: ${time}s`,
     );
@@ -409,62 +409,6 @@ export class Scanner {
           hexEq(t.token, "0x1b10E2270780858923cdBbC9B5423e29fffD1A44"),
         ),
     );
-  }
-
-  async #filterDeleverageAccounts(
-    accounts_: CreditAccountData[],
-    partialLiquidationBot: Address,
-    blockNumber?: bigint,
-  ): Promise<CreditAccountData[]> {
-    if (this.config.optimistic) {
-      return accounts_;
-    }
-
-    const accounts = accounts_.filter(ca => {
-      const cm = this.caService.sdk.marketRegister.findCreditManager(
-        ca.creditManager,
-      );
-      return isVersionRange(cm.creditFacade.version, VERSION_RANGE_310);
-    });
-
-    const res = await this.client.pub.multicall({
-      contracts: accounts.map(ca => {
-        const cm = this.caService.sdk.marketRegister.findCreditManager(
-          ca.creditManager,
-        );
-        return {
-          address: cm.creditFacade.botList,
-          abi: iBotListV310Abi,
-          functionName: "getBotStatus",
-          args: [partialLiquidationBot, ca.creditAccount],
-        } as const;
-      }),
-      allowFailure: true,
-      blockNumber,
-    });
-    const result: CreditAccountData[] = [];
-    let errored = 0;
-    for (let i = 0; i < accounts.length; i++) {
-      const ca = accounts[i];
-      const r = res[i];
-      if (r.status === "success") {
-        const [permissions, forbidden] = r.result;
-        if (
-          !!permissions &&
-          !forbidden &&
-          (permissions & DELEVERAGE_PERMISSIONS) === DELEVERAGE_PERMISSIONS
-        ) {
-          result.push(ca);
-        }
-      } else if (r.status === "failure") {
-        errored++;
-      }
-    }
-    this.log.debug(
-      { errored, before: accounts_.length, after: result.length },
-      "filtered accounts for deleverage",
-    );
-    return result;
   }
 
   #notifyOnZeroHFAccounts(count: number, badTokens: string): void {

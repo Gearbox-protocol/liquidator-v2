@@ -13,7 +13,7 @@ import type {
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import { DELEVERAGE_PERMISSIONS } from "../../utils/permissions.js";
-import { PartialLiquidationBotV310Contract } from "../PartialLiquidationBotV310Contract.js";
+import type DeleverageService from "../DeleverageService.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
 import type {
   ILiquidationStrategy,
@@ -32,6 +32,9 @@ export default class LiquidationStrategyDeleverage
   @Logger("DeleverageStrategy")
   // @ts-expect-error
   logger!: ILogger;
+
+  @DI.Inject(DI.Deleverage)
+  deleverage!: DeleverageService;
 
   public override isApplicable(ca: CreditAccountData): boolean {
     return this.checkAccountVersion(ca, VERSION_RANGE_310);
@@ -54,7 +57,7 @@ export default class LiquidationStrategyDeleverage
       callData: encodeFunctionData({
         abi: iCreditFacadeMulticallV310Abi,
         functionName: "setBotPermissions",
-        args: [this.config.partialLiquidationBot, DELEVERAGE_PERMISSIONS],
+        args: [this.deleverage.bot.address, DELEVERAGE_PERMISSIONS],
       }),
     };
 
@@ -90,10 +93,8 @@ export default class LiquidationStrategyDeleverage
   }
 
   protected override optimisticHF(_ca: CreditAccountData): bigint {
-    const minHF = PartialLiquidationBotV310Contract.get(
-      this.sdk,
-      this.config.partialLiquidationBot,
-    ).minHealthFactor;
+    // TODO: which bot to use?
+    const minHF = BigInt(this.deleverage.bot.minHealthFactor);
     return (minHF * 9990n) / PERCENTAGE_FACTOR;
   }
 }

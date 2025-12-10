@@ -7,6 +7,7 @@ import {
   GearboxSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
+import { BotsPlugin } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Transport } from "viem";
 import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
@@ -72,6 +73,9 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     networkType: config.network,
     // we need prices to calculate things like numsplits
     ignoreUpdateablePrices: false,
+    plugins: {
+      bots: new BotsPlugin(false),
+    },
     redstone: {
       historicTimestamp: optimisticTimestamp,
       gateways: config.redstoneGateways,

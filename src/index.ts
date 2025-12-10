@@ -2,6 +2,7 @@
 import "./services/Client.js";
 import "./services/HealthCheckerService.js";
 import "./services/Scanner.js";
+import "./services/DeleverageService.js";
 import "./services/liquidate/index.js";
 import "./services/output/index.js";
 import "./services/notifier/index.js";

@@ -5,6 +5,7 @@ import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
 import type Client from "./services/Client.js";
+import type DeleverageService from "./services/DeleverageService.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
 import type { Scanner } from "./services/Scanner.js";
@@ -19,6 +20,9 @@ export default class Liquidator {
 
   @DI.Inject(DI.Scanner)
   scanner!: Scanner;
+
+  @DI.Inject(DI.Deleverage)
+  deleverage!: DeleverageService;
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
@@ -41,6 +45,7 @@ export default class Liquidator {
     await this.client.launch();
 
     this.healthChecker.launch();
+    await this.deleverage.launch();
     await this.swapper.launch(this.config.network);
     await this.scanner.launch();
 
