@@ -22,9 +22,16 @@ export interface BotParameters extends TBotParameters {
   address: Address;
 }
 
+export interface DeleverageBotStatus {
+  address: Address;
+  status: StatusCode;
+  minHealthFactor: number;
+  maxHealthFactor: number;
+}
+
 export interface DeleverageStatus {
   status: StatusCode;
-  bots: Array<{ address: Address; status: StatusCode }>;
+  bots: DeleverageBotStatus[];
 }
 
 @DI.Injectable(DI.Deleverage)
@@ -74,8 +81,6 @@ export default class DeleverageService {
     if (this.config.optimistic) {
       return accounts_;
     }
-    // TODO: support multiple bots
-    const bot = this.#bots[0];
 
     const accounts = accounts_.filter(ca => {
       const cm = this.caService.sdk.marketRegister.findCreditManager(
@@ -93,7 +98,7 @@ export default class DeleverageService {
           address: cm.creditFacade.botList,
           abi: iBotListV310Abi,
           functionName: "getBotStatus",
-          args: [bot, ca.creditAccount],
+          args: [this.bot.address, ca.creditAccount],
         } as const;
       }),
       allowFailure: true,
@@ -137,6 +142,8 @@ export default class DeleverageService {
       bots: this.bots.map(b => ({
         address: b.address,
         status: "healthy",
+        minHealthFactor: b.minHealthFactor,
+        maxHealthFactor: b.maxHealthFactor,
       })),
     };
   }
