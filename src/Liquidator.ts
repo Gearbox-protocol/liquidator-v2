@@ -45,7 +45,6 @@ export default class Liquidator {
     await this.client.launch();
 
     this.healthChecker.launch();
-    await this.deleverage.launch();
     await this.swapper.launch(this.config.network);
     await this.scanner.launch();
 

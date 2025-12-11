@@ -8,6 +8,7 @@ import {
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import type {
   BotsPlugin,
+  PartialLiquidationBotV310Contract,
   BotParameters as TBotParameters,
 } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address } from "viem";
@@ -48,30 +49,13 @@ export default class DeleverageService {
   @DI.Inject(DI.Client)
   client!: Client;
 
-  #bots: BotParameters[] = [];
-
-  public async launch(): Promise<void> {
-    if (this.config.liquidationMode !== "deleverage") {
-      return;
-    }
-    const bots =
-      await this.sdk.plugins.bots.findDeployedPartialLiquidationBots();
-    this.#bots = bots.entries().map(([address, bot]) => ({
-      ...bot,
-      address,
-    }));
-    this.log.info(
-      `Found ${this.#bots.length} deployed partial liquidation bots`,
-    );
+  public get bots(): PartialLiquidationBotV310Contract[] {
+    return this.sdk.plugins.bots.bots;
   }
 
-  public get bots(): BotParameters[] {
-    return this.#bots;
-  }
-
-  public get bot(): BotParameters {
+  public get bot(): PartialLiquidationBotV310Contract {
     // TODO: support multiple bots
-    return this.#bots[0];
+    return this.bots[0];
   }
 
   public async filterDeleverageAccounts(

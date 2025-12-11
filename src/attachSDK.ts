@@ -74,7 +74,7 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     // we need prices to calculate things like numsplits
     ignoreUpdateablePrices: false,
     plugins: {
-      bots: new BotsPlugin(false),
+      bots: new BotsPlugin(config.liquidationMode === "deleverage"),
     },
     redstone: {
       historicTimestamp: optimisticTimestamp,
