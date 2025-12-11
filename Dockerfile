@@ -1,4 +1,4 @@
-FROM node:24.12 AS dev
+FROM node:24.11 AS dev
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -13,7 +13,7 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 
 # Production npm modules
 
-FROM node:24.12 AS prod
+FROM node:24.11 AS prod
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
