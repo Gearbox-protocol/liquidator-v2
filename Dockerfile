@@ -1,4 +1,4 @@
-FROM node:22.13 AS dev
+FROM node:24.12 AS dev
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -13,7 +13,7 @@ RUN --mount=type=cache,id=yarn,target=/root/.yarn \
 
 # Production npm modules
 
-FROM node:22.13 AS prod
+FROM node:24.12 AS prod
 
 ENV YARN_CACHE_FOLDER=/root/.yarn
 
@@ -34,7 +34,7 @@ RUN mkdir ${FOUNDRY_DIR} && \
 
 # Final image
 
-FROM gcr.io/distroless/nodejs22-debian12
+FROM gcr.io/distroless/nodejs24-debian12
 ARG PACKAGE_VERSION
 ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
 LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
