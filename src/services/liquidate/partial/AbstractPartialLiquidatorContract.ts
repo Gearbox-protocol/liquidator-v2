@@ -323,8 +323,12 @@ export abstract class AbstractPartialLiquidatorContract
       this.caLogger(ca).debug(`optimal HF is ${hf}`);
       return hf;
     } else if (this.config.liquidationMode === "deleverage") {
-      const { minHealthFactor, maxHealthFactor } = this.deleverage.bot;
-      return BigInt(minHealthFactor + maxHealthFactor) / 2n;
+      const minHealthFactor = BigInt(this.deleverage.bot.minHealthFactor);
+      const maxHealthFactor = BigInt(this.deleverage.bot.maxHealthFactor);
+      const optimalHF = maxHealthFactor - 5n;
+      return optimalHF <= minHealthFactor
+        ? (minHealthFactor + maxHealthFactor) / 2n
+        : optimalHF;
     }
     throw new Error("invalid liquidation mode");
   }

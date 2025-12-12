@@ -158,8 +158,8 @@ __metadata:
   linkType: hard
 
 "@aws-sdk/client-secrets-manager@npm:^3.948.0":
-  version: 3.948.0
-  resolution: "@aws-sdk/client-secrets-manager@npm:3.948.0"
+  version: 3.950.0
+  resolution: "@aws-sdk/client-secrets-manager@npm:3.950.0"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:5.2.0"
     "@aws-crypto/sha256-js": "npm:5.2.0"
@@ -200,7 +200,7 @@ __metadata:
     "@smithy/util-retry": "npm:^4.2.5"
     "@smithy/util-utf8": "npm:^4.2.0"
     tslib: "npm:^2.6.2"
-  checksum: 10c0/8458ee907774665c8ac6c8835b0fe1111e3a98e8a9c2e2770d93e1f4fd27b5fb929fdf2b42ad272ff1bd5d84b4c2ef105b6d862b835f8eb9262b56729366b3c2
+  checksum: 10c0/d904105f8e10dc01480f49cb61bd1c7c0119449127ecfe3dbdb004b0d232383b567f834bcda6ec6814b32dec9308839729337733d0e7d95ce8fd4d7becdfc4aa
   languageName: node
   linkType: hard
 
@@ -1878,20 +1878,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.63.0":
-  version: 5.63.0
-  resolution: "@gearbox-protocol/cli-utils@npm:5.63.0"
+"@gearbox-protocol/cli-utils@npm:^5.63.2":
+  version: 5.63.2
+  resolution: "@gearbox-protocol/cli-utils@npm:5.63.2"
   dependencies:
     "@aws-sdk/client-secrets-manager": "npm:^3.948.0"
     "@aws-sdk/client-ssm": "npm:^3.948.0"
-    "@gearbox-protocol/sdk": "npm:>=11.11.0"
+    "@gearbox-protocol/sdk": "npm:>=11.12.0"
     abitype: "npm:^1.2.1"
     commander: "npm:^14.0.2"
     lodash-es: "npm:^4.17.21"
     viem: "npm:^2.41.2"
     yaml: "npm:^2.8.2"
     zod: "npm:^4.1.13"
-  checksum: 10c0/671561cdd8294ac4f649bf21c35c4a723ac1dd566b965311ad478382582c3939004bbaca2f6c63f0d55783f53313dbcca534511c31a9684bae13d6a5f65cc602
+  checksum: 10c0/f9cd684393108b66703c87ab44cd1748cdc140026007a1933516cd22ebbc80fb681ff889c606b478553a96fa1563b2c33d01e5f24ef8dc4635c658ef054fecef
   languageName: node
   linkType: hard
 
@@ -1903,9 +1903,9 @@ __metadata:
   linkType: hard
 
 "@gearbox-protocol/liquidator-contracts@npm:^1.36.0-experimental.67":
-  version: 1.36.0-experimental.67
-  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.67"
-  checksum: 10c0/aa67a877d040c0fde8844dc98a324f49628f683a143a4ca2e6e911a383853d4b8de01a05746cede2bdf0653d704eecb4ba4987c96c22b19d06658d6da60ed061
+  version: 1.36.0-experimental.68
+  resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.68"
+  checksum: 10c0/a1a9c2f767b1a59ccd51f1a3e2952de805e7947a3ecce2aec0231fc5b8b4f4d6bf216916a18a077a2e0f221bd984a355563f1b0204dd6226d97598e66cf44f59
   languageName: node
   linkType: hard
 
@@ -1926,12 +1926,12 @@ __metadata:
     "@commitlint/cli": "npm:^20.2.0"
     "@commitlint/config-conventional": "npm:^20.2.0"
     "@gearbox-protocol/biome-config": "npm:^1.0.14"
-    "@gearbox-protocol/cli-utils": "npm:^5.63.0"
+    "@gearbox-protocol/cli-utils": "npm:^5.63.2"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/sdk": "npm:11.12.0"
     "@gearbox-protocol/types": "npm:^1.14.8"
-    "@types/node": "npm:^25.0.0"
+    "@types/node": "npm:^25.0.1"
     "@uniswap/sdk-core": "npm:^7.10.0"
     "@uniswap/v3-sdk": "npm:^3.26.0"
     "@vlad-yakovlev/telegram-md": "npm:^2.1.0"
@@ -1956,7 +1956,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:11.12.0":
+"@gearbox-protocol/sdk@npm:11.12.0, @gearbox-protocol/sdk@npm:>=11.12.0":
   version: 11.12.0
   resolution: "@gearbox-protocol/sdk@npm:11.12.0"
   dependencies:
@@ -1976,29 +1976,6 @@ __metadata:
     axios: ^1.0.0
     viem-deal: ^2.0.4
   checksum: 10c0/6c6c900e7f781782f05d764b1bb0a2d5594370514c80028550793a01c69db910979641c82629c88719d1e85f34a2b3370153333ff1e894ff9d0c7ea163ec3fe7
-  languageName: node
-  linkType: hard
-
-"@gearbox-protocol/sdk@npm:>=11.11.0":
-  version: 11.11.0
-  resolution: "@gearbox-protocol/sdk@npm:11.11.0"
-  dependencies:
-    "@gearbox-protocol/integrations-v3": "npm:1.52.1"
-    "@redstone-finance/evm-connector": "npm:^0.9.0"
-    "@redstone-finance/protocol": "npm:^0.9.0"
-    "@redstone-finance/sdk": "npm:^0.9.0"
-    "@types/bn.js": "npm:^5.2.0"
-    abitype: "npm:^1.2.2"
-    bn.js: "npm:^5.2.2"
-    buffer: "npm:^6.0.3"
-    date-fns: "npm:^4.1.0"
-    decimal.js-light: "npm:^2.5.1"
-    viem: "npm:>=2.23.15 <3.0.0"
-    zod: "npm:^4.1.13"
-  peerDependencies:
-    axios: ^1.0.0
-    viem-deal: ^2.0.4
-  checksum: 10c0/8699329facc75b807d385a44f225789f27d7fab7356a52e55c4922642ecbc6f0f672b5d74831342ae3e3ac4860ea31eb2210a3e0ca80f4a1877ab4d88fe63dfe
   languageName: node
   linkType: hard
 
@@ -3028,12 +3005,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^25.0.0":
-  version: 25.0.0
-  resolution: "@types/node@npm:25.0.0"
+"@types/node@npm:*, @types/node@npm:^25.0.1":
+  version: 25.0.1
+  resolution: "@types/node@npm:25.0.1"
   dependencies:
     undici-types: "npm:~7.16.0"
-  checksum: 10c0/5a10d6f873ad326e46fac923ea4305b7fea3de0cf7e11c835d1fdc99d4b4d0f3f108035432ec1732f505c97d367b9abf618ecbdfb02a75a5306665ecce2a81a6
+  checksum: 10c0/1d5ca9f240d0cf8e43d5281c0e6ee96fb22d37dc2e5ef52c6ca71de47957a6128e124990cedf5b14c03d0250737bd78ad370d93bcf1729a75ca4e54384fdd51a
   languageName: node
   linkType: hard
 
@@ -5851,9 +5828,9 @@ __metadata:
   linkType: hard
 
 "strnum@npm:^2.1.0":
-  version: 2.1.1
-  resolution: "strnum@npm:2.1.1"
-  checksum: 10c0/1f9bd1f9b4c68333f25c2b1f498ea529189f060cd50aa59f1876139c994d817056de3ce57c12c970f80568d75df2289725e218bd9e3cdf73cd1a876c9c102733
+  version: 2.1.2
+  resolution: "strnum@npm:2.1.2"
+  checksum: 10c0/4e04753b793540d79cd13b2c3e59e298440477bae2b853ab78d548138385193b37d766d95b63b7046475d68d44fb1fca692f0a3f72b03f4168af076c7b246df9
   languageName: node
   linkType: hard
 
