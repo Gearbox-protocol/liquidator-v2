@@ -12,7 +12,10 @@ import type {
   BotParameters as TBotParameters,
 } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Address } from "viem";
-import type { Config } from "../config/index.js";
+import type {
+  DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
+} from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import { DELEVERAGE_PERMISSIONS } from "../utils/permissions.js";
@@ -41,7 +44,7 @@ export default class DeleverageService {
   log!: ILogger;
 
   @DI.Inject(DI.Config)
-  config!: Config;
+  config!: LiqduiatorConfig<DeleverageLiquidatorSchema>;
 
   @DI.Inject(DI.CreditAccountService)
   caService!: ICreditAccountsService;
@@ -63,7 +66,11 @@ export default class DeleverageService {
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
     if (this.config.optimistic) {
-      return accounts_;
+      if (this.config.useProductionScanner) {
+        this.log.debug(`checking which accounts have deleverage bot enabled`);
+      } else {
+        return accounts_;
+      }
     }
 
     const accounts = accounts_.filter(ca => {

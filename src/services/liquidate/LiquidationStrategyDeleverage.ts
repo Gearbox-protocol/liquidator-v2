@@ -47,6 +47,10 @@ export default class LiquidationStrategyDeleverage
       throw new Error("warning: deleverage is not supported for v300 accounts");
     }
     const result = await super.makeLiquidatable(ca);
+    if (this.config.useProductionScanner) {
+      this.logger.debug("skipping force-enabling deleverage bot");
+      return result;
+    }
     const { creditFacade } = this.sdk.marketRegister.findCreditManager(
       ca.creditManager,
     );

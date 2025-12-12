@@ -84,23 +84,31 @@ export class Scanner {
     if (this.config.liquidationMode === "deleverage") {
       if (this.deleverage.bots.length === 0) {
         this.log.error("no deleverage bots found");
-        // hang indefinitely
+        // will hang indefinitely
         return;
       }
-      // TODO: support multiple bots
-      if (this.config.optimistic) {
+      if (this.config.optimistic && !this.config.useProductionScanner) {
         this.#minHealthFactor = 0n;
         this.#maxHealthFactor = MAX_UINT256;
       } else {
+        // TODO: support multiple bots
         this.#minHealthFactor = WAD;
         this.#maxHealthFactor =
           (BigInt(this.deleverage.bot.minHealthFactor) * WAD) /
           PERCENTAGE_FACTOR;
-        this.log.info(
-          `deleverage bot max health factor is ${this.deleverage.bot.minHealthFactor / 100}%  (${this.#maxHealthFactor})`,
-        );
       }
     }
+
+    this.log.info(
+      {
+        min: this.#minHealthFactor,
+        max:
+          this.#maxHealthFactor === MAX_UINT256
+            ? "MAX_UINT256"
+            : this.#maxHealthFactor,
+      },
+      "final health factor range",
+    );
 
     // we should not pin block during optimistic liquidations
     // because during optimistic liquidations we need to call evm_mine to make redstone work
@@ -268,7 +276,6 @@ export class Scanner {
   async #getExpiredCreditAccounts(
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
-    const timestamp = this.caService.sdk.timestamp;
     const expiredCMs = new AddressSet();
     const expiredCmNames: string[] = [];
 
