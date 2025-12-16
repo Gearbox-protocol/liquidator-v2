@@ -1,4 +1,4 @@
-import { zommandRegistry } from "@gearbox-protocol/cli-utils";
+import { boolLike, zommandRegistry } from "@gearbox-protocol/cli-utils";
 import { z } from "zod/v4";
 import { CommonSchema } from "./common.js";
 
@@ -18,7 +18,7 @@ export const DeleverageLiquidatorSchema = z.object({
    *
    * This mode can be used to test that deleverage bot is able to detect accounts correctly
    */
-  useProductionScanner: z.boolean().default(false).register(zommandRegistry, {
+  useProductionScanner: boolLike().optional().register(zommandRegistry, {
     flags: "--use-production-scanner",
     description:
       "In optimistic mode, use real health factor range to scan for accounts and do not force-enable deleverage bot on accounts",
