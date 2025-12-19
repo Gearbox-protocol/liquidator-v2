@@ -30,7 +30,8 @@ const FACTORIES: IPartialLiqudatorContractFactory[] = [
 ];
 
 export class PartialContractsDeployer extends SDKConstruct {
-  @Logger("Liquidator")
+  @Logger("PartialContractsDeployer")
+  // @ts-expect-error
   logger!: ILogger;
   /**
    * mapping of credit manager address to deployed partial liquidator

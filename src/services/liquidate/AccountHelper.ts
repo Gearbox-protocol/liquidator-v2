@@ -15,10 +15,7 @@ export default abstract class AccountHelper {
     ca: CreditAccountData,
     v: VersionRange,
   ): boolean {
-    return isVersionRange(
-      this.sdk.contracts.mustGet(ca.creditFacade).version,
-      v,
-    );
+    return isVersionRange(this.sdk.mustGetContract(ca.creditFacade).version, v);
   }
 
   /**

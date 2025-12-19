@@ -161,7 +161,7 @@ export default class SingularLiquidator
       try {
         const preview = await s.preview(ca);
         skipOnFailure ||= !!preview.skipOnFailure;
-        pathHuman = this.creditAccountService.sdk.parseMultiCall([
+        pathHuman = this.creditAccountService.sdk.stringifyMultiCall([
           ...preview.calls,
         ]);
         this.logger.debug({ pathHuman }, "path found");
@@ -238,7 +238,7 @@ export default class SingularLiquidator
         result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
         result.calls = strategyResult.preview?.calls as MultiCall[];
         result.pathAmount = strategyResult.preview?.underlyingBalance ?? 0n;
-        result.callsHuman = this.creditAccountService.sdk.parseMultiCall([
+        result.callsHuman = this.creditAccountService.sdk.stringifyMultiCall([
           ...(strategyResult.preview?.calls ?? []),
         ]);
 
