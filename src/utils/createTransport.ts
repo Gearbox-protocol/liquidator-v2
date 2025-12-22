@@ -14,8 +14,10 @@ export function createTransport(
   notifier: INotifier,
 ): Transport {
   return createRevolverTransport(config, {
-    timeout: config.optimistic ? 240_000 : 10_000,
-    retryCount: config.optimistic ? 3 : undefined,
+    defaultHTTPOptions: {
+      timeout: config.optimistic ? 240_000 : 10_000,
+      retryCount: config.optimistic ? 3 : undefined,
+    },
     logger: logger?.child?.({ name: "transport" }),
     onRotateSuccess: (oldT, newT, reason) => {
       notifier.notify(new ProviderRotationSuccessMessage(oldT, newT, reason));
