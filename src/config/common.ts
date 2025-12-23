@@ -194,6 +194,18 @@ export const CommonSchema = z.object({
     env: "OPTIMISTIC",
   }),
   /**
+   * In optimistic mode, use real health factor range to scan for accounts
+   * and do not force-enable deleverage bot on accounts.
+   *
+   * This mode can be used to test that deleverage bot is able to detect accounts correctly
+   */
+  useProductionScanner: boolLike().optional().register(zommandRegistry, {
+    flags: "--use-production-scanner",
+    description:
+      "In optimistic mode, use real health factor range to scan for accounts and do not force-enable deleverage bot on accounts",
+    env: "USE_PRODUCTION_SCANNER",
+  }),
+  /**
    * Optimistic timestamp to pass from external runner, in ms
    */
   optimisticTimestamp: z.coerce

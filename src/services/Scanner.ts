@@ -74,13 +74,20 @@ export class Scanner {
       ? MAX_UINT256 // to discover account with underlying only, whose HF are not affected by zero-let script
       : this.config.hfThreshold;
     this.#minHealthFactor = this.config.optimistic ? 0n : 1n;
-    if (
-      (this.config.optimistic && this.config.liquidationMode === "partial") ||
-      (this.config.liquidationMode === "full" &&
-        this.config.lossPolicy === "only")
-    ) {
-      this.#maxHealthFactor = MAX_UINT256;
+
+    if (this.config.liquidationMode === "full") {
+      if (this.config.optimistic && this.config.useProductionScanner) {
+        this.#minHealthFactor = 1n;
+        this.#maxHealthFactor = this.config.hfThreshold;
+      }
     }
+
+    if (this.config.liquidationMode === "partial") {
+      if (this.config.optimistic) {
+        this.#maxHealthFactor = MAX_UINT256;
+      }
+    }
+
     if (this.config.liquidationMode === "deleverage") {
       if (this.deleverage.bots.length === 0) {
         this.log.error("no deleverage bots found");
