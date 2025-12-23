@@ -13,6 +13,20 @@ export const FullLiquidatorSchema = z.object({
     env: "LIQUIDATION_MODE",
   }),
   /**
+   * Debt policy
+   * full - liquidate fully
+   * debt-only - try to liquidate only debt
+   * debt-expired - try to liquidate only debt for expired accounts
+   */
+  debtPolicy: z
+    .enum(["full", "debt-only", "debt-expired"])
+    .default("full")
+    .register(zommandRegistry, {
+      flags: "--debt-policy <policy>",
+      description: "Liquidate fully/debt only/debt only for expired accounts",
+      env: "DEBT_POLICY",
+    }),
+  /**
    * Whether we should apply loss policy on full liquidation of accounts with bad debt
    */
   lossPolicy: z

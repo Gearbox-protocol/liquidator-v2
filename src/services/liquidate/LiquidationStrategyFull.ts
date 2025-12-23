@@ -169,6 +169,9 @@ export default class LiquidationStrategyFull
       const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
       const ignoreReservePrices = !this.config.updateReservePrices && isV310;
       const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+      const debtOnly =
+        this.config.debtPolicy === "debt-only" ||
+        (this.config.debtPolicy === "debt-expired" && cm.isExpired);
       const { tx, routerCloseResult, calls } =
         await this.creditAccountService.fullyLiquidate({
           account: ca,
@@ -177,8 +180,7 @@ export default class LiquidationStrategyFull
           keepAssets: this.config.keepAssets,
           ignoreReservePrices,
           applyLossPolicy: this.#applyLossPolicy,
-          // TODO: try to liquidate with debt only, then normally as a fallback
-          debtOnly: cm.isExpired,
+          debtOnly,
         });
       return { ...routerCloseResult, calls, rawTx: tx };
     } catch (e) {
