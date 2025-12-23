@@ -179,7 +179,7 @@ export const CommonSchema = z.object({
    */
   liquidationMode: z
     .enum(["full", "partial", "batch", "deleverage"])
-    .optional()
+    .default("full")
     .register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
       description: "Liquidator mode (full/partial/batch/deleverage)",
