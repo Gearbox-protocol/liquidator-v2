@@ -141,6 +141,7 @@ export default class SingularLiquidator
         borrower: ca.owner,
         manager: cm.name,
         hf: ca.healthFactor,
+        isExpired: cm.isExpired,
       },
       "liquidating account",
     );
@@ -207,6 +208,7 @@ export default class SingularLiquidator
         borrower: acc.owner,
         manager: cm.name,
         hf: acc.healthFactor,
+        isExpired: cm.isExpired,
       },
       "liquidating account",
     );
