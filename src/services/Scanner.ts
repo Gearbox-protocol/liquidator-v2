@@ -260,19 +260,18 @@ export class Scanner {
         const badTokens = new AddressSet();
         for (const ca of zeroHFAccs) {
           for (const token of ca.tokens) {
-            if (!token.success) {
+            if (token.balance > 10n) {
               badTokens.add(token.token);
             }
           }
         }
-        this.log.warn(
-          `found ${zeroHFAccs.length} accounts with HF=0 and ${badTokens.size} bad tokens on second attempt skipping them`,
-        );
         const badTokensStr = badTokens
           .asArray()
           .map(t => this.caService.sdk.tokensMeta.get(t)?.symbol ?? t)
           .join(", ");
-        this.log.warn(`bad tokens: ${badTokensStr}`);
+        this.log.warn(
+          `found ${zeroHFAccs.length} accounts with HF=0 and ${badTokens.size} bad tokens: ${badTokensStr}`,
+        );
         this.#notifyOnZeroHFAccounts(zeroHFAccs.length, badTokensStr);
       }
     }
