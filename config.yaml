@@ -1,0 +1,17 @@
+notifications:
+  - type: telegram
+    token: "${TELEGRAM_BOT_TOKEN}"
+    alertsChannel: "${TELEGRAM_ALERTS_CHANNEL}"
+    notificationsChannel: "${TELEGRAM_NOTIFICATIONS_CHANNEL}"
+  - curator: "kpk"
+    type: telegram
+    token: "${TELEGRAM_BOT_TOKEN}"
+    alertsChannel: "${TELEGRAM_ALERTS_CHANNEL}"
+    notificationsChannel: "${TELEGRAM_NOTIFICATIONS_CHANNEL}"
+    prefix: "[KPK]"
+  - curator: "Invariant Group"
+    type: telegram
+    token: "${TELEGRAM_BOT_TOKEN}"
+    alertsChannel: "${TELEGRAM_ALERTS_CHANNEL}"
+    notificationsChannel: "${TELEGRAM_NOTIFICATIONS_CHANNEL}"
+    prefix: "[Invariant Group]"

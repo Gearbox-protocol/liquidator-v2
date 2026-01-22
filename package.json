@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rm -rf build",
     "build": "node esbuild.config.mjs",
-    "start": "tsx --env-file .env src/index.ts | pino-pretty --colorize",
+    "start": "tsx --env-file .env src/index.ts --config config.yaml | pino-pretty --colorize",
     "prepare": "husky",
     "check": "biome check --write",
     "check:ci": "biome check",
