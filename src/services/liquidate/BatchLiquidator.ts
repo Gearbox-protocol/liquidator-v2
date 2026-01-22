@@ -23,9 +23,9 @@ import type { Address, TransactionReceipt } from "viem";
 import { encodeFunctionData, parseEventLogs } from "viem";
 import type { BatchLiquidatorSchema } from "../../config/index.js";
 import {
-  BatchLiquidationErrorMessage,
-  BatchLiquidationFinishedMessage,
-} from "../notifier/messages.js";
+  BatchLiquidationErrorNotification,
+  BatchLiquidationFinishedNotification,
+} from "../notifier/index.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
 import type { ILiquidatorService } from "./types.js";
 import type {
@@ -77,13 +77,17 @@ export default class BatchLiquidator
           batches.length,
         );
         this.notifier.notify(
-          new BatchLiquidationFinishedMessage(receipt, results),
+          new BatchLiquidationFinishedNotification(this.sdk, receipt, results),
         );
       } catch (e) {
         const decoded = await this.errorHandler.explain(e);
         this.logger.error(`cant liquidate: ${decoded.shortMessage}`);
         this.notifier.notify(
-          new BatchLiquidationErrorMessage(batch, decoded.shortMessage),
+          new BatchLiquidationErrorNotification(
+            this.sdk,
+            batch,
+            decoded.shortMessage,
+          ),
         );
       }
     }

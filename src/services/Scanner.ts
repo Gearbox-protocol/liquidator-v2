@@ -1,3 +1,4 @@
+import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type {
   CreditAccountData,
   GetCreditAccountsOptions,
@@ -20,7 +21,7 @@ import { type ILogger, Logger } from "../log/index.js";
 import type Client from "./Client.js";
 import type DeleverageService from "./DeleverageService.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
-import { type INotifier, ZeroHFAccountsMessage } from "./notifier/index.js";
+import { ZeroHFAccountsNotification } from "./notifier/ZeroHFAccountsNotification.js";
 
 const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
   Mainnet:
@@ -50,7 +51,7 @@ export class Scanner {
   deleverage!: DeleverageService;
 
   @DI.Inject(DI.Notifier)
-  notifier!: INotifier;
+  notifier!: INotificationService;
 
   #processing: bigint | null = null;
   #restakingCMAddr?: Address;
@@ -59,7 +60,6 @@ export class Scanner {
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
   #unwatch?: () => void;
-  #lastZeroHFNotification = 0;
   #liquidatableAccounts = 0;
 
   public async launch(): Promise<void> {
@@ -265,14 +265,13 @@ export class Scanner {
             }
           }
         }
-        const badTokensStr = badTokens
-          .asArray()
-          .map(t => this.caService.sdk.tokensMeta.get(t)?.symbol ?? t)
-          .join(", ");
-        this.log.warn(
-          `found ${zeroHFAccs.length} accounts with HF=0 and ${badTokens.size} bad tokens: ${badTokensStr}`,
+        this.notifier.alert(
+          new ZeroHFAccountsNotification(
+            this.caService.sdk,
+            zeroHFAccs.length,
+            badTokens,
+          ),
         );
-        this.#notifyOnZeroHFAccounts(zeroHFAccs.length, badTokensStr);
       }
     }
 
@@ -422,16 +421,6 @@ export class Scanner {
           hexEq(t.token, "0x1b10E2270780858923cdBbC9B5423e29fffD1A44"),
         ),
     );
-  }
-
-  #notifyOnZeroHFAccounts(count: number, badTokens: string): void {
-    const now = Date.now();
-    if (now - this.#lastZeroHFNotification < 1000 * 60 * 5) {
-      return;
-    }
-    this.#lastZeroHFNotification = now;
-    this.log.debug("notifying on zero HF accounts");
-    this.notifier.alert(new ZeroHFAccountsMessage(count, badTokens));
   }
 
   public get lastUpdated(): bigint {

@@ -1,17 +1,19 @@
-import { createRevolverTransport } from "@gearbox-protocol/cli-utils";
+import {
+  createRevolverTransport,
+  type INotificationService,
+} from "@gearbox-protocol/cli-utils";
 import type { ILogger } from "@gearbox-protocol/sdk";
 import type { Transport } from "viem";
 import type { CommonSchema } from "../config/common.js";
 import {
-  type INotifier,
-  ProviderRotationErrorMessage,
-  ProviderRotationSuccessMessage,
+  ProviderRotationErrorNotification,
+  ProviderRotationSuccessNotification,
 } from "../services/notifier/index.js";
 
 export function createTransport(
   config: CommonSchema,
   logger: ILogger,
-  notifier: INotifier,
+  notifier: INotificationService,
 ): Transport {
   return createRevolverTransport(config, {
     defaultHTTPOptions: {
@@ -20,10 +22,12 @@ export function createTransport(
     },
     logger: logger?.child?.({ name: "transport" }),
     onRotateSuccess: (oldT, newT, reason) => {
-      notifier.notify(new ProviderRotationSuccessMessage(oldT, newT, reason));
+      notifier.notify(
+        new ProviderRotationSuccessNotification(oldT, newT, reason),
+      );
     },
     onRotateFailed: (oldT, reason) => {
-      notifier.alert(new ProviderRotationErrorMessage(oldT, reason));
+      notifier.alert(new ProviderRotationErrorNotification(oldT, reason));
     },
     selectionStrategy: "ordered",
   });

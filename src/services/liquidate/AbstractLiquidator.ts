@@ -1,3 +1,4 @@
+import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type {
   CreditAccountData,
   GearboxSDK,
@@ -6,14 +7,13 @@ import type {
 import { filterDustUSD } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import { type Address, erc20Abi } from "viem";
-
 import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";
 import { Logger } from "../../log/index.js";
 import type Client from "../Client.js";
-import { type INotifier, StartedMessage } from "../notifier/index.js";
+import { ServiceStartedNotification } from "../notifier/index.js";
 import type { IOptimisticOutputWriter } from "../output/index.js";
 import type { ISwapper } from "../swap/index.js";
 import AccountHelper from "./AccountHelper.js";
@@ -34,7 +34,7 @@ export default abstract class AbstractLiquidator<
   creditAccountService!: ICreditAccountsService;
 
   @DI.Inject(DI.Notifier)
-  notifier!: INotifier;
+  notifier!: INotificationService;
 
   @DI.Inject(DI.Config)
   config!: LiqduiatorConfig<TConfig>;
@@ -58,7 +58,7 @@ export default abstract class AbstractLiquidator<
   public async launch(asFallback?: boolean): Promise<void> {
     this.#errorHandler = new ErrorHandler(this.config, this.logger);
     if (!asFallback) {
-      this.notifier.notify(new StartedMessage());
+      this.notifier.notify(new ServiceStartedNotification());
     }
   }
 

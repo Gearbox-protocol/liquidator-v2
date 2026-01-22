@@ -1,5 +1,5 @@
 import { nextTick } from "node:process";
-
+import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type {
   AnvilClient,
@@ -32,15 +32,13 @@ import {
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { errorAbis } from "../errors/abis.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type { StatusCode } from "../utils/index.js";
-import type { INotifier } from "./notifier/index.js";
-import { LowBalanceMessage } from "./notifier/index.js";
+import { LowBalanceNotification } from "./notifier/index.js";
 
 const GAS_X = 5000n;
 
@@ -50,7 +48,7 @@ export default class Client {
   config!: Config;
 
   @DI.Inject(DI.Notifier)
-  notifier!: INotifier;
+  notifier!: INotificationService;
 
   @DI.Inject(DI.Transport)
   transport!: Transport<"revolver", RevolverTransportValue>;
@@ -270,7 +268,12 @@ export default class Client {
     this.logger.debug(`liquidator balance is ${formatEther(balance)}`);
     if (balance < this.config.minBalance) {
       this.notifier.alert(
-        new LowBalanceMessage(this.address, balance, this.config.minBalance),
+        new LowBalanceNotification(
+          this.config.network,
+          this.address,
+          balance,
+          this.config.minBalance,
+        ),
       );
     }
   }

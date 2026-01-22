@@ -10,6 +10,7 @@ import {
 import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
+import { NotificationsConfig } from "./notifications.js";
 
 export const CommonSchema = z.object({
   ...ProvidersSchema.shape,
@@ -399,55 +400,9 @@ export const CommonSchema = z.object({
   }),
 
   /**
-   * Telegram bot token used to send notifications
+   * Notifications, global and per-curator
    */
-  telegramBotToken: z
-    .string()
-    .transform(CensoredString.transform)
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--telegram-bot-token <token>",
-      description: "Telegram bot token used to send notifications",
-      env: "TELEGRAM_BOT_TOKEN",
-    }),
-  /**
-   * Telegram channel where bot will post critical notifications
-   */
-  telegramAlertsChannel: z
-    .string()
-    .startsWith("-")
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--telegram-alerts-channel <channel>",
-      description:
-        "Telegram channel where bot will post critical notifications",
-      env: "TELEGRAM_ALERTS_CHANNEL",
-    }),
-  /**
-   * Telegram channel where bot will post non-critical notifications
-   */
-  telegramNotificationsChannel: z
-    .string()
-    .startsWith("-")
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--telegram-notifications-channel <channel>",
-      description:
-        "Telegram channel where bot will post non-critical notifications",
-      env: "TELEGRAM_NOTIFICATIONS_CHANNEL",
-    }),
-  /**
-   * Notification cooldown in minutes
-   */
-  notificationCooldown: z.coerce
-    .number()
-    .nonnegative()
-    .default(4 * 60)
-    .register(zommandRegistry, {
-      flags: "--notification-cooldown <cooldown>",
-      description: "Notification cooldown in minutes",
-      env: "NOTIFICATION_COOLDOWN",
-    }),
+  ...NotificationsConfig.shape,
 });
 
 export type CommonSchema = z.infer<typeof CommonSchema>;

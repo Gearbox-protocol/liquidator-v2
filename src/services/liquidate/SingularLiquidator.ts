@@ -15,9 +15,9 @@ import type {
 import { TransactionRevertedError } from "../../errors/index.js";
 import { LoggerFactory } from "../../log/index.js";
 import {
-  LiquidationErrorMessage,
-  LiquidationStartMessage,
-  LiquidationSuccessMessage,
+  LiquidationErrorNotification,
+  LiquidationStartNotification,
+  LiquidationSuccessNotification,
 } from "../notifier/index.js";
 import AbstractLiquidator, {
   type ExecutorBalance,
@@ -103,8 +103,6 @@ export default class SingularLiquidator
       LoggerFactory.setLogContext({ account: ca.creditAccount });
       await this.#liquidateOne(ca);
       LoggerFactory.clearLogContext();
-      // success or no, silence the notifier for this account for a while
-      this.notifier.setCooldown(ca.creditAccount.toLowerCase());
     }
   }
 
@@ -152,7 +150,7 @@ export default class SingularLiquidator
     let pathHuman: string[] | undefined;
     let skipOnFailure = false;
 
-    this.notifier.notify(new LiquidationStartMessage(ca));
+    this.notifier.notify(new LiquidationStartNotification(this.sdk, ca));
 
     for (const s of this.#strategies) {
       if (!s.isApplicable(ca)) {
@@ -171,7 +169,13 @@ export default class SingularLiquidator
         const receipt = await this.client.liquidate(request);
         if (receipt.status === "success") {
           this.notifier.alert(
-            new LiquidationSuccessMessage(ca, s.name, receipt, pathHuman),
+            new LiquidationSuccessNotification(
+              this.sdk,
+              ca,
+              receipt,
+              s.name,
+              pathHuman,
+            ),
           );
           return;
         } else {
@@ -183,7 +187,8 @@ export default class SingularLiquidator
           `cant liquidate with ${s.name}: ${decoded.shortMessage}`,
         );
         this.notifier.alert(
-          new LiquidationErrorMessage(
+          new LiquidationErrorNotification(
+            this.sdk,
             ca,
             s.name,
             decoded.shortMessage,
