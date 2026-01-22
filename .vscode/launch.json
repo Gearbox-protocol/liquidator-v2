@@ -9,6 +9,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/index.ts",
+      "args": ["--config", "${workspaceFolder}/config.yaml"],
       "envFile": "${workspaceFolder}/.env",
       "runtimeExecutable": "tsx",
       // "console": "integratedTerminal",
