@@ -12,13 +12,16 @@ const extendedOptions = NotificationConfig.options.map(o =>
 );
 
 export const NotificationsConfig = z.object({
-  notifications: z.array(
-    z.discriminatedUnion(
-      NotificationConfig.def.discriminator,
-      extendedOptions as [
-        (typeof extendedOptions)[0],
-        ...(typeof extendedOptions)[number][],
-      ],
-    ),
-  ),
+  notifications: z
+    .array(
+      z.discriminatedUnion(
+        NotificationConfig.def.discriminator,
+        extendedOptions as [
+          (typeof extendedOptions)[0],
+          ...(typeof extendedOptions)[number][],
+        ],
+      ),
+    )
+    .optional()
+    .default([]),
 });
