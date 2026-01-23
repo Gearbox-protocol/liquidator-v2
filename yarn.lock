@@ -875,18 +875,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@biomejs/biome@npm:^2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/biome@npm:2.3.11"
+"@biomejs/biome@npm:^2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/biome@npm:2.3.12"
   dependencies:
-    "@biomejs/cli-darwin-arm64": "npm:2.3.11"
-    "@biomejs/cli-darwin-x64": "npm:2.3.11"
-    "@biomejs/cli-linux-arm64": "npm:2.3.11"
-    "@biomejs/cli-linux-arm64-musl": "npm:2.3.11"
-    "@biomejs/cli-linux-x64": "npm:2.3.11"
-    "@biomejs/cli-linux-x64-musl": "npm:2.3.11"
-    "@biomejs/cli-win32-arm64": "npm:2.3.11"
-    "@biomejs/cli-win32-x64": "npm:2.3.11"
+    "@biomejs/cli-darwin-arm64": "npm:2.3.12"
+    "@biomejs/cli-darwin-x64": "npm:2.3.12"
+    "@biomejs/cli-linux-arm64": "npm:2.3.12"
+    "@biomejs/cli-linux-arm64-musl": "npm:2.3.12"
+    "@biomejs/cli-linux-x64": "npm:2.3.12"
+    "@biomejs/cli-linux-x64-musl": "npm:2.3.12"
+    "@biomejs/cli-win32-arm64": "npm:2.3.12"
+    "@biomejs/cli-win32-x64": "npm:2.3.12"
   dependenciesMeta:
     "@biomejs/cli-darwin-arm64":
       optional: true
@@ -906,62 +906,62 @@ __metadata:
       optional: true
   bin:
     biome: bin/biome
-  checksum: 10c0/b9764070c3d1583466a8861d37dc480c18103f7bb52115db0f265a38e6343d69792c9beea094e0b3db0905cb365b9a82ad2a0f3f05b7f04873a8f9b444263140
+  checksum: 10c0/8def8c21ec08cf3739b2f07b0ad2e8234f1673fd0af5abe6d2663944487ac8a8af427c1386cbeff97b2206e237e413c36f1c8003a4f2add83eba10c78a6986d8
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-arm64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-darwin-arm64@npm:2.3.11"
+"@biomejs/cli-darwin-arm64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-darwin-arm64@npm:2.3.12"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-x64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-darwin-x64@npm:2.3.11"
+"@biomejs/cli-darwin-x64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-darwin-x64@npm:2.3.12"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64-musl@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-linux-arm64-musl@npm:2.3.11"
+"@biomejs/cli-linux-arm64-musl@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-linux-arm64-musl@npm:2.3.12"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-linux-arm64@npm:2.3.11"
+"@biomejs/cli-linux-arm64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-linux-arm64@npm:2.3.12"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64-musl@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-linux-x64-musl@npm:2.3.11"
+"@biomejs/cli-linux-x64-musl@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-linux-x64-musl@npm:2.3.12"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-linux-x64@npm:2.3.11"
+"@biomejs/cli-linux-x64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-linux-x64@npm:2.3.12"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-arm64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-win32-arm64@npm:2.3.11"
+"@biomejs/cli-win32-arm64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-win32-arm64@npm:2.3.12"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-x64@npm:2.3.11":
-  version: 2.3.11
-  resolution: "@biomejs/cli-win32-x64@npm:2.3.11"
+"@biomejs/cli-win32-x64@npm:2.3.12":
+  version: 2.3.12
+  resolution: "@biomejs/cli-win32-x64@npm:2.3.12"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -1771,18 +1771,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/biome-config@npm:^1.0.17":
-  version: 1.0.17
-  resolution: "@gearbox-protocol/biome-config@npm:1.0.17"
+"@gearbox-protocol/biome-config@npm:^1.0.18":
+  version: 1.0.18
+  resolution: "@gearbox-protocol/biome-config@npm:1.0.18"
   peerDependencies:
-    "@biomejs/biome": ^2.3.11
-  checksum: 10c0/3b217285b9887d8b636f4557b7b9d6e374fa11790219b1f6fdf2c5c153fbfe7cb6ed0dfcf3539aca314a577cf6ce6adfafdd31fc9c962acc9ae2e4d8091c81be
+    "@biomejs/biome": ^2.3.12
+  checksum: 10c0/17d275696c1a13ba9cc0388e7f05166f35aff66aa9b5219e48bd34967468d2c84c8ccc2d2fdd1e4680b3f56b64a715f5428eab31a8a53fb0a338c9f56bf156b5
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.68.3":
-  version: 5.68.3
-  resolution: "@gearbox-protocol/cli-utils@npm:5.68.3"
+"@gearbox-protocol/cli-utils@npm:^5.69.0":
+  version: 5.69.0
+  resolution: "@gearbox-protocol/cli-utils@npm:5.69.0"
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.971.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.971.0"
@@ -1797,7 +1797,7 @@ __metadata:
     viem: "npm:^2.44.4"
     yaml: "npm:^2.8.2"
     zod: "npm:^4.3.5"
-  checksum: 10c0/8dd1d00ae7e993efc0af65e107b558089eaea263f19fb43bc462339edb9c6f519f1ebb44ba235cbc72882aad33e014bb4de4b00c27eab9a5de398115244398d1
+  checksum: 10c0/10cd245bdf781903e4ef6b782e1e2d17a439a9f19bb87bd73759bccc68d7b39e9761c2ad53c6fb690a89a5af5041bfa5bd5ed5d8d243d6b26b08e68390d1bb77
   languageName: node
   linkType: hard
 
@@ -1827,12 +1827,12 @@ __metadata:
   resolution: "@gearbox-protocol/liquidator-v2@workspace:."
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.974.0"
-    "@biomejs/biome": "npm:^2.3.11"
+    "@biomejs/biome": "npm:^2.3.12"
     "@commander-js/extra-typings": "npm:^14.0.0"
     "@commitlint/cli": "npm:^20.3.1"
     "@commitlint/config-conventional": "npm:^20.3.1"
-    "@gearbox-protocol/biome-config": "npm:^1.0.17"
-    "@gearbox-protocol/cli-utils": "npm:^5.68.3"
+    "@gearbox-protocol/biome-config": "npm:^1.0.18"
+    "@gearbox-protocol/cli-utils": "npm:^5.69.0"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
     "@gearbox-protocol/sdk": "npm:12.5.3"
