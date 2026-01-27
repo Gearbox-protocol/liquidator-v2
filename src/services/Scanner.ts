@@ -281,6 +281,7 @@ export class Scanner {
   async #getExpiredCreditAccounts(
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
+    this.log.debug("getting expired credit accounts");
     const expiredCMs = new AddressSet();
     const expiredCmNames: string[] = [];
 
@@ -302,8 +303,13 @@ export class Scanner {
     }
 
     if (expiredCMs.size === 0) {
+      this.log.debug("no expired credit managers found");
       return [];
     }
+
+    this.log.debug(
+      `found ${expiredCMs.size} expired credit managers: ${expiredCmNames.join(", ")}`,
+    );
 
     let result: CreditAccountData[] = [];
     if (this.config.optimistic) {
