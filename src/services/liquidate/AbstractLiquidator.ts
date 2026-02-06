@@ -15,7 +15,6 @@ import { Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import { ServiceStartedNotification } from "../notifier/index.js";
 import type { IOptimisticOutputWriter } from "../output/index.js";
-import type { ISwapper } from "../swap/index.js";
 import AccountHelper from "./AccountHelper.js";
 import type { OptimisticResults } from "./OptimisiticResults.js";
 
@@ -41,9 +40,6 @@ export default abstract class AbstractLiquidator<
 
   @DI.Inject(DI.Output)
   outputWriter!: IOptimisticOutputWriter;
-
-  @DI.Inject(DI.Swapper)
-  swapper!: ISwapper;
 
   @DI.Inject(DI.OptimisticResults)
   optimistic!: OptimisticResults;
@@ -86,19 +82,15 @@ export default abstract class AbstractLiquidator<
   protected async getExecutorBalance(
     underlyingToken: Address,
   ): Promise<ExecutorBalance> {
-    // TODO: is this needed?
-    const isWeth = this.sdk.tokensMeta.symbol(underlyingToken) === "WETH";
     const eth = await this.client.pub.getBalance({
       address: this.client.address,
     });
-    const underlying = isWeth
-      ? eth
-      : await this.client.pub.readContract({
-          address: underlyingToken,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [this.client.address],
-        });
+    const underlying = await this.client.pub.readContract({
+      address: underlyingToken,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [this.client.address],
+    });
     return { eth, underlying };
   }
 

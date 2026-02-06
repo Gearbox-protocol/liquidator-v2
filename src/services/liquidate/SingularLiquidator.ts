@@ -337,10 +337,6 @@ export default class SingularLiquidator
         );
       }
       result.state = ca;
-      // await this.swapper.swap(
-      //   acc.underlying,
-      //   balanceBefore.underlying + result.liquidatorPremium,
-      // );
       result.balancesAfter = await this.getExecutorBalance(acc.underlying);
     } catch (e) {
       logger.error(e, "strategy failed");

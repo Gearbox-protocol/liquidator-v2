@@ -322,27 +322,6 @@ export const CommonSchema = z.object({
     description: "List of assets to keep on account after liquidation",
     env: "KEEP_ASSETS",
   }),
-  /**
-   * Use this mechanism to swap underlying token to ETH after the liquidation (abandoned feature)
-   */
-  swapToEth: z.enum(["1inch", "uniswap"]).optional().register(zommandRegistry, {
-    flags: "--swap-to-eth <mode>",
-    description:
-      "Use this mechanism to swap underlying token to ETH after the liquidation (abandoned feature)",
-    env: "SWAP_TO_ETH",
-  }),
-  /**
-   * 1inch api key for swapper
-   */
-  oneInchApiKey: z
-    .string()
-    .transform(CensoredString.transform)
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--one-inch-api-key <key>",
-      description: "1inch API key for swapper",
-      env: "ONE_INCH_API_KEY",
-    }),
 
   /**
    * Directory to save json with optimistic liquidation results

@@ -12,7 +12,6 @@ const Injectables = {
   OptimisticResults: "OptimisticResults",
   Output: "Output",
   Scanner: "Scanner",
-  Swapper: "Swapper",
   Transport: "Transport",
   Deleverage: "Deleverage",
 } as const;
@@ -33,7 +32,6 @@ export const DI = Object.assign(
     Output: [];
     Redstone: [];
     Scanner: [];
-    Swapper: [];
     Transport: [];
     Deleverage: [];
   }>(),

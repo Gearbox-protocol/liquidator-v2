@@ -9,7 +9,6 @@ import type DeleverageService from "./services/DeleverageService.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
 import type { Scanner } from "./services/Scanner.js";
-import type { ISwapper } from "./services/swap/index.js";
 
 export default class Liquidator {
   @Logger("App")
@@ -36,16 +35,12 @@ export default class Liquidator {
   @DI.Inject(DI.Output)
   outputWriter!: IOptimisticOutputWriter;
 
-  @DI.Inject(DI.Swapper)
-  swapper!: ISwapper;
-
   #staleBlockInterval?: NodeJS.Timeout;
 
   public async launch(): Promise<void> {
     await this.client.launch();
 
     this.healthChecker.launch();
-    await this.swapper.launch(this.config.network);
     await this.scanner.launch();
 
     if (this.config.optimistic) {
