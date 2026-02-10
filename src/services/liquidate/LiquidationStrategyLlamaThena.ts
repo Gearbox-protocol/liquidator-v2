@@ -56,7 +56,7 @@ export default class LiquidationStrategyLlamaThena
   @Logger("LlamaThenaStrategy")
   logger!: ILogger;
 
-  public readonly name = "LlamaThena";
+  public readonly name = "llamathena";
 
   #liquidator: Address | undefined;
 
@@ -65,7 +65,7 @@ export default class LiquidationStrategyLlamaThena
     const { address } = await deployer.ensureExists({
       abi: LlamaThenaLiquidatorJson.abi,
       bytecode: LlamaThenaLiquidatorJson.bytecode.object as Hex,
-      args: [AAVE_V3_LENDING_POOL.Mainnet],
+      args: [this.owner, AAVE_V3_LENDING_POOL.Mainnet],
     });
     this.#liquidator = address;
     this.logger.info(`LlamaThena legacy liquidator deployed at ${address}`);
@@ -161,5 +161,9 @@ export default class LiquidationStrategyLlamaThena
 
   protected get sdk(): GearboxSDK {
     return this.creditAccountService.sdk;
+  }
+
+  protected get owner(): Address {
+    return this.client.wallet.account.address;
   }
 }
