@@ -8,12 +8,7 @@ import {
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { Address } from "@gearbox-protocol/types/optimist";
 import type { Hex, SimulateContractReturnType } from "viem";
-import {
-  type Chain,
-  encodeFunctionData,
-  type PrivateKeyAccount,
-  type Transport,
-} from "viem";
+import { encodeFunctionData } from "viem";
 import type {
   FullLiquidatorSchema,
   LiqduiatorConfig,
@@ -62,16 +57,11 @@ export default class LiquidationStrategyLlamaThena
 
   public readonly name = "LlamaThena";
 
-  #deployer: Create2Deployer<Transport, Chain, PrivateKeyAccount>;
   #liquidator: Address | undefined;
 
-  constructor() {
-    super();
-    this.#deployer = new Create2Deployer(this.sdk, this.client.wallet);
-  }
-
   public async launch(): Promise<void> {
-    const { address } = await this.#deployer.ensureExists({
+    const deployer = new Create2Deployer(this.sdk, this.client.wallet);
+    const { address } = await deployer.ensureExists({
       abi: LlamaThenaLiquidatorJson.abi,
       bytecode: LlamaThenaLiquidatorJson.bytecode.object as Hex,
       args: [AAVE_V3_LENDING_POOL.Mainnet],
