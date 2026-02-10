@@ -37,6 +37,7 @@ const LLAMATHENA_TOKENS_MAINNET = new AddressSet([
   "0x72eD19788Bce2971A5ed6401662230ee57e254B7", // stkcvxllamathena
   "0x237926E55f9deee89833a42dEb92d3a6970850B4", // cvxllamathena
   "0xd29f8980852c2c76fC3f6E96a7Aa06E0BedCC1B1", // llamathena
+  "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497", // sUSDe
 ]);
 
 export default class LiquidationStrategyLlamaThena
