@@ -24,6 +24,7 @@ import AbstractLiquidator, {
 } from "./AbstractLiquidator.js";
 import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
+import LiquidationStrategyLlamaThena from "./LiquidationStrategyLlamaThena.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
 import type {
   ILiquidationStrategy,
@@ -54,6 +55,9 @@ export default class SingularLiquidator
     switch (liquidationMode) {
       case "full": {
         const cfg = this.config as unknown as FullLiquidatorSchema;
+        if (cfg.llamathenaWorkaround && cfg.network === "Mainnet") {
+          add(new LiquidationStrategyLlamaThena());
+        }
         switch (cfg.lossPolicy) {
           case "only":
             add(new LiquidationStrategyFull("loss policy", true));
