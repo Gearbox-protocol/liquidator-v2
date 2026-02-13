@@ -281,7 +281,10 @@ export class Scanner {
   async #getExpiredCreditAccounts(
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
-    this.log.debug("getting expired credit accounts");
+    this.log.debug(
+      { timestamp: this.caService.sdk.timestamp },
+      "getting expired credit accounts",
+    );
     const expiredCMs = new AddressSet();
     const expiredCmNames: string[] = [];
 
