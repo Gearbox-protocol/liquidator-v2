@@ -325,7 +325,7 @@ export abstract class AbstractPartialLiquidatorContract
     } else if (this.config.liquidationMode === "deleverage") {
       const minHealthFactor = BigInt(this.deleverage.bot.minHealthFactor);
       const maxHealthFactor = BigInt(this.deleverage.bot.maxHealthFactor);
-      const optimalHF = maxHealthFactor - 5n;
+      const optimalHF = maxHealthFactor - 100n;
       return optimalHF <= minHealthFactor
         ? (minHealthFactor + maxHealthFactor) / 2n
         : optimalHF;
