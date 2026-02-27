@@ -188,7 +188,7 @@ export class Scanner {
           !this.config.updateReservePrices,
       };
       accounts = await this.#getAllCreditAccounts(queue, blockNumber);
-      if (accounts.length === 0) {
+      if (accounts.length === 0 && this.config.liquidationMode === "full") {
         accounts = await this.#getExpiredCreditAccounts(blockNumber);
       }
     }
