@@ -256,21 +256,8 @@ export class Scanner {
 
       if (zeroHFAccs.length > 0) {
         accounts = accounts.filter(ca => ca.healthFactor !== 0n);
-
-        const badTokens = new AddressSet();
-        for (const ca of zeroHFAccs) {
-          for (const token of ca.tokens) {
-            if (token.balance > 10n) {
-              badTokens.add(token.token);
-            }
-          }
-        }
         this.notifier.alert(
-          new ZeroHFAccountsNotification(
-            this.caService.sdk,
-            zeroHFAccs.length,
-            badTokens,
-          ),
+          new ZeroHFAccountsNotification(this.caService.sdk, zeroHFAccs),
         );
       }
     }
