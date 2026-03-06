@@ -12,6 +12,8 @@ import {
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 
+const MAX_ACCS = 3;
+
 export class ZeroHFAccountsNotification
   extends SDKConstruct
   implements INotification
@@ -23,6 +25,7 @@ export class ZeroHFAccountsNotification
   readonly #dedupeKey: string;
   readonly #failedPools: string;
   readonly #blockNumber: bigint;
+  readonly #accounts: Address[];
 
   constructor(
     sdk: GearboxSDK,
@@ -65,6 +68,8 @@ export class ZeroHFAccountsNotification
       .asArray()
       .map(p => this.sdk.labelAddress(p))
       .join(", ");
+
+    this.#accounts = accounts.map(ca => ca.creditAccount);
     this.#failedTokensStr =
       failedTokens.size > 0 ? `, failed tokens: ${this.#failedTokensStr}` : "";
     this.#dedupeKey = crypto
@@ -87,10 +92,30 @@ export class ZeroHFAccountsNotification
   }
 
   get #plain(): string {
-    return `[${this.networkType}][block ${this.#blockNumber}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    const accountsStr =
+      this.#accounts.length <= MAX_ACCS
+        ? this.#accounts.join(", ")
+        : [
+            ...this.#accounts.slice(0, MAX_ACCS),
+            `and ${this.#accounts.length - MAX_ACCS} more...`,
+          ].join(", ");
+    return `[${this.networkType}][block ${this.#blockNumber}] found ${this.#failedCount} failed accounts (${this.#accounts} with HF=0): ${accountsStr} — pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 
   get #markdown(): Markdown {
-    return md`[${this.networkType}][block ${this.#blockNumber}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    const accountsMd =
+      this.#accounts.length <= MAX_ACCS
+        ? md.join(
+            this.#accounts.map(a => md.inlineCode(a)),
+            ", ",
+          )
+        : md.join(
+            [
+              ...this.#accounts.slice(0, MAX_ACCS).map(a => md.inlineCode(a)),
+              md`and ${this.#accounts.length - MAX_ACCS} more...`,
+            ],
+            ",",
+          );
+    return md`[${this.networkType}][block ${md.inlineCode(this.#blockNumber.toString(10))}] found ${this.#failedCount} failed accounts (${this.#accountsCount} with HF=0): ${accountsMd} — pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 }
