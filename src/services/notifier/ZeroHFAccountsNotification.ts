@@ -22,11 +22,17 @@ export class ZeroHFAccountsNotification
   readonly #failedTokensStr: string;
   readonly #dedupeKey: string;
   readonly #failedPools: string;
+  readonly #blockNumber: bigint;
 
-  constructor(sdk: GearboxSDK, accounts: CreditAccountData[]) {
+  constructor(
+    sdk: GearboxSDK,
+    accounts: CreditAccountData[],
+    blockNumber?: bigint,
+  ) {
     super(sdk);
     this.#accountsCount = accounts.length;
     this.#failedCount = accounts.filter(ca => !ca.success).length;
+    this.#blockNumber = blockNumber ?? sdk.currentBlock;
 
     const badTokens = new AddressSet();
     const failedTokens = new AddressSet();
@@ -81,10 +87,10 @@ export class ZeroHFAccountsNotification
   }
 
   get #plain(): string {
-    return `[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    return `[${this.networkType}][block ${this.#blockNumber}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 
   get #markdown(): Markdown {
-    return md`[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    return md`[${this.networkType}][block ${this.#blockNumber}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 }

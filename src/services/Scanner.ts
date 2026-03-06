@@ -257,7 +257,11 @@ export class Scanner {
       if (zeroHFAccs.length > 0) {
         accounts = accounts.filter(ca => ca.healthFactor !== 0n);
         this.notifier.alert(
-          new ZeroHFAccountsNotification(this.caService.sdk, zeroHFAccs),
+          new ZeroHFAccountsNotification(
+            this.caService.sdk,
+            zeroHFAccs,
+            blockNumber,
+          ),
         );
       }
     }
