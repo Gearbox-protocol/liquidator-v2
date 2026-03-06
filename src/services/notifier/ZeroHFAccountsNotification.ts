@@ -21,6 +21,7 @@ export class ZeroHFAccountsNotification
   readonly #badTokensStr: string;
   readonly #failedTokensStr: string;
   readonly #dedupeKey: string;
+  readonly #failedPools: string;
 
   constructor(sdk: GearboxSDK, accounts: CreditAccountData[]) {
     super(sdk);
@@ -29,6 +30,7 @@ export class ZeroHFAccountsNotification
 
     const badTokens = new AddressSet();
     const failedTokens = new AddressSet();
+    const pools = new AddressSet();
 
     for (const ca of accounts) {
       for (const token of ca.tokens) {
@@ -39,6 +41,10 @@ export class ZeroHFAccountsNotification
           failedTokens.add(token.token);
         }
       }
+      pools.add(
+        this.sdk.marketRegister.findByCreditManager(ca.creditManager).pool.pool
+          .address,
+      );
     }
 
     this.#badTokensStr = badTokens
@@ -48,6 +54,10 @@ export class ZeroHFAccountsNotification
     this.#failedTokensStr = failedTokens
       .asArray()
       .map(t => this.sdk.tokensMeta.get(t)?.symbol ?? t)
+      .join(", ");
+    this.#failedPools = pools
+      .asArray()
+      .map(p => this.sdk.labelAddress(p))
       .join(", ");
     this.#failedTokensStr =
       failedTokens.size > 0 ? `, failed tokens: ${this.#failedTokensStr}` : "";
@@ -71,10 +81,10 @@ export class ZeroHFAccountsNotification
   }
 
   get #plain(): string {
-    return `[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed), bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    return `[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 
   get #markdown(): Markdown {
-    return md`[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed), bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
+    return md`[${this.networkType}] found ${this.#accountsCount} accounts with HF=0 (${this.#failedCount} failed) in pools: ${this.#failedPools}, bad tokens: ${this.#badTokensStr}${this.#failedTokensStr}`;
   }
 }
