@@ -256,6 +256,11 @@ export class Scanner {
 
       if (zeroHFAccs.length > 0) {
         accounts = accounts.filter(ca => ca.healthFactor !== 0n);
+        const ignored = new AddressSet(this.config.ignoreAccounts);
+        zeroHFAccs = zeroHFAccs.filter(ca => !ignored.has(ca.creditAccount));
+      }
+
+      if (zeroHFAccs.length > 0) {
         this.notifier.alert(
           new ZeroHFAccountsNotification(
             this.caService.sdk,
