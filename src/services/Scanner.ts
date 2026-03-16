@@ -322,16 +322,23 @@ export class Scanner {
       );
       result = result.filter(ca => expiredCMs.has(ca.creditManager));
     } else {
-      // we can take first expired credit manager, and continue with next one on next block
-      result = await this.caService.getCreditAccounts(
-        {
-          creditManager: expiredCMs.asArray()[0],
-          ignoreReservePrices: true,
-          minHealthFactor: 0n,
-          maxHealthFactor: MAX_UINT256,
-        },
-        blockNumber,
-      );
+      const ignoreAccounts = new AddressSet(this.config.ignoreAccounts);
+      for (const creditManager of expiredCMs) {
+        // we can take first expired credit manager that has non-ignored accounts, and continue with next one on next block
+        result = await this.caService.getCreditAccounts(
+          {
+            creditManager,
+            ignoreReservePrices: true,
+            minHealthFactor: 0n,
+            maxHealthFactor: MAX_UINT256,
+          },
+          blockNumber,
+        );
+        result = result.filter(ca => !ignoreAccounts.has(ca.creditAccount));
+        if (result.length > 0) {
+          break;
+        }
+      }
     }
 
     this.log.debug(`found ${result.length} expired credit accounts`);
