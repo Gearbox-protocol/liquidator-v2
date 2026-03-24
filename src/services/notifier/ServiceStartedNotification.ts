@@ -12,14 +12,12 @@ import version from "../../version.js";
 export class ServiceStartedNotification implements INotification {
   readonly #name: string;
   readonly #hfThreshold: bigint;
-  readonly #restakingWA: boolean;
   readonly #network: NetworkType;
 
   constructor() {
     const cfg = DI.get(DI.Config) as Config;
     this.#name = cfg.appName;
     this.#hfThreshold = cfg.hfThreshold;
-    this.#restakingWA = !!cfg.restakingWorkaround;
     this.#network = cfg.network;
   }
 
@@ -40,7 +38,6 @@ export class ServiceStartedNotification implements INotification {
   get #plain(): string {
     return `[${this.#network}] started ${this.#name} ${version}
 HF threshold: ${this.#hfThreshold}
-Restaking workaround: ${this.#restakingWA}
 `;
   }
 
@@ -48,7 +45,6 @@ Restaking workaround: ${this.#restakingWA}
     return md`[${this.#network}] started ${this.#name} 
 Version: ${md.bold(version)}
 HF threshold: ${md.bold(this.#hfThreshold.toString(10))}
-Restaking workaround: ${md.bold(this.#restakingWA.toString())}
 `;
   }
 }

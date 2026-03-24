@@ -299,14 +299,6 @@ export const CommonSchema = z.object({
       env: "UPDATE_RESERVE_PRICES",
     }),
   /**
-   * Flag to enable less eager liquidations for LRT tokens
-   */
-  restakingWorkaround: boolLike().optional().register(zommandRegistry, {
-    flags: "--restaking-workaround",
-    description: "Flag to enable less eager liquidations for LRT tokens",
-    env: "RESTAKING_WORKAROUND",
-  }),
-  /**
    * List of assets to keep on account after liquidation
    */
   keepAssets: optionalAddressArrayLike().register(zommandRegistry, {

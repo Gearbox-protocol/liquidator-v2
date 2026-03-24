@@ -38,15 +38,6 @@ export const FullLiquidatorSchema = z.object({
         "Whether we should apply loss policy on full liquidation of accounts with bad debt",
       env: "LOSS_POLICY",
     }),
-  /**
-   * Flag to enable llama thena workaround to liquidate 3.0 accounts with llamathena
-   */
-  llamathenaWorkaround: boolLike().optional().register(zommandRegistry, {
-    flags: "--llamathena-workaround",
-    description:
-      "Flag to enable llama thena workaround to liquidate 3.0 accounts wiht llamathena",
-    env: "LLAMATHENA_WORKAROUND",
-  }),
 });
 
 export type FullLiquidatorSchema = z.infer<typeof FullLiquidatorSchema>;

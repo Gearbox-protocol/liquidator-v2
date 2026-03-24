@@ -3,18 +3,14 @@ import type {
   CreditAccountData,
   GetCreditAccountsOptions,
   ICreditAccountsService,
-  NetworkType,
 } from "@gearbox-protocol/sdk";
 import {
   AddressSet,
-  hexEq,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
   WAD,
 } from "@gearbox-protocol/sdk";
-import { iCreditManagerV300Abi } from "@gearbox-protocol/sdk/abi/v300";
 import type { Address, Block } from "viem";
-import { getContract } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -22,13 +18,6 @@ import type Client from "./Client.js";
 import type DeleverageService from "./DeleverageService.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 import { ZeroHFAccountsNotification } from "./notifier/ZeroHFAccountsNotification.js";
-
-const RESTAKING_CMS: Partial<Record<NetworkType, Address>> = {
-  Mainnet:
-    "0x50ba483272484fc5eebe8676dc87d814a11faef6".toLowerCase() as Address, // Mainnet WETH_V3_RESTAKING
-  Arbitrum:
-    "0xcedaa4b4a42c0a771f6c24a3745c3ca3ed73f17a".toLowerCase() as Address, // Arbitrum WETH_V3_TRADE_TIER_1
-};
 
 @DI.Injectable(DI.Scanner)
 export class Scanner {
@@ -64,9 +53,6 @@ export class Scanner {
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
-    if (this.config.restakingWorkaround) {
-      await this.#setupRestakingWorkaround();
-    }
 
     const block = await this.client.pub.getBlock();
 
@@ -191,13 +177,6 @@ export class Scanner {
       if (accounts.length === 0 && this.config.liquidationMode === "full") {
         accounts = await this.#getExpiredCreditAccounts(blockNumber);
       }
-    }
-    if (this.config.restakingWorkaround) {
-      const before = accounts.length;
-      accounts = this.#filterRestakingAccounts(accounts);
-      this.log.debug(
-        `filtered out ${before - accounts.length} restaking accounts`,
-      );
     }
     if (this.config.ignoreAccounts) {
       const before = accounts.length;
@@ -336,81 +315,6 @@ export class Scanner {
 
     this.log.debug(`found ${result.length} expired credit accounts`);
     return result;
-  }
-
-  async #setupRestakingWorkaround(): Promise<void> {
-    this.#restakingCMAddr = RESTAKING_CMS[this.config.network];
-
-    if (this.#restakingCMAddr) {
-      const ezETH = this.caService.sdk.tokensMeta.mustFindBySymbol("ezETH");
-      const cm = getContract({
-        abi: iCreditManagerV300Abi,
-        address: this.#restakingCMAddr,
-        client: this.client.pub,
-      });
-      const [[, , liquidationDiscount], ezETHLT] = await Promise.all([
-        cm.read.fees(),
-        cm.read.liquidationThresholds([ezETH.addr]),
-      ]);
-
-      // For restaking accounts, say for simplicity account with only ezETH:
-      //
-      //        price(ezETH) * balance(ezETH) * LT(ezETH)
-      // HF = ----------------------------------------------
-      //                     debt(WETH)
-      //
-      // Assuming that price(ezETH) at some point becomes 1 (when you can withdraw ezETH):
-      //
-      //               balance(ezETH) * LT(ezETH)
-      // debt(WETH) = ----------------------------
-      //                        HF
-      //
-      // Amount that goes to gearbox + to account owner (if any) when account is liquidated:
-      // liquidationDiscount == 100% - liquidatorPremium
-      //
-      // discounted = balance(ezETH) * LiquidationDiscount
-      //
-      // To avoid bad debt (discounted >= debt):
-      //
-      //                                           balance(ezETH) * LT(ezETH)
-      // balance(ezETH) * LiquidationDiscount >=  ---------------------------
-      //                                                        HF
-      //          LT(ezETH)
-      // HF >= --------------------
-      //       LiquidationDiscount
-      //
-      // So it's safe to liquidate accounts with such HF, otherwise we get into bad debt zone
-      // For current settings of  Restaking WETH credit manager on mainnet it translates to HF >= 91.50% / 0.97 == 94.33%
-      this.#restakingMinHF =
-        (PERCENTAGE_FACTOR * BigInt(ezETHLT)) / BigInt(liquidationDiscount);
-      this.log.warn(
-        {
-          restakingCMAddr: this.#restakingCMAddr,
-          liquidationDiscount,
-          ezETHLT,
-          restakingMinHF: this.#restakingMinHF,
-        },
-        "restaking workaround enabled",
-      );
-    }
-  }
-
-  #filterRestakingAccounts(accounts: CreditAccountData[]): CreditAccountData[] {
-    return accounts.filter(ca => {
-      if (
-        this.#restakingCMAddr === ca.creditManager.toLowerCase() &&
-        !!this.#restakingMinHF
-      ) {
-        const ok = ca.healthFactor >= this.#restakingMinHF;
-        if (!ok) {
-          this.log.debug(
-            `filtered out ${ca.creditAccount} due to restaking workaround (HF ${ca.healthFactor} < ${this.#restakingMinHF})`,
-          );
-        }
-        return ok;
-      }
-      return true;
-    });
   }
 
   public get lastUpdated(): bigint {
