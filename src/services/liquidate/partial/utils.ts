@@ -2,7 +2,6 @@ import type {
   CreditSuite,
   Curator,
   OnDemandPriceUpdates,
-  PriceUpdateV300,
   PriceUpdateV310,
 } from "@gearbox-protocol/sdk";
 import { formatBN, getCuratorName } from "@gearbox-protocol/sdk";
@@ -46,12 +45,7 @@ export function humanizePreviewPartialLiquidation(
     ...result,
     liquidatorContract,
     connectors,
-    priceUpdates: (
-      priceUpdates.raw as Array<PriceUpdateV300 | PriceUpdateV310>
-    ).map(p => {
-      if ("token" in p) {
-        return p.token;
-      }
+    priceUpdates: (priceUpdates.raw as PriceUpdateV310[]).map(p => {
       if (p.priceFeed) {
         return p.priceFeed;
       }

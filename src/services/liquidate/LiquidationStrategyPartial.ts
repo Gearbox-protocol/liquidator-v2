@@ -1,8 +1,7 @@
-import {
-  type CreditAccountData,
-  type GearboxSDK,
-  type ICreditAccountsService,
-  VERSION_RANGE_310,
+import type {
+  CreditAccountData,
+  GearboxSDK,
+  ICreditAccountsService,
 } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -226,9 +225,8 @@ export default class LiquidationStrategyPartial
     }
   }
 
-  protected ignoreReservePrices(ca: CreditAccountData): boolean {
-    const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
-    return isV310 && !this.config.updateReservePrices;
+  protected ignoreReservePrices(_ca: CreditAccountData): boolean {
+    return !this.config.updateReservePrices;
   }
 
   protected optimisticHF(_ca: CreditAccountData): bigint {

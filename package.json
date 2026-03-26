@@ -31,7 +31,7 @@
     "@gearbox-protocol/cli-utils": "^5.71.2",
     "@gearbox-protocol/liquidator-contracts": "^1.36.0-experimental.67",
     "@gearbox-protocol/liquidator-v2-contracts": "^2.4.0",
-    "@gearbox-protocol/sdk": "12.8.0",
+    "@gearbox-protocol/sdk": "13.0.0-beta.9",
     "@gearbox-protocol/types": "^1.14.8",
     "@types/node": "^25.3.5",
     "@vlad-yakovlev/telegram-md": "^2.1.0",

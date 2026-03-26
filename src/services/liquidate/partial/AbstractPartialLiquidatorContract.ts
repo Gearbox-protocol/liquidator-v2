@@ -7,7 +7,6 @@ import type {
   OnDemandPriceUpdates,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
-import { iDegenDistributorV300Abi } from "@gearbox-protocol/sdk/abi/iDegenDistributorV300";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
 import type {
@@ -22,7 +21,6 @@ import type DeleverageService from "../../DeleverageService.js";
 import type { PartialLiquidationPreview } from "../types.js";
 import type {
   IPartialLiquidatorContract,
-  MerkleDistributorInfo,
   OptimalPartialLiquidation,
   RawPartialLiquidationPreview,
 } from "./types.js";
@@ -50,7 +48,7 @@ export abstract class AbstractPartialLiquidatorContract
   #address?: Address;
   #router: Address;
   /**
-   * Credit managers for which async write operations (register, obtaining degen, etc...) are pending
+   * Credit managers for which async write operations (register, etc.) are pending
    */
   #pendingCreditManagers: CreditSuite[] = [];
 
@@ -93,15 +91,7 @@ export abstract class AbstractPartialLiquidatorContract
     if (this.#pendingCreditManagers.length === 0) {
       return;
     }
-    // only affects pending credit managers
-    // so it's safe to be used inside syncState
     const creditAccounts = await this.#getLiquidatorAccounts();
-
-    try {
-      await this.#claimDegenNFTs(creditAccounts);
-    } catch (e) {
-      this.logger.warn(`failed to obtain degen NFTs: ${e}`);
-    }
 
     for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
@@ -164,93 +154,6 @@ export abstract class AbstractPartialLiquidatorContract
         results[i],
       ]),
     );
-  }
-
-  /**
-   * Claim NFT tokens as liquidator contract, so that the contract can open credit accounts in Degen NFT protected credit managers
-   * @returns
-   */
-  async #claimDegenNFTs(creditAccounts: AddressMap<Address>): Promise<void> {
-    const account = this.address;
-    let nfts = 0;
-    for (const cm of this.#pendingCreditManagers) {
-      const { address, name } = cm.creditManager;
-      const { degenNFT } = cm.creditFacade;
-      const account = creditAccounts.get(address);
-      if (account === ADDRESS_0X0 && degenNFT !== ADDRESS_0X0) {
-        this.logger.debug(
-          `need degen NFT ${degenNFT} for credit manager ${name}`,
-        );
-        nfts++;
-      }
-    }
-    if (nfts === 0) {
-      return;
-    }
-    const mcs =
-      this.creditAccountService.sdk.marketRegister.marketConfigurators;
-
-    if (mcs.length !== 1) {
-      throw new Error(
-        "claim degen NFT works only with single market configurator",
-      );
-    }
-
-    const distributor = await mcs[0].getPeripheryContract("DEGEN_DISTRIBUTOR");
-    this.logger.debug(`degen distributor: ${distributor}`);
-    const [distributorNFT, merkelRoot, claimed] =
-      await this.client.pub.multicall({
-        allowFailure: false,
-        contracts: [
-          {
-            address: distributor,
-            abi: iDegenDistributorV300Abi,
-            functionName: "degenNFT",
-          },
-          {
-            address: distributor,
-            abi: iDegenDistributorV300Abi,
-            functionName: "merkleRoot",
-          },
-          {
-            address: distributor,
-            abi: iDegenDistributorV300Abi,
-            functionName: "claimed",
-            args: [account],
-          },
-        ],
-      });
-    const merkleRootURL = `https://dm.gearbox.fi/${this.config.network.toLowerCase()}_${merkelRoot}.json`;
-    this.logger.debug(
-      `merkle root: ${merkleRootURL}, degen distributor NFT: ${distributorNFT}, claimed: ${claimed}`,
-    );
-
-    const resp = await fetch(merkleRootURL);
-    const merkle = (await resp.json()) as MerkleDistributorInfo;
-    const claims = merkle.claims[account];
-    if (!claims) {
-      throw new Error(`${account} is not eligible for degen NFT claim`);
-    }
-    this.logger.debug(claims, `claims`);
-    if (BigInt(claims.amount) <= claimed) {
-      throw new Error(`already claimed`);
-    }
-
-    const receipt = await this.client.simulateAndWrite({
-      address: distributor,
-      abi: iDegenDistributorV300Abi,
-      functionName: "claim",
-      args: [
-        BigInt(claims.index), // uint256 index,
-        account, // address account,
-        BigInt(claims.amount), // uint256 totalAmount,
-        claims.proof, // bytes32[] calldata merkleProof
-      ],
-    });
-    if (receipt.status === "reverted") {
-      throw new Error(`degenDistributor.claim reverted`);
-    }
-    this.logger.debug(`${account} claimed ${BigInt(claims.amount)} degenNFTs`);
   }
 
   async #registerCM(cm: CreditSuite): Promise<void> {

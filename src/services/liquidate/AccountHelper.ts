@@ -1,22 +1,13 @@
 import {
   type CreditAccountData,
   type GearboxSDK,
-  isVersionRange,
   PERCENTAGE_FACTOR,
-  type VersionRange,
 } from "@gearbox-protocol/sdk";
 import type { ILogger } from "../../log/index.js";
 
 export default abstract class AccountHelper {
   protected abstract sdk: GearboxSDK;
   public abstract logger: ILogger;
-
-  protected checkAccountVersion(
-    ca: CreditAccountData,
-    v: VersionRange,
-  ): boolean {
-    return isVersionRange(this.sdk.mustGetContract(ca.creditFacade).version, v);
-  }
 
   /**
    * Whether account's total value (minus liquidator's premium) is below its outstanding debt

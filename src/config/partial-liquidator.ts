@@ -1,5 +1,4 @@
 import {
-  addressLike,
   boolLike,
   optionalAddressArrayLike,
   zommandRegistry,
@@ -7,69 +6,8 @@ import {
 import { z } from "zod/v4";
 import { CommonSchema } from "./common.js";
 
-export const PartialV300ConfigSchema = z.object({
-  /**
-   * Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based
-   */
-  aavePartialLiquidatorAddress: addressLike()
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--aave-partial-liquidator-address <address>",
-      description:
-        "Address of deployed partial liquidator contract for all credit managers except for GHO- and DOLA- based",
-      env: "AAVE_PARTIAL_LIQUIDATOR_ADDRESS",
-    }),
-  /**
-   * Address of deployed partial liquidator contract for GHO credit managers
-   */
-  ghoPartialLiquidatorAddress: addressLike()
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--gho-partial-liquidator-address <address>",
-      description:
-        "Address of deployed partial liquidator contract for GHO credit managers",
-      env: "GHO_PARTIAL_LIQUIDATOR_ADDRESS",
-    }),
-  /**
-   * Address of deployed partial liquidator contract for DOLA credit managers
-   */
-  dolaPartialLiquidatorAddress: addressLike()
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--dola-partial-liquidator-address <address>",
-      description:
-        "Address of deployed partial liquidator contract for DOLA credit managers",
-      env: "DOLA_PARTIAL_LIQUIDATOR_ADDRESS",
-    }),
-  /**
-   * Address of deployed partial liquidator contract for Nexo credit managers
-   */
-  nexoPartialLiquidatorAddress: addressLike()
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--nexo-partial-liquidator-address <address>",
-      description:
-        "Address of deployed partial liquidator contract for Nexo credit managers",
-      env: "NEXO_PARTIAL_LIQUIDATOR_ADDRESS",
-    }),
-  /**
-   * Address of deployed partial liquidator contract for Sonic credit managers
-   */
-  siloPartialLiquidatorAddress: addressLike()
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--silo-partial-liquidator-address <address>",
-      description:
-        "Address of deployed partial liquidator contract for Silo credit managers",
-      env: "SILO_PARTIAL_LIQUIDATOR_ADDRESS",
-    }),
-});
-
-export type PartialV300ConfigSchema = z.infer<typeof PartialV300ConfigSchema>;
-
 export const PartialLiquidatorSchema = z.object({
   ...CommonSchema.shape,
-  ...PartialV300ConfigSchema.shape,
   /**
    * Liquidator mode
    */

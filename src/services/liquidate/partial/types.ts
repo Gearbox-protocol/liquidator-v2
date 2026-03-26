@@ -4,7 +4,7 @@ import type {
   MultiCall,
   OnDemandPriceUpdates,
 } from "@gearbox-protocol/sdk";
-import type { Address, Hash, SimulateContractReturnType } from "viem";
+import type { Address, SimulateContractReturnType } from "viem";
 
 import type { PartialLiquidationPreview } from "../types.js";
 
@@ -40,7 +40,7 @@ export interface IPartialLiquidatorContract {
    */
   syncState: () => Promise<void>;
   /**
-   * Cross-version call to getOptimalLiquidation on liquidator contracts for rouuters v300 and v310
+   * Call to getOptimalLiquidation on liquidator contracts for v310 routers
    * @param ca
    * @param priceUpdates
    */
@@ -49,7 +49,7 @@ export interface IPartialLiquidatorContract {
     priceUpdates: OnDemandPriceUpdates,
   ) => Promise<OptimalPartialLiquidation>;
   /**
-   * Cross-version call to previewPartialLiquidation on liquidator contracts for rouuters v300 and v310
+   * Call to previewPartialLiquidation on liquidator contracts for v310 routers
    * @param ca
    * @param cm
    * @param optimalLiquidation
@@ -62,7 +62,7 @@ export interface IPartialLiquidatorContract {
     priceUpdates: OnDemandPriceUpdates,
   ) => Promise<RawPartialLiquidationPreview>;
   /**
-   * Cross-version call to partialLiquidateAndConvert on liquidator contracts for rouuters v300 and v310
+   * Call to partialLiquidateAndConvert on liquidator contracts for v310 routers
    * @param account
    * @param preview
    */
@@ -74,17 +74,4 @@ export interface IPartialLiquidatorContract {
 
 export interface IPartialLiqudatorContractFactory {
   tryAttach: (cm: CreditSuite) => IPartialLiquidatorContract | undefined;
-}
-
-export interface MerkleDistributorInfo {
-  merkleRoot: Hash;
-  tokenTotal: string;
-  claims: Record<
-    Address,
-    {
-      index: number;
-      amount: string;
-      proof: Hash[];
-    }
-  >;
 }

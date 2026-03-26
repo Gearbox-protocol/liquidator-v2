@@ -1676,6 +1676,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@gearbox-protocol/integrations-v3@npm:1.54.2":
+  version: 1.54.2
+  resolution: "@gearbox-protocol/integrations-v3@npm:1.54.2"
+  checksum: 10c0/5bc799f73dc47b4929d27007a164f00cba7c001c5828dccb86bf0e7ba39c0094efafd386f9f1ef0a0f85d7b80bbbfb58919aea8b61a8a047672b264dc98756ae
+  languageName: node
+  linkType: hard
+
 "@gearbox-protocol/liquidator-contracts@npm:^1.36.0-experimental.67":
   version: 1.36.0-experimental.70
   resolution: "@gearbox-protocol/liquidator-contracts@npm:1.36.0-experimental.70"
@@ -1703,7 +1710,7 @@ __metadata:
     "@gearbox-protocol/cli-utils": "npm:^5.71.2"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:12.8.0"
+    "@gearbox-protocol/sdk": "npm:13.0.0-beta.9"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^25.3.5"
     "@vlad-yakovlev/telegram-md": "npm:^2.1.0"
@@ -1728,7 +1735,31 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:12.8.0, @gearbox-protocol/sdk@npm:>=12.6.8":
+"@gearbox-protocol/sdk@npm:13.0.0-beta.9":
+  version: 13.0.0-beta.9
+  resolution: "@gearbox-protocol/sdk@npm:13.0.0-beta.9"
+  dependencies:
+    "@gearbox-protocol/integrations-v3": "npm:1.54.2"
+    "@redstone-finance/evm-connector": "npm:^0.9.0"
+    "@redstone-finance/protocol": "npm:^0.9.0"
+    "@redstone-finance/sdk": "npm:^0.9.0"
+    "@redstone-finance/utils": "npm:^0.9.0"
+    "@types/bn.js": "npm:^5.2.0"
+    abitype: "npm:^1.2.3"
+    bn.js: "npm:^5.2.3"
+    buffer: "npm:^6.0.3"
+    date-fns: "npm:^4.1.0"
+    decimal.js-light: "npm:^2.5.1"
+    viem: "npm:>=2.23.15 <3.0.0"
+    zod: "npm:^4.3.6"
+  peerDependencies:
+    axios: ^1.0.0
+    viem-deal: ^2.0.4
+  checksum: 10c0/6f11c41b4bcdb76f2bfedb67a12807e52e179e0279eabc9a586b338872e7ee5bcceeda07d1e12875ceaa5b9a3d9c4ddd645d020bfa87903837a6dbd1602aef5c
+  languageName: node
+  linkType: hard
+
+"@gearbox-protocol/sdk@npm:>=12.6.8":
   version: 12.8.0
   resolution: "@gearbox-protocol/sdk@npm:12.8.0"
   dependencies:
@@ -3049,7 +3080,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bn.js@npm:^5.2.1, bn.js@npm:^5.2.2":
+"bn.js@npm:^5.2.1, bn.js@npm:^5.2.2, bn.js@npm:^5.2.3":
   version: 5.2.3
   resolution: "bn.js@npm:5.2.3"
   checksum: 10c0/eef19cb9cf5e91e91e3e0f036b799ce6c72f79463c3934d62991c3dcdb58f6c94dc3d806495d9b0bf31cd121870ed79bb2115cea71b56c03e794fb71485031fa
