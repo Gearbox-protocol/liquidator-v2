@@ -193,11 +193,9 @@ const program = new Zommand("diagnose", {
       ignoreUpdateablePrices: false,
       pyth: {
         historicTimestamp: true,
-        ignoreMissingFeeds: true,
       },
       redstone: {
         historicTimestamp: true,
-        ignoreMissingFeeds: true,
       },
       blockNumber: block,
     });

@@ -150,11 +150,10 @@ export const CommonSchema = z.object({
     }),
   /**
    * Filter out all accounts with HF >= threshold during scan stage
-   * Min HF is set to crash older versions, which had 10000 as 100%
    */
   hfThreshold: z.coerce
     .bigint()
-    .min(1_10_00n)
+    .nonnegative()
     .max(MAX_UINT256)
     .default(WAD - 1n) // 100% accounts are healthy, and credit account compressors filters by HF <= threshold
     .register(zommandRegistry, {
@@ -220,12 +219,12 @@ export const CommonSchema = z.object({
       env: "OPTIMISTIC_TIMESTAMP",
     }),
   /**
-   * Ignore missing feeds (redstone/pyth)
+   * Fail on missing feeds (redstone and pyth)
    */
-  ignoreMissingFeeds: boolLike().optional().register(zommandRegistry, {
-    flags: "--ignore-missing-feeds",
-    description: "Ignore missing feeds (redstone/pyth)",
-    env: "IGNORE_MISSING_FEEDS",
+  failOnMissingFeeds: boolLike().optional().register(zommandRegistry, {
+    flags: "--fail-on-missing-feeds",
+    description: "Fail on missing feeds (redstone and pyth)",
+    env: "FAIL_ON_MISSING_FEEDS",
   }),
   /**
    * Explicitly set gas limit for SDK

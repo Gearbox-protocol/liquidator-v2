@@ -2,7 +2,6 @@ import {
   type CreditAccountData,
   type MultiCall,
   PERCENTAGE_FACTOR,
-  VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { encodeFunctionData, parseEther } from "viem";
@@ -36,15 +35,15 @@ export default class LiquidationStrategyDeleverage
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
 
-  public override isApplicable(ca: CreditAccountData): boolean {
-    return this.checkAccountVersion(ca, VERSION_RANGE_310);
+  public override isApplicable(_ca: CreditAccountData): boolean {
+    return true;
   }
 
   public override async makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
     if (!this.isApplicable(ca)) {
-      throw new Error("warning: deleverage is not supported for v300 accounts");
+      throw new Error("warning: deleverage is not applicable for this account");
     }
     const result = await super.makeLiquidatable(ca);
     if (this.config.useProductionScanner) {

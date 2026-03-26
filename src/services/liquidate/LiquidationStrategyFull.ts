@@ -3,7 +3,6 @@ import {
   type GearboxSDK,
   type ICreditAccountsService,
   PERCENTAGE_FACTOR,
-  VERSION_RANGE_310,
   WAD,
 } from "@gearbox-protocol/sdk";
 import {
@@ -68,9 +67,6 @@ export default class LiquidationStrategyFull
       return { account: ca };
     }
     const { totalValue, debt, accruedInterest } = ca;
-    if (!this.checkAccountVersion(ca, VERSION_RANGE_310)) {
-      throw new Error("loss policy only works for v310 accounts");
-    }
 
     // Induce bad debt on account
     // see hasBadDebt for the formula
@@ -146,10 +142,7 @@ export default class LiquidationStrategyFull
   }
 
   public isApplicable(ca: CreditAccountData): boolean {
-    if (
-      this.#applyLossPolicy &&
-      (!this.checkAccountVersion(ca, VERSION_RANGE_310) || !this.hasBadDebt(ca))
-    ) {
+    if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
       return false;
     }
     return true;
@@ -159,15 +152,8 @@ export default class LiquidationStrategyFull
     if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
       throw new Error("cannot apply loss policy: account has no bad debt");
     }
-    if (
-      this.#applyLossPolicy &&
-      !this.checkAccountVersion(ca, VERSION_RANGE_310)
-    ) {
-      throw new Error("cannot apply loss policy: version not supported");
-    }
     try {
-      const isV310 = this.checkAccountVersion(ca, VERSION_RANGE_310);
-      const ignoreReservePrices = !this.config.updateReservePrices && isV310;
+      const ignoreReservePrices = !this.config.updateReservePrices;
       const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
       const debtOnly =
         this.config.debtPolicy === "debt-only" ||

@@ -6,11 +6,6 @@ import type {
   IPartialLiquidatorContract,
 } from "./types.js";
 import {
-  AAVELiquidatorV300Contract,
-  GHOLiquidatorV300Contract,
-  SiloLiquidatorV300Contract,
-} from "./v300/index.js";
-import {
   AAVELiquidatorV310Contract,
   GHOLiquidatorV310Contract,
   MorphoLiquidatorV310Contract,
@@ -18,11 +13,6 @@ import {
 } from "./v310/index.js";
 
 const FACTORIES: IPartialLiqudatorContractFactory[] = [
-  // v300
-  AAVELiquidatorV300Contract,
-  GHOLiquidatorV300Contract,
-  SiloLiquidatorV300Contract,
-  // v310
   AAVELiquidatorV310Contract,
   GHOLiquidatorV310Contract,
   MorphoLiquidatorV310Contract,

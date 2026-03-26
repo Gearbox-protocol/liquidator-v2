@@ -1,9 +1,7 @@
-import {
-  type CreditAccountData,
-  type GearboxSDK,
-  type ICreditAccountsService,
-  isVersionRange,
-  VERSION_RANGE_310,
+import type {
+  CreditAccountData,
+  GearboxSDK,
+  ICreditAccountsService,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import type {
@@ -62,23 +60,16 @@ export default class DeleverageService {
   }
 
   public async filterDeleverageAccounts(
-    accounts_: CreditAccountData[],
+    accounts: CreditAccountData[],
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
     if (this.config.optimistic) {
       if (this.config.useProductionScanner) {
         this.log.debug(`checking which accounts have deleverage bot enabled`);
       } else {
-        return accounts_;
+        return accounts;
       }
     }
-
-    const accounts = accounts_.filter(ca => {
-      const cm = this.caService.sdk.marketRegister.findCreditManager(
-        ca.creditManager,
-      );
-      return isVersionRange(cm.creditFacade.version, VERSION_RANGE_310);
-    });
 
     const res = await this.client.pub.multicall({
       contracts: accounts.map(ca => {
@@ -114,7 +105,7 @@ export default class DeleverageService {
       }
     }
     this.log.debug(
-      { errored, before: accounts_.length, after: result.length },
+      { errored, before: accounts.length, after: result.length },
       "filtered accounts for deleverage",
     );
     return result;
