@@ -94,7 +94,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.1008.0, @aws-sdk/client-s3@npm:^3.1018.0":
+"@aws-sdk/client-s3@npm:^3.1018.0":
   version: 3.1018.0
   resolution: "@aws-sdk/client-s3@npm:3.1018.0"
   dependencies:
@@ -157,7 +157,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-secrets-manager@npm:^3.1008.0":
+"@aws-sdk/client-secrets-manager@npm:^3.1018.0":
   version: 3.1018.0
   resolution: "@aws-sdk/client-secrets-manager@npm:3.1018.0"
   dependencies:
@@ -204,7 +204,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ssm@npm:^3.1008.0":
+"@aws-sdk/client-ssm@npm:^3.1018.0":
   version: 3.1018.0
   resolution: "@aws-sdk/client-ssm@npm:3.1018.0"
   dependencies:
@@ -1695,24 +1695,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/cli-utils@npm:^5.72.1":
-  version: 5.72.1
-  resolution: "@gearbox-protocol/cli-utils@npm:5.72.1"
+"@gearbox-protocol/cli-utils@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "@gearbox-protocol/cli-utils@npm:6.0.0"
   dependencies:
-    "@aws-sdk/client-s3": "npm:^3.1008.0"
-    "@aws-sdk/client-secrets-manager": "npm:^3.1008.0"
-    "@aws-sdk/client-ssm": "npm:^3.1008.0"
-    "@gearbox-protocol/sdk": "npm:13.0.0-next.32"
+    "@aws-sdk/client-s3": "npm:^3.1018.0"
+    "@aws-sdk/client-secrets-manager": "npm:^3.1018.0"
+    "@aws-sdk/client-ssm": "npm:^3.1018.0"
+    "@gearbox-protocol/sdk": "npm:13.1.0-next.1"
     "@vlad-yakovlev/telegram-md": "npm:^2.1.0"
     abitype: "npm:^1.2.3"
     commander: "npm:^14.0.3"
     lodash-es: "npm:^4.17.23"
-    lru-cache: "npm:^11.2.6"
+    lru-cache: "npm:^11.2.7"
     p-queue: "npm:^9.1.0"
-    viem: "npm:^2.47.2"
-    yaml: "npm:^2.8.2"
+    viem: "npm:^2.47.6"
+    yaml: "npm:^2.8.3"
     zod: "npm:^4.3.6"
-  checksum: 10c0/67d490ed15bf5374b563227cda2311deb7ea0c6ab23a1c99b9b04ab42a2bd1910f6cde924d1ce8c8abc299c3c5ca9c67b68f7299062c969ccd8228f992fcd7c5
+  checksum: 10c0/8dc641a6cd678ae5fb3e186334308391cc4078b37e6bf713759d6033b656f30cb4f7e565302c5341d33b0b061143e983df82c8257cf58fd5351a26c64e0832e2
   languageName: node
   linkType: hard
 
@@ -1747,10 +1747,10 @@ __metadata:
     "@commitlint/cli": "npm:^20.5.0"
     "@commitlint/config-conventional": "npm:^20.5.0"
     "@gearbox-protocol/biome-config": "npm:^1.0.24"
-    "@gearbox-protocol/cli-utils": "npm:^5.72.1"
+    "@gearbox-protocol/cli-utils": "npm:^6.0.0"
     "@gearbox-protocol/liquidator-contracts": "npm:^1.36.0-experimental.67"
     "@gearbox-protocol/liquidator-v2-contracts": "npm:^2.4.0"
-    "@gearbox-protocol/sdk": "npm:13.0.0"
+    "@gearbox-protocol/sdk": "npm:13.0.1"
     "@gearbox-protocol/types": "npm:^1.14.8"
     "@types/node": "npm:^25.5.0"
     "@vlad-yakovlev/telegram-md": "npm:^2.1.0"
@@ -1775,9 +1775,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gearbox-protocol/sdk@npm:13.0.0":
-  version: 13.0.0
-  resolution: "@gearbox-protocol/sdk@npm:13.0.0"
+"@gearbox-protocol/sdk@npm:13.0.1":
+  version: 13.0.1
+  resolution: "@gearbox-protocol/sdk@npm:13.0.1"
   dependencies:
     "@gearbox-protocol/integrations-v3": "npm:1.54.2"
     "@redstone-finance/evm-connector": "npm:^0.9.0"
@@ -1795,13 +1795,13 @@ __metadata:
   peerDependencies:
     axios: ^1.0.0
     viem-deal: ^2.0.4
-  checksum: 10c0/5b7c41178e2252e9d0aac7d94095b5823477739fb81907c98666e88ed10a011cfe6e2117f896f6bb96c4901e3cb811189e1ddf5599cbb7f552a28db7219e4e2c
+  checksum: 10c0/17f163d0759527d41c7ac466ddd0b74b90431b0ccb1a87b9babe54f36bbc229b9664fd948ff5bfcd9d79164efb41fafa6a9171ca1bf15b0be63bc2e941315f6c
   languageName: node
   linkType: hard
 
-"@gearbox-protocol/sdk@npm:13.0.0-next.32":
-  version: 13.0.0-next.32
-  resolution: "@gearbox-protocol/sdk@npm:13.0.0-next.32"
+"@gearbox-protocol/sdk@npm:13.1.0-next.1":
+  version: 13.1.0-next.1
+  resolution: "@gearbox-protocol/sdk@npm:13.1.0-next.1"
   dependencies:
     "@gearbox-protocol/integrations-v3": "npm:1.54.2"
     "@redstone-finance/evm-connector": "npm:^0.9.0"
@@ -1819,7 +1819,7 @@ __metadata:
   peerDependencies:
     axios: ^1.0.0
     viem-deal: ^2.0.4
-  checksum: 10c0/4e8ae03e2a4d37845684ec396eac126612077dd6a936d74c46dd8f40b413aa73f503e9ea8243923721b229f28d62e6885602e488580769100b3865c42b26b708
+  checksum: 10c0/81404da42c5609168f0f7a8d0204c593bb5adfad35ae75ecd50004cc6b7f35c5e425b9382710f16cfd8dc2351f518ee6b7ffd137d8d39da543ced12f7907ce70
   languageName: node
   linkType: hard
 
@@ -4413,7 +4413,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^11.0.0, lru-cache@npm:^11.1.0, lru-cache@npm:^11.2.1, lru-cache@npm:^11.2.6":
+"lru-cache@npm:^11.0.0, lru-cache@npm:^11.1.0, lru-cache@npm:^11.2.1, lru-cache@npm:^11.2.7":
   version: 11.2.7
   resolution: "lru-cache@npm:11.2.7"
   checksum: 10c0/549cdb59488baa617135fc12159cafb1a97f91079f35093bb3bcad72e849fc64ace636d244212c181dfdf1a99bbfa90757ff303f98561958ee4d0f885d9bd5f7
@@ -5394,7 +5394,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.47.2, viem@npm:^2.47.6":
+"viem@npm:>=2.23.15 <3.0.0, viem@npm:^2.47.6":
   version: 2.47.6
   resolution: "viem@npm:2.47.6"
   dependencies:
@@ -5637,7 +5637,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.8.2":
+"yaml@npm:^2.8.2, yaml@npm:^2.8.3":
   version: 2.8.3
   resolution: "yaml@npm:2.8.3"
   bin:
