@@ -16,6 +16,7 @@ export function createTransport(
   notifier: INotificationService,
 ): Transport {
   return createRevolverTransport(config, {
+    resilient: true,
     defaultHTTPOptions: {
       timeout: config.optimistic ? 240_000 : 10_000,
       retryCount: config.optimistic ? 3 : undefined,
