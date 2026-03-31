@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1019.0",
-    "@biomejs/biome": "^2.4.10",
+    "@biomejs/biome": "^2.4.0",
     "@commander-js/extra-typings": "^14.0.0",
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
@@ -62,5 +62,5 @@
       "biome check --no-errors-on-unmatched --write"
     ]
   },
-  "packageManager": "yarn@4.9.2"
+  "packageManager": "pnpm@10.32.1"
 }

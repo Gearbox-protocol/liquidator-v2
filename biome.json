@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
   "extends": ["@gearbox-protocol/biome-config"],
   "vcs": {
     "enabled": true,
@@ -12,7 +12,6 @@
       "!node_modules",
       "!build",
       "!output",
-      "!.yarn",
       "!cache",
       "!dist",
       "!forge-out",
