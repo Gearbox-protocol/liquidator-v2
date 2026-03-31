@@ -1,30 +1,33 @@
 FROM node:24.11 AS dev
 
-ENV YARN_CACHE_FOLDER=/root/.yarn
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
 COPY . .
 
-RUN --mount=type=cache,id=yarn,target=/root/.yarn \
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     corepack enable \
-    && yarn install --immutable \
-    && yarn build
+    && pnpm install --frozen-lockfile \
+    && pnpm build
 
 # Production npm modules
 
 FROM node:24.11 AS prod
 
-ENV YARN_CACHE_FOLDER=/root/.yarn
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-COPY --from=dev /app/package.json /app/yarn.lock /app/.yarnrc.yml /app/
+COPY --from=dev /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/
 COPY --from=dev /app/build/ /app/build
 
-RUN --mount=type=cache,id=yarn,target=/root/.yarn \
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     corepack enable \
-    && yarn workspaces focus --all --production
+    && npm pkg delete scripts.prepare \
+    && pnpm install --prod --frozen-lockfile
 
 # Install foundy
 ENV FOUNDRY_DIR=/root/.foundry
