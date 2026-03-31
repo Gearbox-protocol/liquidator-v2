@@ -17,37 +17,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Use Latest Corepack
-        run: |
-          echo "Before: corepack version => $(corepack --version || echo 'not installed')"
-          npm install -g corepack@latest
-          echo "After : corepack version => $(corepack --version)"
-          corepack enable
-          pnpm --version
-          PNPM_STORE_PATH="$( pnpm store path --silent )"
-          if [ ! -d "$PNPM_STORE_PATH" ]; then
-            echo "PNPM store directory does not exist, creating it."
-            mkdir -p "$PNPM_STORE_PATH"
-          else
-            echo "PNPM store directory exists."
-          fi
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "pnpm"
 
+      - name: Install node modules
+        run: pnpm install --frozen-lockfile
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v6
         with:
           extra_plugins: |
             @codedependant/semantic-release-docker
