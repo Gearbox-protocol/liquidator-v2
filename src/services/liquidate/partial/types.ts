@@ -2,7 +2,7 @@ import type {
   CreditAccountData,
   CreditSuite,
   MultiCall,
-  OnDemandPriceUpdates,
+  PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import type { Address, SimulateContractReturnType } from "viem";
 
@@ -46,7 +46,7 @@ export interface IPartialLiquidatorContract {
    */
   getOptimalLiquidation: (
     ca: CreditAccountData,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ) => Promise<OptimalPartialLiquidation>;
   /**
    * Call to previewPartialLiquidation on liquidator contracts for v310 routers
@@ -59,7 +59,7 @@ export interface IPartialLiquidatorContract {
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ) => Promise<RawPartialLiquidationPreview>;
   /**
    * Call to partialLiquidateAndConvert on liquidator contracts for v310 routers

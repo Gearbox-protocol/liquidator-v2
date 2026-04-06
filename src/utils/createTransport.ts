@@ -1,5 +1,4 @@
 import {
-  createRevolverTransport,
   getProviders,
   type INotificationService,
 } from "@gearbox-protocol/cli-utils";
@@ -19,7 +18,7 @@ import {
 export function createTransport(
   config: CommonSchema,
   logger: ILogger,
-  notifier: INotificationService,
+  notifier?: INotificationService,
 ): Transport {
   const providers = getProviders(config);
 
@@ -42,12 +41,12 @@ export function createTransport(
     transports,
     logger: logger?.child?.({ name: "transport" }),
     onRotateSuccess: (oldT, newT, reason) => {
-      notifier.notify(
+      notifier?.notify(
         new ProviderRotationSuccessNotification(oldT, newT, reason),
       );
     },
     onRotateFailed: (oldT, reason) => {
-      notifier.alert(new ProviderRotationErrorNotification(oldT, reason));
+      notifier?.alert(new ProviderRotationErrorNotification(oldT, reason));
     },
     selectionStrategy: "ordered",
   });

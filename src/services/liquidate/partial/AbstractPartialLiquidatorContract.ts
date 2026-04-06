@@ -4,7 +4,7 @@ import type {
   Curator,
   GearboxSDK,
   ICreditAccountsService,
-  OnDemandPriceUpdates,
+  PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -185,14 +185,14 @@ export abstract class AbstractPartialLiquidatorContract
 
   public abstract getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ): Promise<OptimalPartialLiquidation>;
 
   public abstract previewPartialLiquidation(
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ): Promise<RawPartialLiquidationPreview>;
 
   public abstract partialLiquidateAndConvert(

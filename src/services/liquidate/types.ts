@@ -1,6 +1,7 @@
 import type {
   CreditAccountData,
   MultiCall,
+  PriceUpdate,
   RawTx,
 } from "@gearbox-protocol/sdk";
 import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
@@ -44,7 +45,7 @@ export interface PartialLiquidationPreview
     "calls" | "assetOut" | "amountOut" | "flashLoanAmount" | "underlyingBalance"
   > {
   underlyingBalance: bigint;
-  priceUpdates: unknown[];
+  priceUpdates: PriceUpdate[];
 }
 
 export interface ILiquidatorService {

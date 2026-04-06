@@ -4,7 +4,7 @@ import type {
   CreditSuite,
   Curator,
   OnDemandPriceUpdates,
-  PriceUpdateV310,
+  PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
@@ -76,7 +76,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
 
   public async getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ): Promise<OptimalPartialLiquidation> {
     const optimalHF = this.getOptimalHealthFactor(ca);
     const {
@@ -92,11 +92,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
       abi: [...iPartialLiquidatorAbi, ...errorAbis],
       address: this.address,
       functionName: "getOptimalLiquidation",
-      args: [
-        ca.creditAccount,
-        optimalHF,
-        priceUpdates.raw as PriceUpdateV310[] as any,
-      ],
+      args: [ca.creditAccount, optimalHF, priceUpdates],
       gas: 550_000_000n,
     });
     return {
@@ -112,7 +108,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     ca: CreditAccountData,
     cm: CreditSuite,
     optimalLiquidation: OptimalPartialLiquidation,
-    priceUpdates: OnDemandPriceUpdates,
+    priceUpdates: PriceUpdate[],
   ): Promise<RawPartialLiquidationPreview> {
     this.caLogger(ca).debug(
       humanizePreviewPartialLiquidation(
@@ -135,7 +131,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         optimalLiquidation.tokenOut,
         optimalLiquidation.optimalAmount,
         optimalLiquidation.flashLoanAmount,
-        priceUpdates.raw as PriceUpdateV310[] as any,
+        priceUpdates,
         BigInt(this.config.slippage),
         4n, // TODO: splits
         this.extraData,
@@ -161,7 +157,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         preview.assetOut,
         preview.amountOut,
         preview.flashLoanAmount,
-        preview.priceUpdates as readonly PriceUpdateV310[],
+        preview.priceUpdates,
         preview.calls,
         this.extraData,
       ],

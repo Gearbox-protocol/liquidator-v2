@@ -120,11 +120,10 @@ export default class LiquidationStrategyPartial
   ): Promise<PartialLiquidationPreview> {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const priceUpdates =
-      await this.creditAccountService.getOnDemandPriceUpdates({
-        creditManager: ca.creditManager,
-        creditAccount: ca,
-        ignoreReservePrices: this.ignoreReservePrices(ca),
-      });
+      await this.creditAccountService.getOnDemandPriceUpdates(
+        ca,
+        this.ignoreReservePrices(ca),
+      );
     const liquidatorContract = this.#liquidatorForCA(ca);
     if (!liquidatorContract) {
       throw new Error(
@@ -160,7 +159,7 @@ export default class LiquidationStrategyPartial
         assetOut: optimalLiquidation.tokenOut,
         amountOut: optimalLiquidation.optimalAmount,
         flashLoanAmount: optimalLiquidation.flashLoanAmount,
-        priceUpdates: priceUpdates.raw,
+        priceUpdates,
         calls: preview.calls.map(c => ({
           callData: c.callData,
           target: c.target,

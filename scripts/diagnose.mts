@@ -1,13 +1,12 @@
 import {
   addressLike,
-  createRevolverTransport,
-  ProvidersSchema,
   Zommand,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
 import {
   AP_CREDIT_ACCOUNT_COMPRESSOR,
   createCreditAccountService,
+  detectNetwork,
   GearboxSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
@@ -20,6 +19,7 @@ import {
   createPublicClient,
   encodeFunctionData,
   getAddress,
+  http,
   multicall3Abi,
   parseAbi,
 } from "viem";
@@ -39,7 +39,10 @@ const c = {
 };
 
 const DiagnoseSchema = z.object({
-  ...ProvidersSchema.shape,
+  rpcUrl: z.string().register(zommandRegistry, {
+    flags: "--rpc-url <url>",
+    description: "RPC URL to use",
+  }),
   block: z.coerce.bigint().register(zommandRegistry, {
     flags: "--block <number>",
     description: "Block number to query at",
@@ -151,9 +154,10 @@ const program = new Zommand("diagnose", {
 })
   .description("Diagnose credit account health factor issues")
   .action(async schema => {
-    const { network, block, account } = schema;
-    const transport = createRevolverTransport(schema);
+    const { rpcUrl, block, account } = schema;
+    const transport = http(rpcUrl);
     const client = createPublicClient({ transport });
+    const network = await detectNetwork(client);
     const creditManager = await client.readContract({
       address: account,
       abi: parseAbi(["function creditManager() view returns (address)"]),
