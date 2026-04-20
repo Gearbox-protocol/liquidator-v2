@@ -45,4 +45,5 @@ LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 WORKDIR /app
 COPY --from=prod /app /app
 COPY --from=prod /root/.foundry/bin/cast /app
-CMD ["--enable-source-maps", "/app/build/index.mjs"]
+
+ENTRYPOINT ["/nodejs/bin/node", "--enable-source-maps", "/app/build/index.mjs"]
