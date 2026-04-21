@@ -1,7 +1,7 @@
 import {
   type CreditAccountData,
-  type GearboxSDK,
   type ICreditAccountsService,
+  type OnchainSDK,
   PERCENTAGE_FACTOR,
   WAD,
 } from "@gearbox-protocol/sdk";
@@ -221,7 +221,7 @@ export default class LiquidationStrategyFull
     }
   }
 
-  protected get sdk(): GearboxSDK {
+  protected get sdk(): OnchainSDK {
     return this.creditAccountService.sdk;
   }
 }

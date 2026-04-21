@@ -2,8 +2,8 @@ import type {
   CreditAccountData,
   CreditSuite,
   Curator,
-  GearboxSDK,
   ICreditAccountsService,
+  OnchainSDK,
   PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
@@ -256,7 +256,7 @@ export abstract class AbstractPartialLiquidatorContract
     return this.#router;
   }
 
-  protected get sdk(): GearboxSDK {
+  protected get sdk(): OnchainSDK {
     return this.creditAccountService.sdk;
   }
 

@@ -2,7 +2,7 @@ import type {
   IDedupableNotification,
   INotification,
 } from "@gearbox-protocol/cli-utils";
-import type { CreditAccountData, GearboxSDK } from "@gearbox-protocol/sdk";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 import AccountNotification from "./AccountNotification.js";
@@ -17,7 +17,7 @@ export class LiquidationErrorNotification
   readonly #strategyName: string;
 
   constructor(
-    sdk: GearboxSDK,
+    sdk: OnchainSDK,
     ca: CreditAccountData,
     strategyName: string,
     error: string,

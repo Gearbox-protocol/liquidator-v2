@@ -7,7 +7,7 @@ import {
   AP_CREDIT_ACCOUNT_COMPRESSOR,
   createCreditAccountService,
   detectNetwork,
-  GearboxSDK,
+  OnchainSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import {
@@ -190,9 +190,8 @@ const program = new Zommand("diagnose", {
     console.log();
 
     console.log(c.dim("Attaching SDK..."));
-    const sdk = await GearboxSDK.attach({
-      transport,
-      networkType: network,
+    const sdk = new OnchainSDK(network, { transport });
+    await sdk.attach({
       marketConfigurators: [marketConfigurator],
       ignoreUpdateablePrices: false,
       pyth: {

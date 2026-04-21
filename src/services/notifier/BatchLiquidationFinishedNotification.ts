@@ -2,7 +2,7 @@ import type {
   IDedupableNotification,
   INotification,
 } from "@gearbox-protocol/cli-utils";
-import { type GearboxSDK, hexEq, SDKConstruct } from "@gearbox-protocol/sdk";
+import { hexEq, type OnchainSDK, SDKConstruct } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
@@ -17,7 +17,7 @@ export class BatchLiquidationFinishedNotification
   readonly receipt: TransactionReceipt;
 
   constructor(
-    sdk: GearboxSDK,
+    sdk: OnchainSDK,
     receipt: TransactionReceipt,
     results: OptimisticResult<bigint>[],
   ) {

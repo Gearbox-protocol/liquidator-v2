@@ -1,8 +1,8 @@
 import { createServer, type Server } from "node:http";
 import {
-  type GearboxSDK,
   type ICreditAccountsService,
   json_stringify,
+  type OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
 import { customAlphabet } from "nanoid";
@@ -172,7 +172,7 @@ block_number{${labels}} ${this.scanner.lastUpdated}
 `;
   }
 
-  private get sdk(): GearboxSDK {
+  private get sdk(): OnchainSDK {
     return this.caService.sdk;
   }
 }

@@ -6,7 +6,7 @@ import type {
 import {
   AddressSet,
   type CreditAccountData,
-  type GearboxSDK,
+  type OnchainSDK,
   SDKConstruct,
 } from "@gearbox-protocol/sdk";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
@@ -28,7 +28,7 @@ export class ZeroHFAccountsNotification
   readonly #accounts: Address[];
 
   constructor(
-    sdk: GearboxSDK,
+    sdk: OnchainSDK,
     accounts: CreditAccountData[],
     blockNumber?: bigint,
   ) {

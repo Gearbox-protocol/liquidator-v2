@@ -130,11 +130,11 @@ export default class Client {
       functionName,
     } as EncodeFunctionDataParameters);
     const req = await this.wallet.prepareTransactionRequest({
-      ...(this.#gasFees as any),
+      ...this.#gasFees,
       ...rest,
       to: request.address,
       data,
-    });
+    } as Parameters<typeof this.wallet.prepareTransactionRequest>[0]);
     const { gas, maxFeePerGas, maxPriorityFeePerGas } = req;
     if (maxPriorityFeePerGas && maxFeePerGas) {
       req.maxPriorityFeePerGas = 10n * maxPriorityFeePerGas;
@@ -213,7 +213,9 @@ export default class Client {
       abi: [...args.abi, ...errorAbis],
       account,
     });
-    const hash = await this.wallet.writeContract(request as any);
+    const hash = await this.wallet.writeContract(
+      request as Parameters<typeof this.wallet.writeContract>[0],
+    );
     return this.#waitForTransactionReceipt(hash);
   }
 
@@ -233,8 +235,8 @@ export default class Client {
             hash,
             timeout: 12_000,
           });
-        } catch (e: any) {
-          error = e;
+        } catch (e) {
+          error = e instanceof Error ? e : new Error(String(e));
         }
       }
       if (error) {

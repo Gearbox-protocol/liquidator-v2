@@ -1,12 +1,12 @@
 import {
   type CreditAccountData,
-  type GearboxSDK,
+  type OnchainSDK,
   PERCENTAGE_FACTOR,
 } from "@gearbox-protocol/sdk";
 import type { ILogger } from "../../log/index.js";
 
 export default abstract class AccountHelper {
-  protected abstract sdk: GearboxSDK;
+  protected abstract sdk: OnchainSDK;
   public abstract logger: ILogger;
 
   /**

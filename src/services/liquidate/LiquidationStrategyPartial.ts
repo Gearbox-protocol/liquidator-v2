@@ -1,7 +1,7 @@
 import type {
   CreditAccountData,
-  GearboxSDK,
   ICreditAccountsService,
+  OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
@@ -188,7 +188,7 @@ export default class LiquidationStrategyPartial
     return liquidator.partialLiquidateAndConvert(account, preview);
   }
 
-  protected get sdk(): GearboxSDK {
+  protected get sdk(): OnchainSDK {
     return this.creditAccountService.sdk;
   }
 

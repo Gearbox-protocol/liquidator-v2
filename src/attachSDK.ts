@@ -4,7 +4,7 @@ import type {
 } from "@gearbox-protocol/sdk";
 import {
   createCreditAccountService,
-  GearboxSDK,
+  OnchainSDK,
   VERSION_RANGE_310,
 } from "@gearbox-protocol/sdk";
 import { BotsPlugin } from "@gearbox-protocol/sdk/plugins/bots";
@@ -64,18 +64,22 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
     gasLimit = null;
   }
 
-  const sdk = await GearboxSDK.attach({
-    transport,
-    gasLimit,
+  const sdk = new OnchainSDK(
+    config.network,
+    { transport },
+    {
+      gasLimit,
+      logger,
+      plugins: {
+        bots: new BotsPlugin(config.liquidationMode === "deleverage"),
+      },
+    },
+  );
+  await sdk.attach({
     addressProvider: config.addressProvider,
     marketConfigurators: config.marketConfigurators,
-    chainId: config.chainId,
-    networkType: config.network,
     // we need prices to calculate things like numsplits
     ignoreUpdateablePrices: false,
-    plugins: {
-      bots: new BotsPlugin(config.liquidationMode === "deleverage"),
-    },
     redstone: {
       historicTimestamp: optimisticTimestamp,
       gateways: config.redstoneGateways,
@@ -87,7 +91,6 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
         : undefined,
       failOnMissingFeeds: config.failOnMissingFeeds,
     },
-    logger,
   });
   // trying to set default numSplits for router v3.1 contract
   try {
@@ -106,11 +109,11 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
         logger.debug({ tag: "timing" }, `new block ts: ${formatTs(block)}`);
       } catch {}
     });
-    const mcs = new Set(
-      sdk.marketRegister.marketConfigurators.map(mc => mc.address),
-    );
-    // load second time with hook
-    await sdk.marketRegister.loadMarkets(Array.from(mcs));
+    // re-sync to re-trigger price feed updates now that the hook is attached
+    await sdk.syncState({
+      blockNumber: sdk.currentBlock,
+      timestamp: sdk.timestamp,
+    });
   }
   const service = createCreditAccountService(sdk, 310, {
     batchSize: config.compressorBatchSize,

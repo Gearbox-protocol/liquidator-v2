@@ -1,7 +1,7 @@
 import type {
   CreditAccountData,
-  GearboxSDK,
   ICreditAccountsService,
+  OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import type {
@@ -111,8 +111,8 @@ export default class DeleverageService {
     return result;
   }
 
-  private get sdk(): GearboxSDK<{ bots: BotsPlugin }> {
-    return this.caService.sdk as GearboxSDK<{ bots: BotsPlugin }>;
+  private get sdk(): OnchainSDK<{ bots: BotsPlugin }> {
+    return this.caService.sdk as OnchainSDK<{ bots: BotsPlugin }>;
   }
 
   public get status(): DeleverageStatus | undefined {

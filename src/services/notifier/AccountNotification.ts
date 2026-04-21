@@ -1,8 +1,8 @@
 import {
   type CreditAccountData,
   etherscanUrl,
-  type GearboxSDK,
   hexEq,
+  type OnchainSDK,
   PERCENTAGE_FACTOR,
   SDKConstruct,
   WAD,
@@ -15,7 +15,7 @@ export default abstract class AccountNotification extends SDKConstruct {
   public readonly receipt?: TransactionReceipt;
 
   constructor(
-    sdk: GearboxSDK,
+    sdk: OnchainSDK,
     ca: CreditAccountData,
     receipt?: TransactionReceipt,
   ) {

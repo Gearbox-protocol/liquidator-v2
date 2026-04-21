@@ -1,8 +1,8 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type {
   CreditAccountData,
-  GearboxSDK,
   ICreditAccountsService,
+  OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
@@ -94,7 +94,7 @@ export default abstract class AbstractLiquidator<
     return { eth, underlying };
   }
 
-  protected get sdk(): GearboxSDK {
+  protected get sdk(): OnchainSDK {
     return this.creditAccountService.sdk;
   }
 

@@ -3,12 +3,14 @@ import type {
   CreditAccountData,
   GetCreditAccountsOptions,
   ICreditAccountsService,
+  OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import {
   AddressSet,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
   WAD,
+  watchBlocksAsync,
 } from "@gearbox-protocol/sdk";
 import type { Address, Block } from "viem";
 import type { Config } from "../config/index.js";
@@ -42,9 +44,6 @@ export class Scanner {
   @DI.Inject(DI.Notifier)
   notifier!: INotificationService;
 
-  #processing: bigint | null = null;
-  #restakingCMAddr?: Address;
-  #restakingMinHF?: bigint;
   #lastUpdated = 0n;
   #maxHealthFactor = MAX_UINT256;
   #minHealthFactor = 0n;
@@ -109,24 +108,16 @@ export class Scanner {
       this.config.optimistic ? undefined : block.number,
     );
     if (!this.config.optimistic) {
-      this.#unwatch = this.client.pub.watchBlocks({
+      this.#unwatch = watchBlocksAsync(this.client.pub, {
         onBlock: b => this.#onBlock(b),
-        includeTransactions: false,
       });
     }
   }
 
   async #onBlock(block: Block<bigint, false, "latest">): Promise<void> {
     const { number: blockNumber, timestamp } = block;
-    if (this.#processing) {
-      this.log.debug(
-        `skipping block ${blockNumber}, still processing block ${this.#processing}`,
-      );
-      return;
-    }
     try {
-      this.#processing = blockNumber;
-      await this.caService.sdk.syncState({
+      const ok = await this.sdk.syncState({
         blockNumber,
         timestamp,
         // this effectively updates chainlink prices
@@ -135,17 +126,17 @@ export class Scanner {
         // and redstone price updates will be updated in credit account service calls
         ignoreUpdateablePrices: true,
       });
-      await this.liquidatorService.syncState(blockNumber);
-      await this.#updateAccounts(blockNumber);
-      this.#lastUpdated = blockNumber;
+      if (ok) {
+        await this.liquidatorService.syncState(this.sdk.currentBlock);
+        await this.#updateAccounts(this.sdk.currentBlock);
+        this.#lastUpdated = this.sdk.currentBlock;
+      }
     } catch (e) {
       this.log.error(
         new Error(`failed to process block ${blockNumber}`, { cause: e }),
       );
       // this.#lastUpdated will not change in case of failed block
       // if this happens for multiple blocks, this error should be caught by metrics monitor, since lastUpdated metric will be stagnant
-    } finally {
-      this.#processing = null;
     }
   }
 
@@ -234,11 +225,7 @@ export class Scanner {
 
       if (zeroHFAccs.length > 0) {
         this.notifier.alert(
-          new ZeroHFAccountsNotification(
-            this.caService.sdk,
-            zeroHFAccs,
-            blockNumber,
-          ),
+          new ZeroHFAccountsNotification(this.sdk, zeroHFAccs, blockNumber),
         );
       }
     }
@@ -250,13 +237,13 @@ export class Scanner {
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
     this.log.debug(
-      { timestamp: this.caService.sdk.timestamp },
+      { timestamp: this.sdk.timestamp },
       "getting expired credit accounts",
     );
     const expiredCMs = new AddressSet();
     const expiredCmNames: string[] = [];
 
-    for (const m of this.caService.sdk.marketRegister.markets) {
+    for (const m of this.sdk.marketRegister.markets) {
       // nothing borrowed === no accounts
       if (m.pool.pool.totalBorrowed === 0n) {
         continue;
@@ -331,6 +318,10 @@ export class Scanner {
 
   public get maxHealthFactor(): bigint {
     return this.#maxHealthFactor;
+  }
+
+  public get sdk(): OnchainSDK {
+    return this.caService.sdk;
   }
 
   public async stop(): Promise<void> {

@@ -5,8 +5,8 @@ import type {
 } from "@gearbox-protocol/cli-utils";
 import {
   type CreditAccountData,
-  type GearboxSDK,
   hexEq,
+  type OnchainSDK,
   SDKConstruct,
 } from "@gearbox-protocol/sdk";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
@@ -19,7 +19,7 @@ export class BatchLiquidationErrorNotification
   #error: string;
   #accounts: CreditAccountData[];
 
-  constructor(sdk: GearboxSDK, accounts: CreditAccountData[], error: string) {
+  constructor(sdk: OnchainSDK, accounts: CreditAccountData[], error: string) {
     super(sdk);
     this.#accounts = accounts;
     this.#error = error.length > 128 ? `${error.slice(0, 128)}...` : error;
