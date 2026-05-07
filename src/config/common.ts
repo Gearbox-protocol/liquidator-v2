@@ -34,6 +34,15 @@ export const CommonSchema = z.object({
     env: "MARKET_CONFIGURATORS",
   }),
   /**
+   * RWA factories addresses to attach SDK
+   */
+  rwaFactories: optionalAddressArrayLike().register(zommandRegistry, {
+    flags: "--rwa-factories <addresses...>",
+    description:
+      "RWA factories to use for the process, comma separated. Uses default value from SDK if not specified",
+    env: "RWA_FACTORIES",
+  }),
+  /**
    * App name used in various messages to distinguish instances
    */
   appName: z.string().default("liquidator-ts").register(zommandRegistry, {

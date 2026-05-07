@@ -68,8 +68,9 @@ const program = new Zommand("liquidator-v2", {
 
     await config.initialize(transport);
 
-    const service = await attachSDK();
-    DI.set(DI.CreditAccountService, service);
+    const sdk = await attachSDK();
+    DI.set(DI.SDK, sdk);
+
     const app = new Liquidator();
     await app.launch();
   });

@@ -1,9 +1,5 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
-import type {
-  CreditAccountData,
-  ICreditAccountsService,
-  OnchainSDK,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
 import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import { type Address, erc20Abi } from "viem";
@@ -29,8 +25,8 @@ export default abstract class AbstractLiquidator<
   @Logger("Liquidator")
   logger!: ILogger;
 
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Notifier)
   notifier!: INotificationService;
@@ -92,10 +88,6 @@ export default abstract class AbstractLiquidator<
       args: [this.client.address],
     });
     return { eth, underlying };
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
   }
 
   protected get errorHandler(): ErrorHandler {

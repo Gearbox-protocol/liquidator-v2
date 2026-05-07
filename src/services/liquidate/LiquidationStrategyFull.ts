@@ -1,6 +1,5 @@
 import {
   type CreditAccountData,
-  type ICreditAccountsService,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
   WAD,
@@ -35,8 +34,8 @@ export default class LiquidationStrategyFull
   extends AccountHelper
   implements ILiquidationStrategy<FullLiquidationPreview>
 {
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Config)
   config!: LiqduiatorConfig<FullLiquidatorSchema>;
@@ -91,7 +90,7 @@ export default class LiquidationStrategyFull
     const snapshotId = await this.client.anvil.snapshot();
 
     await this.#setDebt(ca, increaseBy, newDebt);
-    const account = await this.creditAccountService.getCreditAccountData(
+    const account = await this.sdk.accounts.getCreditAccountData(
       ca.creditAccount,
     );
     if (!account || !this.hasBadDebt(account)) {
@@ -159,7 +158,7 @@ export default class LiquidationStrategyFull
         this.config.debtPolicy === "debt-only" ||
         (this.config.debtPolicy === "debt-expired" && cm.isExpired);
       const { tx, routerCloseResult, calls } =
-        await this.creditAccountService.fullyLiquidate({
+        await this.sdk.accounts.fullyLiquidate({
           account: ca,
           to: this.client.address,
           slippage: BigInt(this.config.slippage),
@@ -219,9 +218,5 @@ export default class LiquidationStrategyFull
       }
       throw e;
     }
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
   }
 }

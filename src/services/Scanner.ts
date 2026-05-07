@@ -2,7 +2,6 @@ import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type {
   CreditAccountData,
   GetCreditAccountsOptions,
-  ICreditAccountsService,
   OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import {
@@ -12,7 +11,7 @@ import {
   WAD,
   watchBlocksAsync,
 } from "@gearbox-protocol/sdk";
-import type { Address, Block } from "viem";
+import type { Block } from "viem";
 import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
@@ -35,8 +34,8 @@ export class Scanner {
   @DI.Inject(DI.Liquidator)
   liquidatorService!: ILiquidatorService;
 
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
@@ -149,7 +148,7 @@ export class Scanner {
     const blockS = blockNumber ? ` in ${blockNumber}` : "";
     let accounts: CreditAccountData[] = [];
     if (this.config.debugAccount) {
-      const acc = await this.caService.getCreditAccountData(
+      const acc = await this.sdk.accounts.getCreditAccountData(
         this.config.debugAccount,
         blockNumber,
       );
@@ -204,7 +203,10 @@ export class Scanner {
     queue: GetCreditAccountsOptions,
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
-    let accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+    let accounts = await this.sdk.accounts.getCreditAccounts(
+      queue,
+      blockNumber,
+    );
     let zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
     if (zeroHFAccs.length > 0) {
@@ -214,7 +216,7 @@ export class Scanner {
       if (this.config.optimistic) {
         return accounts;
       }
-      accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+      accounts = await this.sdk.accounts.getCreditAccounts(queue, blockNumber);
       zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
       if (zeroHFAccs.length > 0) {
@@ -271,7 +273,7 @@ export class Scanner {
 
     let result: CreditAccountData[] = [];
     if (this.config.optimistic) {
-      result = await this.caService.getCreditAccounts(
+      result = await this.sdk.accounts.getCreditAccounts(
         {
           ignoreReservePrices: true,
           minHealthFactor: 0n,
@@ -284,7 +286,7 @@ export class Scanner {
       const ignoreAccounts = new AddressSet(this.config.ignoreAccounts);
       for (const creditManager of expiredCMs) {
         // we can take first expired credit manager that has non-ignored accounts, and continue with next one on next block
-        result = await this.caService.getCreditAccounts(
+        result = await this.sdk.accounts.getCreditAccounts(
           {
             creditManager,
             ignoreReservePrices: true,
@@ -318,10 +320,6 @@ export class Scanner {
 
   public get maxHealthFactor(): bigint {
     return this.#maxHealthFactor;
-  }
-
-  public get sdk(): OnchainSDK {
-    return this.caService.sdk;
   }
 
   public async stop(): Promise<void> {

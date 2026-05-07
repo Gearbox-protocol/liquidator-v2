@@ -1,12 +1,5 @@
-import type {
-  ICreditAccountsService,
-  RouterV310Contract,
-} from "@gearbox-protocol/sdk";
-import {
-  createCreditAccountService,
-  OnchainSDK,
-  VERSION_RANGE_310,
-} from "@gearbox-protocol/sdk";
+import type { RouterV310Contract } from "@gearbox-protocol/sdk";
+import { OnchainSDK, VERSION_RANGE_310 } from "@gearbox-protocol/sdk";
 import { BotsPlugin } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Transport } from "viem";
 import type { Config } from "./config/index.js";
@@ -15,7 +8,9 @@ import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";
 import { formatTs } from "./utils/index.js";
 
-export default async function attachSDK(): Promise<ICreditAccountsService> {
+export default async function attachSDK(): Promise<
+  OnchainSDK<{ bots: BotsPlugin }>
+> {
   const config: Config = DI.get(DI.Config);
   const client: Client = DI.get(DI.Client);
   const logger: ILogger = DI.create(DI.Logger, "sdk");
@@ -78,6 +73,7 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
   await sdk.attach({
     addressProvider: config.addressProvider,
     marketConfigurators: config.marketConfigurators,
+    rwaFactories: config.rwaFactories,
     // we need prices to calculate things like numsplits
     ignoreUpdateablePrices: false,
     redstone: {
@@ -115,9 +111,5 @@ export default async function attachSDK(): Promise<ICreditAccountsService> {
       timestamp: sdk.timestamp,
     });
   }
-  const service = createCreditAccountService(sdk, 310, {
-    batchSize: config.compressorBatchSize,
-  });
-
-  return service;
+  return sdk;
 }

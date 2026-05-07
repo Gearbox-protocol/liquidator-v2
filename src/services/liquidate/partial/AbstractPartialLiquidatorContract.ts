@@ -2,7 +2,6 @@ import type {
   CreditAccountData,
   CreditSuite,
   Curator,
-  ICreditAccountsService,
   OnchainSDK,
   PriceUpdate,
 } from "@gearbox-protocol/sdk";
@@ -35,8 +34,8 @@ export abstract class AbstractPartialLiquidatorContract
     PartialLiquidatorSchema | DeleverageLiquidatorSchema
   >;
 
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -219,7 +218,7 @@ export abstract class AbstractPartialLiquidatorContract
       let hf = this.config.targetPartialHF;
       for (const t of this.config.calculatePartialHF ?? []) {
         if (ca.underlying === t) {
-          hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
+          hf = this.sdk.accounts.getOptimalHFForPartialLiquidation(ca);
           break;
         }
       }
@@ -254,10 +253,6 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected get router(): Address {
     return this.#router;
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
   }
 
   protected get owner(): Address {

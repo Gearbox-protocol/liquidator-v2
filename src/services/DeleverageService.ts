@@ -1,8 +1,4 @@
-import type {
-  CreditAccountData,
-  ICreditAccountsService,
-  OnchainSDK,
-} from "@gearbox-protocol/sdk";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import type {
   BotsPlugin,
@@ -44,8 +40,8 @@ export default class DeleverageService {
   @DI.Inject(DI.Config)
   config!: LiqduiatorConfig<DeleverageLiquidatorSchema>;
 
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK<{ bots: BotsPlugin }>;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -73,9 +69,7 @@ export default class DeleverageService {
 
     const res = await this.client.pub.multicall({
       contracts: accounts.map(ca => {
-        const cm = this.caService.sdk.marketRegister.findCreditManager(
-          ca.creditManager,
-        );
+        const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
         return {
           address: cm.creditFacade.botList,
           abi: iBotListV310Abi,
@@ -94,7 +88,7 @@ export default class DeleverageService {
       if (r.status === "success") {
         const [permissions, forbidden] = r.result;
         if (
-          !!permissions &&
+          permissions &&
           !forbidden &&
           (permissions & DELEVERAGE_PERMISSIONS) === DELEVERAGE_PERMISSIONS
         ) {
@@ -109,10 +103,6 @@ export default class DeleverageService {
       "filtered accounts for deleverage",
     );
     return result;
-  }
-
-  private get sdk(): OnchainSDK<{ bots: BotsPlugin }> {
-    return this.caService.sdk as OnchainSDK<{ bots: BotsPlugin }>;
   }
 
   public get status(): DeleverageStatus | undefined {

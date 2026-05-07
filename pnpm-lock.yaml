@@ -20,7 +20,7 @@ importers:
     devDependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.1042.0
-        version: 3.1042.0
+        version: 3.1044.0
       '@biomejs/biome':
         specifier: ^2.4.14
         version: 2.4.14
@@ -40,14 +40,11 @@ importers:
         specifier: ^6.8.2
         version: 6.8.2(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
       '@gearbox-protocol/liquidator-contracts':
-        specifier: ^1.36.0-experimental.67
-        version: 1.36.0-next.9
-      '@gearbox-protocol/liquidator-v2-contracts':
-        specifier: ^2.4.0
-        version: 2.4.0
+        specifier: ^v1.36.0-securitize.1
+        version: 1.36.0-securitize.1
       '@gearbox-protocol/sdk':
-        specifier: ^14.5.10
-        version: 14.5.11(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
+        specifier: ^14.8.0-next.1
+        version: 14.8.0-next.1(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
       '@gearbox-protocol/types':
         specifier: ^1.14.8
         version: 1.14.8(ethers@5.8.0)
@@ -131,16 +128,16 @@ packages:
   '@aws-crypto/util@5.2.0':
     resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
 
-  '@aws-sdk/client-s3@3.1042.0':
-    resolution: {integrity: sha512-z3Ibstr7ckDT10dz/nkk4+93LitrrO49Oq563/JoFHt30ZNodPBCfSxysKcelLyi/lNVF1MZrhZZfikUAG3iNQ==}
+  '@aws-sdk/client-s3@3.1044.0':
+    resolution: {integrity: sha512-yT3g0Oi0b+pJBJswNxRwWLLBoExQhRx9Iz2rUy1xV0slMogTQN+DSjChI95XTDtpGEcY0qnIK6UYX0XCYdhOKg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-secrets-manager@3.1042.0':
-    resolution: {integrity: sha512-doHP17OwqhcuW3e7fKkFfF4rDFM0hY8IVIwqwvBQRLk6IsZXzpl/YRhQWuIiy9O7BSZgzKKE+XytdElsTd9PWQ==}
+  '@aws-sdk/client-secrets-manager@3.1044.0':
+    resolution: {integrity: sha512-aURP58NekytJcxe3xFDOepS6wDChlQe/sLtJbFIJjc1+ReQ1RQblmC7/pvJIUmb8swjvNCgXzgQozR+R8fw/pw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ssm@3.1042.0':
-    resolution: {integrity: sha512-FVX73f1jsms0Ay1DSmivV/jN+unUVI/pUjR2FtbbPoj3N9VA6JZd178xN62jLpfSIN+iBuNGD9gvk3uI3AR9nA==}
+  '@aws-sdk/client-ssm@3.1044.0':
+    resolution: {integrity: sha512-rSCWPYTFywAxmGfiWuoScPyJWEW6WvBBZyC9M+/0C7UnkXoHcRgRGVGYJeBbBT/Gy9YIw0CwZtRTKLaGrC0+eA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.974.8':
@@ -849,14 +846,20 @@ packages:
   '@gearbox-protocol/integrations-v3@1.54.2':
     resolution: {integrity: sha512-DHKBBtQaBNAoj1Dj9WEPpRXInNTL10olI+QVeGKDZQmbF5eEL7qzFfnc59uDPAwjL3BZZbS4clZte/5R7m7Neg==}
 
-  '@gearbox-protocol/liquidator-contracts@1.36.0-next.9':
-    resolution: {integrity: sha512-MX2V4BIbW437vcFPmHfsp3nTlXdDWR2zHmhRgSGx8Ycyc/P4BLwKIQFPIoNarsvRPIJptQbcOOegU2chpgbXHA==}
+  '@gearbox-protocol/liquidator-contracts@1.36.0-securitize.1':
+    resolution: {integrity: sha512-WVc2XxMQr32YkxO59l9lBWbMz53rtZ4/wIC67ZAW+WgcfDxSqk/HIRWTWPCvGT0fN/YexYjpmfpVljwjeij1hQ==}
 
-  '@gearbox-protocol/liquidator-v2-contracts@2.4.0':
-    resolution: {integrity: sha512-BCwNV9WtKvOitMxtSrYhG7VlBUo/FTWg7tmnVxN5HfyGHkS/T/EVxT9xooXCmpH/fbWcYE6+Hs4VDnbi7/LZWQ==}
+  '@gearbox-protocol/sdk@14.7.0':
+    resolution: {integrity: sha512-BXMUGblLw9n5Z868y0Fv3K7FrVCIAJ+JaHxLNyA/4lkqC2qRCr0mAYYbELebQTLUg/q2mGuIe2x22gjxAsgMuw==}
+    peerDependencies:
+      axios: ^1.0.0
+      viem-deal: ^2.0.4
+    peerDependenciesMeta:
+      viem-deal:
+        optional: true
 
-  '@gearbox-protocol/sdk@14.5.11':
-    resolution: {integrity: sha512-l3bsXBNIMiqKPWgIHRMitgS1dYG+uHL0JILfTqeJ7otcIB/RbBVEGYfHSQN1yTCZlrC2x/6tb4Ksuuw5/HGYbg==}
+  '@gearbox-protocol/sdk@14.8.0-next.1':
+    resolution: {integrity: sha512-rkPdLf6mLDPRCK3+OMBCAVk1J8D4r1sOxsm5yz9XIbQQ5+k7VlILlZUhqwXw5XEtkEiYMMZe1yjt+RPf/j8Ofw==}
     peerDependencies:
       axios: ^1.0.0
       viem-deal: ^2.0.4
@@ -1585,8 +1588,8 @@ packages:
   fast-uri@3.1.2:
     resolution: {integrity: sha512-rVjf7ArG3LTk+FS6Yw81V1DLuZl1bRbNrev6Tmd/9RaroeeRRJhAt7jg/6YFxbvAQXUCavSoZhPPj6oOx+5KjQ==}
 
-  fast-xml-builder@1.1.8:
-    resolution: {integrity: sha512-sDVBc2gg8pSKvcbE8rBmOyjSGQf0AdsbqvHeIOv3D/uYNoV4eCReQXyDF8Pdv8+m1FHazACypSz2hR7O2S1LLw==}
+  fast-xml-builder@1.1.9:
+    resolution: {integrity: sha512-jcyKVSEX13iseJqg7n/KWw+xnu/7fdrZ333Fac54KjHDIELVCfDDJXYIm6DTJ0Su4gSzrhqiK0DzY/wZbF40mw==}
 
   fast-xml-parser@5.7.2:
     resolution: {integrity: sha512-P7oW7tLbYnhOLQk/Gv7cZgzgMPP/XN03K02/Jy6Y/NHzyIAIpxuZIM/YqAkfiXFPxA2CTm7NtCijK9EDu09u2w==}
@@ -2350,7 +2353,7 @@ snapshots:
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1042.0':
+  '@aws-sdk/client-s3@3.1044.0':
     dependencies:
       '@aws-crypto/sha1-browser': 5.2.0
       '@aws-crypto/sha256-browser': 5.2.0
@@ -2410,7 +2413,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-secrets-manager@3.1042.0':
+  '@aws-sdk/client-secrets-manager@3.1044.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -2454,7 +2457,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-ssm@3.1042.0':
+  '@aws-sdk/client-ssm@3.1044.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -3437,10 +3440,10 @@ snapshots:
 
   '@gearbox-protocol/cli-utils@6.8.2(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
     dependencies:
-      '@aws-sdk/client-s3': 3.1042.0
-      '@aws-sdk/client-secrets-manager': 3.1042.0
-      '@aws-sdk/client-ssm': 3.1042.0
-      '@gearbox-protocol/sdk': 14.5.11(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
+      '@aws-sdk/client-s3': 3.1044.0
+      '@aws-sdk/client-secrets-manager': 3.1044.0
+      '@aws-sdk/client-ssm': 3.1044.0
+      '@gearbox-protocol/sdk': 14.7.0(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
       '@vlad-yakovlev/telegram-md': 2.1.0
       abitype: 1.2.4(typescript@6.0.3)(zod@4.4.3)
       commander: 14.0.3
@@ -3461,11 +3464,30 @@ snapshots:
 
   '@gearbox-protocol/integrations-v3@1.54.2': {}
 
-  '@gearbox-protocol/liquidator-contracts@1.36.0-next.9': {}
+  '@gearbox-protocol/liquidator-contracts@1.36.0-securitize.1': {}
 
-  '@gearbox-protocol/liquidator-v2-contracts@2.4.0': {}
+  '@gearbox-protocol/sdk@14.7.0(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
+    dependencies:
+      '@gearbox-protocol/integrations-v3': 1.54.2
+      '@redstone-finance/evm-connector': 0.9.0
+      '@redstone-finance/protocol': 0.9.0
+      '@redstone-finance/sdk': 0.9.0
+      '@redstone-finance/utils': 0.9.0
+      abitype: 1.2.4(typescript@6.0.3)(zod@4.4.3)
+      axios: 1.16.0
+      buffer: 6.0.3
+      date-fns: 4.1.0
+      viem: 2.48.8(typescript@6.0.3)(zod@4.4.3)
+      zod: 4.4.3
+    optionalDependencies:
+      viem-deal: 2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3))
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - typescript
+      - utf-8-validate
 
-  '@gearbox-protocol/sdk@14.5.11(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
+  '@gearbox-protocol/sdk@14.8.0-next.1(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
     dependencies:
       '@gearbox-protocol/integrations-v3': 1.54.2
       '@redstone-finance/evm-connector': 0.9.0
@@ -4365,14 +4387,14 @@ snapshots:
 
   fast-uri@3.1.2: {}
 
-  fast-xml-builder@1.1.8:
+  fast-xml-builder@1.1.9:
     dependencies:
       path-expression-matcher: 1.5.0
 
   fast-xml-parser@5.7.2:
     dependencies:
       '@nodable/entities': 2.1.0
-      fast-xml-builder: 1.1.8
+      fast-xml-builder: 1.1.9
       path-expression-matcher: 1.5.0
       strnum: 2.2.3
 
