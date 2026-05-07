@@ -53,19 +53,6 @@ export interface RWALiquidationPreview extends LiquidationPreview {
   priceUpdates: PriceUpdate[];
 }
 
-/**
- * Thrown by a strategy's `preview` (or `simulate`) when an account is detected
- * to be in a state where this strategy cannot be applied, but it's a normal
- * situation that should not produce error notifications or be retried with
- * fallback strategies.
- */
-export class NotApplicableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotApplicableError";
-  }
-}
-
 export interface ILiquidatorService {
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
@@ -103,7 +90,7 @@ export interface ILiquidationStrategy<
 
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
-  isApplicable: (ca: CreditAccountData) => boolean;
+  isApplicable: (ca: CreditAccountData, optimistic: boolean) => boolean;
   /**
    * For optimistic liquidations only: create conditions that make this account liquidatable
    * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result

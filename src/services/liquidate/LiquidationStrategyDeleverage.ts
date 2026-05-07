@@ -35,16 +35,16 @@ export default class LiquidationStrategyDeleverage
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
 
-  public override isApplicable(_ca: CreditAccountData): boolean {
+  public override isApplicable(
+    _ca: CreditAccountData,
+    _optimistic: boolean,
+  ): boolean {
     return true;
   }
 
   public override async makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
-    if (!this.isApplicable(ca)) {
-      throw new Error("warning: deleverage is not applicable for this account");
-    }
     const result = await super.makeLiquidatable(ca);
     if (this.config.useProductionScanner) {
       this.logger.debug("skipping force-enabling deleverage bot");

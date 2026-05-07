@@ -52,7 +52,7 @@ export default class LiquidationStrategyPartial
     await this.#deployer.syncState();
   }
 
-  public isApplicable(_ca: CreditAccountData): boolean {
+  public isApplicable(_ca: CreditAccountData, _optimistic: boolean): boolean {
     return true;
   }
 

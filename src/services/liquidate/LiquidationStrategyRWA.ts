@@ -10,13 +10,11 @@ import { errorAbis } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
-import { RWAContractsDeployer } from "./rwa/RWAContractsDeployer.js";
-import { resolveRedemptionGateway } from "./rwa/redemptionGateway.js";
-import {
-  type ILiquidationStrategy,
-  type MakeLiquidatableResult,
-  NotApplicableError,
-  type RWALiquidationPreview,
+import { RWAContractsDeployer, resolveRedemptionGateway } from "./rwa/index.js";
+import type {
+  ILiquidationStrategy,
+  MakeLiquidatableResult,
+  RWALiquidationPreview,
 } from "./types.js";
 
 export default class LiquidationStrategyRWA
@@ -52,7 +50,7 @@ export default class LiquidationStrategyRWA
 
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
-  public isApplicable(ca: CreditAccountData): boolean {
+  public isApplicable(ca: CreditAccountData, _optimistic: boolean): boolean {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
     const meta = this.sdk.tokensMeta.mustGet(cm.underlying);
     return this.sdk.tokensMeta.isRWAUnderlying(meta);
@@ -88,14 +86,11 @@ export default class LiquidationStrategyRWA
         this.logger.info(
           `account ${ca.creditAccount} cannot be liquidated via stablecoins yet`,
         );
-        throw new NotApplicableError(
-          "account cannot be liquidated via stablecoins",
+        throw new Error(
+          "warning: account cannot be liquidated via stablecoins",
         );
       }
     } catch (e) {
-      if (e instanceof NotApplicableError) {
-        throw e;
-      }
       throw new BaseError("cant preview rwa liquidation", {
         cause: e as Error,
       });

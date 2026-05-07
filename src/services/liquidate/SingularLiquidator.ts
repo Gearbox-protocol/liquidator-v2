@@ -24,7 +24,9 @@ import AbstractLiquidator, {
 } from "./AbstractLiquidator.js";
 import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
+import LiquidationStrategyLossPolicy from "./LiquidationStrategyLossPolicy.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
+import LiquidationStrategyRWA from "./LiquidationStrategyRWA.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
@@ -56,16 +58,17 @@ export default class SingularLiquidator
         const cfg = this.config as unknown as FullLiquidatorSchema;
         switch (cfg.lossPolicy) {
           case "only":
-            add(new LiquidationStrategyFull("loss policy", true));
-            return;
+            add(new LiquidationStrategyLossPolicy());
+            break;
           case "never":
-            add(new LiquidationStrategyFull("full", false));
-            return;
+            add(new LiquidationStrategyFull());
+            break;
           case "fallback":
-            add(new LiquidationStrategyFull("loss policy", true));
-            add(new LiquidationStrategyFull("full fallback", false));
-            return;
+            add(new LiquidationStrategyLossPolicy());
+            add(new LiquidationStrategyFull("full fallback"));
+            break;
         }
+        add(new LiquidationStrategyRWA());
         return;
       }
       case "deleverage":
@@ -159,7 +162,7 @@ export default class SingularLiquidator
     this.notifier.notify(new LiquidationStartNotification(this.sdk, ca));
 
     for (const s of this.#strategies) {
-      if (!s.isApplicable(ca)) {
+      if (!s.isApplicable(ca, false)) {
         this.logger.debug(`strategy ${s.name} is not applicable`);
         continue;
       }
@@ -225,22 +228,27 @@ export default class SingularLiquidator
     const start = Date.now();
     let strategyResult: OptimisticStrategyResult | undefined;
 
+    // At most one strategy may apply to a given account
+    // A violation indicates a misconfigured optimistic run
+    const applicable = this.#strategies.filter(s => s.isApplicable(acc, true));
+    if (applicable.length > 1) {
+      throw new Error(
+        `${applicable.length} strategies apply to ${acc.creditAccount} in optimistic mode: ${applicable.map(s => s.name).join(", ")}`,
+      );
+    }
+
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlying);
 
-      // make liquidatable using first strategy
-      const ml = await this.#strategies[0].makeLiquidatable(acc);
-      result.partialLiquidationCondition = ml.partialLiquidationCondition;
-
-      for (const s of this.#strategies) {
+      if (applicable.length === 1) {
+        const s = applicable[0];
+        const ml = await s.makeLiquidatable(acc);
+        result.partialLiquidationCondition = ml.partialLiquidationCondition;
         strategyResult = await this.#liquidateOneOptimisticStrategy(
           ml.account,
           s,
           ml.snapshotId,
         );
-        if (strategyResult.success) {
-          break;
-        }
       }
 
       if (strategyResult) {
