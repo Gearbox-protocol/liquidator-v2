@@ -48,6 +48,24 @@ export interface PartialLiquidationPreview
   priceUpdates: PriceUpdate[];
 }
 
+export interface RWALiquidationPreview extends LiquidationPreview {
+  redemptionGateway: Address;
+  priceUpdates: PriceUpdate[];
+}
+
+/**
+ * Thrown by a strategy's `preview` (or `simulate`) when an account is detected
+ * to be in a state where this strategy cannot be applied, but it's a normal
+ * situation that should not produce error notifications or be retried with
+ * fallback strategies.
+ */
+export class NotApplicableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotApplicableError";
+  }
+}
+
 export interface ILiquidatorService {
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;

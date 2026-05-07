@@ -87,11 +87,17 @@ export default class SingularLiquidator
     this.logger.info(
       `launching strategies: ${this.#strategies.map(s => s.name).join(", ")}`,
     );
-    await Promise.all(this.#strategies.map(s => s.launch()));
+    // launch consecutively since there might be write transactions (contract deployments)
+    for (const s of this.#strategies) {
+      await s.launch();
+    }
   }
 
   public async syncState(_blockNumber: bigint): Promise<void> {
-    await Promise.all(this.#strategies.map(s => s.syncState(_blockNumber)));
+    // sync consecutively since there might be write transactions (contract deployments)
+    for (const s of this.#strategies) {
+      await s.syncState(_blockNumber);
+    }
   }
 
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {

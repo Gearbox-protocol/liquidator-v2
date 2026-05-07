@@ -141,6 +141,11 @@ export default class LiquidationStrategyFull
   }
 
   public isApplicable(ca: CreditAccountData): boolean {
+    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
+    const meta = this.sdk.tokensMeta.mustGet(cm.underlying);
+    if (this.sdk.tokensMeta.isRWAUnderlying(meta)) {
+      return false;
+    }
     if (this.#applyLossPolicy && !this.hasBadDebt(ca)) {
       return false;
     }
