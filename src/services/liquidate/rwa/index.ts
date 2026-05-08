@@ -1,2 +1,2 @@
 export * from "./RWAContractsDeployer.js";
-export * from "./redemptionGateway.js";
+export * from "./resolveRWAContext.js";

@@ -1,20 +1,30 @@
-import { hexEq, type OnchainSDK } from "@gearbox-protocol/sdk";
+import {
+  hexEq,
+  type OnchainSDK,
+  type SecuritizeRWAFactory,
+} from "@gearbox-protocol/sdk";
 import type { Address } from "viem";
 
 /**
- * Resolves the Securitize redemption gateway (DS token operator) for a credit
- * manager whose underlying is an RWA token wrapping a DS token.
- *
- * Returns `undefined` if the underlying is not an RWA underlying (so callers
- * can use it as a quick "is this a Securitize RWA CM?" check).
- *
- * Throws if the underlying is RWA but the matching Securitize factory or
- * DS token operator cannot be found - that indicates a misconfiguration.
+ * Bundle of contract handles needed to drive a Securitize RWA credit account
+ * (the factory that owns it, the DSToken used as the RWA collateral, and the
+ * redemption gateway / DS token operator).
  */
-export function resolveRedemptionGateway(
+export interface RWAContext {
+  factory: SecuritizeRWAFactory;
+  dsToken: Address;
+  gateway: Address;
+}
+
+/**
+ * Resolves the Securitize RWA context for a credit manager.
+ * Returns `undefined` if the credit manager is not an RWA credit manager.
+ * Throws on configuration error
+ */
+export function resolveRWAContext(
   sdk: OnchainSDK,
   underlying: Address,
-): Address | undefined {
+): RWAContext | undefined {
   const meta = sdk.tokensMeta.mustGet(underlying);
   if (!sdk.tokensMeta.isRWAUnderlying(meta)) {
     return undefined;
@@ -33,11 +43,11 @@ export function resolveRedemptionGateway(
       `Securitize factory ${factory.address} has no DS tokens registered`,
     );
   }
-  const operator = dsToken.operators[0];
-  if (!operator) {
+  const gateway = dsToken.operators[0];
+  if (!gateway) {
     throw new Error(
       `DS token ${sdk.labelAddress(dsToken.address)} has no operators registered in Securitize factory ${factory.address}`,
     );
   }
-  return operator;
+  return { factory, dsToken: dsToken.address, gateway };
 }

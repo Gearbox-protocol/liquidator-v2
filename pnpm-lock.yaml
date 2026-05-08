@@ -43,8 +43,8 @@ importers:
         specifier: ^v1.36.0-securitize.1
         version: 1.36.0-securitize.1
       '@gearbox-protocol/sdk':
-        specifier: ^14.8.0-next.1
-        version: 14.8.0-next.1(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
+        specifier: ^14.8.0-next.2
+        version: 14.8.0-next.2(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))
       '@gearbox-protocol/types':
         specifier: ^1.14.8
         version: 1.14.8(ethers@5.8.0)
@@ -858,8 +858,8 @@ packages:
       viem-deal:
         optional: true
 
-  '@gearbox-protocol/sdk@14.8.0-next.1':
-    resolution: {integrity: sha512-rkPdLf6mLDPRCK3+OMBCAVk1J8D4r1sOxsm5yz9XIbQQ5+k7VlILlZUhqwXw5XEtkEiYMMZe1yjt+RPf/j8Ofw==}
+  '@gearbox-protocol/sdk@14.8.0-next.2':
+    resolution: {integrity: sha512-Qyv3VWuHMO7eocjyHKA9OUQLCjltuKK6gnbNI4328ncuB7yJNQBtTf9Jxe0HLJcRIdfu5lBCE2bLBDsfpQP8nQ==}
     peerDependencies:
       axios: ^1.0.0
       viem-deal: ^2.0.4
@@ -3487,7 +3487,7 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@gearbox-protocol/sdk@14.8.0-next.1(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
+  '@gearbox-protocol/sdk@14.8.0-next.2(axios@1.16.0)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.48.8(typescript@6.0.3)(zod@4.4.3)))':
     dependencies:
       '@gearbox-protocol/integrations-v3': 1.54.2
       '@redstone-finance/evm-connector': 0.9.0
