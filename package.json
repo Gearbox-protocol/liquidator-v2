@@ -28,11 +28,11 @@
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@gearbox-protocol/biome-config": "^1.0.28",
-    "@gearbox-protocol/cli-utils": "^6.8.2",
+    "@gearbox-protocol/cli-utils": "^6.9.0",
     "@gearbox-protocol/liquidator-contracts": "^v1.36.0-securitize.1",
-    "@gearbox-protocol/sdk": "14.8.0-next.2",
+    "@gearbox-protocol/sdk": "14.8.1",
     "@gearbox-protocol/types": "^1.14.8",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.6.1",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.2.4",
     "axios": "^1.16.0",
@@ -61,5 +61,5 @@
       "biome check --no-errors-on-unmatched --write"
     ]
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@11.0.8"
 }

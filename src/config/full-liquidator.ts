@@ -1,4 +1,4 @@
-import { boolLike, zommandRegistry } from "@gearbox-protocol/cli-utils";
+import { zommandRegistry } from "@gearbox-protocol/cli-utils";
 import { z } from "zod/v4";
 import { CommonSchema } from "./common.js";
 
