@@ -1,0 +1,49 @@
+{
+  "name": "@gearbox-protocol/liquidator-v2-config",
+  "version": "0.0.0-semantic-release",
+  "description": "Configuration schemas and optimistic result types for Gearbox liquidator v2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gearbox-protocol/liquidator-v2.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.mjs"
+        }
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup"
+  },
+  "dependencies": {
+    "@gearbox-protocol/cli-utils": "^6.9.0",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@gearbox-protocol/sdk": ">=14.8.1",
+    "viem": ">=2.48.8"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^6.0.3"
+  }
+}

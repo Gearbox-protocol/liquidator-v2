@@ -1,5 +1,6 @@
 import { nextTick } from "node:process";
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type {
   AnvilClient,
@@ -32,7 +33,6 @@ import {
   WaitForTransactionReceiptTimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { errorAbis } from "../errors/abis.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";

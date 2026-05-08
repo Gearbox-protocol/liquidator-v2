@@ -1,4 +1,8 @@
 import { securitizeLiquidatorHelperAbi } from "@gearbox-protocol/liquidator-contracts/abi";
+import type {
+  FullLiquidatorSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   type CreditAccountData,
   hexEq,
@@ -14,10 +18,6 @@ import {
   parseEther,
   type SimulateContractReturnType,
 } from "viem";
-import type {
-  FullLiquidatorSchema,
-  LiqduiatorConfig,
-} from "../../config/index.js";
 import { DI } from "../../di.js";
 import { errorAbis } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";

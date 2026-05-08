@@ -1,10 +1,10 @@
+import type { PartialLiquidationCondition } from "@gearbox-protocol/liquidator-v2-config";
 import type {
   CreditAccountData,
   MultiCall,
   PriceUpdate,
   RawTx,
 } from "@gearbox-protocol/sdk";
-import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
 import type {
   Address,
   Hex,

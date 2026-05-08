@@ -1,4 +1,9 @@
 import type {
+  DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
+  PartialLiquidatorSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
+import type {
   CreditAccountData,
   CreditSuite,
   Curator,
@@ -8,11 +13,6 @@ import type {
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
-import type {
-  DeleverageLiquidatorSchema,
-  LiqduiatorConfig,
-  PartialLiquidatorSchema,
-} from "../../../config/index.js";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";

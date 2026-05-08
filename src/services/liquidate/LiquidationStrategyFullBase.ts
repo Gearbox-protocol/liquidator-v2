@@ -1,3 +1,7 @@
+import type {
+  FullLiquidatorSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   type CreditAccountData,
   type OnchainSDK,
@@ -9,10 +13,6 @@ import {
   decodeFunctionData,
   type SimulateContractReturnType,
 } from "viem";
-import type {
-  FullLiquidatorSchema,
-  LiqduiatorConfig,
-} from "../../config/index.js";
 import { DI } from "../../di.js";
 import { errorAbis, isRevertedWith } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";

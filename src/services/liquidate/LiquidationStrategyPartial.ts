@@ -1,7 +1,10 @@
+import type {
+  CommonSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
 import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
-import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";

@@ -1,3 +1,9 @@
+import type {
+  CommonSchema,
+  FullLiquidatorSchema,
+  OptimisticResult,
+  PartialLiquidatorSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   AddressMap,
   AddressSet,
@@ -5,13 +11,7 @@ import {
   filterDustUSD,
   type MultiCall,
 } from "@gearbox-protocol/sdk";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, TransactionReceipt } from "viem";
-import type {
-  CommonSchema,
-  FullLiquidatorSchema,
-  PartialLiquidatorSchema,
-} from "../../config/index.js";
 import { TransactionRevertedError } from "../../errors/index.js";
 import { LoggerFactory } from "../../log/index.js";
 import {

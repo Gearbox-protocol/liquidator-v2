@@ -14,9 +14,11 @@ import {
   ssmManagerProxy,
   Zommand,
 } from "@gearbox-protocol/cli-utils";
-
+import {
+  ConfigImplementation,
+  ConfigSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
 import attachSDK from "./attachSDK.js";
-import { ConfigImplementation, ConfigSchema } from "./config/index.js";
 import { DI } from "./di.js";
 import Liquidator from "./Liquidator.js";
 import { createTransport } from "./utils/index.js";

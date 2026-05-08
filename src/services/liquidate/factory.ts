@@ -1,6 +1,5 @@
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { IFactory } from "di-at-home";
-
-import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
 import BatchLiquidator from "./BatchLiquidator.js";
 import SingularLiquidator from "./SingularLiquidator.js";

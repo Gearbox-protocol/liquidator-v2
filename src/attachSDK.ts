@@ -1,8 +1,8 @@
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { RouterV310Contract } from "@gearbox-protocol/sdk";
 import { OnchainSDK, VERSION_RANGE_310 } from "@gearbox-protocol/sdk";
 import { BotsPlugin } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Transport } from "viem";
-import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import type { ILogger } from "./log/index.js";
 import type Client from "./services/Client.js";

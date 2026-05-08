@@ -1,7 +1,7 @@
 import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
-
+import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
 import { type CreditAccountData, json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
@@ -10,8 +10,6 @@ import {
   ContractFunctionExecutionError,
   encodeFunctionData,
 } from "viem";
-
-import type { CommonSchema } from "../config/index.js";
 import type { ILogger } from "../log/index.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 

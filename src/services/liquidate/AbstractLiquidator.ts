@@ -1,9 +1,12 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
+import type {
+  CommonSchema,
+  LiqduiatorConfig,
+  OptimisticResult,
+} from "@gearbox-protocol/liquidator-v2-config";
 import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import { type Address, erc20Abi } from "viem";
-import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";

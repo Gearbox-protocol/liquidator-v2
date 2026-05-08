@@ -1,3 +1,7 @@
+import type {
+  DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   type CreditAccountData,
   type MultiCall,
@@ -5,10 +9,6 @@ import {
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { encodeFunctionData, parseEther } from "viem";
-import type {
-  DeleverageLiquidatorSchema,
-  LiqduiatorConfig,
-} from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import { DELEVERAGE_PERMISSIONS } from "../../utils/permissions.js";

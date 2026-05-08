@@ -3,10 +3,10 @@ import {
   NotificationsService,
   type NotificationsServiceOptions,
 } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import { findCuratorMarketConfigurator } from "@gearbox-protocol/sdk";
 import type { IFactory } from "di-at-home";
 import type { Address } from "viem";
-import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 

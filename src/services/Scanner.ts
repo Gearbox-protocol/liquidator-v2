@@ -1,4 +1,5 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type {
   CreditAccountData,
   GetCreditAccountsOptions,
@@ -12,7 +13,6 @@ import {
   watchBlocksAsync,
 } from "@gearbox-protocol/sdk";
 import type { Block } from "viem";
-import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type Client from "./Client.js";
