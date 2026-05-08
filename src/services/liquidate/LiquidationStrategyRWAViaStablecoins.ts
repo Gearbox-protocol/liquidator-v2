@@ -145,11 +145,13 @@ export default class LiquidationStrategyRWAViaStablecoins
     await this.client.anvil.impersonateAccount({ address: investor });
     await this.client.anvil.setBalance({
       address: investor,
-      value: parseEther("1000000"),
+      value: parseEther("100"),
     });
     const hash = await sendRawTx(this.client.anvil, {
       account: investor,
       tx: redeemTx,
+      maxFeePerGas: 0n,
+      maxPriorityFeePerGas: 0n,
     });
     const receipt = await this.client.anvil.waitForTransactionReceipt({ hash });
     await this.client.anvil.stopImpersonatingAccount({ address: investor });
@@ -175,8 +177,6 @@ export default class LiquidationStrategyRWAViaStablecoins
     const redeemer = redeemers[redeemers.length - 1];
 
     // 3. Fund the redeemer with enough stablecoin to cover the discounted debt.
-    // The pool needs `stableOnRedeemers * liquidationDiscount / PERCENTAGE_FACTOR >= debt`,
-    // so flip the formula and add a buffer for interest/fee drift between snapshot and tx.
     const totalDebt = ca.debt + ca.accruedInterest + ca.accruedFees;
     const amount =
       2n *
