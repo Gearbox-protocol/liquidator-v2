@@ -30,7 +30,7 @@ import type {
   RWALiquidationPreview,
 } from "./types.js";
 
-export default class LiquidationStrategyRWA
+export default class LiquidationStrategyRWAViaStablecoins
   extends AccountHelper
   implements ILiquidationStrategy<RWALiquidationPreview>
 {
@@ -54,7 +54,7 @@ export default class LiquidationStrategyRWA
   }
 
   public get name(): string {
-    return "rwa";
+    return "rwa-via-stablecoins";
   }
 
   public async launch(): Promise<void> {

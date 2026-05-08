@@ -26,7 +26,7 @@ import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyLossPolicy from "./LiquidationStrategyLossPolicy.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
-import LiquidationStrategyRWA from "./LiquidationStrategyRWA.js";
+import LiquidationStrategyRWAViaStablecoins from "./LiquidationStrategyRWAViaStablecoins.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
@@ -68,7 +68,7 @@ export default class SingularLiquidator
             add(new LiquidationStrategyFull("full fallback"));
             break;
         }
-        add(new LiquidationStrategyRWA());
+        add(new LiquidationStrategyRWAViaStablecoins());
         return;
       }
       case "deleverage":
