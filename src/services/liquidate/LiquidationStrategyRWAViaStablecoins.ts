@@ -85,6 +85,14 @@ export default class LiquidationStrategyRWAViaStablecoins
       throw new Error(`Credit manager ${cs.name} is not an RWA credit manager`);
     }
     const { factory, dsToken, gateway } = ctx;
+    this.logger.debug(
+      {
+        factory: this.sdk.labelAddress(factory.address),
+        dsToken: this.sdk.labelAddress(dsToken),
+        gateway: this.sdk.labelAddress(gateway),
+      },
+      "making account liquidatable via stablecoins",
+    );
 
     // RWA underlying is an ERC-4626 vault around the stablecoin we need to fund the redeemer with
     const meta = this.sdk.tokensMeta.mustGet(cs.underlying);
@@ -101,6 +109,17 @@ export default class LiquidationStrategyRWAViaStablecoins
 
     const gatewayAdapter = cs.creditManager.adapters.mustGet(gateway).address;
     const investor = await factory.getInvestor(ca.creditAccount);
+    this.logger.debug(
+      {
+        stable: this.sdk.labelAddress(stable),
+        gatewayAdapter,
+        investor,
+        dsBalance: this.sdk.tokensMeta.formatBN(dsToken, dsBalance, {
+          symbol: true,
+        }),
+      },
+      "investor for account",
+    );
 
     const snapshotId = await this.client.anvil.snapshot();
 
@@ -126,7 +145,7 @@ export default class LiquidationStrategyRWAViaStablecoins
     await this.client.anvil.impersonateAccount({ address: investor });
     await this.client.anvil.setBalance({
       address: investor,
-      value: parseEther("100"),
+      value: parseEther("1000000"),
     });
     const hash = await sendRawTx(this.client.anvil, {
       account: investor,
