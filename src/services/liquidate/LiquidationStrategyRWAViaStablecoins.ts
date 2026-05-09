@@ -145,11 +145,12 @@ export default class LiquidationStrategyRWAViaStablecoins
     await this.client.anvil.impersonateAccount({ address: investor });
     await this.client.anvil.setBalance({
       address: investor,
-      value: parseEther("100"),
+      value: parseEther("100000"),
     });
     const hash = await sendRawTx(this.client.anvil, {
       account: investor,
       tx: redeemTx,
+      gas: 30_000_000n,
     });
     const receipt = await this.client.anvil.waitForTransactionReceipt({ hash });
     await this.client.anvil.stopImpersonatingAccount({ address: investor });
