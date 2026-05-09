@@ -150,8 +150,6 @@ export default class LiquidationStrategyRWAViaStablecoins
     const hash = await sendRawTx(this.client.anvil, {
       account: investor,
       tx: redeemTx,
-      maxFeePerGas: 0n,
-      maxPriorityFeePerGas: 0n,
     });
     const receipt = await this.client.anvil.waitForTransactionReceipt({ hash });
     await this.client.anvil.stopImpersonatingAccount({ address: investor });
