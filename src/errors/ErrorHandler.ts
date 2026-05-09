@@ -2,7 +2,7 @@ import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
-import { type CreditAccountData, json_stringify } from "@gearbox-protocol/sdk";
+import { json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -31,14 +31,13 @@ export class ErrorHandler {
 
   public async explain(
     error: unknown,
-    context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
     if (error instanceof BaseError) {
       let traceFile: string | undefined;
       if (saveTrace) {
         try {
-          traceFile = await this.#saveErrorTrace(error, context);
+          traceFile = await this.#saveErrorTrace(error);
         } catch {}
       }
       const shortMessages: string[] = [];
@@ -99,10 +98,7 @@ export class ErrorHandler {
    * @param error
    * @returns
    */
-  async #saveErrorTrace(
-    e: BaseError,
-    context?: CreditAccountData,
-  ): Promise<string | undefined> {
+  async #saveErrorTrace(e: BaseError): Promise<string | undefined> {
     let cast: string[] = [];
     // this only works for anvil, so we expect jsonRpcProviders to be set
     const anvilURL = this.config.jsonRpcProviders?.[0];
@@ -133,31 +129,26 @@ export class ErrorHandler {
           exErr.contractAddress,
           // data,
         ];
-        this.#caLogger(context).debug(`calling cast ${cast.join(" ")} <data>`);
+        this.log.debug(`calling cast ${cast.join(" ")} <data>`);
         cast.push(data);
       }
     }
     if (!cast.length) {
       return undefined;
     }
-    return this.#runCast(cast, context);
+    return this.#runCast(cast);
   }
 
   /**
    * Runs cast cli command and saves output to a unique file
    * @param args
-   * @param context
    * @returns
    */
-  async #runCast(
-    args: string[],
-    context?: CreditAccountData,
-  ): Promise<string | undefined> {
+  async #runCast(args: string[]): Promise<string | undefined> {
     if (!this.config.castBin || !this.config.outDir) {
       return undefined;
     }
 
-    const logger = this.#caLogger(context);
     try {
       const traceId = `${nanoid()}.trace`;
       const traceFile = path.resolve(this.config.outDir, traceId);
@@ -169,10 +160,10 @@ export class ErrorHandler {
       await new Promise(resolve => {
         pty.onExit(() => resolve(undefined));
       });
-      logger.debug(`saved trace file: ${traceFile}`);
+      this.log.debug(`saved trace file: ${traceFile}`);
       return traceId;
     } catch (e) {
-      logger.warn(`failed to save trace: ${e}`);
+      this.log.warn(`failed to save trace: ${e}`);
     }
   }
 
@@ -184,14 +175,5 @@ export class ErrorHandler {
       longMessage = `${longMessage}Cause: ${cause.longMessage}`;
     }
     return { shortMessage, longMessage };
-  }
-
-  #caLogger(ca?: CreditAccountData): ILogger {
-    return ca
-      ? this.log.child({
-          account: ca.creditAccount,
-          manager: ca.creditManager, // TODO: credit manager name
-        })
-      : this.log;
   }
 }

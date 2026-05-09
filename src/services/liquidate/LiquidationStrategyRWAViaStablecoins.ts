@@ -19,7 +19,7 @@ import {
   type SimulateContractReturnType,
 } from "viem";
 import { DI } from "../../di.js";
-import { errorAbis } from "../../errors/index.js";
+import { errorAbis, TransactionRevertedError } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
@@ -155,9 +155,7 @@ export default class LiquidationStrategyRWAViaStablecoins
     const receipt = await this.client.anvil.waitForTransactionReceipt({ hash });
     await this.client.anvil.stopImpersonatingAccount({ address: investor });
     if (receipt.status === "reverted") {
-      throw new Error(
-        `redeem reverted in tx ${hash} for account ${ca.creditAccount}`,
-      );
+      throw new TransactionRevertedError(receipt);
     }
     this.logger.debug(
       `redeemed ${this.sdk.tokensMeta.formatBN(dsToken, dsBalance, { symbol: true })} via ${this.sdk.labelAddress(gateway)} in tx ${hash}`,

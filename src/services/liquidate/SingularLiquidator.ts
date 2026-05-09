@@ -189,7 +189,7 @@ export default class SingularLiquidator
           throw new TransactionRevertedError(receipt);
         }
       } catch (e) {
-        const decoded = await this.errorHandler.explain(e, ca);
+        const decoded = await this.errorHandler.explain(e);
         this.logger.error(
           `cant liquidate with ${s.name}: ${decoded.shortMessage}`,
         );
@@ -278,7 +278,6 @@ export default class SingularLiquidator
         if (strategyResult?.success === false) {
           const decoded = await this.errorHandler.explain(
             strategyResult.error,
-            acc,
             true,
           );
           result.traceFile = decoded.traceFile;
@@ -297,8 +296,10 @@ export default class SingularLiquidator
       }
     } catch (e) {
       result.isError = true;
-      result.error = `${e}`;
-      this.logger.error(e, "cannot liquidate");
+      const decoded = await this.errorHandler.explain(e, true);
+      result.traceFile = decoded.traceFile;
+      result.error = decoded.longMessage.replaceAll("\n", "\\n");
+      this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
     }
 
     result.duration = Date.now() - start;
