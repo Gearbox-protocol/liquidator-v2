@@ -5,6 +5,7 @@ import type {
 } from "@gearbox-protocol/liquidator-v2-config";
 import {
   type CreditAccountData,
+  formatBN,
   hexEq,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
@@ -126,10 +127,15 @@ export default class LiquidationStrategyRWAViaStablecoins
         gatewayAdapter,
         phantomToken: this.sdk.labelAddress(phantomToken),
         investor,
+        twvUSD: `${formatBN(ca.twvUSD, 8)} USD`,
+        totalValue: this.sdk.tokensMeta.formatBN(cs.underlying, ca.totalValue, {
+          symbol: true,
+        }),
+        totalValueUSD: `${formatBN(ca.totalValueUSD, 8)} USD`,
         dsBalance: this.sdk.tokensMeta.formatBN(dsToken, dsBalance, {
           symbol: true,
         }),
-        dsQuota: this.sdk.tokensMeta.formatBN(dsToken, dsQuota, {
+        dsQuota: this.sdk.tokensMeta.formatBN(cs.underlying, dsQuota, {
           symbol: true,
         }),
         totalDebt: this.sdk.tokensMeta.formatBN(ca.underlying, totalDebt, {
@@ -151,7 +157,7 @@ export default class LiquidationStrategyRWAViaStablecoins
           callData: encodeFunctionData({
             abi: iCreditFacadeMulticallV310Abi,
             functionName: "updateQuota",
-            args: [phantomToken, (12n * dsQuota) / 10n, 0n],
+            args: [phantomToken, dsQuota, 0n],
           }),
         },
         {
