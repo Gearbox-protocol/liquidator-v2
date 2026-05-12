@@ -11,8 +11,13 @@ import {
   RWA_FACTORY_SECURITIZE,
   sendRawTx,
 } from "@gearbox-protocol/sdk";
-import { iSecuritizeRedemptionGatewayAbi } from "@gearbox-protocol/sdk/plugins/adapters";
+import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import {
+  iSecuritizeRedemptionGatewayAbi,
+  type SecuritizeRedemptionGatewayAdapterContract,
+} from "@gearbox-protocol/sdk/plugins/adapters";
+import {
+  type Address,
   BaseError,
   encodeFunctionData,
   parseEther,
@@ -101,20 +106,29 @@ export default class LiquidationStrategyRWAViaStablecoins
     }
     const stable = meta.asset;
 
-    const dsBalance =
-      ca.tokens.find(t => hexEq(t.token, dsToken))?.balance ?? 0n;
+    const dsTok = ca.tokens.find(t => hexEq(t.token, dsToken));
+    const dsBalance = dsTok?.balance ?? 0n;
+    const dsQuota = dsTok?.quota ?? 0n;
     if (dsBalance === 0n) {
       throw new Error("warning: no DSToken balance on account");
     }
 
-    const gatewayAdapter = cs.creditManager.adapters.mustGet(gateway).address;
+    const adapterContract = cs.creditManager.adapters.mustGet(
+      gateway,
+    ) as SecuritizeRedemptionGatewayAdapterContract;
+    const gatewayAdapter = adapterContract.address;
+    const phantomToken = adapterContract.redemptionPhantomToken;
     const investor = await factory.getInvestor(ca.creditAccount);
     this.logger.debug(
       {
         stable: this.sdk.labelAddress(stable),
         gatewayAdapter,
+        phantomToken: this.sdk.labelAddress(phantomToken),
         investor,
         dsBalance: this.sdk.tokensMeta.formatBN(dsToken, dsBalance, {
+          symbol: true,
+        }),
+        dsQuota: this.sdk.tokensMeta.formatBN(dsToken, dsQuota, {
           symbol: true,
         }),
       },
@@ -124,15 +138,32 @@ export default class LiquidationStrategyRWAViaStablecoins
     const snapshotId = await this.client.anvil.snapshot();
 
     // 1. Redeem all DSTokens via the factory multicall, impersonating the investor.
+    //    Reduce DSToken quota to 0 and increase phantom token quota
     const redeemTx = factory.multicall(
       ca.creditAccount,
       [
+        {
+          target: cs.creditFacade.address,
+          callData: encodeFunctionData({
+            abi: iCreditFacadeMulticallV310Abi,
+            functionName: "updateQuota",
+            args: [phantomToken, dsQuota, 0n],
+          }),
+        },
         {
           target: gatewayAdapter,
           callData: encodeFunctionData({
             abi: iSecuritizeRedemptionGatewayAbi,
             functionName: "redeem",
             args: [dsBalance],
+          }),
+        },
+        {
+          target: cs.creditFacade.address,
+          callData: encodeFunctionData({
+            abi: iCreditFacadeMulticallV310Abi,
+            functionName: "updateQuota",
+            args: [dsToken, -dsQuota, 0n],
           }),
         },
       ],

@@ -1,6 +1,7 @@
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { RouterV310Contract } from "@gearbox-protocol/sdk";
 import { OnchainSDK, VERSION_RANGE_310 } from "@gearbox-protocol/sdk";
+import { AdaptersPlugin } from "@gearbox-protocol/sdk/plugins/adapters";
 import { BotsPlugin } from "@gearbox-protocol/sdk/plugins/bots";
 import type { Transport } from "viem";
 import { DI } from "./di.js";
@@ -67,6 +68,7 @@ export default async function attachSDK(): Promise<
       logger,
       plugins: {
         bots: new BotsPlugin(config.liquidationMode === "deleverage"),
+        adapters: new AdaptersPlugin(true),
       },
     },
   );
