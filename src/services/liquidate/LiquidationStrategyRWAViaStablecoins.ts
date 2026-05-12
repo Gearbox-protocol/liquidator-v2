@@ -93,6 +93,7 @@ export default class LiquidationStrategyRWAViaStablecoins
     const { factory, dsToken, gateway } = ctx;
     this.logger.debug(
       {
+        ca,
         factory: this.sdk.labelAddress(factory.address),
         dsToken: this.sdk.labelAddress(dsToken),
         gateway: this.sdk.labelAddress(gateway),
@@ -157,7 +158,7 @@ export default class LiquidationStrategyRWAViaStablecoins
           callData: encodeFunctionData({
             abi: iCreditFacadeMulticallV310Abi,
             functionName: "updateQuota",
-            args: [phantomToken, dsQuota, 0n],
+            args: [phantomToken, (10n * dsQuota) / 9n, 0n],
           }),
         },
         {
