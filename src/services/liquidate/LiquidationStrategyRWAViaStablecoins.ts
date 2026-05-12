@@ -147,7 +147,7 @@ export default class LiquidationStrategyRWAViaStablecoins
           callData: encodeFunctionData({
             abi: iCreditFacadeMulticallV310Abi,
             functionName: "updateQuota",
-            args: [phantomToken, dsQuota, 0n],
+            args: [phantomToken, (12n * dsQuota) / 10n, 0n],
           }),
         },
         {
