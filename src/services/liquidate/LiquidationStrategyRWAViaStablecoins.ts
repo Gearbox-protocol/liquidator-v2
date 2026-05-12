@@ -119,6 +119,7 @@ export default class LiquidationStrategyRWAViaStablecoins
     const gatewayAdapter = adapterContract.address;
     const phantomToken = adapterContract.redemptionPhantomToken;
     const investor = await factory.getInvestor(ca.creditAccount);
+    const totalDebt = ca.debt + ca.accruedInterest + ca.accruedFees;
     this.logger.debug(
       {
         stable: this.sdk.labelAddress(stable),
@@ -129,6 +130,9 @@ export default class LiquidationStrategyRWAViaStablecoins
           symbol: true,
         }),
         dsQuota: this.sdk.tokensMeta.formatBN(dsToken, dsQuota, {
+          symbol: true,
+        }),
+        totalDebt: this.sdk.tokensMeta.formatBN(ca.underlying, totalDebt, {
           symbol: true,
         }),
       },
@@ -205,7 +209,6 @@ export default class LiquidationStrategyRWAViaStablecoins
     const redeemer = redeemers[redeemers.length - 1];
 
     // 3. Fund the redeemer with enough stablecoin to cover the discounted debt.
-    const totalDebt = ca.debt + ca.accruedInterest + ca.accruedFees;
     const amount =
       2n *
       ((totalDebt * PERCENTAGE_FACTOR) /
