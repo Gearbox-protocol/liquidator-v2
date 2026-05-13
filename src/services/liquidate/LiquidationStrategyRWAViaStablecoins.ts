@@ -157,50 +157,84 @@ export default class LiquidationStrategyRWAViaStablecoins
     try {
       // 1. Redeem all DSTokens via the factory multicall, impersonating the investor.
       //    Reduce DSToken quota to 0 and increase phantom token quota
-      const redeemTx = factory.multicall(
-        ca.creditAccount,
-        [
-          {
-            target: cs.creditFacade.address,
-            callData: encodeFunctionData({
-              abi: iCreditFacadeMulticallV310Abi,
-              functionName: "updateQuota",
-              args: [phantomToken, (10n * dsQuota) / 9n, 0n],
-            }),
-          },
-          {
-            target: gatewayAdapter,
-            callData: encodeFunctionData({
-              abi: iSecuritizeRedemptionGatewayAbi,
-              functionName: "redeem",
-              args: [dsBalance],
-            }),
-          },
-          {
-            target: cs.creditFacade.address,
-            callData: encodeFunctionData({
-              abi: iCreditFacadeMulticallV310Abi,
-              functionName: "updateQuota",
-              args: [dsToken, -dsQuota, 0n],
-            }),
-          },
-        ],
-        {
-          type: RWA_FACTORY_SECURITIZE,
-          tokensToRegister: [],
-          signaturesToCache: [],
-        },
-      );
+      // const redeemTx = factory.multicall(
+      //   ca.creditAccount,
+      //   [
+      //     {
+      //       target: cs.creditFacade.address,
+      //       callData: encodeFunctionData({
+      //         abi: iCreditFacadeMulticallV310Abi,
+      //         functionName: "updateQuota",
+      //         args: [phantomToken, (10n * dsQuota) / 9n, 0n],
+      //       }),
+      //     },
+      //     {
+      //       target: gatewayAdapter,
+      //       callData: encodeFunctionData({
+      //         abi: iSecuritizeRedemptionGatewayAbi,
+      //         functionName: "redeem",
+      //         args: [dsBalance],
+      //       }),
+      //     },
+      //     {
+      //       target: cs.creditFacade.address,
+      //       callData: encodeFunctionData({
+      //         abi: iCreditFacadeMulticallV310Abi,
+      //         functionName: "updateQuota",
+      //         args: [dsToken, -dsQuota, 0n],
+      //       }),
+      //     },
+      //   ],
+      //   {
+      //     type: RWA_FACTORY_SECURITIZE,
+      //     tokensToRegister: [],
+      //     signaturesToCache: [],
+      //   },
+      // );
       await this.client.anvil.impersonateAccount({ address: investor });
       await this.client.anvil.setBalance({
         address: investor,
         value: parseEther("100000"),
       });
-      const hash = await sendRawTx(this.client.anvil, {
-        account: investor,
-        tx: redeemTx,
-        gas: 30_000_000n,
-      });
+      // const hash = await sendRawTx(this.client.anvil, {
+      //   account: investor,
+      //   tx: redeemTx,
+      //   gas: 30_000_000n,
+      // });
+      const hash = await factory.contract.write.multicall(
+        [
+          ca.creditAccount,
+          [
+            {
+              target: cs.creditFacade.address,
+              callData: encodeFunctionData({
+                abi: iCreditFacadeMulticallV310Abi,
+                functionName: "updateQuota",
+                args: [phantomToken, (10n * dsQuota) / 9n, 0n],
+              }),
+            },
+            {
+              target: gatewayAdapter,
+              callData: encodeFunctionData({
+                abi: iSecuritizeRedemptionGatewayAbi,
+                functionName: "redeem",
+                args: [dsBalance],
+              }),
+            },
+            {
+              target: cs.creditFacade.address,
+              callData: encodeFunctionData({
+                abi: iCreditFacadeMulticallV310Abi,
+                functionName: "updateQuota",
+                args: [dsToken, -dsQuota, 0n],
+              }),
+            },
+          ],
+          [],
+          [],
+        ],
+        { account: investor, gas: 30_000_000n },
+      );
       const receipt = await this.client.anvil.waitForTransactionReceipt({
         hash,
       });
