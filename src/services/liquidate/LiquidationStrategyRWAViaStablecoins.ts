@@ -206,6 +206,7 @@ export default class LiquidationStrategyRWAViaStablecoins
         address: factory.address,
         abi: factory.abi,
         functionName: "multicall",
+        gas: 30_000_000n,
         args: [
           ca.creditAccount,
           [
