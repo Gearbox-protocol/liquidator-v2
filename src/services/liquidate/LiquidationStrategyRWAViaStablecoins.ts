@@ -201,8 +201,12 @@ export default class LiquidationStrategyRWAViaStablecoins
       //   tx: redeemTx,
       //   gas: 30_000_000n,
       // });
-      const hash = await factory.contract.write.multicall(
-        [
+      const { request } = await this.client.pub.simulateContract({
+        account: investor,
+        address: factory.address,
+        abi: factory.abi,
+        functionName: "multicall",
+        args: [
           ca.creditAccount,
           [
             {
@@ -233,8 +237,10 @@ export default class LiquidationStrategyRWAViaStablecoins
           [],
           [],
         ],
-        { account: investor, gas: 30_000_000n },
-      );
+      });
+      this.logger.debug(request, "simulated multicall");
+      const hash = await this.client.wallet.writeContract(request);
+
       const receipt = await this.client.anvil.waitForTransactionReceipt({
         hash,
       });
@@ -282,13 +288,9 @@ export default class LiquidationStrategyRWAViaStablecoins
     } catch (e) {
       // Save the foundry trace BEFORE reverting the snapshot
       const decoded = await this.errorHandler.explain(e, true);
-      try {
-        await this.client.anvil.revert({ id: snapshotId });
-      } catch (revertErr) {
-        this.logger.warn(
-          `failed to revert snapshot ${snapshotId}: ${revertErr}`,
-        );
-      }
+      await this.client.anvil.revert({ id: snapshotId });
+      this.logger.error(e, "error in makeLiquidatable");
+
       throw new PreDecodedError(e as Error, decoded);
     }
   }
