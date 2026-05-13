@@ -12,6 +12,7 @@ import {
   type MultiCall,
 } from "@gearbox-protocol/sdk";
 import type { Hex, TransactionReceipt } from "viem";
+import type { ExplainedError } from "../../errors/index.js";
 import { TransactionRevertedError } from "../../errors/index.js";
 import { LoggerFactory } from "../../log/index.js";
 import {
@@ -38,7 +39,7 @@ type OptimisticStrategyResult = {
   receipt?: TransactionReceipt;
 } & (
   | { success: true; state: CreditAccountData; balancesAfter: ExecutorBalance }
-  | { success: false; error: Error }
+  | { success: false; error: Error; decoded?: ExplainedError }
 );
 
 export default class SingularLiquidator
@@ -276,10 +277,12 @@ export default class SingularLiquidator
         result.isError = !strategyResult.success;
 
         if (strategyResult?.success === false) {
-          const decoded = await this.errorHandler.explain(
-            strategyResult.error,
-            true,
-          );
+          // Reuse the trace decoded inside `#liquidateOneOptimisticStrategy`
+          // (saved before snapshot rollback). Fall back to explaining here
+          // only if that pre-decoding failed for some reason.
+          const decoded =
+            strategyResult.decoded ??
+            (await this.errorHandler.explain(strategyResult.error, true));
           result.traceFile = decoded.traceFile;
           result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
             "\n",
@@ -353,7 +356,9 @@ export default class SingularLiquidator
       result.balancesAfter = await this.getExecutorBalance(acc.underlying);
     } catch (e) {
       logger.error(e, "strategy failed");
-      result = { ...result, success: false, error: e as Error };
+      // Decode the error (and save foundry trace) before reverting the snapshot
+      const decoded = await this.errorHandler.explain(e, true);
+      result = { ...result, success: false, error: e as Error, decoded };
     } finally {
       if (snapshotId) {
         await this.client.anvil.revert({ id: snapshotId });

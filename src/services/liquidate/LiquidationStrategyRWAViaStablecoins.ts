@@ -18,14 +18,18 @@ import {
   type SecuritizeRedemptionGatewayAdapterContract,
 } from "@gearbox-protocol/sdk/plugins/adapters";
 import {
-  type Address,
   BaseError,
   encodeFunctionData,
   parseEther,
   type SimulateContractReturnType,
 } from "viem";
 import { DI } from "../../di.js";
-import { errorAbis, TransactionRevertedError } from "../../errors/index.js";
+import {
+  type ErrorHandler,
+  errorAbis,
+  PreDecodedError,
+  TransactionRevertedError,
+} from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
@@ -48,6 +52,9 @@ export default class LiquidationStrategyRWAViaStablecoins
 
   @DI.Inject(DI.Client)
   client!: Client;
+
+  @DI.Inject(DI.ErrorHandler)
+  errorHandler!: ErrorHandler;
 
   @Logger("RWAStrategy")
   logger!: ILogger;
@@ -147,95 +154,109 @@ export default class LiquidationStrategyRWAViaStablecoins
     );
 
     const snapshotId = await this.client.anvil.snapshot();
-
-    // 1. Redeem all DSTokens via the factory multicall, impersonating the investor.
-    //    Reduce DSToken quota to 0 and increase phantom token quota
-    const redeemTx = factory.multicall(
-      ca.creditAccount,
-      [
+    try {
+      // 1. Redeem all DSTokens via the factory multicall, impersonating the investor.
+      //    Reduce DSToken quota to 0 and increase phantom token quota
+      const redeemTx = factory.multicall(
+        ca.creditAccount,
+        [
+          {
+            target: cs.creditFacade.address,
+            callData: encodeFunctionData({
+              abi: iCreditFacadeMulticallV310Abi,
+              functionName: "updateQuota",
+              args: [phantomToken, (10n * dsQuota) / 9n, 0n],
+            }),
+          },
+          {
+            target: gatewayAdapter,
+            callData: encodeFunctionData({
+              abi: iSecuritizeRedemptionGatewayAbi,
+              functionName: "redeem",
+              args: [dsBalance],
+            }),
+          },
+          {
+            target: cs.creditFacade.address,
+            callData: encodeFunctionData({
+              abi: iCreditFacadeMulticallV310Abi,
+              functionName: "updateQuota",
+              args: [dsToken, -dsQuota, 0n],
+            }),
+          },
+        ],
         {
-          target: cs.creditFacade.address,
-          callData: encodeFunctionData({
-            abi: iCreditFacadeMulticallV310Abi,
-            functionName: "updateQuota",
-            args: [phantomToken, (10n * dsQuota) / 9n, 0n],
-          }),
+          type: RWA_FACTORY_SECURITIZE,
+          tokensToRegister: [],
+          signaturesToCache: [],
         },
-        {
-          target: gatewayAdapter,
-          callData: encodeFunctionData({
-            abi: iSecuritizeRedemptionGatewayAbi,
-            functionName: "redeem",
-            args: [dsBalance],
-          }),
-        },
-        {
-          target: cs.creditFacade.address,
-          callData: encodeFunctionData({
-            abi: iCreditFacadeMulticallV310Abi,
-            functionName: "updateQuota",
-            args: [dsToken, -dsQuota, 0n],
-          }),
-        },
-      ],
-      {
-        type: RWA_FACTORY_SECURITIZE,
-        tokensToRegister: [],
-        signaturesToCache: [],
-      },
-    );
-    await this.client.anvil.impersonateAccount({ address: investor });
-    await this.client.anvil.setBalance({
-      address: investor,
-      value: parseEther("100000"),
-    });
-    const hash = await sendRawTx(this.client.anvil, {
-      account: investor,
-      tx: redeemTx,
-      gas: 30_000_000n,
-    });
-    const receipt = await this.client.anvil.waitForTransactionReceipt({ hash });
-    await this.client.anvil.stopImpersonatingAccount({ address: investor });
-    if (receipt.status === "reverted") {
-      throw new TransactionRevertedError(receipt);
-    }
-    this.logger.debug(
-      `redeemed ${this.sdk.tokensMeta.formatBN(dsToken, dsBalance, { symbol: true })} via ${this.sdk.labelAddress(gateway)} in tx ${hash}`,
-    );
+      );
+      await this.client.anvil.impersonateAccount({ address: investor });
+      await this.client.anvil.setBalance({
+        address: investor,
+        value: parseEther("100000"),
+      });
+      const hash = await sendRawTx(this.client.anvil, {
+        account: investor,
+        tx: redeemTx,
+        gas: 30_000_000n,
+      });
+      const receipt = await this.client.anvil.waitForTransactionReceipt({
+        hash,
+      });
+      await this.client.anvil.stopImpersonatingAccount({ address: investor });
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(receipt);
+      }
+      this.logger.debug(
+        `redeemed ${this.sdk.tokensMeta.formatBN(dsToken, dsBalance, { symbol: true })} via ${this.sdk.labelAddress(gateway)} in tx ${hash}`,
+      );
 
-    // 2. Pick the redeemer that was just created (last unclaimed).
-    const redeemers = await this.client.pub.readContract({
-      abi: iSecuritizeRedemptionGatewayAbi,
-      address: gateway,
-      functionName: "getUnclaimedRedeemers",
-      args: [ca.creditAccount],
-    });
-    if (redeemers.length === 0) {
-      throw new Error(`no redeemers found for account ${ca.creditAccount}`);
-    }
-    const redeemer = redeemers[redeemers.length - 1];
+      // 2. Pick the redeemer that was just created (last unclaimed).
+      const redeemers = await this.client.pub.readContract({
+        abi: iSecuritizeRedemptionGatewayAbi,
+        address: gateway,
+        functionName: "getUnclaimedRedeemers",
+        args: [ca.creditAccount],
+      });
+      if (redeemers.length === 0) {
+        throw new Error(`no redeemers found for account ${ca.creditAccount}`);
+      }
+      const redeemer = redeemers[redeemers.length - 1];
 
-    // 3. Fund the redeemer with enough stablecoin to cover the discounted debt.
-    const amount =
-      2n *
-      ((totalDebt * PERCENTAGE_FACTOR) /
-        BigInt(cs.creditManager.liquidationDiscount));
-    await this.client.anvil.deal({
-      erc20: stable,
-      account: redeemer,
-      amount,
-    });
-    this.logger.debug(
-      `funded redeemer ${redeemer} with ${this.sdk.tokensMeta.formatBN(stable, amount, { symbol: true })}`,
-    );
+      // 3. Fund the redeemer with enough stablecoin to cover the discounted debt.
+      const amount =
+        2n *
+        ((totalDebt * PERCENTAGE_FACTOR) /
+          BigInt(cs.creditManager.liquidationDiscount));
+      await this.client.anvil.deal({
+        erc20: stable,
+        account: redeemer,
+        amount,
+      });
+      this.logger.debug(
+        `funded redeemer ${redeemer} with ${this.sdk.tokensMeta.formatBN(stable, amount, { symbol: true })}`,
+      );
 
-    const account = await this.sdk.accounts.getCreditAccountData(
-      ca.creditAccount,
-    );
-    if (!account) {
-      throw new Error(`account ${ca.creditAccount} not found after redeem`);
+      const account = await this.sdk.accounts.getCreditAccountData(
+        ca.creditAccount,
+      );
+      if (!account) {
+        throw new Error(`account ${ca.creditAccount} not found after redeem`);
+      }
+      return { account, snapshotId };
+    } catch (e) {
+      // Save the foundry trace BEFORE reverting the snapshot
+      const decoded = await this.errorHandler.explain(e, true);
+      try {
+        await this.client.anvil.revert({ id: snapshotId });
+      } catch (revertErr) {
+        this.logger.warn(
+          `failed to revert snapshot ${snapshotId}: ${revertErr}`,
+        );
+      }
+      throw new PreDecodedError(e as Error, decoded);
     }
-    return { account, snapshotId };
   }
 
   public async preview(ca: CreditAccountData): Promise<RWALiquidationPreview> {

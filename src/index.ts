@@ -1,4 +1,5 @@
 // These imports are required to establish correct order of dependency injections
+import "./errors/index.js";
 import "./services/Client.js";
 import "./services/HealthCheckerService.js";
 import "./services/Scanner.js";

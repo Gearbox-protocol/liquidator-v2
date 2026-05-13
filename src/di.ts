@@ -4,6 +4,7 @@ const Injectables = {
   Client: "Client",
   Config: "Config",
   Deleverage: "Deleverage",
+  ErrorHandler: "ErrorHandler",
   HealthChecker: "HealthChecker",
   Liquidator: "Liquidator",
   Logger: "Logger",
@@ -20,6 +21,7 @@ export const DI = Object.assign(
     Client: [];
     Config: [];
     Deleverage: [];
+    ErrorHandler: [];
     HealthChecker: [];
     Liquidator: [];
     Logger: [string];

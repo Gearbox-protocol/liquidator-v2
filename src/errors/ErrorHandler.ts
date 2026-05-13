@@ -10,7 +10,9 @@ import {
   ContractFunctionExecutionError,
   encodeFunctionData,
 } from "viem";
-import type { ILogger } from "../log/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
+import { PreDecodedError } from "./PreDecodedError.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
 export interface ExplainedError {
@@ -20,19 +22,32 @@ export interface ExplainedError {
   traceFile?: string;
 }
 
+@DI.Injectable(DI.ErrorHandler)
 export class ErrorHandler {
-  log: ILogger;
-  config: CommonSchema;
+  @DI.Inject(DI.Config)
+  config!: CommonSchema;
 
-  constructor(config: CommonSchema, log: ILogger) {
-    this.config = config;
-    this.log = log;
-  }
+  @Logger("ErrorHandler")
+  log!: ILogger;
 
   public async explain(
     error: unknown,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
+    try {
+      return await this.#explain(error, saveTrace);
+    } catch (e) {
+      return {
+        shortMessage: e instanceof Error ? e.message : String(e),
+        longMessage: e instanceof Error ? e.message : String(e),
+      };
+    }
+  }
+
+  async #explain(error: unknown, saveTrace?: boolean): Promise<ExplainedError> {
+    if (error instanceof PreDecodedError) {
+      return error.decoded;
+    }
     if (error instanceof BaseError) {
       let traceFile: string | undefined;
       if (saveTrace) {

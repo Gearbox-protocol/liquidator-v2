@@ -8,7 +8,7 @@ import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
 import { type Address, erc20Abi } from "viem";
 import { DI } from "../../di.js";
-import { ErrorHandler } from "../../errors/index.js";
+import type { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";
 import { Logger } from "../../log/index.js";
 import type Client from "../Client.js";
@@ -46,12 +46,12 @@ export default abstract class AbstractLiquidator<
   @DI.Inject(DI.Client)
   client!: Client;
 
+  @DI.Inject(DI.ErrorHandler)
+  errorHandler!: ErrorHandler;
+
   skipList = new Set<Address>();
 
-  #errorHandler?: ErrorHandler;
-
   public async launch(asFallback?: boolean): Promise<void> {
-    this.#errorHandler = new ErrorHandler(this.config, this.logger);
     if (!asFallback) {
       this.notifier.notify(new ServiceStartedNotification());
     }
@@ -91,12 +91,5 @@ export default abstract class AbstractLiquidator<
       args: [this.client.address],
     });
     return { eth, underlying };
-  }
-
-  protected get errorHandler(): ErrorHandler {
-    if (!this.#errorHandler) {
-      throw new Error("liquidator not launched");
-    }
-    return this.#errorHandler;
   }
 }
