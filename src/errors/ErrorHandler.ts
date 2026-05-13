@@ -154,6 +154,8 @@ export class ErrorHandler {
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
+      const command = [this.config.castBin, ...args].map(shellQuote).join(" ");
+      out.write(`${command}\n`);
       // use node-pty instead of node:child_process to have colored output
       const pty = spawn(this.config.castBin, args, { cols: 1024 });
       pty.onData(data => out.write(data));
@@ -176,4 +178,14 @@ export class ErrorHandler {
     }
     return { shortMessage, longMessage };
   }
+}
+
+function shellQuote(arg: string): string {
+  if (arg === "") {
+    return "''";
+  }
+  if (/^[A-Za-z0-9_\-./:=@%+,]+$/.test(arg)) {
+    return arg;
+  }
+  return `'${arg.replace(/'/g, "'\\''")}'`;
 }
