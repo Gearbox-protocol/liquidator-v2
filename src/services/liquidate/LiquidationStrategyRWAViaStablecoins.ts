@@ -13,6 +13,7 @@ import {
   sendRawTx,
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+import { setLTZero } from "@gearbox-protocol/sdk/dev";
 import {
   iSecuritizeRedemptionGatewayAbi,
   type SecuritizeRedemptionGatewayAdapterContract,
@@ -157,90 +158,50 @@ export default class LiquidationStrategyRWAViaStablecoins
     try {
       // 1. Redeem all DSTokens via the factory multicall, impersonating the investor.
       //    Reduce DSToken quota to 0 and increase phantom token quota
-      // const redeemTx = factory.multicall(
-      //   ca.creditAccount,
-      //   [
-      //     {
-      //       target: cs.creditFacade.address,
-      //       callData: encodeFunctionData({
-      //         abi: iCreditFacadeMulticallV310Abi,
-      //         functionName: "updateQuota",
-      //         args: [phantomToken, (10n * dsQuota) / 9n, 0n],
-      //       }),
-      //     },
-      //     {
-      //       target: gatewayAdapter,
-      //       callData: encodeFunctionData({
-      //         abi: iSecuritizeRedemptionGatewayAbi,
-      //         functionName: "redeem",
-      //         args: [dsBalance],
-      //       }),
-      //     },
-      //     {
-      //       target: cs.creditFacade.address,
-      //       callData: encodeFunctionData({
-      //         abi: iCreditFacadeMulticallV310Abi,
-      //         functionName: "updateQuota",
-      //         args: [dsToken, -dsQuota, 0n],
-      //       }),
-      //     },
-      //   ],
-      //   {
-      //     type: RWA_FACTORY_SECURITIZE,
-      //     tokensToRegister: [],
-      //     signaturesToCache: [],
-      //   },
-      // );
+      const redeemTx = factory.multicall(
+        ca.creditAccount,
+        [
+          {
+            target: cs.creditFacade.address,
+            callData: encodeFunctionData({
+              abi: iCreditFacadeMulticallV310Abi,
+              functionName: "updateQuota",
+              args: [phantomToken, (10n * dsQuota) / 9n, 0n],
+            }),
+          },
+          {
+            target: gatewayAdapter,
+            callData: encodeFunctionData({
+              abi: iSecuritizeRedemptionGatewayAbi,
+              functionName: "redeem",
+              args: [dsBalance],
+            }),
+          },
+          {
+            target: cs.creditFacade.address,
+            callData: encodeFunctionData({
+              abi: iCreditFacadeMulticallV310Abi,
+              functionName: "updateQuota",
+              args: [dsToken, -dsQuota, 0n],
+            }),
+          },
+        ],
+        {
+          type: RWA_FACTORY_SECURITIZE,
+          tokensToRegister: [],
+          signaturesToCache: [],
+        },
+      );
       await this.client.anvil.impersonateAccount({ address: investor });
       await this.client.anvil.setBalance({
         address: investor,
         value: parseEther("100000"),
       });
-      // const hash = await sendRawTx(this.client.anvil, {
-      //   account: investor,
-      //   tx: redeemTx,
-      //   gas: 30_000_000n,
-      // });
-      const { request } = await this.client.pub.simulateContract({
+      const hash = await sendRawTx(this.client.anvil, {
         account: investor,
-        address: factory.address,
-        abi: factory.abi,
-        functionName: "multicall",
+        tx: redeemTx,
         gas: 30_000_000n,
-        args: [
-          ca.creditAccount,
-          [
-            {
-              target: cs.creditFacade.address,
-              callData: encodeFunctionData({
-                abi: iCreditFacadeMulticallV310Abi,
-                functionName: "updateQuota",
-                args: [phantomToken, (10n * dsQuota) / 9n, 0n],
-              }),
-            },
-            {
-              target: gatewayAdapter,
-              callData: encodeFunctionData({
-                abi: iSecuritizeRedemptionGatewayAbi,
-                functionName: "redeem",
-                args: [dsBalance],
-              }),
-            },
-            {
-              target: cs.creditFacade.address,
-              callData: encodeFunctionData({
-                abi: iCreditFacadeMulticallV310Abi,
-                functionName: "updateQuota",
-                args: [dsToken, -dsQuota, 0n],
-              }),
-            },
-          ],
-          [],
-          [],
-        ],
       });
-      this.logger.debug(request, "simulated multicall");
-      const hash = await this.client.wallet.writeContract(request);
 
       const receipt = await this.client.anvil.waitForTransactionReceipt({
         hash,
@@ -278,6 +239,9 @@ export default class LiquidationStrategyRWAViaStablecoins
       this.logger.debug(
         `funded redeemer ${redeemer} with ${this.sdk.tokensMeta.formatBN(stable, amount, { symbol: true })}`,
       );
+
+      // 4. Lower LTs to enable liquidation
+      await setLTZero(this.client.anvil, cs.state, this.logger);
 
       const account = await this.sdk.accounts.getCreditAccountData(
         ca.creditAccount,
