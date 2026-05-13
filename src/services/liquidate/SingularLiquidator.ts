@@ -57,19 +57,22 @@ export default class SingularLiquidator
     switch (liquidationMode) {
       case "full": {
         const cfg = this.config as unknown as FullLiquidatorSchema;
-        switch (cfg.lossPolicy) {
-          case "only":
-            add(new LiquidationStrategyLossPolicy());
-            break;
-          case "never":
-            add(new LiquidationStrategyFull());
-            break;
-          case "fallback":
+        switch (cfg.strategy) {
+          case "auto":
             add(new LiquidationStrategyLossPolicy());
             add(new LiquidationStrategyFull("full fallback"));
+            add(new LiquidationStrategyRWAViaStablecoins());
+            break;
+          case "rwa":
+            add(new LiquidationStrategyRWAViaStablecoins());
+            break;
+          case "loss":
+            add(new LiquidationStrategyLossPolicy());
+            break;
+          case "full":
+            add(new LiquidationStrategyFull());
             break;
         }
-        add(new LiquidationStrategyRWAViaStablecoins());
         return;
       }
       case "deleverage":

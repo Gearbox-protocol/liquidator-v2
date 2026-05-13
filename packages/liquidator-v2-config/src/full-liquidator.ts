@@ -28,21 +28,37 @@ export const FullLiquidatorSchema = z
         env: "DEBT_POLICY",
       }),
     /**
-     * Whether we should apply loss policy on full liquidation of accounts with bad debt
+     * Full-mode liquidation strategy set for this process.
+     *
+     * Values:
+     * - `auto`: production default. Includes loss-policy, normal full, and RWA
+     *   stablecoin strategies. Routing is decided by account type and
+     *   per-strategy `isApplicable`: non-RWA accounts use loss policy when they
+     *   have bad debt and fall back to normal full liquidation otherwise, while
+     *   RWA accounts use only the RWA stablecoin strategy.
+     * - `rwa`: include only `LiquidationStrategyRWAViaStablecoins`
+     *   Intended for optimistic RWA tracks.
+     * - `loss`: include only `LiquidationStrategyLossPolicy`
+     *   Intended for optimistic loss-policy tracks.
+     * - `full`: include only `LiquidationStrategyFull`
+     *   Intended for optimistic normal-full tracks.
+     *
+     * Optimistic mode rejects `auto`, so the external runner must invoke
+     * explicit tracks: `rwa`, `loss`, and `full`.
      */
-    lossPolicy: z
-      .enum(["only", "never", "fallback"])
-      .default("never")
+    strategy: z
+      .enum(["auto", "rwa", "loss", "full"])
+      .default("auto")
       .register(zommandRegistry, {
-        flags: "--loss-policy <when>",
+        flags: "--strategy <strategy>",
         description:
-          "Whether we should apply loss policy on full liquidation of accounts with bad debt",
-        env: "LOSS_POLICY",
+          "Full-mode liquidation strategy set (auto/rwa/loss/full). Optimistic mode requires an explicit track.",
+        env: "STRATEGY",
       }),
   })
-  .refine(
-    data => !(data.optimistic === true && data.lossPolicy === "fallback"),
-    { message: "lossPolicy=fallback is not allowed in optimistic mode" },
-  );
+  .refine(data => !(data.optimistic === true && data.strategy === "auto"), {
+    message:
+      "strategy=auto is not allowed in optimistic mode; pick one of rwa/loss/full",
+  });
 
 export type FullLiquidatorSchema = z.infer<typeof FullLiquidatorSchema>;
