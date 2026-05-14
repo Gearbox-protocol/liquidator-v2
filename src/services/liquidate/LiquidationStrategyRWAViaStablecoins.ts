@@ -78,7 +78,7 @@ export default class LiquidationStrategyRWAViaStablecoins
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
   public isApplicable(ca: CreditAccountData, _optimistic: boolean): boolean {
-    const ctx = resolveRWAContext(this.sdk, ca, this.logger);
+    const ctx = resolveRWAContext(this.sdk, ca);
     return !!ctx;
   }
 
@@ -89,7 +89,7 @@ export default class LiquidationStrategyRWAViaStablecoins
       throw new Error("makeLiquidatable only works in optimistic mode");
     }
     const cs = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const ctx = resolveRWAContext(this.sdk, ca, this.logger);
+    const ctx = resolveRWAContext(this.sdk, ca);
     if (!ctx) {
       throw new Error(`Credit manager ${cs.name} is not an RWA credit manager`);
     }
@@ -256,7 +256,7 @@ export default class LiquidationStrategyRWAViaStablecoins
   }
 
   public async preview(ca: CreditAccountData): Promise<RWALiquidationPreview> {
-    const ctx = resolveRWAContext(this.sdk, ca, this.logger);
+    const ctx = resolveRWAContext(this.sdk, ca);
     const redemptionGateway = ctx?.gateway;
     if (!redemptionGateway) {
       throw new Error(
