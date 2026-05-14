@@ -275,6 +275,7 @@ export default class LiquidationStrategyRWAViaStablecoins
         functionName: "canLiquidateViaStablecoins",
         args: [ca.creditAccount, redemptionGateway, priceUpdates],
       });
+      this.logger.info(`can liquidate via stablecoins: ${canLiquidate}`);
       if (!canLiquidate) {
         this.logger.info(
           `account ${ca.creditAccount} cannot be liquidated via stablecoins yet`,
