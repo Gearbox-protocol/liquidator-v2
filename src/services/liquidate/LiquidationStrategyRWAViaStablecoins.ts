@@ -78,13 +78,8 @@ export default class LiquidationStrategyRWAViaStablecoins
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
   public isApplicable(ca: CreditAccountData, _optimistic: boolean): boolean {
-    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const ctx = resolveRWAContext(this.sdk, cm.underlying);
-    if (!ctx) {
-      return false;
-    }
-    // need to have DSToken balance on the account
-    return ca.tokens.some(t => hexEq(t.token, ctx.dsToken) && t.balance > 0n);
+    const ctx = resolveRWAContext(this.sdk, ca);
+    return !!ctx;
   }
 
   public async makeLiquidatable(
@@ -94,7 +89,7 @@ export default class LiquidationStrategyRWAViaStablecoins
       throw new Error("makeLiquidatable only works in optimistic mode");
     }
     const cs = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const ctx = resolveRWAContext(this.sdk, cs.underlying);
+    const ctx = resolveRWAContext(this.sdk, ca);
     if (!ctx) {
       throw new Error(`Credit manager ${cs.name} is not an RWA credit manager`);
     }
@@ -261,12 +256,11 @@ export default class LiquidationStrategyRWAViaStablecoins
   }
 
   public async preview(ca: CreditAccountData): Promise<RWALiquidationPreview> {
-    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const ctx = resolveRWAContext(this.sdk, cm.underlying);
+    const ctx = resolveRWAContext(this.sdk, ca);
     const redemptionGateway = ctx?.gateway;
     if (!redemptionGateway) {
       throw new Error(
-        `cannot resolve redemption gateway for ${cm.underlying} in ${cm.name}`,
+        `cannot resolve redemption gateway for ${this.sdk.labelAddress(ca.underlying)} in ${this.sdk.labelAddress(ca.creditManager)}`,
       );
     }
     const priceUpdates = await this.sdk.accounts.getOnDemandPriceUpdates(
