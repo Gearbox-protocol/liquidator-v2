@@ -1,4 +1,4 @@
-FROM node:24.11 AS dev
+FROM node:24.15.0-trixie AS dev
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -14,7 +14,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 
 # Production npm modules
 
-FROM node:24.11 AS prod
+FROM node:24.15.0-trixie AS prod
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
