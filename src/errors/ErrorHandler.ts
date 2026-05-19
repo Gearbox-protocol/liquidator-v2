@@ -171,17 +171,21 @@ export class ErrorHandler {
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
-      const fullArgs = [CAST_TIMEOUT, this.config.castBin, ...args];
-      const command = ["timeout", ...fullArgs].map(shellQuote).join(" ");
+      const noTimeout = CAST_TIMEOUT.startsWith("0");
+      const cmd = noTimeout ? this.config.castBin : "timeout";
+      const fullArgs = noTimeout
+        ? args
+        : [CAST_TIMEOUT, this.config.castBin, ...args];
+      const command = [cmd, ...fullArgs].map(shellQuote).join(" ");
       out.write(`${command}\n`);
       // use node-pty instead of node:child_process to have colored output
-      const pty = spawn("timeout", fullArgs, { cols: 1024 });
+      const pty = spawn(cmd, fullArgs, { cols: 1024 });
       pty.onData(data => out.write(data));
       const exitCode = await new Promise<number>(resolve => {
         pty.onExit(({ exitCode: code }) => resolve(code));
       });
       // `timeout` exits with 124 when the deadline is reached
-      if (exitCode === 124) {
+      if (!noTimeout && exitCode === 124) {
         this.log.warn(`cast timed out after ${CAST_TIMEOUT}: ${command}`);
       }
       this.log.debug(`saved trace file: ${traceFile}`);
