@@ -37,7 +37,7 @@ RUN mkdir ${FOUNDRY_DIR} && \
 
 # Final image
 
-FROM gcr.io/distroless/nodejs24-debian12
+FROM gcr.io/distroless/nodejs24-debian13
 ARG PACKAGE_VERSION
 ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
 LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
@@ -45,5 +45,7 @@ LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 WORKDIR /app
 COPY --from=prod /app /app
 COPY --from=prod /root/.foundry/bin/cast /app
+COPY --from=prod /usr/bin/timeout /app/timeout
+ENV PATH="/app:${PATH}"
 
 ENTRYPOINT ["/nodejs/bin/node", "--enable-source-maps", "/app/build/index.mjs"]
