@@ -15,7 +15,7 @@ import { type ILogger, Logger } from "../log/index.js";
 import { PreDecodedError } from "./PreDecodedError.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
-const CAST_TIMEOUT = "30s";
+const CAST_TIMEOUT = process.env.CAST_TIMEOUT ?? "1m";
 
 export interface ExplainedError {
   errorJson?: string;
