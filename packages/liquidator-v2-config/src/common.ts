@@ -59,12 +59,14 @@ export const CommonSchema = z.object({
     env: "PORT",
   }),
   /**
-   * These accounts will not be liquidated
+   * Full URL of the whitelist endpoint. Entries can be credit account
+   * addresses or credit manager addresses. Only applied in non-optimistic mode.
    */
-  ignoreAccounts: optionalAddressArrayLike().register(zommandRegistry, {
-    flags: "--ignore-accounts <addresses...>",
-    description: "These accounts will not be liquidated",
-    env: "IGNORE_ACCOUNTS",
+  whitelistUrl: z.url().optional().register(zommandRegistry, {
+    flags: "--whitelist-url <url>",
+    description:
+      "Full URL of the liquidator whitelist endpoint. Entries are credit account or credit manager addresses. Only applied in non-optimistic mode.",
+    env: "WHITELIST_URL",
   }),
   /**
    * Only check this account during local debug session
