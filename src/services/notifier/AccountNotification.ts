@@ -1,6 +1,5 @@
 import {
   type CreditAccountData,
-  etherscanUrl,
   hexEq,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
@@ -36,19 +35,19 @@ export default abstract class AccountNotification extends SDKConstruct {
   }
 
   protected get caPlain(): string {
-    return etherscanUrl(this.ca, this.networkType);
+    return this.ca.creditAccount;
   }
 
   protected get caMd(): Markdown {
-    return md.link(this.ca?.creditAccount, this.caPlain);
+    return md.inlineCode(this.caPlain);
   }
 
   protected get cmPlain(): string {
-    return etherscanUrl({ address: this.ca.creditManager }, this.networkType);
+    return this.ca.creditManager;
   }
 
   protected get cmMd(): Markdown {
-    return md.link(this.ca.creditManager, this.cmPlain);
+    return md.inlineCode(this.cmPlain);
   }
 
   protected get withHF(): string {
