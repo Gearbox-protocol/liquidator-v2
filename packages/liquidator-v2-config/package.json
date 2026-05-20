@@ -35,15 +35,15 @@
     "prepack": "tsup"
   },
   "dependencies": {
-    "@gearbox-protocol/cli-utils": "^6.9.0",
+    "@gearbox-protocol/cli-utils": "^6.13.1",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@gearbox-protocol/sdk": ">=14.8.1",
-    "viem": ">=2.48.8"
+    "@gearbox-protocol/sdk": ">=14.10.1",
+    "viem": ">=2.23.15 <3.0.0"
   },
   "devDependencies": {
-    "tsup": "^8.5.0",
+    "tsup": "^8.5.1",
     "typescript": "^6.0.3"
   }
 }
