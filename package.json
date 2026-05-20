@@ -29,7 +29,7 @@
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
     "@gearbox-protocol/biome-config": "^1.0.28",
-    "@gearbox-protocol/cli-utils": "^6.13.0",
+    "@gearbox-protocol/cli-utils": "^6.13.1",
     "@gearbox-protocol/liquidator-contracts": "^v1.36.0-securitize.1",
     "@gearbox-protocol/sdk": "14.10.1",
     "@types/node": "^25.9.0",

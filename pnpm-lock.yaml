@@ -40,8 +40,8 @@ importers:
         specifier: ^1.0.28
         version: 1.0.29(@biomejs/biome@2.4.15)
       '@gearbox-protocol/cli-utils':
-        specifier: ^6.13.0
-        version: 6.13.0(axios@1.16.1)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.50.4(typescript@6.0.3)(zod@4.4.3)))
+        specifier: ^6.13.1
+        version: 6.13.1(axios@1.16.1)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.50.4(typescript@6.0.3)(zod@4.4.3)))
       '@gearbox-protocol/liquidator-contracts':
         specifier: ^v1.36.0-securitize.1
         version: 1.36.0-securitize.2
@@ -865,8 +865,8 @@ packages:
     peerDependencies:
       '@biomejs/biome': ^2.4.15
 
-  '@gearbox-protocol/cli-utils@6.13.0':
-    resolution: {integrity: sha512-wkDRvZRAigKNG5CKkA6SkJ44uS9FbzFkTMyw7dj4jmi6MZD3zZ5fkmM2++p0iiXe2kHq/SghuBIv5xzfyRAbag==}
+  '@gearbox-protocol/cli-utils@6.13.1':
+    resolution: {integrity: sha512-nweA4rmCYdTbgaOxTz2MbQNZ02m5xUatoWrhMSroCOirWm/6xW/tiEH0b7grYk33bDB0dYQ/P55IuNltjOVv+A==}
     engines: {node: '>=18'}
 
   '@gearbox-protocol/cli-utils@6.9.1':
@@ -3592,7 +3592,7 @@ snapshots:
     dependencies:
       '@biomejs/biome': 2.4.15
 
-  '@gearbox-protocol/cli-utils@6.13.0(axios@1.16.1)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.50.4(typescript@6.0.3)(zod@4.4.3)))':
+  '@gearbox-protocol/cli-utils@6.13.1(axios@1.16.1)(typescript@6.0.3)(viem-deal@2.0.4(viem@2.50.4(typescript@6.0.3)(zod@4.4.3)))':
     dependencies:
       '@aws-sdk/client-s3': 3.1049.0
       '@aws-sdk/client-secrets-manager': 3.1049.0
