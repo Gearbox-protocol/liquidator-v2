@@ -15,8 +15,6 @@ import { type ILogger, Logger } from "../log/index.js";
 import { PreDecodedError } from "./PreDecodedError.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
-const CAST_TIMEOUT = process.env.CAST_TIMEOUT ?? "1m";
-
 export interface ExplainedError {
   errorJson?: string;
   shortMessage: string;
@@ -171,11 +169,12 @@ export class ErrorHandler {
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
-      const noTimeout = CAST_TIMEOUT.startsWith("0");
-      const cmd = noTimeout ? this.config.castBin : "timeout";
-      const fullArgs = noTimeout
-        ? args
-        : [CAST_TIMEOUT, this.config.castBin, ...args];
+      const castTimeout = this.config.castTimeout;
+      const useTimeout = !!castTimeout && !castTimeout.startsWith("0");
+      const cmd = useTimeout ? "timeout" : this.config.castBin;
+      const fullArgs = useTimeout
+        ? [castTimeout, this.config.castBin, ...args]
+        : args;
       const command = [cmd, ...fullArgs].map(shellQuote).join(" ");
       out.write(`${command}\n`);
       // use node-pty instead of node:child_process to have colored output
@@ -185,8 +184,8 @@ export class ErrorHandler {
         pty.onExit(({ exitCode: code }) => resolve(code));
       });
       // `timeout` exits with 124 when the deadline is reached
-      if (!noTimeout && exitCode === 124) {
-        this.log.warn(`cast timed out after ${CAST_TIMEOUT}: ${command}`);
+      if (useTimeout && exitCode === 124) {
+        this.log.warn(`cast timed out after ${castTimeout}: ${command}`);
       }
       this.log.debug(`saved trace file: ${traceFile}`);
       return traceId;

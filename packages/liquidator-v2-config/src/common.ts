@@ -95,6 +95,16 @@ export const CommonSchema = z.object({
     env: "CAST_BIN",
   }),
   /**
+   * Timeout duration passed to `timeout` utility when running cast.
+   * If unset, cast runs without a timeout. Accepts any value understood by `timeout(1)` (e.g. `30s`, `1m`).
+   */
+  castTimeout: z.string().optional().register(zommandRegistry, {
+    flags: "--cast-timeout <duration>",
+    description:
+      "Timeout duration for cast invocations (e.g. 30s, 1m). If unset, cast runs without a timeout.",
+    env: "CAST_TIMEOUT",
+  }),
+  /**
    * Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring
    */
   staleBlockThreshold: z.coerce
