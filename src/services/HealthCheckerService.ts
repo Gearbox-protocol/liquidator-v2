@@ -1,13 +1,9 @@
 import { createServer, type Server } from "node:http";
-import {
-  type ICreditAccountsService,
-  json_stringify,
-  type OnchainSDK,
-} from "@gearbox-protocol/sdk";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
+import { json_stringify, type OnchainSDK } from "@gearbox-protocol/sdk";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
 import { customAlphabet } from "nanoid";
 import type { PublicClient, Transport } from "viem";
-import type { Config } from "../config/index.js";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
@@ -30,8 +26,8 @@ export default class HealthCheckerService {
   @DI.Inject(DI.Config)
   config!: Config;
 
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
@@ -100,7 +96,7 @@ export default class HealthCheckerService {
       maxHealthFactor: this.scanner.maxHealthFactor,
       timestamp: {
         value: timestamp,
-        status: (!!threshold && now - timestamp <= threshold
+        status: (threshold && now - timestamp <= threshold
           ? "healthy"
           : "alert") as StatusCode,
       },
@@ -170,9 +166,5 @@ start_time{${labels}} ${this.#start}
 block_number{${labels}} ${this.scanner.lastUpdated}
 
 `;
-  }
-
-  private get sdk(): OnchainSDK {
-    return this.caService.sdk;
   }
 }

@@ -1,4 +1,4 @@
-FROM node:24.11 AS dev
+FROM node:24.15.0-trixie AS dev
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -14,7 +14,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 
 # Production npm modules
 
-FROM node:24.11 AS prod
+FROM node:24.15.0-trixie AS prod
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -37,7 +37,7 @@ RUN mkdir ${FOUNDRY_DIR} && \
 
 # Final image
 
-FROM gcr.io/distroless/nodejs24-debian12
+FROM gcr.io/distroless/nodejs24-debian13
 ARG PACKAGE_VERSION
 ENV PACKAGE_VERSION=${PACKAGE_VERSION:-dev}
 LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
@@ -45,5 +45,7 @@ LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 WORKDIR /app
 COPY --from=prod /app /app
 COPY --from=prod /root/.foundry/bin/cast /app
+COPY --from=prod /usr/bin/timeout /app/timeout
+ENV PATH="/app:${PATH}"
 
 ENTRYPOINT ["/nodejs/bin/node", "--enable-source-maps", "/app/build/index.mjs"]

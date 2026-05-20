@@ -34,6 +34,15 @@ export const CommonSchema = z.object({
     env: "MARKET_CONFIGURATORS",
   }),
   /**
+   * RWA factories addresses to attach SDK
+   */
+  rwaFactories: optionalAddressArrayLike().register(zommandRegistry, {
+    flags: "--rwa-factories <addresses...>",
+    description:
+      "RWA factories to use for the process, comma separated. Uses default value from SDK if not specified",
+    env: "RWA_FACTORIES",
+  }),
+  /**
    * App name used in various messages to distinguish instances
    */
   appName: z.string().default("liquidator-ts").register(zommandRegistry, {
@@ -50,12 +59,14 @@ export const CommonSchema = z.object({
     env: "PORT",
   }),
   /**
-   * These accounts will not be liquidated
+   * Full URL of the whitelist endpoint. Entries can be credit account
+   * addresses or credit manager addresses. Only applied in non-optimistic mode.
    */
-  ignoreAccounts: optionalAddressArrayLike().register(zommandRegistry, {
-    flags: "--ignore-accounts <addresses...>",
-    description: "These accounts will not be liquidated",
-    env: "IGNORE_ACCOUNTS",
+  whitelistUrl: z.url().optional().register(zommandRegistry, {
+    flags: "--whitelist-url <url>",
+    description:
+      "Full URL of the liquidator whitelist endpoint. Entries are credit account or credit manager addresses. Only applied in non-optimistic mode.",
+    env: "WHITELIST_URL",
   }),
   /**
    * Only check this account during local debug session
@@ -82,6 +93,16 @@ export const CommonSchema = z.object({
     description:
       "Path to foundry/cast binary, so that we can create tree-like traces in case of errors",
     env: "CAST_BIN",
+  }),
+  /**
+   * Timeout duration passed to `timeout` utility when running cast.
+   * If unset, cast runs without a timeout. Accepts any value understood by `timeout(1)` (e.g. `30s`, `1m`).
+   */
+  castTimeout: z.string().optional().default("1m").register(zommandRegistry, {
+    flags: "--cast-timeout <duration>",
+    description:
+      "Timeout duration for cast invocations (e.g. 30s, 1m). If unset, cast runs without a timeout.",
+    env: "CAST_TIMEOUT",
   }),
   /**
    * Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring

@@ -1,7 +1,7 @@
-import type { ICreditAccountsService } from "@gearbox-protocol/sdk";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
+import type { OnchainSDK } from "@gearbox-protocol/sdk";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
 import { BaseError, type PublicClient, type Transport } from "viem";
-import type { Config } from "./config/index.js";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
 import type Client from "./services/Client.js";
@@ -23,8 +23,8 @@ export default class Liquidator {
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
 
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
@@ -82,13 +82,13 @@ export default class Liquidator {
   }
 
   async #checkStaleBlock(): Promise<void> {
-    const timestamp = Number(this.caService.sdk.timestamp);
+    const timestamp = Number(this.sdk.timestamp);
     const now = Math.ceil(Date.now() / 1000);
     const threshold = this.config.staleBlockThreshold;
     if (now - timestamp > threshold) {
       this.log.warn({ now, timestamp, threshold }, "stale block detected");
       await (
-        this.caService.client as unknown as PublicClient<
+        this.sdk.client as unknown as PublicClient<
           Transport<"revolver", RevolverTransportValue>
         >
       ).transport.rotate(

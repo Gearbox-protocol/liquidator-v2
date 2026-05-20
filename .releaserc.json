@@ -16,6 +16,12 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     [
+      "@semantic-release/npm",
+      {
+        "pkgRoot": "packages/liquidator-v2-config"
+      }
+    ],
+    [
       "@semantic-release/github",
       {
         "successComment": false,

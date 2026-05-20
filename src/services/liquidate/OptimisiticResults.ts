@@ -1,4 +1,4 @@
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
+import type { OptimisticResult } from "@gearbox-protocol/liquidator-v2-config";
 
 import { DI } from "../../di.js";
 

@@ -5,7 +5,6 @@ import {
 } from "@gearbox-protocol/cli-utils";
 import {
   AP_CREDIT_ACCOUNT_COMPRESSOR,
-  createCreditAccountService,
   detectNetwork,
   OnchainSDK,
   VERSION_RANGE_310,
@@ -206,10 +205,11 @@ const program = new Zommand("diagnose", {
       `${c.bold("Block timestamp:")} ${formatTimestamp(sdk.timestamp)}`,
     );
 
-    const service = createCreditAccountService(sdk, 310);
-
     console.log(c.dim("Fetching credit account data..."));
-    const ca = await service.getCreditAccountData(getAddress(account), block);
+    const ca = await sdk.accounts.getCreditAccountData(
+      getAddress(account),
+      block,
+    );
 
     if (!ca) {
       console.error(c.redBold("✗ Credit account not found"));

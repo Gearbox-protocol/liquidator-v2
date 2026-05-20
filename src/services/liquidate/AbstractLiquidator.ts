@@ -1,15 +1,14 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type {
-  CreditAccountData,
-  ICreditAccountsService,
-  OnchainSDK,
-} from "@gearbox-protocol/sdk";
+  CommonSchema,
+  LiqduiatorConfig,
+  OptimisticResult,
+} from "@gearbox-protocol/liquidator-v2-config";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { filterDustUSD } from "@gearbox-protocol/sdk";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import { type Address, erc20Abi } from "viem";
-import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
-import { ErrorHandler } from "../../errors/index.js";
+import type { ErrorHandler } from "../../errors/index.js";
 import type { ILogger } from "../../log/index.js";
 import { Logger } from "../../log/index.js";
 import type Client from "../Client.js";
@@ -29,8 +28,8 @@ export default abstract class AbstractLiquidator<
   @Logger("Liquidator")
   logger!: ILogger;
 
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Notifier)
   notifier!: INotificationService;
@@ -47,12 +46,12 @@ export default abstract class AbstractLiquidator<
   @DI.Inject(DI.Client)
   client!: Client;
 
+  @DI.Inject(DI.ErrorHandler)
+  errorHandler!: ErrorHandler;
+
   skipList = new Set<Address>();
 
-  #errorHandler?: ErrorHandler;
-
   public async launch(asFallback?: boolean): Promise<void> {
-    this.#errorHandler = new ErrorHandler(this.config, this.logger);
     if (!asFallback) {
       this.notifier.notify(new ServiceStartedNotification());
     }
@@ -92,16 +91,5 @@ export default abstract class AbstractLiquidator<
       args: [this.client.address],
     });
     return { eth, underlying };
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
-  }
-
-  protected get errorHandler(): ErrorHandler {
-    if (!this.#errorHandler) {
-      throw new Error("liquidator not launched");
-    }
-    return this.#errorHandler;
   }
 }

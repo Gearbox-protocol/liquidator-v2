@@ -2,6 +2,7 @@ import {
   getProviders,
   type INotificationService,
 } from "@gearbox-protocol/cli-utils";
+import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
 import type { ILogger } from "@gearbox-protocol/sdk";
 import {
   logSplitterTransport,
@@ -9,7 +10,6 @@ import {
   resilientTransport,
 } from "@gearbox-protocol/sdk/dev";
 import { http, type Transport } from "viem";
-import type { CommonSchema } from "../config/common.js";
 import {
   ProviderRotationErrorNotification,
   ProviderRotationSuccessNotification,

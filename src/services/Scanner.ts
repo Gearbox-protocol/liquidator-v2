@@ -1,8 +1,8 @@
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type {
   CreditAccountData,
   GetCreditAccountsOptions,
-  ICreditAccountsService,
   OnchainSDK,
 } from "@gearbox-protocol/sdk";
 import {
@@ -12,11 +12,11 @@ import {
   WAD,
   watchBlocksAsync,
 } from "@gearbox-protocol/sdk";
-import type { Address, Block } from "viem";
-import type { Config } from "../config/index.js";
+import type { Block } from "viem";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type Client from "./Client.js";
+import { CreditAccountWhitelist } from "./CreditAccountWhitelist.js";
 import type DeleverageService from "./DeleverageService.js";
 import type { ILiquidatorService } from "./liquidate/index.js";
 import { ZeroHFAccountsNotification } from "./notifier/ZeroHFAccountsNotification.js";
@@ -35,8 +35,8 @@ export class Scanner {
   @DI.Inject(DI.Liquidator)
   liquidatorService!: ILiquidatorService;
 
-  @DI.Inject(DI.CreditAccountService)
-  caService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
@@ -49,9 +49,19 @@ export class Scanner {
   #minHealthFactor = 0n;
   #unwatch?: () => void;
   #liquidatableAccounts = 0;
+  #whitelist?: CreditAccountWhitelist;
 
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
+
+    if (!this.config.optimistic && this.config.whitelistUrl) {
+      this.#whitelist = new CreditAccountWhitelist({
+        url: this.config.whitelistUrl,
+        network: this.config.network,
+        logger: this.log,
+      });
+      await this.#whitelist.start();
+    }
 
     const block = await this.client.pub.getBlock();
 
@@ -149,7 +159,7 @@ export class Scanner {
     const blockS = blockNumber ? ` in ${blockNumber}` : "";
     let accounts: CreditAccountData[] = [];
     if (this.config.debugAccount) {
-      const acc = await this.caService.getCreditAccountData(
+      const acc = await this.sdk.accounts.getCreditAccountData(
         this.config.debugAccount,
         blockNumber,
       );
@@ -169,12 +179,26 @@ export class Scanner {
         accounts = await this.#getExpiredCreditAccounts(blockNumber);
       }
     }
-    if (this.config.ignoreAccounts) {
+    if (this.#whitelist) {
+      const whitelist = this.#whitelist;
       const before = accounts.length;
-      const ignoreAccounts = new AddressSet(this.config.ignoreAccounts);
-      accounts = accounts.filter(ca => !ignoreAccounts.has(ca.creditAccount));
+      accounts = accounts.filter(ca => {
+        const item = whitelist.match(ca);
+        if (item) {
+          this.log.warn(
+            {
+              creditAccount: ca.creditAccount,
+              creditManager: ca.creditManager,
+              reason: item.reason,
+              expiresAt: item.expiresAt,
+            },
+            `ignoring whitelisted account ${ca.creditAccount}`,
+          );
+        }
+        return !item;
+      });
       this.log.debug(
-        `filtered out ${before - accounts.length} ignored accounts`,
+        `filtered out ${before - accounts.length} whitelisted accounts`,
       );
     }
 
@@ -204,7 +228,10 @@ export class Scanner {
     queue: GetCreditAccountsOptions,
     blockNumber?: bigint,
   ): Promise<CreditAccountData[]> {
-    let accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+    let accounts = await this.sdk.accounts.getCreditAccounts(
+      queue,
+      blockNumber,
+    );
     let zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
     if (zeroHFAccs.length > 0) {
@@ -214,13 +241,12 @@ export class Scanner {
       if (this.config.optimistic) {
         return accounts;
       }
-      accounts = await this.caService.getCreditAccounts(queue, blockNumber);
+      accounts = await this.sdk.accounts.getCreditAccounts(queue, blockNumber);
       zeroHFAccs = accounts.filter(ca => ca.healthFactor === 0n);
 
       if (zeroHFAccs.length > 0) {
         accounts = accounts.filter(ca => ca.healthFactor !== 0n);
-        const ignored = new AddressSet(this.config.ignoreAccounts);
-        zeroHFAccs = zeroHFAccs.filter(ca => !ignored.has(ca.creditAccount));
+        zeroHFAccs = zeroHFAccs.filter(ca => !this.#whitelist?.match(ca));
       }
 
       if (zeroHFAccs.length > 0) {
@@ -271,7 +297,7 @@ export class Scanner {
 
     let result: CreditAccountData[] = [];
     if (this.config.optimistic) {
-      result = await this.caService.getCreditAccounts(
+      result = await this.sdk.accounts.getCreditAccounts(
         {
           ignoreReservePrices: true,
           minHealthFactor: 0n,
@@ -281,10 +307,9 @@ export class Scanner {
       );
       result = result.filter(ca => expiredCMs.has(ca.creditManager));
     } else {
-      const ignoreAccounts = new AddressSet(this.config.ignoreAccounts);
       for (const creditManager of expiredCMs) {
         // we can take first expired credit manager that has non-ignored accounts, and continue with next one on next block
-        result = await this.caService.getCreditAccounts(
+        result = await this.sdk.accounts.getCreditAccounts(
           {
             creditManager,
             ignoreReservePrices: true,
@@ -293,7 +318,7 @@ export class Scanner {
           },
           blockNumber,
         );
-        result = result.filter(ca => !ignoreAccounts.has(ca.creditAccount));
+        result = result.filter(ca => !this.#whitelist?.match(ca));
         if (result.length > 0) {
           break;
         }
@@ -320,12 +345,9 @@ export class Scanner {
     return this.#maxHealthFactor;
   }
 
-  public get sdk(): OnchainSDK {
-    return this.caService.sdk;
-  }
-
   public async stop(): Promise<void> {
     this.#unwatch?.();
+    this.#whitelist?.stop();
     this.log.info("stopped");
   }
 }

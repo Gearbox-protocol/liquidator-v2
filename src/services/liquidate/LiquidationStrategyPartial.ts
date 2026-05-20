@@ -1,11 +1,10 @@
 import type {
-  CreditAccountData,
-  ICreditAccountsService,
-  OnchainSDK,
-} from "@gearbox-protocol/sdk";
+  CommonSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
 import type { Address, SimulateContractReturnType } from "viem";
-import type { CommonSchema, LiqduiatorConfig } from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
@@ -25,8 +24,8 @@ export default class LiquidationStrategyPartial
   extends AccountHelper
   implements ILiquidationStrategy<PartialLiquidationPreview>
 {
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Config)
   config!: LiqduiatorConfig<CommonSchema>;
@@ -56,7 +55,7 @@ export default class LiquidationStrategyPartial
     await this.#deployer.syncState();
   }
 
-  public isApplicable(_ca: CreditAccountData): boolean {
+  public isApplicable(_ca: CreditAccountData, _optimistic: boolean): boolean {
     return true;
   }
 
@@ -85,7 +84,7 @@ export default class LiquidationStrategyPartial
     const snapshotId = await this.client.anvil.snapshot();
 
     await setLTs(this.client.anvil, cm.state, newLTs, this.logger);
-    const account = await this.creditAccountService.getCreditAccountData(
+    const account = await this.sdk.accounts.getCreditAccountData(
       ca.creditAccount,
     );
     if (!account) {
@@ -119,11 +118,10 @@ export default class LiquidationStrategyPartial
     ca: CreditAccountData,
   ): Promise<PartialLiquidationPreview> {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const priceUpdates =
-      await this.creditAccountService.getOnDemandPriceUpdates(
-        ca,
-        this.ignoreReservePrices(ca),
-      );
+    const priceUpdates = await this.sdk.accounts.getOnDemandPriceUpdates(
+      ca,
+      this.ignoreReservePrices(ca),
+    );
     const liquidatorContract = this.#liquidatorForCA(ca);
     if (!liquidatorContract) {
       throw new Error(
@@ -186,10 +184,6 @@ export default class LiquidationStrategyPartial
       );
     }
     return liquidator.partialLiquidateAndConvert(account, preview);
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
   }
 
   /**

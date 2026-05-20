@@ -1,8 +1,8 @@
 import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
-
-import { type CreditAccountData, json_stringify } from "@gearbox-protocol/sdk";
+import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
+import { json_stringify } from "@gearbox-protocol/sdk";
 import { nanoid } from "nanoid";
 import { spawn } from "node-pty";
 import {
@@ -10,9 +10,9 @@ import {
   ContractFunctionExecutionError,
   encodeFunctionData,
 } from "viem";
-
-import type { CommonSchema } from "../config/index.js";
-import type { ILogger } from "../log/index.js";
+import { DI } from "../di.js";
+import { type ILogger, Logger } from "../log/index.js";
+import { PreDecodedError } from "./PreDecodedError.js";
 import { TransactionRevertedError } from "./TransactionRevertedError.js";
 
 export interface ExplainedError {
@@ -22,25 +22,37 @@ export interface ExplainedError {
   traceFile?: string;
 }
 
+@DI.Injectable(DI.ErrorHandler)
 export class ErrorHandler {
-  log: ILogger;
-  config: CommonSchema;
+  @DI.Inject(DI.Config)
+  config!: CommonSchema;
 
-  constructor(config: CommonSchema, log: ILogger) {
-    this.config = config;
-    this.log = log;
-  }
+  @Logger("ErrorHandler")
+  log!: ILogger;
 
   public async explain(
     error: unknown,
-    context?: CreditAccountData,
     saveTrace?: boolean,
   ): Promise<ExplainedError> {
+    try {
+      return await this.#explain(error, saveTrace);
+    } catch (e) {
+      return {
+        shortMessage: e instanceof Error ? e.message : String(e),
+        longMessage: e instanceof Error ? e.message : String(e),
+      };
+    }
+  }
+
+  async #explain(error: unknown, saveTrace?: boolean): Promise<ExplainedError> {
+    if (error instanceof PreDecodedError) {
+      return error.decoded;
+    }
     if (error instanceof BaseError) {
       let traceFile: string | undefined;
       if (saveTrace) {
         try {
-          traceFile = await this.#saveErrorTrace(error, context);
+          traceFile = await this.#saveErrorTrace(error);
         } catch {}
       }
       const shortMessages: string[] = [];
@@ -101,10 +113,7 @@ export class ErrorHandler {
    * @param error
    * @returns
    */
-  async #saveErrorTrace(
-    e: BaseError,
-    context?: CreditAccountData,
-  ): Promise<string | undefined> {
+  async #saveErrorTrace(e: BaseError): Promise<string | undefined> {
     let cast: string[] = [];
     // this only works for anvil, so we expect jsonRpcProviders to be set
     const anvilURL = this.config.jsonRpcProviders?.[0];
@@ -135,46 +144,53 @@ export class ErrorHandler {
           exErr.contractAddress,
           // data,
         ];
-        this.#caLogger(context).debug(`calling cast ${cast.join(" ")} <data>`);
+        this.log.debug(`calling cast ${cast.join(" ")} <data>`);
         cast.push(data);
       }
     }
     if (!cast.length) {
       return undefined;
     }
-    return this.#runCast(cast, context);
+    return this.#runCast(cast);
   }
 
   /**
    * Runs cast cli command and saves output to a unique file
    * @param args
-   * @param context
    * @returns
    */
-  async #runCast(
-    args: string[],
-    context?: CreditAccountData,
-  ): Promise<string | undefined> {
+  async #runCast(args: string[]): Promise<string | undefined> {
     if (!this.config.castBin || !this.config.outDir) {
       return undefined;
     }
 
-    const logger = this.#caLogger(context);
     try {
       const traceId = `${nanoid()}.trace`;
       const traceFile = path.resolve(this.config.outDir, traceId);
       const out = createWriteStream(traceFile, "utf-8");
       await events.once(out, "open");
+      const castTimeout = this.config.castTimeout;
+      const useTimeout = !!castTimeout && !castTimeout.startsWith("0");
+      const cmd = useTimeout ? "timeout" : this.config.castBin;
+      const fullArgs = useTimeout
+        ? [castTimeout, this.config.castBin, ...args]
+        : args;
+      const command = [cmd, ...fullArgs].map(shellQuote).join(" ");
+      out.write(`${command}\n`);
       // use node-pty instead of node:child_process to have colored output
-      const pty = spawn(this.config.castBin, args, { cols: 1024 });
+      const pty = spawn(cmd, fullArgs, { cols: 1024 });
       pty.onData(data => out.write(data));
-      await new Promise(resolve => {
-        pty.onExit(() => resolve(undefined));
+      const exitCode = await new Promise<number>(resolve => {
+        pty.onExit(({ exitCode: code }) => resolve(code));
       });
-      logger.debug(`saved trace file: ${traceFile}`);
+      // `timeout` exits with 124 when the deadline is reached
+      if (useTimeout && exitCode === 124) {
+        this.log.warn(`cast timed out after ${castTimeout}: ${command}`);
+      }
+      this.log.debug(`saved trace file: ${traceFile}`);
       return traceId;
     } catch (e) {
-      logger.warn(`failed to save trace: ${e}`);
+      this.log.warn(`failed to save trace: ${e}`);
     }
   }
 
@@ -187,13 +203,14 @@ export class ErrorHandler {
     }
     return { shortMessage, longMessage };
   }
+}
 
-  #caLogger(ca?: CreditAccountData): ILogger {
-    return ca
-      ? this.log.child({
-          account: ca.creditAccount,
-          manager: ca.creditManager, // TODO: credit manager name
-        })
-      : this.log;
+function shellQuote(arg: string): string {
+  if (arg === "") {
+    return "''";
   }
+  if (/^[A-Za-z0-9_\-./:=@%+,]+$/.test(arg)) {
+    return arg;
+  }
+  return `'${arg.replace(/'/g, "'\\''")}'`;
 }

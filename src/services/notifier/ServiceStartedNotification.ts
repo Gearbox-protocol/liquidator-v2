@@ -2,10 +2,10 @@ import type {
   IDedupableNotification,
   INotification,
 } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
-import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
 import version from "../../version.js";
 

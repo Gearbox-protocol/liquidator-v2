@@ -1,19 +1,18 @@
 import type {
+  DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
+  PartialLiquidatorSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
+import type {
   CreditAccountData,
   CreditSuite,
   Curator,
-  ICreditAccountsService,
   OnchainSDK,
   PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
 import type { Address, SimulateContractReturnType } from "viem";
 import { parseAbi } from "viem";
-import type {
-  DeleverageLiquidatorSchema,
-  LiqduiatorConfig,
-  PartialLiquidatorSchema,
-} from "../../../config/index.js";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
@@ -35,8 +34,8 @@ export abstract class AbstractPartialLiquidatorContract
     PartialLiquidatorSchema | DeleverageLiquidatorSchema
   >;
 
-  @DI.Inject(DI.CreditAccountService)
-  creditAccountService!: ICreditAccountsService;
+  @DI.Inject(DI.SDK)
+  sdk!: OnchainSDK;
 
   @DI.Inject(DI.Client)
   client!: Client;
@@ -219,7 +218,7 @@ export abstract class AbstractPartialLiquidatorContract
       let hf = this.config.targetPartialHF;
       for (const t of this.config.calculatePartialHF ?? []) {
         if (ca.underlying === t) {
-          hf = this.creditAccountService.getOptimalHFForPartialLiquidation(ca);
+          hf = this.sdk.accounts.getOptimalHFForPartialLiquidation(ca);
           break;
         }
       }
@@ -254,10 +253,6 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected get router(): Address {
     return this.#router;
-  }
-
-  protected get sdk(): OnchainSDK {
-    return this.creditAccountService.sdk;
   }
 
   protected get owner(): Address {

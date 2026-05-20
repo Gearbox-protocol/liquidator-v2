@@ -1,10 +1,10 @@
+import type { PartialLiquidationCondition } from "@gearbox-protocol/liquidator-v2-config";
 import type {
   CreditAccountData,
   MultiCall,
   PriceUpdate,
   RawTx,
 } from "@gearbox-protocol/sdk";
-import type { PartialLiquidationCondition } from "@gearbox-protocol/types/optimist";
 import type {
   Address,
   Hex,
@@ -48,6 +48,11 @@ export interface PartialLiquidationPreview
   priceUpdates: PriceUpdate[];
 }
 
+export interface RWALiquidationPreview extends LiquidationPreview {
+  redemptionGateway: Address;
+  priceUpdates: PriceUpdate[];
+}
+
 export interface ILiquidatorService {
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
@@ -85,7 +90,7 @@ export interface ILiquidationStrategy<
 
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
-  isApplicable: (ca: CreditAccountData) => boolean;
+  isApplicable: (ca: CreditAccountData, optimistic: boolean) => boolean;
   /**
    * For optimistic liquidations only: create conditions that make this account liquidatable
    * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result

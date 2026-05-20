@@ -1,3 +1,9 @@
+import type {
+  CommonSchema,
+  FullLiquidatorSchema,
+  OptimisticResult,
+  PartialLiquidatorSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   AddressMap,
   AddressSet,
@@ -5,13 +11,8 @@ import {
   filterDustUSD,
   type MultiCall,
 } from "@gearbox-protocol/sdk";
-import type { OptimisticResult } from "@gearbox-protocol/types/optimist";
 import type { Hex, TransactionReceipt } from "viem";
-import type {
-  CommonSchema,
-  FullLiquidatorSchema,
-  PartialLiquidatorSchema,
-} from "../../config/index.js";
+import type { ExplainedError } from "../../errors/index.js";
 import { TransactionRevertedError } from "../../errors/index.js";
 import { LoggerFactory } from "../../log/index.js";
 import {
@@ -24,7 +25,9 @@ import AbstractLiquidator, {
 } from "./AbstractLiquidator.js";
 import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
+import LiquidationStrategyLossPolicy from "./LiquidationStrategyLossPolicy.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
+import LiquidationStrategyRWAViaStablecoins from "./LiquidationStrategyRWAViaStablecoins.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
@@ -36,7 +39,7 @@ type OptimisticStrategyResult = {
   receipt?: TransactionReceipt;
 } & (
   | { success: true; state: CreditAccountData; balancesAfter: ExecutorBalance }
-  | { success: false; error: Error }
+  | { success: false; error: Error; decoded?: ExplainedError }
 );
 
 export default class SingularLiquidator
@@ -54,17 +57,21 @@ export default class SingularLiquidator
     switch (liquidationMode) {
       case "full": {
         const cfg = this.config as unknown as FullLiquidatorSchema;
-        switch (cfg.lossPolicy) {
-          case "only":
-            add(new LiquidationStrategyFull("loss policy", true));
-            return;
-          case "never":
-            add(new LiquidationStrategyFull("full", false));
-            return;
-          case "fallback":
-            add(new LiquidationStrategyFull("loss policy", true));
-            add(new LiquidationStrategyFull("full fallback", false));
-            return;
+        switch (cfg.strategy) {
+          case "auto":
+            add(new LiquidationStrategyLossPolicy());
+            add(new LiquidationStrategyFull("full fallback"));
+            add(new LiquidationStrategyRWAViaStablecoins());
+            break;
+          case "rwa":
+            add(new LiquidationStrategyRWAViaStablecoins());
+            break;
+          case "loss":
+            add(new LiquidationStrategyLossPolicy());
+            break;
+          case "full":
+            add(new LiquidationStrategyFull());
+            break;
         }
         return;
       }
@@ -87,11 +94,17 @@ export default class SingularLiquidator
     this.logger.info(
       `launching strategies: ${this.#strategies.map(s => s.name).join(", ")}`,
     );
-    await Promise.all(this.#strategies.map(s => s.launch()));
+    // launch consecutively since there might be write transactions (contract deployments)
+    for (const s of this.#strategies) {
+      await s.launch();
+    }
   }
 
   public async syncState(_blockNumber: bigint): Promise<void> {
-    await Promise.all(this.#strategies.map(s => s.syncState(_blockNumber)));
+    // sync consecutively since there might be write transactions (contract deployments)
+    for (const s of this.#strategies) {
+      await s.syncState(_blockNumber);
+    }
   }
 
   public async liquidate(accounts: CreditAccountData[]): Promise<void> {
@@ -153,16 +166,14 @@ export default class SingularLiquidator
     this.notifier.notify(new LiquidationStartNotification(this.sdk, ca));
 
     for (const s of this.#strategies) {
-      if (!s.isApplicable(ca)) {
+      if (!s.isApplicable(ca, false)) {
         this.logger.debug(`strategy ${s.name} is not applicable`);
         continue;
       }
       try {
         const preview = await s.preview(ca);
         skipOnFailure ||= !!preview.skipOnFailure;
-        pathHuman = this.creditAccountService.sdk.stringifyMultiCall([
-          ...preview.calls,
-        ]);
+        pathHuman = this.sdk.stringifyMultiCall([...preview.calls]);
         this.logger.debug({ pathHuman }, "path found");
 
         const { request } = await s.simulate(ca, preview);
@@ -182,7 +193,7 @@ export default class SingularLiquidator
           throw new TransactionRevertedError(receipt);
         }
       } catch (e) {
-        const decoded = await this.errorHandler.explain(e, ca);
+        const decoded = await this.errorHandler.explain(e);
         this.logger.error(
           `cant liquidate with ${s.name}: ${decoded.shortMessage}`,
         );
@@ -221,22 +232,27 @@ export default class SingularLiquidator
     const start = Date.now();
     let strategyResult: OptimisticStrategyResult | undefined;
 
+    // At most one strategy may apply to a given account
+    // A violation indicates a misconfigured optimistic run
+    const applicable = this.#strategies.filter(s => s.isApplicable(acc, true));
+    if (applicable.length > 1) {
+      throw new Error(
+        `${applicable.length} strategies apply to ${acc.creditAccount} in optimistic mode: ${applicable.map(s => s.name).join(", ")}`,
+      );
+    }
+
     try {
       const balanceBefore = await this.getExecutorBalance(acc.underlying);
 
-      // make liquidatable using first strategy
-      const ml = await this.#strategies[0].makeLiquidatable(acc);
-      result.partialLiquidationCondition = ml.partialLiquidationCondition;
-
-      for (const s of this.#strategies) {
+      if (applicable.length === 1) {
+        const s = applicable[0];
+        const ml = await s.makeLiquidatable(acc);
+        result.partialLiquidationCondition = ml.partialLiquidationCondition;
         strategyResult = await this.#liquidateOneOptimisticStrategy(
           ml.account,
           s,
           ml.snapshotId,
         );
-        if (strategyResult.success) {
-          break;
-        }
       }
 
       if (strategyResult) {
@@ -245,7 +261,7 @@ export default class SingularLiquidator
         result.flashLoanAmount = strategyResult.preview?.flashLoanAmount;
         result.calls = strategyResult.preview?.calls as MultiCall[];
         result.pathAmount = strategyResult.preview?.underlyingBalance ?? 0n;
-        result.callsHuman = this.creditAccountService.sdk.stringifyMultiCall([
+        result.callsHuman = this.sdk.stringifyMultiCall([
           ...(strategyResult.preview?.calls ?? []),
         ]);
 
@@ -264,11 +280,12 @@ export default class SingularLiquidator
         result.isError = !strategyResult.success;
 
         if (strategyResult?.success === false) {
-          const decoded = await this.errorHandler.explain(
-            strategyResult.error,
-            acc,
-            true,
-          );
+          // Reuse the trace decoded inside `#liquidateOneOptimisticStrategy`
+          // (saved before snapshot rollback). Fall back to explaining here
+          // only if that pre-decoding failed for some reason.
+          const decoded =
+            strategyResult.decoded ??
+            (await this.errorHandler.explain(strategyResult.error, true));
           result.traceFile = decoded.traceFile;
           result.error = `cannot liquidate: ${decoded.longMessage}`.replaceAll(
             "\n",
@@ -285,8 +302,10 @@ export default class SingularLiquidator
       }
     } catch (e) {
       result.isError = true;
-      result.error = `${e}`;
-      this.logger.error(e, "cannot liquidate");
+      const decoded = await this.errorHandler.explain(e, true);
+      result.traceFile = decoded.traceFile;
+      result.error = decoded.longMessage.replaceAll("\n", "\\n");
+      this.logger.error(`cannot liquidate: ${decoded.shortMessage}`);
     }
 
     result.duration = Date.now() - start;
@@ -328,7 +347,7 @@ export default class SingularLiquidator
       if (result.receipt.status !== "success") {
         throw new TransactionRevertedError(result.receipt);
       }
-      const ca = await this.creditAccountService.getCreditAccountData(
+      const ca = await this.sdk.accounts.getCreditAccountData(
         acc.creditAccount,
       );
       if (!ca) {
@@ -340,7 +359,9 @@ export default class SingularLiquidator
       result.balancesAfter = await this.getExecutorBalance(acc.underlying);
     } catch (e) {
       logger.error(e, "strategy failed");
-      result = { ...result, success: false, error: e as Error };
+      // Decode the error (and save foundry trace) before reverting the snapshot
+      const decoded = await this.errorHandler.explain(e, true);
+      result = { ...result, success: false, error: e as Error, decoded };
     } finally {
       if (snapshotId) {
         await this.client.anvil.revert({ id: snapshotId });

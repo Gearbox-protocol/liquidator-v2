@@ -1,4 +1,5 @@
 // These imports are required to establish correct order of dependency injections
+import "./errors/index.js";
 import "./services/Client.js";
 import "./services/HealthCheckerService.js";
 import "./services/Scanner.js";
@@ -14,9 +15,11 @@ import {
   ssmManagerProxy,
   Zommand,
 } from "@gearbox-protocol/cli-utils";
-
+import {
+  ConfigImplementation,
+  ConfigSchema,
+} from "@gearbox-protocol/liquidator-v2-config";
 import attachSDK from "./attachSDK.js";
-import { ConfigImplementation, ConfigSchema } from "./config/index.js";
 import { DI } from "./di.js";
 import Liquidator from "./Liquidator.js";
 import { createTransport } from "./utils/index.js";
@@ -68,8 +71,9 @@ const program = new Zommand("liquidator-v2", {
 
     await config.initialize(transport);
 
-    const service = await attachSDK();
-    DI.set(DI.CreditAccountService, service);
+    const sdk = await attachSDK();
+    DI.set(DI.SDK, sdk);
+
     const app = new Liquidator();
     await app.launch();
   });

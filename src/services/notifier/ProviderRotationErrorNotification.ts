@@ -2,10 +2,10 @@ import type {
   IDedupableNotification,
   INotification,
 } from "@gearbox-protocol/cli-utils";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { NetworkType } from "@gearbox-protocol/sdk";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address, BaseError } from "viem";
-import type { Config } from "../../config/index.js";
 import { DI } from "../../di.js";
 
 export class ProviderRotationErrorNotification implements INotification {

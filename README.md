@@ -58,7 +58,7 @@ For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy -
 --market-configurators <addresses...>        Market configurators to use for the process, comma separated. Uses default value from SDK if not specified (env variable MARKET_CONFIGURATORS)
 --app-name <name>                            App name used in various messages to distinguish instances (env variable APP_NAME)
 --port <port>                                Port to expose some vital signals and metrics (env variable PORT)
---ignore-accounts <addresses...>             These accounts will not be liquidated (env variable IGNORE_ACCOUNTS)
+--whitelist-url <url>                        Full URL of the liquidator whitelist endpoint. Entries are credit account or credit manager addresses. Only applied in non-optimistic mode (env variable WHITELIST_URL)
 --debug-account <address>                    Only check this account during local debug session (env variable DEBUG_ACCOUNT)
 --debug-manager <address>                    Only check this credit manager during local debug session (env variable DEBUG_MANAGER)
 --stale-block-threshold <threshold>          Stale block threshold in seconds, to notify and try to rotate rpc provider. 0 means no monitoring (env variable STALE_BLOCK_THRESHOLD)

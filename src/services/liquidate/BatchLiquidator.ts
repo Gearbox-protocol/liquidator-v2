@@ -1,5 +1,5 @@
+import type { BatchLiquidatorSchema } from "@gearbox-protocol/liquidator-v2-config";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type { BatchLiquidatorSchema } from "../../config/index.js";
 import AbstractLiquidator from "./AbstractLiquidator.js";
 import type { ILiquidatorService } from "./types.js";
 

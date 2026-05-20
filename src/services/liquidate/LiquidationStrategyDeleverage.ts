@@ -1,3 +1,7 @@
+import type {
+  DeleverageLiquidatorSchema,
+  LiqduiatorConfig,
+} from "@gearbox-protocol/liquidator-v2-config";
 import {
   type CreditAccountData,
   type MultiCall,
@@ -5,10 +9,6 @@ import {
 } from "@gearbox-protocol/sdk";
 import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { encodeFunctionData, parseEther } from "viem";
-import type {
-  DeleverageLiquidatorSchema,
-  LiqduiatorConfig,
-} from "../../config/index.js";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import { DELEVERAGE_PERMISSIONS } from "../../utils/permissions.js";
@@ -35,16 +35,16 @@ export default class LiquidationStrategyDeleverage
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
 
-  public override isApplicable(_ca: CreditAccountData): boolean {
+  public override isApplicable(
+    _ca: CreditAccountData,
+    _optimistic: boolean,
+  ): boolean {
     return true;
   }
 
   public override async makeLiquidatable(
     ca: CreditAccountData,
   ): Promise<MakeLiquidatableResult> {
-    if (!this.isApplicable(ca)) {
-      throw new Error("warning: deleverage is not applicable for this account");
-    }
     const result = await super.makeLiquidatable(ca);
     if (this.config.useProductionScanner) {
       this.logger.debug("skipping force-enabling deleverage bot");
