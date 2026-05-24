@@ -93,7 +93,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
       address: this.address,
       functionName: "getOptimalLiquidation",
       args: [ca.creditAccount, optimalHF, priceUpdates],
-      gas: 550_000_000n,
+      gas: this.sdk.gasLimit,
     });
     return {
       tokenOut,
@@ -136,7 +136,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         4n, // TODO: splits
         this.extraData,
       ],
-      gas: 550_000_000n,
+      gas: this.sdk.gasLimit,
     });
 
     return preview;
