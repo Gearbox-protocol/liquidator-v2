@@ -35,6 +35,10 @@ export default class LiquidationStrategyDeleverage
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
 
+  public override get name(): string {
+    return "deleverage";
+  }
+
   public override isApplicable(
     _ca: CreditAccountData,
     _optimistic: boolean,
