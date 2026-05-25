@@ -8,6 +8,7 @@ import {
   detectNetwork,
   OnchainSDK,
   VERSION_RANGE_310,
+  WAD,
 } from "@gearbox-protocol/sdk";
 import {
   iCreditManagerV310Abi,
@@ -226,7 +227,7 @@ const program = new Zommand("diagnose", {
     );
     console.log();
 
-    if (ca.healthFactor !== 0n && ca.success) {
+    if (ca.healthFactor >= WAD && ca.success) {
       console.log(
         c.greenBold("✓ Account is healthy") +
           c.dim(" (HF != 0 and success = true). Nothing to diagnose."),
