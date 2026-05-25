@@ -23,7 +23,7 @@
     "viem-deal": "^2.0.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1049.0",
+    "@aws-sdk/client-s3": "^3.1053.0",
     "@biomejs/biome": "^2.4.15",
     "@commander-js/extra-typings": "^14.0.0",
     "@commitlint/cli": "^21.0.1",
@@ -31,13 +31,13 @@
     "@gearbox-protocol/biome-config": "^1.0.28",
     "@gearbox-protocol/cli-utils": "^6.13.1",
     "@gearbox-protocol/liquidator-contracts": "^v1.36.0-securitize.1",
-    "@gearbox-protocol/sdk": "14.10.1",
-    "@types/node": "^25.9.0",
+    "@gearbox-protocol/sdk": "14.10.2",
+    "@types/node": "^25.9.1",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.2.4",
     "axios": "^1.16.1",
     "axios-retry": "^4.5.0",
-    "date-fns": "^4.2.1",
+    "date-fns": "^4.3.0",
     "di-at-home": "^0.0.7",
     "esbuild": "^0.28.0",
     "husky": "^9.1.7",
@@ -48,7 +48,7 @@
     "tsx": "4.22.3",
     "typescript": "^6.0.3",
     "viem": "^2.50.4",
-    "vitest": "^4.1.6",
+    "vitest": "^4.1.7",
     "zod": "^4.4.3"
   },
   "commitlint": {
