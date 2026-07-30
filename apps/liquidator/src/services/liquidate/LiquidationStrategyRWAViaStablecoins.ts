@@ -16,7 +16,7 @@ import {
 import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { setLTZero } from "@gearbox-protocol/sdk/dev";
 import {
-  iSecuritizeRedemptionGatewayAbi,
+  iSecuritizeRedemptionGatewayV311Abi,
   type SecuritizeRedemptionGatewayAdapterContract,
 } from "@gearbox-protocol/sdk/plugins/adapters";
 import {
@@ -171,9 +171,9 @@ export default class LiquidationStrategyRWAViaStablecoins
           {
             target: gatewayAdapter,
             callData: encodeFunctionData({
-              abi: iSecuritizeRedemptionGatewayAbi,
+              abi: iSecuritizeRedemptionGatewayV311Abi,
               functionName: "redeem",
-              args: [dsBalance],
+              args: [dsBalance, "0x"],
             }),
           },
           {
@@ -215,7 +215,7 @@ export default class LiquidationStrategyRWAViaStablecoins
 
       // 2. Pick the redeemer that was just created (last unclaimed).
       const redeemers = await this.client.pub.readContract({
-        abi: iSecuritizeRedemptionGatewayAbi,
+        abi: iSecuritizeRedemptionGatewayV311Abi,
         address: gateway,
         functionName: "getUnclaimedRedeemers",
         args: [ca.creditAccount],
