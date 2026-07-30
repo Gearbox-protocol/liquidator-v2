@@ -2,12 +2,18 @@ import { readFile } from "node:fs/promises";
 import { resolve as pathResolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import type { OptimisticResult } from "@gearbox-protocol/liquidator-v2-config";
-import { json_parse, TypedObjectUtils } from "@gearbox-protocol/sdk";
+import {
+  AddressSet,
+  json_parse,
+  TypedObjectUtils,
+} from "@gearbox-protocol/sdk";
 import { iAliasedLossPolicyV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { iDegenNFTV2Abi } from "@gearbox-protocol/sdk/abi/iDegenNFTV2";
 import type { AnvilClient } from "@gearbox-protocol/sdk/dev";
 import {
   createAnvilClient,
+  createMinter,
+  registerRWAInvestor,
   setLTs,
   setLTZero,
 } from "@gearbox-protocol/sdk/dev";
@@ -21,8 +27,9 @@ import {
   keccak256,
   pad,
   parseEther,
+  parseUnits,
 } from "viem";
-import type { Config, LiquidatorConfig } from "./config";
+import type { Config, KycConfig, LiquidatorConfig } from "./config";
 import DI from "./di";
 import type { ContainerManager } from "./docker";
 import type { ContainerInfo } from "./docker/types";
@@ -33,6 +40,13 @@ import { formatTs, getChain } from "./utils";
 export type TrackOptions = LiquidatorConfig & {
   optimisticTimestamp: number;
 };
+
+/**
+ * Amount of each underlying dealt to liquidator addresses, in whole tokens.
+ * Deliberately way above any account debt, so that strategies spending the
+ * liquidator's own funds never run out and no per-account math is needed
+ */
+const UNDERLYING_FUND_AMOUNT = "1000000000";
 
 export default class Track implements ITrack {
   @DI.Inject(DI.Config)
@@ -220,6 +234,14 @@ export default class Track implements ITrack {
       }
     }
 
+    if (opts.kyc) {
+      await this.#passKYC(opts.kyc);
+    }
+
+    if (opts.fundUnderlying) {
+      await this.#fundUnderlying();
+    }
+
     if (opts.hackLossPolicy) {
       await this.#hackLossPolicy();
     }
@@ -246,13 +268,21 @@ export default class Track implements ITrack {
     // await stopImpersonate(this.anvil, configuratorAddr);
   }
 
-  async #topUpBalance(): Promise<void> {
-    const keys = [...TypedObjectUtils.keys(this.#options.addresses)];
+  /**
+   * Addresses the liquidator of this track can send transactions from:
+   * configured instances plus the sender used in optimistic mode
+   */
+  #liquidatorAddresses(): Address[] {
+    const addresses = [...TypedObjectUtils.keys(this.#options.addresses)];
     const liquidatorAddress = this.#options.env.LIQUIDATOR_ADDRESS;
     if (liquidatorAddress && isAddress(liquidatorAddress)) {
-      keys.push(liquidatorAddress);
+      addresses.push(liquidatorAddress);
     }
-    for (const w of keys) {
+    return addresses;
+  }
+
+  async #topUpBalance(): Promise<void> {
+    for (const w of this.#liquidatorAddresses()) {
       try {
         await this.anvil.setBalance({
           address: w,
@@ -261,6 +291,58 @@ export default class Track implements ITrack {
         this.logger?.debug(`set high balance for liquidator ${w}`);
       } catch (e) {
         this.logger?.error(`failed to set balance for ${w}: ${e}`);
+      }
+    }
+  }
+
+  /**
+   * Passes the KYC of every RWA token and midas gateway, so that liquidators
+   * are eligible to receive RWA collateral
+   */
+  async #passKYC(kyc: KycConfig): Promise<void> {
+    const { securitizeAdmin, midasAdmin } = kyc;
+    for (const investor of this.#liquidatorAddresses()) {
+      const { securitizeTokens, midasGateways, failed } =
+        await registerRWAInvestor({
+          anvil: this.anvil,
+          sdk: this.sdk,
+          investor,
+          securitizeAdmin,
+          midasAdmin,
+          logger: this.logger,
+        });
+      for (const { target, error } of failed) {
+        this.logger.warn(`failed to pass kyc of ${target}: ${error}`);
+      }
+      this.logger.debug(
+        `${investor} passed kyc of ${securitizeTokens.length} ds token(s) and ${midasGateways.length} midas gateway(s)`,
+      );
+    }
+  }
+
+  /**
+   * Deals underlyings of all active markets to liquidator addresses
+   */
+  async #fundUnderlying(): Promise<void> {
+    const underlyings = new AddressSet();
+    for (const cm of this.sdk.marketRegister.creditManagers) {
+      if (!cm.isExpired) {
+        underlyings.add(cm.underlying);
+      }
+    }
+    const addresses = this.#liquidatorAddresses();
+    for (const token of underlyings) {
+      const minter = createMinter(this.sdk, this.anvil, token);
+      const amount = parseUnits(
+        UNDERLYING_FUND_AMOUNT,
+        this.sdk.tokensMeta.decimals(token),
+      );
+      for (const address of addresses) {
+        // tryMint does not throw, it returns the balance after the attempt
+        const balance = await minter.tryMint(token, address, amount);
+        this.logger.debug(
+          `${address} has ${this.sdk.tokensMeta.formatBN(token, balance, { symbol: true })}`,
+        );
       }
     }
   }

@@ -13,6 +13,22 @@ export const DegenConfig = z.object({
 
 export type DegenConfig = z.infer<typeof DegenConfig>;
 
+export const KycConfig = z.object({
+  /**
+   * Securitize DS registry admin, impersonated on the fork.
+   * DSTokens are skipped when omitted
+   */
+  securitizeAdmin: addressLike().optional(),
+  /**
+   * Midas access control admin, impersonated on the fork
+   * (MIDAS_ACL_ADMIN in periphery-v3/router-v3 foundry tests).
+   * Midas gateways are skipped when omitted
+   */
+  midasAdmin: addressLike().optional(),
+});
+
+export type KycConfig = z.infer<typeof KycConfig>;
+
 export const SetupConfig = z
   .object({
     /**
@@ -35,6 +51,15 @@ export const SetupConfig = z
      * Mint degen NFTs to some addresses
      */
     mintDegenNFT: DegenConfig.optional(),
+    /**
+     * Pass KYC of every RWA token and midas gateway for liquidator addresses
+     */
+    kyc: KycConfig.optional(),
+    /**
+     * Deal a large amount of every market underlying to liquidator addresses,
+     * required by strategies that liquidate with the liquidator's own funds
+     */
+    fundUnderlying: z.boolean().optional(),
     /**
      * Hack loss policy to test CreditAccountNotLiquidatableWithLossException revert
      *

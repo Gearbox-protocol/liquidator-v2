@@ -22,7 +22,7 @@
     "@aws-sdk/client-ssm": "^3.1097.0",
     "@commander-js/extra-typings": "^15.0.0",
     "@gearbox-protocol/cli-utils": "workspace:*",
-    "@gearbox-protocol/sdk": "14.12.0-next.50",
+    "@gearbox-protocol/sdk": "14.12.0-next.52",
     "@types/deepmerge": "^2.2.3",
     "@types/dockerode": "^4.0.1",
     "@types/lodash-es": "^4.17.12",
@@ -48,6 +48,7 @@
     "typescript": "^7.0.2",
     "uuid": "^14.0.1",
     "viem": "^2.55.10",
+    "viem-deal": "^2.0.4",
     "vitest": "^4.1.10",
     "yaml": "^2.9.0",
     "zod": "^4.3.6"
