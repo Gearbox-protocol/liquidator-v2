@@ -19,13 +19,7 @@ import {
   iSecuritizeRedemptionGatewayV311Abi,
   type SecuritizeRedemptionGatewayAdapterContract,
 } from "@gearbox-protocol/sdk/plugins/adapters";
-import {
-  type Address,
-  BaseError,
-  encodeFunctionData,
-  parseEther,
-  type SimulateContractReturnType,
-} from "viem";
+import { type Address, BaseError, encodeFunctionData, parseEther } from "viem";
 import { DI } from "../../di.js";
 import {
   type ErrorHandler,
@@ -37,7 +31,12 @@ import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
 import { RWAContractsDeployer, resolveRWAContext } from "./rwa/index.js";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
+import type {
+  ILiquidationStrategy,
+  LiquidationRequest,
+  MakeLiquidatableResult,
+} from "./types.js";
+import { toLiquidationRequest } from "./types.js";
 
 export default class LiquidationStrategyRWAViaStablecoins
   extends AccountHelper
@@ -309,8 +308,8 @@ export default class LiquidationStrategyRWAViaStablecoins
   public async simulate(
     account: CreditAccountData,
     preview: RwaStrategyPreview,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    const result = await this.client.pub.simulateContract({
+  ): Promise<LiquidationRequest> {
+    const { request } = await this.client.pub.simulateContract({
       account: this.client.account,
       abi: [...securitizeLiquidatorHelperAbi, ...errorAbis],
       address: this.#deployer.address,
@@ -321,6 +320,6 @@ export default class LiquidationStrategyRWAViaStablecoins
         preview.priceUpdates,
       ],
     });
-    return result as unknown as SimulateContractReturnType<unknown[], any, any>;
+    return toLiquidationRequest(request);
   }
 }

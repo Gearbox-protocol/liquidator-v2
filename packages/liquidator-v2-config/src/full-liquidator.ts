@@ -42,17 +42,19 @@ export const FullLiquidatorSchema = z
      *   Intended for optimistic loss-policy tracks.
      * - `full`: include only `LiquidationStrategyFull`
      *   Intended for optimistic normal-full tracks.
+     * - `wallet`: include only `WalletStrategy`, which repays the debt from the
+     *   liquidator's own funds and receives all account collateral.
      *
      * Optimistic mode rejects `auto`, so the external runner must invoke
-     * explicit tracks: `rwa`, `loss`, and `full`.
+     * explicit tracks: `rwa`, `loss`, `full`, and `wallet`.
      */
     strategy: z
-      .enum(["auto", "rwa", "loss", "full"])
+      .enum(["auto", "rwa", "loss", "full", "wallet"])
       .default("auto")
       .register(zommandRegistry, {
         flags: "--strategy <strategy>",
         description:
-          "Full-mode liquidation strategy set (auto/rwa/loss/full). Optimistic mode requires an explicit track.",
+          "Full-mode liquidation strategy set (auto/rwa/loss/full/wallet). Optimistic mode requires an explicit track.",
         env: "STRATEGY",
       }),
   })

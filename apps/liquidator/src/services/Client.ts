@@ -15,12 +15,10 @@ import type {
   Chain,
   ContractFunctionArgs,
   ContractFunctionName,
-  EncodeFunctionDataParameters,
   Hex,
   LocalAccount,
   PublicClient,
   SimulateContractParameters,
-  SimulateContractReturnType,
   TransactionReceipt,
   Transport,
   WalletClient,
@@ -29,7 +27,6 @@ import {
   createPublicClient,
   createWalletClient,
   defineChain,
-  encodeFunctionData,
   formatEther,
   http,
   WaitForTransactionReceiptTimeoutError,
@@ -40,6 +37,7 @@ import { errorAbis } from "../errors/abis.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
 import type { StatusCode } from "../utils/index.js";
+import type { LiquidationRequest } from "./liquidate/types.js";
 import { LowBalanceNotification } from "./notifier/index.js";
 
 const GAS_X = 5000n;
@@ -165,24 +163,24 @@ export default class Client {
     return { address: liquidatorAddress, type: "json-rpc" };
   }
 
-  public async liquidate(
-    request: SimulateContractReturnType["request"],
+  /**
+   * Sends the liquidation transaction or a transaction it depends on (e.g. an
+   * ERC-20 approval), inflating gas fees so that it does not stall the run.
+   * @param request
+   */
+  public async sendTx(
+    request: LiquidationRequest,
   ): Promise<TransactionReceipt> {
     if (this.config.dryRun && !this.config.optimistic) {
       throw new Error("dry run mode");
     }
-    this.logger.debug("sending liquidation tx");
-    const { abi, address, args, dataSuffix, functionName, ...rest } = request;
-    const data = encodeFunctionData({
-      abi,
-      args,
-      functionName,
-    } as EncodeFunctionDataParameters);
+    return this.#send(request);
+  }
+
+  async #send(request: LiquidationRequest): Promise<TransactionReceipt> {
     const req = await this.wallet.prepareTransactionRequest({
       ...this.#gasFees,
-      ...rest,
-      to: request.address,
-      data,
+      ...request,
     } as Parameters<typeof this.wallet.prepareTransactionRequest>[0]);
     const { gas, maxFeePerGas, maxPriorityFeePerGas } = req;
     if (maxPriorityFeePerGas && maxFeePerGas) {
@@ -329,7 +327,7 @@ export default class Client {
 
   /**
    * Returns the inflated gas price (wei per gas) used to size transactions.
-   * Mirrors the inflation applied in `liquidate()` so the balance check and
+   * Mirrors the inflation applied in `#send()` so the balance check and
    * the actual transaction cost agree on the gas price.
    */
   async #effectiveGasPrice(): Promise<bigint> {

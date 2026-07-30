@@ -6,7 +6,7 @@ import type {
 } from "@gearbox-protocol/liquidator-v2-config";
 import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
-import type { Address, Hex, SimulateContractReturnType } from "viem";
+import type { Address, Hex } from "viem";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
@@ -16,7 +16,12 @@ import {
   type IPartialLiquidatorContract,
   PartialContractsDeployer,
 } from "./partial/index.js";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
+import type {
+  ILiquidationStrategy,
+  LiquidationRequest,
+  MakeLiquidatableResult,
+} from "./types.js";
+import { toLiquidationRequest } from "./types.js";
 
 /**
  * Shared logic for partial and deleverage strategies, generic over the kind so
@@ -195,14 +200,18 @@ export default abstract class LiquidationStrategyPartialBase<
   public async simulate(
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
+  ): Promise<LiquidationRequest> {
     const liquidator = this.#liquidatorForCA(account);
     if (!liquidator) {
       throw new Error(
         `no partial liquidator contract found for account ${account.creditAccount} in ${account.creditManager}`,
       );
     }
-    return liquidator.partialLiquidateAndConvert(account, preview);
+    const { request } = await liquidator.partialLiquidateAndConvert(
+      account,
+      preview,
+    );
+    return toLiquidationRequest(request);
   }
 
   /**
