@@ -34,6 +34,12 @@ import type {
 import { toLiquidationRequest } from "./types.js";
 
 /**
+ * Contract type of `PoolV3_USDT`, the pool variation for USDT-style underlyings
+ * with transfer fees, whose `approve` rejects overwriting a non-zero allowance.
+ */
+const USDT_POOL_CONTRACT_TYPE = "POOL::USDT";
+
+/**
  * Arguments of `CreditFacade.liquidateCreditAccount` decoded from the
  * liquidation compressor's calldata.
  */
@@ -208,9 +214,7 @@ export default class WalletStrategy
       );
       return;
     }
-    // some tokens (USDT-style) reject changing a non-zero allowance directly
-    // TODO: determine which tokens are affected by this
-    if (allowance > 0n) {
+    if (allowance > 0n && this.#needsAllowanceReset(ca)) {
       await this.#approve(token, spender, 0n);
     }
     await this.#approve(token, spender, amount);
@@ -268,6 +272,17 @@ export default class WalletStrategy
       }
     }
     return { received, redeemers: preview.redeemers };
+  }
+
+  /**
+   * Whether the underlying rejects changing a non-zero allowance directly:
+   * markets with such an underlying use the `PoolV3_USDT` pool variation.
+   */
+  #needsAllowanceReset(ca: CreditAccountData): boolean {
+    const { pool } = this.sdk.marketRegister.findByCreditManager(
+      ca.creditManager,
+    );
+    return pool.pool.contractType === USDT_POOL_CONTRACT_TYPE;
   }
 
   async #approve(
