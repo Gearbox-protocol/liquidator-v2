@@ -28,8 +28,7 @@ liquidators:
     imageTag: beta
     rpc: "${sm.ANVIL_NODE.chainstack_ethereum}"
     env:
-      LIQUIDATION_MODE: "full"
-      STRATEGY: "wallet"
+      LIQUIDATION_MODE: "wallet"
       LIQUIDATOR_ADDRESS: "0x185E17894F5716753F857129C98E2BCCEd7e36FD"
     setup:
       zeroLT: true

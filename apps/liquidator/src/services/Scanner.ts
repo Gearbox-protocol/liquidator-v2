@@ -53,6 +53,15 @@ export class Scanner {
   #unwatch?: () => void;
   #liquidatableAccounts = 0;
 
+  /**
+   * Modes that liquidate accounts fully: they scan the same health factor range
+   * and also look at expired credit managers when nothing was found.
+   */
+  get #fullScan(): boolean {
+    const { liquidationMode } = this.config;
+    return liquidationMode === "full" || liquidationMode === "wallet";
+  }
+
   public async launch(): Promise<void> {
     await this.liquidatorService.launch();
 
@@ -65,7 +74,7 @@ export class Scanner {
       : this.config.hfThreshold;
     this.#minHealthFactor = this.config.optimistic ? 0n : 1n;
 
-    if (this.config.liquidationMode === "full") {
+    if (this.#fullScan) {
       if (this.config.optimistic && this.config.useProductionScanner) {
         this.#minHealthFactor = 1n;
         this.#maxHealthFactor = this.config.hfThreshold;
@@ -170,7 +179,7 @@ export class Scanner {
           !this.config.updateReservePrices,
       };
       accounts = await this.#getAllCreditAccounts(queue, blockNumber);
-      if (accounts.length === 0 && this.config.liquidationMode === "full") {
+      if (accounts.length === 0 && this.#fullScan) {
         accounts = await this.#getExpiredCreditAccounts(blockNumber);
       }
     }

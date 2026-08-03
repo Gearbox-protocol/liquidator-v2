@@ -91,14 +91,14 @@ export default class SingularLiquidator
           case "full":
             add(new LiquidationStrategyFull());
             break;
-          case "wallet":
-            add(new WalletStrategy());
-            break;
         }
         return;
       }
       case "deleverage":
         add(new LiquidationStrategyDeleverage());
+        return;
+      case "wallet":
+        add(new WalletStrategy());
         return;
       case "partial": {
         const cfg = this.config as unknown as PartialLiquidatorSchema;

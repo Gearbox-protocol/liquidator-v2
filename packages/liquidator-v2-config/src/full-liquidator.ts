@@ -10,7 +10,7 @@ export const FullLiquidatorSchema = z
      */
     liquidationMode: z.literal("full").register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
-      description: "Liquidator mode (full/partial/batch/deleverage)",
+      description: "Liquidator mode (full/partial/batch/deleverage/wallet)",
       env: "LIQUIDATION_MODE",
     }),
     /**
@@ -42,19 +42,17 @@ export const FullLiquidatorSchema = z
      *   Intended for optimistic loss-policy tracks.
      * - `full`: include only `LiquidationStrategyFull`
      *   Intended for optimistic normal-full tracks.
-     * - `wallet`: include only `WalletStrategy`, which repays the debt from the
-     *   liquidator's own funds and receives all account collateral.
      *
      * Optimistic mode rejects `auto`, so the external runner must invoke
-     * explicit tracks: `rwa`, `loss`, `full`, and `wallet`.
+     * explicit tracks: `rwa`, `loss`, and `full`.
      */
     strategy: z
-      .enum(["auto", "rwa", "loss", "full", "wallet"])
+      .enum(["auto", "rwa", "loss", "full"])
       .default("auto")
       .register(zommandRegistry, {
         flags: "--strategy <strategy>",
         description:
-          "Full-mode liquidation strategy set (auto/rwa/loss/full/wallet). Optimistic mode requires an explicit track.",
+          "Full-mode liquidation strategy set (auto/rwa/loss/full). Optimistic mode requires an explicit track.",
         env: "STRATEGY",
       }),
   })

@@ -1,8 +1,8 @@
 import type {
-  FullLiquidatorSchema,
   LiqduiatorConfig,
   OptimisticAsset,
   Redeemer,
+  WalletLiquidatorSchema,
   WalletStrategyOutcome,
   WalletStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
@@ -53,7 +53,7 @@ export default class WalletStrategy
   sdk!: OnchainSDK;
 
   @DI.Inject(DI.Config)
-  config!: LiqduiatorConfig<FullLiquidatorSchema>;
+  config!: LiqduiatorConfig<WalletLiquidatorSchema>;
 
   @DI.Inject(DI.Client)
   client!: Client;

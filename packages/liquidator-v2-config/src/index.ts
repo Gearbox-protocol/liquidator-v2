@@ -8,3 +8,4 @@ export type * from "./optimist.js";
 export type * from "./partial-liquidator.js";
 export type * from "./report.js";
 export { ConfigSchema } from "./schema.js";
+export type * from "./wallet-liquidator.js";

@@ -12,6 +12,7 @@ Possible values:
 - `partial` - some assets are sold to bring account's health factor above 1
 - `batch` - similar to `full`, but many accounts can be liquidated with single transaction (discontinued)
 - `deleverage` - similar to `partial`, but triggered when HF drops below certain minimum, and tries to bring it close to certain maximum. (not yet implemented fully)
+- `wallet` - similar to `full`, but the debt is repaid from the liquidator's own funds and all the account collateral is received by the liquidator wallet. Requires the liquidator to hold enough underlying and to pass KYC for the liquidated assets
 
 ## Optimistic Liquidations
 
@@ -68,7 +69,7 @@ For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy -
 --min-balance-gas <gas>                      Minimum executor gas budget (in gas units); required balance = this * current gas price (env variable MIN_BALANCE_GAS)
 --hf-threshold <threshold>                   Filter out all accounts with HF >= threshold during scan stage (env variable HF_THRESHOLD)
 --num-splits <splits>                        Default numSplits for router v3.1 contract (env variable NUM_SPLITS)
---liquidation-mode <mode>                    Liquidator mode (full/partial/batch/deleverage) (env variable LIQUIDATION_MODE)
+--liquidation-mode <mode>                    Liquidator mode (full/partial/batch/deleverage/wallet) (env variable LIQUIDATION_MODE)
 --ignore-missing-feeds                       Ignore missing feeds (redstone/pyth) (env variable IGNORE_MISSING_FEEDS)
 --dry-run                                    Do not send transactions in non-optimistic mode, just log them (env variable DRY_RUN)
 --redstone-gateways <urls...>                Redstone gateways to use, comma separated (env variable REDSTONE_GATEWAYS)
