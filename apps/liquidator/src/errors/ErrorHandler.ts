@@ -2,7 +2,7 @@ import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
-import { json_stringify } from "@gearbox-protocol/sdk";
+import { json_stringify, SimulationError } from "@gearbox-protocol/sdk";
 import { spawn } from "@homebridge/node-pty-prebuilt-multiarch";
 import { nanoid } from "nanoid";
 import {
@@ -123,29 +123,37 @@ export class ErrorHandler {
     if (e instanceof TransactionRevertedError) {
       cast = ["run", "--rpc-url", anvilURL.value, e.receipt.transactionHash];
     } else {
-      const exErr = e.walk(
-        err => err instanceof ContractFunctionExecutionError,
-      );
-      if (
-        exErr instanceof ContractFunctionExecutionError &&
-        exErr.contractAddress
-      ) {
-        const data = encodeFunctionData({
-          abi: exErr.abi,
-          args: exErr.args,
-          functionName: exErr.functionName,
-        });
-        cast = [
-          "call",
-          "--trace",
-          "--rpc-url",
-          anvilURL.value,
-          ...(exErr.sender ? ["--from", exErr.sender] : []),
-          exErr.contractAddress,
-          // data,
-        ];
-        this.log.debug(`calling cast ${cast.join(" ")} <data>`);
-        cast.push(data);
+      const simErr = e.walk(err => err instanceof SimulationError);
+      if (simErr instanceof SimulationError) {
+        // replays the original calldata, which is more accurate than re-encoding
+        // decoded args, and also works when the abi did not cover the function
+        cast = simErr.getCastTraceArgs(anvilURL.value);
+        this.log.debug(`calling cast ${cast.slice(0, -1).join(" ")} <data>`);
+      } else {
+        const exErr = e.walk(
+          err => err instanceof ContractFunctionExecutionError,
+        );
+        if (
+          exErr instanceof ContractFunctionExecutionError &&
+          exErr.contractAddress
+        ) {
+          const data = encodeFunctionData({
+            abi: exErr.abi,
+            args: exErr.args,
+            functionName: exErr.functionName,
+          });
+          cast = [
+            "call",
+            "--trace",
+            "--rpc-url",
+            anvilURL.value,
+            ...(exErr.sender ? ["--from", exErr.sender] : []),
+            exErr.contractAddress,
+            // data,
+          ];
+          this.log.debug(`calling cast ${cast.join(" ")} <data>`);
+          cast.push(data);
+        }
       }
     }
     if (!cast.length) {

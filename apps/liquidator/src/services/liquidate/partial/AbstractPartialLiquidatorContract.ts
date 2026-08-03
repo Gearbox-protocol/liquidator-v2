@@ -12,12 +12,13 @@ import type {
   PriceUpdate,
 } from "@gearbox-protocol/sdk";
 import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
-import type { Address, SimulateContractReturnType } from "viem";
+import type { Address } from "viem";
 import { parseAbi } from "viem";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
 import type DeleverageService from "../../DeleverageService.js";
+import type { LiquidationRequest } from "../types.js";
 import type {
   IPartialLiquidatorContract,
   OptimalPartialLiquidation,
@@ -197,7 +198,7 @@ export abstract class AbstractPartialLiquidatorContract
   public abstract partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
+  ): Promise<LiquidationRequest>;
 
   /**
    * Returns partial liquidation bot, or deleverage bot

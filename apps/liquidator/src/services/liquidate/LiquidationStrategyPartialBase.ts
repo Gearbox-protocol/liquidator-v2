@@ -21,7 +21,6 @@ import type {
   LiquidationRequest,
   MakeLiquidatableResult,
 } from "./types.js";
-import { toLiquidationRequest } from "./types.js";
 
 /**
  * Shared logic for partial and deleverage strategies, generic over the kind so
@@ -207,11 +206,7 @@ export default abstract class LiquidationStrategyPartialBase<
         `no partial liquidator contract found for account ${account.creditAccount} in ${account.creditManager}`,
       );
     }
-    const { request } = await liquidator.partialLiquidateAndConvert(
-      account,
-      preview,
-    );
-    return toLiquidationRequest(request);
+    return liquidator.partialLiquidateAndConvert(account, preview);
   }
 
   /**

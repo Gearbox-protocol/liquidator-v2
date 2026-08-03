@@ -6,21 +6,10 @@ import type {
   WalletStrategyOutcome,
   WalletStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type {
-  CreditAccountData,
-  MultiCall,
-  OnchainSDK,
-  RawTx,
-} from "@gearbox-protocol/sdk";
-import { AddressSet, hexEq } from "@gearbox-protocol/sdk";
-import { iCreditFacadeV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
+import { AddressSet } from "@gearbox-protocol/sdk";
 import type { Address, Hex, TransactionReceipt } from "viem";
-import {
-  BaseError,
-  decodeFunctionData,
-  encodeFunctionData,
-  erc20Abi,
-} from "viem";
+import { BaseError, encodeFunctionData, erc20Abi } from "viem";
 import { DI } from "../../di.js";
 import { errorAbis } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
@@ -31,23 +20,12 @@ import type {
   LiquidationRequest,
   MakeLiquidatableResult,
 } from "./types.js";
-import { toLiquidationRequest } from "./types.js";
 
 /**
  * Contract type of `PoolV3_USDT`, the pool variation for USDT-style underlyings
  * with transfer fees, whose `approve` rejects overwriting a non-zero allowance.
  */
 const USDT_POOL_CONTRACT_TYPE = "POOL::USDT";
-
-/**
- * Arguments of `CreditFacade.liquidateCreditAccount` decoded from the
- * liquidation compressor's calldata.
- */
-interface DecodedFacadeLiquidation {
-  creditAccount: Address;
-  to: Address;
-  calls: readonly MultiCall[];
-}
 
 /**
  * Liquidator token balances at a point in time, `balances` aligned with `tokens`.
@@ -97,7 +75,13 @@ export default class WalletStrategy
     return this.client.address;
   }
 
-  public async launch(): Promise<void> {}
+  /**
+   * Registers the dedicated Midas/Securitize liquidator contracts in the sdk,
+   * so that the compressor's calldata targeting them can be stringified.
+   */
+  public async launch(): Promise<void> {
+    await this.sdk.liquidations.loadRWALiquidators();
+  }
 
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
@@ -159,7 +143,7 @@ export default class WalletStrategy
       return {
         approve: details.approve,
         redeemers,
-        calls: this.#decodeLiquidationCall(ca, rawTx)?.calls ?? [],
+        calls: [{ target: rawTx.to, callData: rawTx.callData as Hex }],
         rawTx,
       };
     } catch (e) {
@@ -221,29 +205,17 @@ export default class WalletStrategy
   }
 
   public async simulate(
-    account: CreditAccountData,
+    _account: CreditAccountData,
     preview: WalletStrategyPreview<bigint>,
   ): Promise<LiquidationRequest> {
     const { rawTx } = preview;
-    const decoded = this.#decodeLiquidationCall(account, rawTx);
-    if (decoded) {
-      const { request } = await this.client.pub.simulateContract({
-        account: this.client.account,
-        abi: [...iCreditFacadeV310Abi, ...errorAbis],
-        address: account.creditFacade,
-        functionName: "liquidateCreditAccount",
-        args: [decoded.creditAccount, decoded.to, decoded.calls],
-      });
-      return toLiquidationRequest(request);
-    }
-    // TODO: future sdk versions ship abis of the liquidator contracts, after
-    // which every liquidation call can be simulated with decoded custom errors
-    await this.client.pub.call({
+    const value = BigInt(rawTx.value ?? 0);
+    await this.sdk.simulateCall(rawTx.to, rawTx.callData, {
       account: this.client.account,
-      to: rawTx.to,
-      data: rawTx.callData,
+      value,
+      abis: [errorAbis],
     });
-    return { to: rawTx.to, data: rawTx.callData };
+    return { to: rawTx.to, data: rawTx.callData, value };
   }
 
   /**
@@ -331,32 +303,5 @@ export default class WalletStrategy
       tokens,
       balances: results.map(r => (r.status === "success" ? r.result : 0n)),
     };
-  }
-
-  /**
-   * Decodes the compressor's calldata when the liquidation goes through the
-   * credit facade. Returns `undefined` for dedicated liquidator contracts,
-   * whose abis are not known here.
-   */
-  #decodeLiquidationCall(
-    ca: CreditAccountData,
-    rawTx: RawTx,
-  ): DecodedFacadeLiquidation | undefined {
-    if (!hexEq(rawTx.to, ca.creditFacade)) {
-      return undefined;
-    }
-    try {
-      const decoded = decodeFunctionData({
-        abi: iCreditFacadeV310Abi,
-        data: rawTx.callData as Hex,
-      });
-      if (decoded.functionName !== "liquidateCreditAccount") {
-        return undefined;
-      }
-      const [creditAccount, to, calls] = decoded.args;
-      return { creditAccount, to, calls };
-    } catch {
-      return undefined;
-    }
   }
 }

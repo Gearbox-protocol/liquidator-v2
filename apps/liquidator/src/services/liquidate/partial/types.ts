@@ -5,7 +5,8 @@ import type {
   MultiCall,
   PriceUpdate,
 } from "@gearbox-protocol/sdk";
-import type { Address, SimulateContractReturnType } from "viem";
+import type { Address } from "viem";
+import type { LiquidationRequest } from "../types.js";
 
 export interface OptimalPartialLiquidation {
   tokenOut: Address;
@@ -68,7 +69,7 @@ export interface IPartialLiquidatorContract {
   partialLiquidateAndConvert: (
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ) => Promise<SimulateContractReturnType<unknown[], any, any>>;
+  ) => Promise<LiquidationRequest>;
 }
 
 export interface IPartialLiqudatorContractFactory {

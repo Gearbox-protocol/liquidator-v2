@@ -14,12 +14,13 @@ import {
   type Address,
   type Chain,
   encodeAbiParameters,
+  encodeFunctionData,
   type Hex,
   parseAbi,
-  type SimulateContractReturnType,
   type Transport,
 } from "viem";
 import { errorAbis } from "../../../../errors/index.js";
+import type { LiquidationRequest } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 import type {
   OptimalPartialLiquidation,
@@ -141,11 +142,9 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   public async partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    return this.client.pub.simulateContract({
-      account: this.client.account,
-      address: this.address,
-      abi: [...iPartialLiquidatorAbi, ...errorAbis],
+  ): Promise<LiquidationRequest> {
+    const data = encodeFunctionData({
+      abi: iPartialLiquidatorAbi,
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,
@@ -158,6 +157,11 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         this.extraData,
       ],
     });
+    await this.sdk.simulateCall(this.address, data, {
+      account: this.client.account,
+      abis: [iPartialLiquidatorAbi, errorAbis],
+    });
+    return { to: this.address, data };
   }
 
   protected get partialLiquidationBot(): Address {

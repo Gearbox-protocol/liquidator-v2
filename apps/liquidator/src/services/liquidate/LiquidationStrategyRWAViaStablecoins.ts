@@ -36,7 +36,6 @@ import type {
   LiquidationRequest,
   MakeLiquidatableResult,
 } from "./types.js";
-import { toLiquidationRequest } from "./types.js";
 
 export default class LiquidationStrategyRWAViaStablecoins
   extends AccountHelper
@@ -309,10 +308,9 @@ export default class LiquidationStrategyRWAViaStablecoins
     account: CreditAccountData,
     preview: RwaStrategyPreview,
   ): Promise<LiquidationRequest> {
-    const { request } = await this.client.pub.simulateContract({
-      account: this.client.account,
-      abi: [...securitizeLiquidatorHelperAbi, ...errorAbis],
-      address: this.#deployer.address,
+    const to = this.#deployer.address;
+    const data = encodeFunctionData({
+      abi: securitizeLiquidatorHelperAbi,
       functionName: "liquidateViaStablecoins",
       args: [
         account.creditAccount,
@@ -320,6 +318,10 @@ export default class LiquidationStrategyRWAViaStablecoins
         preview.priceUpdates,
       ],
     });
-    return toLiquidationRequest(request);
+    await this.sdk.simulateCall(to, data, {
+      account: this.client.account,
+      abis: [securitizeLiquidatorHelperAbi, errorAbis],
+    });
+    return { to, data };
   }
 }

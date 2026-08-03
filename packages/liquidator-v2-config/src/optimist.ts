@@ -162,8 +162,8 @@ export interface WalletStrategyPreview<N extends Numberish = Numberish> {
    */
   redeemers: Redeemer<N>[];
   /**
-   * Multicalls used to liquidate the account, decoded from the compressor's
-   * calldata when it targets the credit facade, empty otherwise.
+   * Top-level liquidation call built by the compressor, targeting either the
+   * credit facade or a dedicated Midas/Securitize liquidator contract.
    */
   calls: readonly MultiCall[];
   /**

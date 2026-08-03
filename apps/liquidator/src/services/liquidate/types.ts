@@ -5,13 +5,7 @@ import type {
   StrategySetups,
 } from "@gearbox-protocol/liquidator-v2-config";
 import type { CreditAccountData } from "@gearbox-protocol/sdk";
-import type {
-  Address,
-  EncodeFunctionDataParameters,
-  Hex,
-  TransactionReceipt,
-} from "viem";
-import { encodeFunctionData } from "viem";
+import type { Address, Hex, TransactionReceipt } from "viem";
 
 export interface ILiquidatorService {
   launch: () => Promise<void>;
@@ -33,40 +27,6 @@ export interface LiquidationRequest {
   to: Address;
   data: Hex;
   value?: bigint;
-}
-
-/**
- * Contract call as returned by viem's `simulateContract`. Declared structurally
- * (instead of `SimulateContractReturnType["request"]`) so that requests of any
- * abi can be passed without their inferred types being narrowed to the request
- * of an empty abi.
- */
-export interface SimulatedContractRequest {
-  address: Address;
-  abi: readonly unknown[];
-  functionName: string;
-  args?: readonly unknown[];
-  value?: bigint;
-}
-
-/**
- * Converts a viem `simulateContract` request into a {@link LiquidationRequest}
- * @param request
- * @returns
- */
-export function toLiquidationRequest(
-  request: SimulatedContractRequest,
-): LiquidationRequest {
-  const { abi, address, args, functionName, value } = request;
-  return {
-    to: address,
-    data: encodeFunctionData({
-      abi,
-      args,
-      functionName,
-    } as EncodeFunctionDataParameters),
-    value,
-  };
 }
 
 export type MakeLiquidatableResult<
@@ -130,8 +90,9 @@ export interface ILiquidationStrategy<
     preview: StrategyPreviews<bigint>[K],
   ) => Promise<void>;
   /**
-   * Using data gathered by preview step, simulates transaction.
-   * That is, nothing is actually written, but the gas is estimated, for example.
+   * Using data gathered by preview step, simulates transaction with `eth_call`.
+   * Nothing is written, and gas is not estimated here: `Client` does that via
+   * `prepareTransactionRequest` when the transaction is actually sent.
    * In optimistic mode, we create snapshot after that state so that all the loaded storage slots are not reverted on next account.
    *
    * Returned transaction data then can be used to send actual transaction.

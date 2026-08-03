@@ -9,8 +9,7 @@ import {
   type OnchainSDK,
   WAD,
 } from "@gearbox-protocol/sdk";
-import { iCreditFacadeV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
-import { type Address, BaseError, decodeFunctionData } from "viem";
+import { type Address, BaseError } from "viem";
 import { DI } from "../../di.js";
 import { errorAbis, isRevertedWith } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
@@ -21,7 +20,6 @@ import type {
   LiquidationRequest,
   MakeLiquidatableResult,
 } from "./types.js";
-import { toLiquidationRequest } from "./types.js";
 
 export default abstract class LiquidationStrategyFullBase<
     K extends "full" | "loss-policy",
@@ -125,19 +123,15 @@ export default abstract class LiquidationStrategyFullBase<
     account: CreditAccountData,
     preview: FullStrategyPreview,
   ): Promise<LiquidationRequest> {
-    const { args } = decodeFunctionData({
-      abi: iCreditFacadeV310Abi,
-      data: preview.rawTx.callData,
-    });
+    const { rawTx } = preview;
+    const value = BigInt(rawTx.value ?? 0);
     try {
-      const { request } = await this.client.pub.simulateContract({
+      await this.sdk.simulateCall(rawTx.to, rawTx.callData, {
         account: this.client.account,
-        abi: [...iCreditFacadeV310Abi, ...errorAbis],
-        address: account.creditFacade,
-        functionName: "liquidateCreditAccount",
-        args: args as any,
+        value,
+        abis: [errorAbis],
       });
-      return toLiquidationRequest(request);
+      return { to: rawTx.to, data: rawTx.callData, value };
     } catch (e) {
       // in optimistic mode, it's possible to encounter accounts with underlying only and HF > 0
       if (this.config.optimistic) {
