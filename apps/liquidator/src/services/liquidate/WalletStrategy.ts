@@ -136,6 +136,13 @@ export default class WalletStrategy
             { symbol: true },
           ),
           target: this.sdk.labelAddress(rawTx.to),
+          approve: details.approve
+            ? this.sdk.tokensMeta.formatBN(
+                details.approve.token,
+                details.approve.amount,
+                { symbol: true },
+              )
+            : undefined,
           redeemers: redeemers.length,
         },
         "previewed wallet liquidation",
