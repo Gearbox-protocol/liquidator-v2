@@ -16,10 +16,14 @@ class LoggerFactory implements IFactory<ILogger, [string]> {
   #logger: ILogger;
 
   constructor() {
-    let transport: DestinationStream = pinoPretty();
-    const { loki, executionId, logLevel } = this.config;
+    const { loki, executionId, logLevel, taskCallbackURL } = this.config;
 
-    if (loki) {
+    let transport: DestinationStream;
+    if (taskCallbackURL) {
+      // anvil-manager attaches the loki log driver to task containers, so stdout
+      // is already shipped and must stay machine-readable
+      transport = process.stdout;
+    } else if (loki) {
       const lokiTransport = pinoLoki({
         host: loki.host,
         basicAuth: loki.auth
@@ -39,6 +43,8 @@ class LoggerFactory implements IFactory<ILogger, [string]> {
         { stream: process.stdout, level: "debug" },
         { stream: lokiTransport, level: "debug" },
       ]);
+    } else {
+      transport = pinoPretty();
     }
 
     this.#logger = pino(
