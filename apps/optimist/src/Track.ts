@@ -321,13 +321,19 @@ export default class Track implements ITrack {
   }
 
   /**
-   * Deals underlyings of all active markets to liquidator addresses
+   * Deals underlyings of all active markets to liquidator addresses.
+   * For RWA markets, the unwrapped underlying (e.g. USDC behind dcUSDC) is dealt as well
    */
   async #fundUnderlying(): Promise<void> {
     const underlyings = new AddressSet();
     for (const cm of this.sdk.marketRegister.creditManagers) {
-      if (!cm.isExpired) {
-        underlyings.add(cm.underlying);
+      if (cm.isExpired) {
+        continue;
+      }
+      underlyings.add(cm.underlying);
+      const meta = this.sdk.tokensMeta.get(cm.underlying);
+      if (meta && this.sdk.tokensMeta.isRWAUnderlying(meta)) {
+        underlyings.add(meta.asset);
       }
     }
     const addresses = this.#liquidatorAddresses();
