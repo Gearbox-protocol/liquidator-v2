@@ -167,6 +167,16 @@ export const Config = z
       description: "Output dir path on host machine",
       env: "OUTPUT_DIR_HOST",
     }),
+    /**
+     * Path to json file with credit account labels inside optimist container
+     * Failure to read this file is not fatal
+     */
+    accountLabelsFile: z.string().optional().register(zommandRegistry, {
+      flags: "--account-labels-file <path>",
+      description:
+        "Path to json array of { creditAccount, label } with credit account labels",
+      env: "ACCOUNT_LABELS_FILE",
+    }),
     notifications: z.array(NotificationsConfig).default([]),
     /**
      * This is optimist image version
