@@ -8,6 +8,7 @@ import { nanoid } from "nanoid";
 import {
   BaseError,
   ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
   encodeFunctionData,
 } from "viem";
 import { DI } from "../di.js";
@@ -56,7 +57,6 @@ export class ErrorHandler {
         } catch {}
       }
       const shortMessages: string[] = [];
-      const lowLevelError = error.walk();
       error.walk(e => {
         if (e instanceof BaseError) {
           shortMessages.push(e.shortMessage);
@@ -65,20 +65,7 @@ export class ErrorHandler {
         }
         return false;
       });
-      let revertData = "";
-      if ("data" in lowLevelError) {
-        if (
-          lowLevelError.data &&
-          typeof lowLevelError.data === "object" &&
-          "errorName" in lowLevelError.data
-        ) {
-          revertData = ` (revert: ${lowLevelError.data.errorName})`;
-        } else {
-          revertData = ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
-        }
-      } else if ("raw" in lowLevelError) {
-        revertData = ` (revert: ${lowLevelError.raw})`;
-      }
+      const revertData = formatRevertData(error);
 
       return {
         // errorJson,
@@ -211,6 +198,40 @@ export class ErrorHandler {
     }
     return { shortMessage, longMessage };
   }
+}
+
+/**
+ * Prefer the decoded custom error from {@link ContractFunctionRevertedError}.
+ * `error.walk()` without a predicate returns the deepest RPC cause, whose
+ * `data` is often the raw revert hex — that hides names already decoded higher
+ * in the chain (e.g. SafeTransferFailed).
+ */
+function formatRevertData(error: BaseError): string {
+  const reverted = error.walk(e => e instanceof ContractFunctionRevertedError);
+  if (reverted instanceof ContractFunctionRevertedError) {
+    if (reverted.data?.errorName) {
+      return ` (revert: ${reverted.data.errorName})`;
+    }
+    if (reverted.raw) {
+      return ` (revert: ${reverted.raw})`;
+    }
+  }
+
+  const lowLevelError = error.walk();
+  if ("data" in lowLevelError) {
+    if (
+      lowLevelError.data &&
+      typeof lowLevelError.data === "object" &&
+      "errorName" in lowLevelError.data
+    ) {
+      return ` (revert: ${lowLevelError.data.errorName})`;
+    }
+    return ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
+  }
+  if ("raw" in lowLevelError) {
+    return ` (revert: ${lowLevelError.raw})`;
+  }
+  return "";
 }
 
 function shellQuote(arg: string): string {
