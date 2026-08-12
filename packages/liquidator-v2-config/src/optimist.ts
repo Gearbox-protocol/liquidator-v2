@@ -144,7 +144,7 @@ export interface Redeemer<N extends Numberish = Numberish> {
   /**
    * Estimated unix timestamp (seconds) when the redemption becomes claimable.
    */
-  claimableAt?: N;
+  claimableAt?: number;
 }
 
 /**

@@ -219,7 +219,9 @@ export abstract class AbstractPartialLiquidatorContract
       let hf = this.config.targetPartialHF;
       for (const t of this.config.calculatePartialHF ?? []) {
         if (ca.underlying === t) {
-          hf = this.sdk.accounts.getOptimalHFForPartialLiquidation(ca);
+          hf = this.sdk.marketRegister
+            .findCreditManager(ca.creditManager)
+            .optimalHFForPartialLiquidation(ca);
           break;
         }
       }

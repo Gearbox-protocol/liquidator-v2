@@ -109,7 +109,7 @@ export default class WalletStrategy
       });
       if (!details.isLiquidatorEligible) {
         const token = details.kycToken
-          ? this.sdk.labelAddress(details.kycToken)
+          ? details.kycToken.symbol
           : "liquidated assets";
         throw new Error(
           `warning: liquidator is not whitelisted in ${details.kycProtocol} for ${token}`,
@@ -123,23 +123,23 @@ export default class WalletStrategy
       const redeemers: Redeemer<bigint>[] = details.receivedAssets
         .filter(a => a.isDelayed)
         .map(a => ({
-          address: a.redeemerAddress,
-          token: a.token,
-          amount: a.amount,
+          address: a.redeemer,
+          token: a.token.address,
+          amount: a.value,
           claimableAt: a.claimableAt,
         }));
       this.logger.debug(
         {
           repayment: this.sdk.tokensMeta.formatBN(
-            details.repaymentAmount.token,
-            details.repaymentAmount.balance,
+            details.repaymentAmount.token.address,
+            details.repaymentAmount.value,
             { symbol: true },
           ),
           target: this.sdk.labelAddress(rawTx.to),
           approve: details.approve
             ? this.sdk.tokensMeta.formatBN(
-                details.approve.token,
-                details.approve.amount,
+                details.approve.token.address,
+                details.approve.value,
                 { symbol: true },
               )
             : undefined,
@@ -148,10 +148,23 @@ export default class WalletStrategy
         "previewed wallet liquidation",
       );
       return {
-        approve: details.approve,
+        approve: details.approve
+          ? {
+              token: details.approve.token.address,
+              amount: details.approve.value,
+              spender: details.approve.spender,
+            }
+          : undefined,
         redeemers,
         calls: [{ target: rawTx.to, callData: rawTx.callData as Hex }],
-        rawTx,
+        rawTx: {
+          to: rawTx.to,
+          callData: rawTx.callData as Hex,
+          signature: "",
+          contractMethod: { inputs: [], name: "", payable: false },
+          contractInputsValues: {},
+          value: rawTx.value?.toString() ?? "0",
+        },
       };
     } catch (e) {
       throw new BaseError("cant preview wallet liquidation", {
