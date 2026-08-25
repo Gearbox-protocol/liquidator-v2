@@ -14,11 +14,8 @@ import type {
   TrackReport,
   WhitelistEntry,
 } from "@gearbox-protocol/liquidator-v2-config";
-import {
-  AddressSet,
-  type Curator,
-  json_stringify,
-} from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
+import { AddressSet, json_stringify } from "@gearbox-protocol/sdk/onchain";
 import axios, { isAxiosError } from "axios";
 import parseDuration from "parse-duration";
 import type { Logger as ILogger } from "pino";
@@ -241,7 +238,7 @@ export default class Optimist {
     for (const n of this.config.notifications) {
       const report = this.#filterExecutionReport(
         executionReport,
-        n.curator as Curator,
+        n.curator as CuratorName,
       );
       if (!report) {
         this.logger.warn(
@@ -250,7 +247,7 @@ export default class Optimist {
         continue;
       }
       const notifier = new Notifier(n);
-      const fails = await analyzer.check(report, n.curator as Curator);
+      const fails = await analyzer.check(report, n.curator as CuratorName);
       await notifier.notify(report, fails);
     }
   }
@@ -300,7 +297,7 @@ export default class Optimist {
 
   #filterExecutionReport(
     executionReport: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ): ExecutionReport | undefined {
     // default to all curators (aka Gearbox internal)
     if (!curator) {

@@ -4,21 +4,19 @@ import type {
   LiqduiatorConfig,
   RwaStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+import { setLTZero } from "@gearbox-protocol/sdk/dev";
 import {
   type CreditAccountData,
   formatBN,
   hexEq,
+  iSecuritizeRedemptionGatewayV311Abi,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
   RWA_FACTORY_SECURITIZE,
-  sendRawTx,
-} from "@gearbox-protocol/sdk";
-import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
-import { setLTZero } from "@gearbox-protocol/sdk/dev";
-import {
-  iSecuritizeRedemptionGatewayV311Abi,
   type SecuritizeRedemptionGatewayAdapterContract,
-} from "@gearbox-protocol/sdk/plugins/adapters";
+  sendRawTx,
+} from "@gearbox-protocol/sdk/onchain";
 import { type Address, BaseError, encodeFunctionData, parseEther } from "viem";
 import { DI } from "../../di.js";
 import {

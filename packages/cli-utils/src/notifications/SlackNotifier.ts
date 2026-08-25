@@ -1,4 +1,4 @@
-import type { ILogger } from "@gearbox-protocol/sdk";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import type { SlackConfig } from "./schema.js";
 import type {
   IDedupableNotification,

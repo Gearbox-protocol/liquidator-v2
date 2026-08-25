@@ -1,5 +1,5 @@
 // Mirror of packages/shared/src/whitelist-schema.ts; keep in sync.
-import { NetworkType } from "@gearbox-protocol/sdk";
+import { NetworkType } from "@gearbox-protocol/sdk/onchain";
 import { z } from "zod/v4";
 import { addressLike } from "./schema-primitives.js";
 

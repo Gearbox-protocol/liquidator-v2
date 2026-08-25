@@ -3,12 +3,12 @@ import type {
   OptimisticResult,
   TrackReport,
 } from "@gearbox-protocol/liquidator-v2-config";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
   AddressMap,
-  type Curator,
   findCuratorMarketConfigurator,
   hexEq,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Logger as ILogger } from "pino";
 import type { Address } from "viem";
@@ -31,7 +31,7 @@ export class Notifier {
   public readonly logger!: ILogger;
 
   #notifiers: INotifier[];
-  #curator?: Curator;
+  #curator?: CuratorName;
 
   constructor(options: NotificationsConfig) {
     const notifiers: INotifier[] = [];
@@ -41,7 +41,7 @@ export class Notifier {
         break;
     }
     this.#notifiers = notifiers;
-    this.#curator = options.curator as Curator;
+    this.#curator = options.curator as CuratorName;
   }
 
   public async notify(

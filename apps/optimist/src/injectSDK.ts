@@ -1,4 +1,4 @@
-import { chains, OnchainSDK } from "@gearbox-protocol/sdk";
+import { chains, OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import { AccountsPlugin } from "@gearbox-protocol/sdk/plugins/accounts";
 
 import type { Config } from "./config";
@@ -55,9 +55,6 @@ export default async function injectSDK(config: Config): Promise<void> {
     rwaFactories: config.rwaFactories,
     blockNumber,
     redstone: {
-      historicTimestamp: true,
-    },
-    pyth: {
       historicTimestamp: true,
     },
   });

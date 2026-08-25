@@ -1,4 +1,4 @@
-import type { ILogger } from "@gearbox-protocol/sdk";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import { withRetry } from "viem";
 import type { CensoredString } from "../CensoredString.js";
 import type { SignlConfig } from "./schema.js";

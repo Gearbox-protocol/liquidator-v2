@@ -1,4 +1,8 @@
-import { chains, getChain, type NetworkType } from "@gearbox-protocol/sdk";
+import {
+  chains,
+  getChain,
+  type NetworkType,
+} from "@gearbox-protocol/sdk/onchain";
 
 export function getAlchemyUrl(
   network: NetworkType,

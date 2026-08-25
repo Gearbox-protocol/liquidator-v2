@@ -1,5 +1,5 @@
 import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
-import type { Curator } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
@@ -27,7 +27,7 @@ export class CheckLiquidationDiscount
 
   async check(
     _report: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ): Promise<INotification | undefined> {
     if (curator) {
       return undefined;

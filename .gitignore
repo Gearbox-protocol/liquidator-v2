@@ -11,6 +11,8 @@ coverage*
 keys/*
 node_modules/
 typechain/
+.pnpm-store/
+.vscode/mise-tools/
 
 **/logs/*.json
 *.log

@@ -2,12 +2,12 @@ import type {
   DeleverageLiquidatorSchema,
   LiqduiatorConfig,
 } from "@gearbox-protocol/liquidator-v2-config";
+import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import {
   type CreditAccountData,
   type MultiCall,
   PERCENTAGE_FACTOR,
-} from "@gearbox-protocol/sdk";
-import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+} from "@gearbox-protocol/sdk/onchain";
 import { encodeFunctionData, parseEther } from "viem";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";

@@ -4,7 +4,7 @@ import type {
   CreditSuite,
   MultiCall,
   PriceUpdate,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import type { LiquidationRequest } from "../types.js";
 

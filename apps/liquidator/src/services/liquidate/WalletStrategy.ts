@@ -6,8 +6,11 @@ import type {
   WalletStrategyOutcome,
   WalletStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
-import { AddressSet } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountData,
+  OnchainSDK,
+} from "@gearbox-protocol/sdk/onchain";
+import { AddressSet } from "@gearbox-protocol/sdk/onchain";
 import type { Address, Hex, TransactionReceipt } from "viem";
 import { BaseError, encodeFunctionData, erc20Abi } from "viem";
 import { DI } from "../../di.js";

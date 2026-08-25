@@ -3,12 +3,12 @@ import {
   type INotificationService,
 } from "@gearbox-protocol/cli-utils";
 import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
-import type { ILogger } from "@gearbox-protocol/sdk";
 import {
   logSplitterTransport,
   RevolverTransport,
   resilientTransport,
 } from "@gearbox-protocol/sdk/dev";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import { http, type Transport } from "viem";
 import {
   ProviderRotationErrorNotification,

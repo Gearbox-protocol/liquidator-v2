@@ -4,7 +4,7 @@ import {
   type ILogger,
   type OnchainSDK,
   type SecuritizeRWAFactory,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 /**

@@ -8,12 +8,12 @@ import {
   AaveLiquidator_bytecode,
   AaveUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
   type CreditSuite,
-  type Curator,
   isVersionRange,
   VERSION_RANGE_310,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { type Address, isAddress } from "viem";
 
 import { AAVE_V3_LENDING_POOL } from "../constants.js";
@@ -48,7 +48,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     }
   }
 
-  constructor(router: Address, curator: Curator, aavePool: Address) {
+  constructor(router: Address, curator: CuratorName, aavePool: Address) {
     super("Aave", router, curator);
     this.#aavePool = aavePool;
   }

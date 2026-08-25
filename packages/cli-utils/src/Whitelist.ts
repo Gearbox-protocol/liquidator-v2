@@ -1,5 +1,5 @@
-import type { ILogger, NetworkType } from "@gearbox-protocol/sdk";
-import { AddressMap } from "@gearbox-protocol/sdk";
+import type { ILogger, NetworkType } from "@gearbox-protocol/sdk/onchain";
+import { AddressMap } from "@gearbox-protocol/sdk/onchain";
 import { z } from "zod/v4";
 import { fetchRetry } from "./fetchRetry.js";
 import {

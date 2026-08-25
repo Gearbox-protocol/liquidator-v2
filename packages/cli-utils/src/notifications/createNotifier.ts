@@ -1,4 +1,4 @@
-import type { ILogger } from "@gearbox-protocol/sdk";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import { prettifyError } from "zod";
 import { SlackNotifier } from "./SlackNotifier.js";
 import { NotificationConfig } from "./schema.js";

@@ -6,12 +6,12 @@ import {
   MorphoLiquidator_bytecode,
   MorphoUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
   type CreditSuite,
-  type Curator,
   isVersionRange,
   VERSION_RANGE_310,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { type Address, isAddress } from "viem";
 
 import { MORPHO } from "../constants.js";
@@ -35,7 +35,7 @@ export class MorphoLiquidatorV310Contract extends PartialLiquidatorV310Contract 
     return new MorphoLiquidatorV310Contract(cm.router.address, curator, morpho);
   }
 
-  constructor(router: Address, curator: Curator, morpho: Address) {
+  constructor(router: Address, curator: CuratorName, morpho: Address) {
     super("Morpho", router, curator);
     this.#morpho = morpho;
   }

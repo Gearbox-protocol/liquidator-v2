@@ -4,8 +4,11 @@ import type {
   LiqduiatorConfig,
   OptimisticResult,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
-import { filterDustUSD } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountData,
+  OnchainSDK,
+} from "@gearbox-protocol/sdk/onchain";
+import { filterDustUSD } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import { DI } from "../../di.js";
 import type { ErrorHandler } from "../../errors/index.js";

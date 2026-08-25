@@ -1,4 +1,8 @@
-import type { MultiCall, PriceUpdate, RawTx } from "@gearbox-protocol/sdk";
+import type {
+  MultiCall,
+  PriceUpdate,
+  RawTx,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 export type Numberish = number | string | bigint;

@@ -1,4 +1,4 @@
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 export const AAVE_V3_LENDING_POOL: Partial<Record<NetworkType, Address>> = {

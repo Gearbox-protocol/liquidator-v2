@@ -4,16 +4,16 @@ import {
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
 import {
+  iCreditManagerV310Abi,
+  iPoolV310Abi,
+} from "@gearbox-protocol/sdk/abi/310/generated";
+import {
   AP_CREDIT_ACCOUNT_COMPRESSOR,
   detectNetwork,
   OnchainSDK,
   VERSION_RANGE_310,
   WAD,
-} from "@gearbox-protocol/sdk";
-import {
-  iCreditManagerV310Abi,
-  iPoolV310Abi,
-} from "@gearbox-protocol/sdk/abi/310/generated";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import {
   createPublicClient,
@@ -194,9 +194,6 @@ const program = new Zommand("diagnose", {
     await sdk.attach({
       marketConfigurators: [marketConfigurator],
       ignoreUpdateablePrices: false,
-      pyth: {
-        historicTimestamp: true,
-      },
       redstone: {
         historicTimestamp: true,
       },

@@ -8,7 +8,7 @@ import {
   stringArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
-import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk/onchain";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
 import { NotificationsConfig } from "./notifications.js";

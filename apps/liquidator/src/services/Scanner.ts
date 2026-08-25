@@ -4,14 +4,14 @@ import type {
   CreditAccountData,
   GetCreditAccountsOptions,
   OnchainSDK,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import {
   AddressSet,
   MAX_UINT256,
   PERCENTAGE_FACTOR,
   WAD,
   watchBlocksAsync,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Block } from "viem";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";

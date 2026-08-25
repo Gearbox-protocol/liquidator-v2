@@ -13,7 +13,7 @@ import {
   type CreditAccountData,
   filterDustUSD,
   type MultiCall,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import {
   type Address,
   erc20Abi,

@@ -2,8 +2,11 @@ import type {
   DeleverageLiquidatorSchema,
   LiqduiatorConfig,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { iBotListV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+import type {
+  CreditAccountData,
+  OnchainSDK,
+} from "@gearbox-protocol/sdk/onchain";
 import type {
   BotsPlugin,
   PartialLiquidationBotV310Contract,

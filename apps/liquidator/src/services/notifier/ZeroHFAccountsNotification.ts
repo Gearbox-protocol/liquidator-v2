@@ -8,7 +8,7 @@ import {
   type CreditAccountData,
   type OnchainSDK,
   SDKConstruct,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 

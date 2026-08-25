@@ -2,11 +2,6 @@ import { readFile } from "node:fs/promises";
 import { resolve as pathResolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import type { OptimisticResult } from "@gearbox-protocol/liquidator-v2-config";
-import {
-  AddressSet,
-  json_parse,
-  TypedObjectUtils,
-} from "@gearbox-protocol/sdk";
 import { iAliasedLossPolicyV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
 import { iDegenNFTV2Abi } from "@gearbox-protocol/sdk/abi/iDegenNFTV2";
 import type { AnvilClient } from "@gearbox-protocol/sdk/dev";
@@ -17,6 +12,11 @@ import {
   setLTs,
   setLTZero,
 } from "@gearbox-protocol/sdk/dev";
+import {
+  AddressSet,
+  json_parse,
+  TypedObjectUtils,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Logger as ILogger } from "pino";
 import type { Address } from "viem";
 import {

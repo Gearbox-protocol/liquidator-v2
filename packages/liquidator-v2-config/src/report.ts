@@ -1,5 +1,5 @@
 import type { ClientWhitelistItem } from "@gearbox-protocol/cli-utils";
-import type { GearboxState } from "@gearbox-protocol/sdk";
+import type { GearboxState } from "@gearbox-protocol/sdk/onchain";
 import type { AccountsPlugin } from "@gearbox-protocol/sdk/plugins/accounts";
 import type { Address } from "viem";
 

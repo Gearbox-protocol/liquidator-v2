@@ -8,13 +8,13 @@ import {
   SiloLiquidator_bytecode,
   SiloUnwinder_bytecode,
 } from "@gearbox-protocol/liquidator-contracts/bytecode";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
   type CreditSuite,
-  type Curator,
   hexEq,
   isVersionRange,
   VERSION_RANGE_310,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 import { SONIC_USDCE_SILO, SONIC_WS_SILO } from "../constants.js";
@@ -37,7 +37,7 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
     return new SiloLiquidatorV310Contract(cm.router.address, curator);
   }
 
-  constructor(router: Address, curator: Curator) {
+  constructor(router: Address, curator: CuratorName) {
     super("Silo", router, curator);
   }
 

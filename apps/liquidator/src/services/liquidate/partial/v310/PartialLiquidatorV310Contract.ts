@@ -1,14 +1,13 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-contracts/abi";
 import type { PartialStrategyPreview } from "@gearbox-protocol/liquidator-v2-config";
+import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   CreditSuite,
-  Curator,
-  OnDemandPriceUpdates,
   PriceUpdate,
-} from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+} from "@gearbox-protocol/sdk/onchain";
+import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk/onchain";
 import {
   type Account,
   type Address,
@@ -32,7 +31,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   protected readonly deployer: Create2Deployer<Transport, Chain, Account>;
   #setupComplete = false;
 
-  constructor(name: string, router: Address, curator: Curator) {
+  constructor(name: string, router: Address, curator: CuratorName) {
     super(name, 310, router, curator);
     this.deployer = new Create2Deployer(this.sdk, this.client.wallet);
   }

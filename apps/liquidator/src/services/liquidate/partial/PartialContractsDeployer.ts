@@ -1,4 +1,4 @@
-import { AddressMap, SDKConstruct } from "@gearbox-protocol/sdk";
+import { AddressMap, SDKConstruct } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import { type ILogger, Logger } from "../../../log/index.js";
 import type {

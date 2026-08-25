@@ -4,7 +4,7 @@ import {
   type NotificationsServiceOptions,
 } from "@gearbox-protocol/cli-utils";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
-import { findCuratorMarketConfigurator } from "@gearbox-protocol/sdk";
+import { findCuratorMarketConfigurator } from "@gearbox-protocol/sdk/onchain";
 import type { IFactory } from "di-at-home";
 import type { Address } from "viem";
 import { DI } from "../../di.js";

@@ -4,14 +4,14 @@ import type {
   PartialLiquidatorSchema,
   PartialStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   CreditSuite,
-  Curator,
   OnchainSDK,
   PriceUpdate,
-} from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
+import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import { parseAbi } from "viem";
 import { DI } from "../../../di.js";
@@ -53,14 +53,14 @@ export abstract class AbstractPartialLiquidatorContract
   #pendingCreditManagers: CreditSuite[] = [];
 
   public readonly name: string;
-  public readonly curator: Curator;
+  public readonly curator: CuratorName;
   public readonly version: number;
 
   constructor(
     name: string,
     version: number,
     router: Address,
-    curator: Curator,
+    curator: CuratorName,
   ) {
     this.name = `${name} ${curator} V${version}`;
     this.curator = curator;

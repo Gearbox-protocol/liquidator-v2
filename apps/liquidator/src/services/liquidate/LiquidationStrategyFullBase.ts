@@ -8,7 +8,7 @@ import {
   type CreditAccountData,
   type OnchainSDK,
   WAD,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { type Address, BaseError } from "viem";
 import { DI } from "../../di.js";
 import { errorAbis, isRevertedWith } from "../../errors/index.js";

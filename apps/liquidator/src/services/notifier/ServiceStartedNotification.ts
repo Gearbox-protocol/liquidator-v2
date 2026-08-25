@@ -3,7 +3,7 @@ import type {
   INotification,
 } from "@gearbox-protocol/cli-utils";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk/onchain";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 import { DI } from "../../di.js";

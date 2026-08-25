@@ -4,8 +4,11 @@ import type {
   PartialStrategyPreview,
   PartialStrategySetup,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
+import type {
+  CreditAccountData,
+  OnchainSDK,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address, Hex } from "viem";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";

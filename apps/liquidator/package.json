@@ -23,7 +23,7 @@
     "@aws-sdk/client-s3": "^3.1097.0",
     "@gearbox-protocol/cli-utils": "workspace:*",
     "@gearbox-protocol/liquidator-contracts": "workspace:*",
-    "@gearbox-protocol/sdk": "14.12.0-next.74",
+    "@gearbox-protocol/sdk": "16.0.0-next.5",
     "@types/node": "^26.1.2",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.3.0",

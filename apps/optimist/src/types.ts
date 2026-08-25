@@ -1,5 +1,5 @@
 import type { OptimisticResult } from "@gearbox-protocol/liquidator-v2-config";
-import type { NetworkType, OnchainSDK } from "@gearbox-protocol/sdk";
+import type { NetworkType, OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import type { AccountsPlugin } from "@gearbox-protocol/sdk/plugins/accounts";
 import type { Address } from "viem";
 

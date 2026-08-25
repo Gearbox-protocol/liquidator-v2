@@ -6,7 +6,7 @@ import {
   optionalAddressArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
-import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk";
+import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk/onchain";
 import { z } from "zod/v4";
 
 import { LiquidatorConfig } from "./liquidators";

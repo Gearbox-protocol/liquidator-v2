@@ -22,7 +22,7 @@
     "@aws-sdk/client-ssm": "^3.1097.0",
     "@commander-js/extra-typings": "^15.0.0",
     "@gearbox-protocol/cli-utils": "workspace:*",
-    "@gearbox-protocol/sdk": "14.12.0-next.74",
+    "@gearbox-protocol/sdk": "16.0.0-next.5",
     "@types/deepmerge": "^2.2.3",
     "@types/dockerode": "^4.0.1",
     "@types/lodash-es": "^4.17.12",

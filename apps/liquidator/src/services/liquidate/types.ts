@@ -4,7 +4,7 @@ import type {
   StrategyPreviews,
   StrategySetups,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import type { CreditAccountData } from "@gearbox-protocol/sdk/onchain";
 import type { Address, Hex, TransactionReceipt } from "viem";
 
 export interface ILiquidatorService {

@@ -2,7 +2,7 @@ import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
-import { json_stringify, SimulationError } from "@gearbox-protocol/sdk";
+import { json_stringify, SimulationError } from "@gearbox-protocol/sdk/onchain";
 import { spawn } from "@homebridge/node-pty-prebuilt-multiarch";
 import { nanoid } from "nanoid";
 import {

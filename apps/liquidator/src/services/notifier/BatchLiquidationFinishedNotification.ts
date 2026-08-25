@@ -3,7 +3,11 @@ import type {
   INotification,
 } from "@gearbox-protocol/cli-utils";
 import type { OptimisticResult } from "@gearbox-protocol/liquidator-v2-config";
-import { hexEq, type OnchainSDK, SDKConstruct } from "@gearbox-protocol/sdk";
+import {
+  hexEq,
+  type OnchainSDK,
+  SDKConstruct,
+} from "@gearbox-protocol/sdk/onchain";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address, TransactionReceipt } from "viem";
 import prettyReceipt from "./prettyReceipt.js";

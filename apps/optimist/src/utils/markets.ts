@@ -1,10 +1,10 @@
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
-  type Curator,
   findCuratorMarketConfigurator,
   hexEq,
   type MarketSuite,
   type OnchainSDK,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 
 /**
  * Returns all markets for a given curator
@@ -16,7 +16,7 @@ import {
  */
 export function marketsForCurator(
   sdk: OnchainSDK,
-  curator?: Curator,
+  curator?: CuratorName,
 ): MarketSuite[] | undefined {
   if (!curator) {
     return sdk.marketRegister.markets;

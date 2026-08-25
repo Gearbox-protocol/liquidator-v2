@@ -1,4 +1,4 @@
-import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk";
+import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk/onchain";
 import { z } from "zod/v4";
 import { CensoredString } from "./CensoredString.js";
 import { CensoredURL } from "./CensoredURL.js";

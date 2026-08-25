@@ -1,12 +1,12 @@
 import {
-  type CreditAccountData,
-  PERCENTAGE_FACTOR,
-} from "@gearbox-protocol/sdk";
-import {
   iCreditManagerV310Abi,
   iPoolV310Abi,
 } from "@gearbox-protocol/sdk/abi/310/generated";
 import { replaceStorage } from "@gearbox-protocol/sdk/dev";
+import {
+  type CreditAccountData,
+  PERCENTAGE_FACTOR,
+} from "@gearbox-protocol/sdk/onchain";
 import LiquidationStrategyFullBase from "./LiquidationStrategyFullBase.js";
 import type { MakeLiquidatableResult } from "./types.js";
 

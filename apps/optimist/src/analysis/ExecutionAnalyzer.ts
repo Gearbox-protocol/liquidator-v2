@@ -1,5 +1,5 @@
 import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
-import type { Curator } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type { Logger as ILogger } from "pino";
 import DI from "../di";
 import { Logger } from "../logger";
@@ -28,7 +28,7 @@ export class ExecutionAnalyzer {
 
   async check(
     report: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ): Promise<INotification[]> {
     const results: INotification[] = [];
 

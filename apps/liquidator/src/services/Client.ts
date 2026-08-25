@@ -1,13 +1,17 @@
 import { nextTick } from "node:process";
 import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
-import { chains, formatBN, PERCENTAGE_FACTOR } from "@gearbox-protocol/sdk";
 import type {
   AnvilClient,
   AnvilNodeInfo,
   RevolverTransportValue,
 } from "@gearbox-protocol/sdk/dev";
 import { createAnvilClient } from "@gearbox-protocol/sdk/dev";
+import {
+  chains,
+  formatBN,
+  PERCENTAGE_FACTOR,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Abi } from "abitype";
 import type {
   Account,

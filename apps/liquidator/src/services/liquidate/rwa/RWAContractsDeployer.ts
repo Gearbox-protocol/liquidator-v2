@@ -1,7 +1,7 @@
 import { securitizeLiquidatorHelperAbi } from "@gearbox-protocol/liquidator-contracts/abi";
 import { SecuritizeLiquidatorHelper_bytecode } from "@gearbox-protocol/liquidator-contracts/bytecode";
-import { SDKConstruct } from "@gearbox-protocol/sdk";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+import { SDKConstruct } from "@gearbox-protocol/sdk/onchain";
 import type { Account, Address, Chain, Transport } from "viem";
 import { DI } from "../../../di.js";
 import { type ILogger, Logger } from "../../../log/index.js";

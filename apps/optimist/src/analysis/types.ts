@@ -2,7 +2,7 @@ import type {
   ExecutionReport,
   TrackReport,
 } from "@gearbox-protocol/liquidator-v2-config";
-import type { Curator } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type { Address } from "viem";
 import type { INotification } from "../notifier";
 
@@ -10,7 +10,7 @@ export interface ICheck {
   name: string;
   check: (
     report: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ) => Promise<INotification | undefined>;
 }
 
