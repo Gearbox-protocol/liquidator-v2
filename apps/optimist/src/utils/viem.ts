@@ -1,4 +1,4 @@
-import { chains, type NetworkType } from "@gearbox-protocol/sdk";
+import { chains, type NetworkType } from "@gearbox-protocol/sdk/onchain";
 import type { Chain } from "viem";
 import { createPublicClient, defineChain, http } from "viem";
 

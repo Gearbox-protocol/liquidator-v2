@@ -8,7 +8,7 @@ import {
   stringArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
-import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk";
+import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk/onchain";
 import { type Hex, isHex } from "viem";
 import { z } from "zod/v4";
 import { NotificationsConfig } from "./notifications.js";
@@ -222,11 +222,11 @@ export const CommonSchema = z.object({
    * Liquidator mode
    */
   liquidationMode: z
-    .enum(["full", "partial", "batch", "deleverage"])
+    .enum(["full", "partial", "batch", "deleverage", "wallet"])
     .default("full")
     .register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
-      description: "Liquidator mode (full/partial/batch/deleverage)",
+      description: "Liquidator mode (full/partial/batch/deleverage/wallet)",
       env: "LIQUIDATION_MODE",
     }),
   /**

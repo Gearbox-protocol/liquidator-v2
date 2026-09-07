@@ -4,28 +4,20 @@ import type {
   LiqduiatorConfig,
   RwaStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
+import { setLTZero } from "@gearbox-protocol/sdk/dev";
 import {
   type CreditAccountData,
   formatBN,
   hexEq,
+  iSecuritizeRedemptionGatewayV311Abi,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
   RWA_FACTORY_SECURITIZE,
-  sendRawTx,
-} from "@gearbox-protocol/sdk";
-import { iCreditFacadeMulticallV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
-import { setLTZero } from "@gearbox-protocol/sdk/dev";
-import {
-  iSecuritizeRedemptionGatewayAbi,
   type SecuritizeRedemptionGatewayAdapterContract,
-} from "@gearbox-protocol/sdk/plugins/adapters";
-import {
-  type Address,
-  BaseError,
-  encodeFunctionData,
-  parseEther,
-  type SimulateContractReturnType,
-} from "viem";
+  sendRawTx,
+} from "@gearbox-protocol/sdk/onchain";
+import { type Address, BaseError, encodeFunctionData, parseEther } from "viem";
 import { DI } from "../../di.js";
 import {
   type ErrorHandler,
@@ -37,7 +29,11 @@ import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
 import { RWAContractsDeployer, resolveRWAContext } from "./rwa/index.js";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
+import type {
+  ILiquidationStrategy,
+  LiquidationRequest,
+  MakeLiquidatableResult,
+} from "./types.js";
 
 export default class LiquidationStrategyRWAViaStablecoins
   extends AccountHelper
@@ -171,9 +167,9 @@ export default class LiquidationStrategyRWAViaStablecoins
           {
             target: gatewayAdapter,
             callData: encodeFunctionData({
-              abi: iSecuritizeRedemptionGatewayAbi,
+              abi: iSecuritizeRedemptionGatewayV311Abi,
               functionName: "redeem",
-              args: [dsBalance],
+              args: [dsBalance, "0x"],
             }),
           },
           {
@@ -215,7 +211,7 @@ export default class LiquidationStrategyRWAViaStablecoins
 
       // 2. Pick the redeemer that was just created (last unclaimed).
       const redeemers = await this.client.pub.readContract({
-        abi: iSecuritizeRedemptionGatewayAbi,
+        abi: iSecuritizeRedemptionGatewayV311Abi,
         address: gateway,
         functionName: "getUnclaimedRedeemers",
         args: [ca.creditAccount],
@@ -309,11 +305,10 @@ export default class LiquidationStrategyRWAViaStablecoins
   public async simulate(
     account: CreditAccountData,
     preview: RwaStrategyPreview,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    const result = await this.client.pub.simulateContract({
-      account: this.client.account,
-      abi: [...securitizeLiquidatorHelperAbi, ...errorAbis],
-      address: this.#deployer.address,
+  ): Promise<LiquidationRequest> {
+    const to = this.#deployer.address;
+    const data = encodeFunctionData({
+      abi: securitizeLiquidatorHelperAbi,
       functionName: "liquidateViaStablecoins",
       args: [
         account.creditAccount,
@@ -321,6 +316,10 @@ export default class LiquidationStrategyRWAViaStablecoins
         preview.priceUpdates,
       ],
     });
-    return result as unknown as SimulateContractReturnType<unknown[], any, any>;
+    await this.sdk.simulateCall(to, data, {
+      account: this.client.account,
+      abis: [securitizeLiquidatorHelperAbi, errorAbis],
+    });
+    return { to, data };
   }
 }

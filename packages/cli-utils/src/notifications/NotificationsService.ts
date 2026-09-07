@@ -1,4 +1,8 @@
-import { ADDRESS_0X0, AddressMap, type ILogger } from "@gearbox-protocol/sdk";
+import {
+  ADDRESS_0X0,
+  AddressMap,
+  type ILogger,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import { createNotifier } from "./createNotifier.js";
 import SignlNotifier, { type SignlServiceOptions } from "./SignlNotifier.js";

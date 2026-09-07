@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
-import { json_stringify, type OnchainSDK } from "@gearbox-protocol/sdk";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
+import { json_stringify, type OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import { customAlphabet } from "nanoid";
 import type { PublicClient, Transport } from "viem";
 import { DI } from "../di.js";

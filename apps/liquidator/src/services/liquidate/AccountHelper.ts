@@ -2,7 +2,7 @@ import {
   type CreditAccountData,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { ILogger } from "../../log/index.js";
 
 export default abstract class AccountHelper {

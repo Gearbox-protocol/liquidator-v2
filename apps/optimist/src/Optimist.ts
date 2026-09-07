@@ -1,20 +1,21 @@
 import { createReadStream } from "node:fs";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { clientWhitelistItemSchema } from "@gearbox-protocol/cli-utils";
+import {
+  addressLike,
+  clientWhitelistItemSchema,
+} from "@gearbox-protocol/cli-utils";
 import type {
+  AccountLabels,
   ExecutionReport,
   TrackReport,
   WhitelistEntry,
 } from "@gearbox-protocol/liquidator-v2-config";
-import {
-  AddressSet,
-  type Curator,
-  json_stringify,
-} from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
+import { AddressSet, json_stringify } from "@gearbox-protocol/sdk/onchain";
 import axios, { isAxiosError } from "axios";
 import parseDuration from "parse-duration";
 import type { Logger as ILogger } from "pino";
@@ -29,6 +30,21 @@ import { Notifier } from "./notifier";
 import Track from "./Track";
 import type { ITrack, TypedSDK } from "./types";
 import { marketsForCurator, timeout } from "./utils";
+
+/**
+ * Labels file is an array for convenience of editing, but is used as a lookup map
+ */
+const accountLabelsFileSchema = z
+  .array(
+    z.object({
+      creditAccount: addressLike(),
+      label: z.string(),
+    }),
+  )
+  .transform(
+    (entries): AccountLabels =>
+      Object.fromEntries(entries.map(e => [e.creditAccount, e.label])),
+  );
 
 export default class Optimist {
   @DI.Inject(DI.Config)
@@ -87,6 +103,7 @@ export default class Optimist {
       executionReport.sdkState = this.sdk.state;
       executionReport.gasPrice = await this.sdk.client.getGasPrice();
       executionReport.whitelist = await this.#loadWhitelist();
+      executionReport.accountLabels = await this.#loadAccountLabels();
 
       const delta = Math.ceil(Date.now() / 1000) - Number(this.sdk.timestamp);
       const blockTime = new Date(Number(this.sdk.timestamp) * 1000);
@@ -221,7 +238,7 @@ export default class Optimist {
     for (const n of this.config.notifications) {
       const report = this.#filterExecutionReport(
         executionReport,
-        n.curator as Curator,
+        n.curator as CuratorName,
       );
       if (!report) {
         this.logger.warn(
@@ -230,7 +247,7 @@ export default class Optimist {
         continue;
       }
       const notifier = new Notifier(n);
-      const fails = await analyzer.check(report, n.curator as Curator);
+      const fails = await analyzer.check(report, n.curator as CuratorName);
       await notifier.notify(report, fails);
     }
   }
@@ -254,9 +271,33 @@ export default class Optimist {
     }
   }
 
+  /**
+   * Loads credit account labels from json file, if it's configured
+   * Unreadable or malformed file is not fatal, execution continues without labels
+   */
+  async #loadAccountLabels(): Promise<AccountLabels> {
+    const { accountLabelsFile } = this.config;
+    if (!accountLabelsFile) {
+      return {};
+    }
+    try {
+      const content = await readFile(accountLabelsFile, "utf-8");
+      const result = accountLabelsFileSchema.parse(JSON.parse(content));
+      this.logger.info(
+        `loaded ${Object.keys(result).length} account labels from ${accountLabelsFile}`,
+      );
+      return result;
+    } catch (e) {
+      this.logger.warn(
+        `failed to load account labels from '${accountLabelsFile}': ${e}`,
+      );
+      return {};
+    }
+  }
+
   #filterExecutionReport(
     executionReport: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ): ExecutionReport | undefined {
     // default to all curators (aka Gearbox internal)
     if (!curator) {

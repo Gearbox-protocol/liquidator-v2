@@ -20,11 +20,11 @@
     "viem-deal": "^2.0.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1111.0",
+    "@aws-sdk/client-s3": "^3.1097.0",
     "@gearbox-protocol/cli-utils": "workspace:*",
     "@gearbox-protocol/liquidator-contracts": "workspace:*",
-    "@gearbox-protocol/sdk": "15.0.0",
-    "@types/node": "^26.2.0",
+    "@gearbox-protocol/sdk": "^16.1.1",
+    "@types/node": "^26.1.2",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.3.0",
     "axios": "^1.19.0",
@@ -36,7 +36,7 @@
     "pino": "^10.3.1",
     "tsx": "4.23.12",
     "typescript": "^7.0.2",
-    "viem": "^2.55.16",
+    "viem": "^2.55.10",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
   }

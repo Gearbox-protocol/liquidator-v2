@@ -1,4 +1,4 @@
-import type { ILogger } from "@gearbox-protocol/sdk";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import { md } from "@vlad-yakovlev/telegram-md";
 import Queue from "p-queue";
 import { withRetry } from "viem";

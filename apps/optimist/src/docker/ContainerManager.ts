@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 
 import { uncensorMap } from "@gearbox-protocol/cli-utils";
-import type { NetworkType } from "@gearbox-protocol/sdk";
+import type { NetworkType } from "@gearbox-protocol/sdk/onchain";
 import type {
   Container,
   ContainerCreateOptions,

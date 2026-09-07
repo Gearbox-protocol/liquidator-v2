@@ -1,10 +1,10 @@
 import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
   AddressMap,
   AddressSet,
-  type Curator,
   TypedObjectUtils,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 export interface AccCheckStatus {
@@ -21,7 +21,7 @@ export interface FailedAccounts {
 
 export function getFailedAccounts(
   report: Pick<ExecutionReport, "results" | "whitelist">,
-  curator?: Curator,
+  curator?: CuratorName,
 ): FailedAccounts {
   const statusByAcc = new AddressMap<AccCheckStatus>();
   for (const r of report.results) {

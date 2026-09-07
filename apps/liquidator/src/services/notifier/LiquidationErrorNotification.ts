@@ -2,7 +2,10 @@ import type {
   IDedupableNotification,
   INotification,
 } from "@gearbox-protocol/cli-utils";
-import type { CreditAccountData, OnchainSDK } from "@gearbox-protocol/sdk";
+import type {
+  CreditAccountData,
+  OnchainSDK,
+} from "@gearbox-protocol/sdk/onchain";
 import { type Markdown, md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 import { censor } from "../../log/censor.js";

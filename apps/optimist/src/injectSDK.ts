@@ -1,4 +1,4 @@
-import { chains, OnchainSDK } from "@gearbox-protocol/sdk";
+import { chains, OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import { AccountsPlugin } from "@gearbox-protocol/sdk/plugins/accounts";
 
 import type { Config } from "./config";

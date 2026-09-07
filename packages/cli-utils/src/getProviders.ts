@@ -1,5 +1,5 @@
-import type { ILogger } from "@gearbox-protocol/sdk";
 import type { ProviderConfig } from "@gearbox-protocol/sdk/dev";
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import type { PartialBy } from "viem";
 import { CensoredURL } from "./CensoredURL.js";
 import {

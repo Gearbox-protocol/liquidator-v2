@@ -2,12 +2,13 @@ import events from "node:events";
 import { createWriteStream } from "node:fs";
 import path from "node:path";
 import type { CommonSchema } from "@gearbox-protocol/liquidator-v2-config";
-import { json_stringify } from "@gearbox-protocol/sdk";
+import { json_stringify, SimulationError } from "@gearbox-protocol/sdk/onchain";
 import { spawn } from "@homebridge/node-pty-prebuilt-multiarch";
 import { nanoid } from "nanoid";
 import {
   BaseError,
   ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
   encodeFunctionData,
 } from "viem";
 import { DI } from "../di.js";
@@ -56,7 +57,6 @@ export class ErrorHandler {
         } catch {}
       }
       const shortMessages: string[] = [];
-      const lowLevelError = error.walk();
       error.walk(e => {
         if (e instanceof BaseError) {
           shortMessages.push(e.shortMessage);
@@ -65,20 +65,7 @@ export class ErrorHandler {
         }
         return false;
       });
-      let revertData = "";
-      if ("data" in lowLevelError) {
-        if (
-          lowLevelError.data &&
-          typeof lowLevelError.data === "object" &&
-          "errorName" in lowLevelError.data
-        ) {
-          revertData = ` (revert: ${lowLevelError.data.errorName})`;
-        } else {
-          revertData = ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
-        }
-      } else if ("raw" in lowLevelError) {
-        revertData = ` (revert: ${lowLevelError.raw})`;
-      }
+      const revertData = formatRevertData(error);
 
       return {
         // errorJson,
@@ -123,29 +110,37 @@ export class ErrorHandler {
     if (e instanceof TransactionRevertedError) {
       cast = ["run", "--rpc-url", anvilURL.value, e.receipt.transactionHash];
     } else {
-      const exErr = e.walk(
-        err => err instanceof ContractFunctionExecutionError,
-      );
-      if (
-        exErr instanceof ContractFunctionExecutionError &&
-        exErr.contractAddress
-      ) {
-        const data = encodeFunctionData({
-          abi: exErr.abi,
-          args: exErr.args,
-          functionName: exErr.functionName,
-        });
-        cast = [
-          "call",
-          "--trace",
-          "--rpc-url",
-          anvilURL.value,
-          ...(exErr.sender ? ["--from", exErr.sender] : []),
-          exErr.contractAddress,
-          // data,
-        ];
-        this.log.debug(`calling cast ${cast.join(" ")} <data>`);
-        cast.push(data);
+      const simErr = e.walk(err => err instanceof SimulationError);
+      if (simErr instanceof SimulationError) {
+        // replays the original calldata, which is more accurate than re-encoding
+        // decoded args, and also works when the abi did not cover the function
+        cast = simErr.getCastTraceArgs(anvilURL.value);
+        this.log.debug(`calling cast ${cast.slice(0, -1).join(" ")} <data>`);
+      } else {
+        const exErr = e.walk(
+          err => err instanceof ContractFunctionExecutionError,
+        );
+        if (
+          exErr instanceof ContractFunctionExecutionError &&
+          exErr.contractAddress
+        ) {
+          const data = encodeFunctionData({
+            abi: exErr.abi,
+            args: exErr.args,
+            functionName: exErr.functionName,
+          });
+          cast = [
+            "call",
+            "--trace",
+            "--rpc-url",
+            anvilURL.value,
+            ...(exErr.sender ? ["--from", exErr.sender] : []),
+            exErr.contractAddress,
+            // data,
+          ];
+          this.log.debug(`calling cast ${cast.join(" ")} <data>`);
+          cast.push(data);
+        }
       }
     }
     if (!cast.length) {
@@ -203,6 +198,40 @@ export class ErrorHandler {
     }
     return { shortMessage, longMessage };
   }
+}
+
+/**
+ * Prefer the decoded custom error from {@link ContractFunctionRevertedError}.
+ * `error.walk()` without a predicate returns the deepest RPC cause, whose
+ * `data` is often the raw revert hex — that hides names already decoded higher
+ * in the chain (e.g. SafeTransferFailed).
+ */
+function formatRevertData(error: BaseError): string {
+  const reverted = error.walk(e => e instanceof ContractFunctionRevertedError);
+  if (reverted instanceof ContractFunctionRevertedError) {
+    if (reverted.data?.errorName) {
+      return ` (revert: ${reverted.data.errorName})`;
+    }
+    if (reverted.raw) {
+      return ` (revert: ${reverted.raw})`;
+    }
+  }
+
+  const lowLevelError = error.walk();
+  if ("data" in lowLevelError) {
+    if (
+      lowLevelError.data &&
+      typeof lowLevelError.data === "object" &&
+      "errorName" in lowLevelError.data
+    ) {
+      return ` (revert: ${lowLevelError.data.errorName})`;
+    }
+    return ` (revert: ${json_stringify(lowLevelError.data, 0)})`;
+  }
+  if ("raw" in lowLevelError) {
+    return ` (revert: ${lowLevelError.raw})`;
+  }
+  return "";
 }
 
 function shellQuote(arg: string): string {

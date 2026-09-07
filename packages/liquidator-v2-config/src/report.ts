@@ -1,6 +1,7 @@
 import type { ClientWhitelistItem } from "@gearbox-protocol/cli-utils";
-import type { GearboxState } from "@gearbox-protocol/sdk";
+import type { GearboxState } from "@gearbox-protocol/sdk/onchain";
 import type { AccountsPlugin } from "@gearbox-protocol/sdk/plugins/accounts";
+import type { Address } from "viem";
 
 import type { OptimisticResult } from "./optimist.js";
 
@@ -9,6 +10,11 @@ export type TypedSDKState = GearboxState<{
 }>;
 
 export type WhitelistEntry = ClientWhitelistItem;
+
+/**
+ * Human-readable labels for credit accounts, keyed by checksummed credit account address
+ */
+export type AccountLabels = Record<Address, string>;
 
 export interface TrackReport {
   id: string;
@@ -42,6 +48,10 @@ export interface ExecutionReport {
    * Account/CM/Token addresses that we do not need to alert about, if they cannot be liquidated
    */
   whitelist?: WhitelistEntry[];
+  /**
+   * Human-readable credit account labels, loaded from external file
+   */
+  accountLabels?: AccountLabels;
   /**
    * Gearbox SDK state when it was attached
    */

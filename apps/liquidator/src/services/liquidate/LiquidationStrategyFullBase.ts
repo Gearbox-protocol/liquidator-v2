@@ -8,20 +8,18 @@ import {
   type CreditAccountData,
   type OnchainSDK,
   WAD,
-} from "@gearbox-protocol/sdk";
-import { iCreditFacadeV310Abi } from "@gearbox-protocol/sdk/abi/310/generated";
-import {
-  type Address,
-  BaseError,
-  decodeFunctionData,
-  type SimulateContractReturnType,
-} from "viem";
+} from "@gearbox-protocol/sdk/onchain";
+import { type Address, BaseError } from "viem";
 import { DI } from "../../di.js";
 import { errorAbis, isRevertedWith } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
-import type { ILiquidationStrategy, MakeLiquidatableResult } from "./types.js";
+import type {
+  ILiquidationStrategy,
+  LiquidationRequest,
+  MakeLiquidatableResult,
+} from "./types.js";
 
 export default abstract class LiquidationStrategyFullBase<
     K extends "full" | "loss-policy",
@@ -124,24 +122,16 @@ export default abstract class LiquidationStrategyFullBase<
   public async simulate(
     account: CreditAccountData,
     preview: FullStrategyPreview,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    const { args } = decodeFunctionData({
-      abi: iCreditFacadeV310Abi,
-      data: preview.rawTx.callData,
-    });
+  ): Promise<LiquidationRequest> {
+    const { rawTx } = preview;
+    const value = BigInt(rawTx.value ?? 0);
     try {
-      const result = await this.client.pub.simulateContract({
+      await this.sdk.simulateCall(rawTx.to, rawTx.callData, {
         account: this.client.account,
-        abi: [...iCreditFacadeV310Abi, ...errorAbis],
-        address: account.creditFacade,
-        functionName: "liquidateCreditAccount",
-        args: args as any,
+        value,
+        abis: [errorAbis],
       });
-      return result as unknown as SimulateContractReturnType<
-        unknown[],
-        any,
-        any
-      >;
+      return { to: rawTx.to, data: rawTx.callData, value };
     } catch (e) {
       // in optimistic mode, it's possible to encounter accounts with underlying only and HF > 0
       if (this.config.optimistic) {

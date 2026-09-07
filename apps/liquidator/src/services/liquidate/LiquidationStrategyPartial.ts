@@ -1,4 +1,4 @@
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import type { CreditAccountData } from "@gearbox-protocol/sdk/onchain";
 import LiquidationStrategyPartialBase from "./LiquidationStrategyPartialBase.js";
 import type { MakeLiquidatableResult } from "./types.js";
 

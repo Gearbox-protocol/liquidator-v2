@@ -1,5 +1,6 @@
-import type { CreditSuite, Curator, PriceUpdate } from "@gearbox-protocol/sdk";
-import { formatBN, getCuratorName } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
+import type { CreditSuite, PriceUpdate } from "@gearbox-protocol/sdk/onchain";
+import { formatBN, getCuratorName } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "abitype";
 
 import type { OptimalPartialLiquidation } from "./types.js";
@@ -50,7 +51,7 @@ export function humanizePreviewPartialLiquidation(
   };
 }
 
-export function mustGetCuratorName(cm: CreditSuite): Curator {
+export function mustGetCuratorName(cm: CreditSuite): CuratorName {
   const curator = getCuratorName(cm.marketConfigurator.address, cm.networkType);
   if (!curator) {
     throw new Error(

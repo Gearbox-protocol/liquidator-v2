@@ -4,20 +4,21 @@ import type {
   PartialLiquidatorSchema,
   PartialStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   CreditSuite,
-  Curator,
   OnchainSDK,
   PriceUpdate,
-} from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk";
-import type { Address, SimulateContractReturnType } from "viem";
+} from "@gearbox-protocol/sdk/onchain";
+import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk/onchain";
+import type { Address } from "viem";
 import { parseAbi } from "viem";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
 import type DeleverageService from "../../DeleverageService.js";
+import type { LiquidationRequest } from "../types.js";
 import type {
   IPartialLiquidatorContract,
   OptimalPartialLiquidation,
@@ -52,14 +53,14 @@ export abstract class AbstractPartialLiquidatorContract
   #pendingCreditManagers: CreditSuite[] = [];
 
   public readonly name: string;
-  public readonly curator: Curator;
+  public readonly curator: CuratorName;
   public readonly version: number;
 
   constructor(
     name: string,
     version: number,
     router: Address,
-    curator: Curator,
+    curator: CuratorName,
   ) {
     this.name = `${name} ${curator} V${version}`;
     this.curator = curator;
@@ -197,7 +198,7 @@ export abstract class AbstractPartialLiquidatorContract
   public abstract partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>>;
+  ): Promise<LiquidationRequest>;
 
   /**
    * Returns partial liquidation bot, or deleverage bot
@@ -218,7 +219,9 @@ export abstract class AbstractPartialLiquidatorContract
       let hf = this.config.targetPartialHF;
       for (const t of this.config.calculatePartialHF ?? []) {
         if (ca.underlying === t) {
-          hf = this.sdk.accounts.getOptimalHFForPartialLiquidation(ca);
+          hf = this.sdk.marketRegister
+            .findCreditManager(ca.creditManager)
+            .optimalHFForPartialLiquidation(ca);
           break;
         }
       }

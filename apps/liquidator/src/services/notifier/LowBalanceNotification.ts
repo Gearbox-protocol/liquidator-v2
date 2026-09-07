@@ -7,7 +7,7 @@ import {
   etherscanUrl,
   formatBN,
   type NetworkType,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import { md } from "@vlad-yakovlev/telegram-md";
 import type { Address } from "viem";
 import { formatGwei } from "viem";

@@ -1,25 +1,25 @@
 import { iPartialLiquidatorAbi } from "@gearbox-protocol/liquidator-contracts/abi";
 import type { PartialStrategyPreview } from "@gearbox-protocol/liquidator-v2-config";
+import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   CreditSuite,
-  Curator,
-  OnDemandPriceUpdates,
   PriceUpdate,
-} from "@gearbox-protocol/sdk";
-import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk";
-import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
+} from "@gearbox-protocol/sdk/onchain";
+import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk/onchain";
 import {
   type Account,
   type Address,
   type Chain,
   encodeAbiParameters,
+  encodeFunctionData,
   type Hex,
   parseAbi,
-  type SimulateContractReturnType,
   type Transport,
 } from "viem";
 import { errorAbis } from "../../../../errors/index.js";
+import type { LiquidationRequest } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
 import type {
   OptimalPartialLiquidation,
@@ -31,7 +31,7 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   protected readonly deployer: Create2Deployer<Transport, Chain, Account>;
   #setupComplete = false;
 
-  constructor(name: string, router: Address, curator: Curator) {
+  constructor(name: string, router: Address, curator: CuratorName) {
     super(name, 310, router, curator);
     this.deployer = new Create2Deployer(this.sdk, this.client.wallet);
   }
@@ -141,11 +141,9 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
   public async partialLiquidateAndConvert(
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
-  ): Promise<SimulateContractReturnType<unknown[], any, any>> {
-    return this.client.pub.simulateContract({
-      account: this.client.account,
-      address: this.address,
-      abi: [...iPartialLiquidatorAbi, ...errorAbis],
+  ): Promise<LiquidationRequest> {
+    const data = encodeFunctionData({
+      abi: iPartialLiquidatorAbi,
       functionName: "partialLiquidateAndConvert",
       args: [
         account.creditManager,
@@ -158,6 +156,11 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
         this.extraData,
       ],
     });
+    await this.sdk.simulateCall(this.address, data, {
+      account: this.client.account,
+      abis: [iPartialLiquidatorAbi, errorAbis],
+    });
+    return { to: this.address, data };
   }
 
   protected get partialLiquidationBot(): Address {

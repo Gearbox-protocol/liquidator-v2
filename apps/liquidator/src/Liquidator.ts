@@ -1,6 +1,6 @@
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
-import type { OnchainSDK } from "@gearbox-protocol/sdk";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
+import type { OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import { BaseError, type PublicClient, type Transport } from "viem";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";

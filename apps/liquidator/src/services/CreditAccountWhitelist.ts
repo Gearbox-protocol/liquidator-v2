@@ -1,5 +1,5 @@
 import { Whitelist, type WhitelistMode } from "@gearbox-protocol/cli-utils";
-import type { CreditAccountData } from "@gearbox-protocol/sdk";
+import type { CreditAccountData } from "@gearbox-protocol/sdk/onchain";
 
 export type WhitelistItem = NonNullable<ReturnType<Whitelist["has"]>>;
 

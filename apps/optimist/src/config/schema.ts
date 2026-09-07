@@ -6,7 +6,7 @@ import {
   optionalAddressArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
-import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk";
+import { SUPPORTED_NETWORKS } from "@gearbox-protocol/sdk/onchain";
 import { z } from "zod/v4";
 
 import { LiquidatorConfig } from "./liquidators";
@@ -166,6 +166,16 @@ export const Config = z
       flags: "--host-out-dir <dir>",
       description: "Output dir path on host machine",
       env: "OUTPUT_DIR_HOST",
+    }),
+    /**
+     * Path to json file with credit account labels inside optimist container
+     * Failure to read this file is not fatal
+     */
+    accountLabelsFile: z.string().optional().register(zommandRegistry, {
+      flags: "--account-labels-file <path>",
+      description:
+        "Path to json array of { creditAccount, label } with credit account labels",
+      env: "ACCOUNT_LABELS_FILE",
     }),
     notifications: z.array(NotificationsConfig).default([]),
     /**

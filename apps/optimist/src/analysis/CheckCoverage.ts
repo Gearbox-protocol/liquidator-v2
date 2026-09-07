@@ -1,5 +1,6 @@
 import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
-import { type Curator, TypedObjectUtils } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
+import { TypedObjectUtils } from "@gearbox-protocol/sdk/onchain";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
 import { groupBy, keyBy } from "lodash-es";
@@ -48,7 +49,7 @@ export class CheckCoverage implements ICheck {
 
   async check(
     report: ExecutionReport,
-    curator?: Curator,
+    curator?: CuratorName,
   ): Promise<INotification | undefined> {
     const { tracks, whitelist } = report;
     const tracksById = keyBy(tracks, "id");

@@ -4,6 +4,7 @@ import type {
   LiquidationStrategyKind,
   OptimisticResult,
   PartialLiquidatorSchema,
+  StrategyOutcomes,
   StrategyPreviews,
 } from "@gearbox-protocol/liquidator-v2-config";
 import {
@@ -12,7 +13,7 @@ import {
   type CreditAccountData,
   filterDustUSD,
   type MultiCall,
-} from "@gearbox-protocol/sdk";
+} from "@gearbox-protocol/sdk/onchain";
 import {
   type Address,
   erc20Abi,
@@ -42,9 +43,11 @@ import type {
   ILiquidatorService,
   MakeLiquidatableResult,
 } from "./types.js";
+import WalletStrategy from "./WalletStrategy.js";
 
 type OptimisticStrategyResult = {
   preview?: StrategyPreviews<bigint>[LiquidationStrategyKind];
+  outcome?: StrategyOutcomes<bigint>[LiquidationStrategyKind];
   receipt?: TransactionReceipt;
 } & (
   | {
@@ -93,6 +96,9 @@ export default class SingularLiquidator
       }
       case "deleverage":
         add(new LiquidationStrategyDeleverage());
+        return;
+      case "wallet":
+        add(new WalletStrategy());
         return;
       case "partial": {
         const cfg = this.config as unknown as PartialLiquidatorSchema;
@@ -193,8 +199,9 @@ export default class SingularLiquidator
         pathHuman = this.sdk.stringifyMultiCall([...preview.calls]);
         this.logger.debug({ pathHuman }, "path found");
 
-        const { request } = await s.simulate(ca, preview);
-        const receipt = await this.client.liquidate(request);
+        await s.prepare?.(ca, preview);
+        const request = await s.simulate(ca, preview);
+        const receipt = await this.client.sendTx(request);
         if (receipt.status === "success") {
           this.notifier.alert(
             new LiquidationSuccessNotification(
@@ -277,12 +284,13 @@ export default class SingularLiquidator
 
       if (strategyResult) {
         if (strategy) {
-          // strategy/setup/preview correlate in the discriminated union; assign together
+          // strategy/setup/preview/outcome correlate in the discriminated union; assign together
           Object.assign(result, {
             strategy: strategy.kind,
             trackId: strategy.kind,
             setup: makeLiquidatable!.setup,
             preview: strategyResult.preview,
+            outcome: strategyResult.outcome,
           });
         }
         result.calls = strategyResult.preview?.calls as MultiCall[];
@@ -355,7 +363,11 @@ export default class SingularLiquidator
       result.preview = await strategy.preview(acc);
       logger.debug("preview successful");
 
-      const { request } = await strategy.simulate(acc, result.preview);
+      // writes here (e.g. approvals) must happen before the snapshot below,
+      // so that they are not rolled back and can be reused by the next account
+      await strategy.prepare?.(acc, result.preview);
+
+      const request = await strategy.simulate(acc, result.preview);
       logger.debug("simulate successful");
 
       // snapshotId might be present if we had to setup liquidation conditions for single account
@@ -364,7 +376,7 @@ export default class SingularLiquidator
         snapshotId = await this.client.anvil.snapshot();
       }
       // ------ Actual liquidation (write request start here) -----
-      result.receipt = await this.client.liquidate(request);
+      result.receipt = await this.client.sendTx(request);
       logger.debug(
         `Liquidation tx receipt: hash=${result.receipt.transactionHash}, status=${result.receipt.status}, gas=${result.receipt.cumulativeGasUsed.toString()}`,
       );
@@ -383,6 +395,11 @@ export default class SingularLiquidator
       result.balancesAfter = await this.#getBalances(
         acc.underlying,
         strategy.premiumReceiver,
+      );
+      result.outcome = await strategy.collectOutcome?.(
+        acc,
+        result.preview,
+        result.receipt,
       );
     } catch (e) {
       logger.error(e, "strategy failed");

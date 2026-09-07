@@ -1,4 +1,8 @@
-import type { MultiCall, PriceUpdate, RawTx } from "@gearbox-protocol/sdk";
+import type {
+  MultiCall,
+  PriceUpdate,
+  RawTx,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 
 export type Numberish = number | string | bigint;
@@ -14,6 +18,7 @@ export type LiquidationStrategyKind =
   | "rwa-via-stablecoins"
   | "partial"
   | "deleverage"
+  | "wallet"
   | "none";
 
 /**
@@ -103,6 +108,103 @@ export interface RwaStrategyPreview {
   skipOnFailure?: boolean;
 }
 
+/**
+ * ERC-20 approval the liquidator must grant before sending the liquidation
+ * transaction when it pays from its own funds.
+ */
+export interface Approval<N extends Numberish = Numberish> {
+  /**
+   * Credit manager, or the dedicated Midas/Securitize liquidator contract.
+   */
+  spender: Address;
+  /**
+   * Credit manager underlying.
+   */
+  token: Address;
+  /**
+   * Amount the liquidation pulls plus the SDK's headroom.
+   */
+  amount: N;
+}
+
+/**
+ * Delayed withdrawal position the liquidator takes ownership of during
+ * liquidation. No tokens move: the redeemer contract changes owner.
+ */
+export interface Redeemer<N extends Numberish = Numberish> {
+  /**
+   * Redeemer contract whose ownership moves to the liquidator.
+   */
+  address?: Address;
+  /**
+   * Receivable token, e.g. the Securitize stablecoin.
+   */
+  token: Address;
+  /**
+   * Amount of {@link token}: exact for claimable withdrawals, estimated for
+   * pending ones.
+   */
+  amount: N;
+  /**
+   * Estimated unix timestamp (seconds) when the redemption becomes claimable.
+   */
+  claimableAt?: number;
+}
+
+/**
+ * Preview data of the wallet strategy: a liquidation paid from the liquidator's
+ * own funds, previewed by the liquidation compressor.
+ */
+export interface WalletStrategyPreview<N extends Numberish = Numberish> {
+  /**
+   * Approval granted in the prepare step, absent when the liquidation path
+   * needs no capital from the liquidator.
+   */
+  approve?: Approval<N>;
+  /**
+   * Redemption positions the liquidation hands over to the liquidator.
+   */
+  redeemers: Redeemer<N>[];
+  /**
+   * Top-level liquidation call built by the compressor, targeting either the
+   * credit facade or a dedicated Midas/Securitize liquidator contract.
+   */
+  calls: readonly MultiCall[];
+  /**
+   * Liquidation transaction built by the liquidation compressor.
+   */
+  rawTx: RawTx;
+  /**
+   * If true, will not attempt to liquidate this account again.
+   */
+  skipOnFailure?: boolean;
+}
+
+/**
+ * Token amount reported in an {@link OptimisticResult}.
+ */
+export interface OptimisticAsset<N extends Numberish = Numberish> {
+  token: Address;
+  amount: N;
+}
+
+/**
+ * What the liquidator got out of a wallet-funded liquidation.
+ */
+export interface WalletStrategyOutcome<N extends Numberish = Numberish> {
+  /**
+   * Balance increases of the liquidator wallet across the liquidation,
+   * measured with a `balanceOf` multicall before and after the transaction.
+   * Includes phantom tokens such as Securitize pending redemptions.
+   */
+  received: OptimisticAsset<N>[];
+  /**
+   * Redemption positions the liquidator now owns, from the compressor preview:
+   * the redeemer addresses and claim timestamps that a balance cannot express.
+   */
+  redeemers: Redeemer<N>[];
+}
+
 export interface LossPolicyStrategySetup<N extends Numberish = Numberish> {
   /**
    * Amount the account debt was artificially increased by.
@@ -155,6 +257,22 @@ export interface StrategyPreviews<N extends Numberish = Numberish> {
   partial: PartialStrategyPreview<N>;
   deleverage: PartialStrategyPreview<N>;
   "rwa-via-stablecoins": RwaStrategyPreview;
+  wallet: WalletStrategyPreview<N>;
+  none: never;
+}
+
+/**
+ * Maps each {@link LiquidationStrategyKind} to its `outcome` shape (what the
+ * liquidator got out of the liquidation). Only strategies that liquidate with
+ * own capital report one.
+ */
+export interface StrategyOutcomes<N extends Numberish = Numberish> {
+  full: never;
+  "loss-policy": never;
+  partial: never;
+  deleverage: never;
+  "rwa-via-stablecoins": never;
+  wallet: WalletStrategyOutcome<N>;
   none: never;
 }
 
@@ -168,6 +286,7 @@ export interface StrategySetups<N extends Numberish = Numberish> {
   partial: PartialStrategySetup<N>;
   deleverage: DeleverageStrategySetup<N>;
   "rwa-via-stablecoins": RwaStrategySetup;
+  wallet: never;
   none: never;
 }
 
@@ -273,6 +392,10 @@ type OptimisticResultByKind<N extends Numberish = Numberish> = {
      * Strategy-specific liquidation preview.
      */
     preview?: StrategyPreviews<N>[K];
+    /**
+     * Strategy-specific result of the liquidation: what the liquidator got.
+     */
+    outcome?: StrategyOutcomes<N>[K];
   };
 };
 

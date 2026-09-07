@@ -1,5 +1,5 @@
 import { NotificationConfig } from "@gearbox-protocol/cli-utils";
-import type { Curator } from "@gearbox-protocol/sdk";
+import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import { z } from "zod/v4";
 
 const extendedOptions = NotificationConfig.options.map(o =>
@@ -7,7 +7,7 @@ const extendedOptions = NotificationConfig.options.map(o =>
     /**
      * When undefined, defaults to all curators together (aka Gearbox internal)
      */
-    curator: z.custom<Curator>(s => typeof s === "string").optional(),
+    curator: z.custom<CuratorName>(s => typeof s === "string").optional(),
   }),
 );
 
