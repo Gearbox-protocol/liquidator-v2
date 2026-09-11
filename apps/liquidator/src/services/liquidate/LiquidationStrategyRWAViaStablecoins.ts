@@ -13,7 +13,6 @@ import {
   iSecuritizeRedemptionGatewayV311Abi,
   type OnchainSDK,
   PERCENTAGE_FACTOR,
-  RWA_FACTORY_SECURITIZE,
   type SecuritizeRedemptionGatewayAdapterContract,
   sendRawTx,
 } from "@gearbox-protocol/sdk/onchain";
@@ -182,7 +181,7 @@ export default class LiquidationStrategyRWAViaStablecoins
           },
         ],
         {
-          type: RWA_FACTORY_SECURITIZE,
+          protocol: "securitize",
           tokensToRegister: [],
           signaturesToCache: [],
         },

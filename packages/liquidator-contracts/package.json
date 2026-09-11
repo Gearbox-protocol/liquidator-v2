@@ -35,7 +35,7 @@
     "generate": "tsx ./scripts/generate.mts"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.5.1",
     "@wagmi/cli": "^2.10.0",
     "tsdown": "^0.23.0",
     "tsx": "4.23.13",
