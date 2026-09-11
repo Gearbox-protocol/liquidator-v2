@@ -4,7 +4,7 @@
 FROM --platform=$BUILDPLATFORM node:24.15.0-trixie AS deps
 
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 ENV HUSKY=0
 
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY packages/liquidator-v2-config/package.json packages/liquidator-v2-config/
 COPY packages/cli-utils/package.json packages/cli-utils/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    corepack enable \
+    wget -qO- https://get.pnpm.io/install.sh | env ENV="$HOME/.shrc" SHELL="$(which sh)" sh - \
     && pnpm install --frozen-lockfile
 
 COPY . .
@@ -32,7 +32,7 @@ RUN pnpm -r build
 FROM node:24.15.0-trixie AS liquidator-prod
 
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 
 WORKDIR /app
 
@@ -44,8 +44,8 @@ COPY --from=build /app/packages/cli-utils/package.json /app/packages/cli-utils/p
 COPY --from=build /app/apps/liquidator/build/ /app/apps/liquidator/build
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    corepack enable \
-    && npm pkg delete scripts.prepare \
+    wget -qO- https://get.pnpm.io/install.sh | env ENV="$HOME/.shrc" SHELL="$(which sh)" sh - \
+    && pnpm pkg delete scripts.prepare \
     && pnpm install --prod --frozen-lockfile
 
 # The bundled entry runs from /app/index.mjs and imports the only external

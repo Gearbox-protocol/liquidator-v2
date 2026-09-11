@@ -25,15 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
+      - uses: pnpm/setup@v2
         with:
-          node-version-file: ".nvmrc"
-          cache: "pnpm"
-
-      - name: Install node modules
-        run: pnpm install --frozen-lockfile
+          cache: true
+          require-lockfile: true
 
       - name: Verify
         run: |
@@ -59,7 +54,7 @@ jobs:
         if: steps.semantic.outputs.new_release_published == 'true'
         run: |
           NPM_TAG="${{ steps.semantic.outputs.new_release_channel }}"
-          pnpm -r exec npm version ${{ steps.semantic.outputs.new_release_version }} --no-git-tag-version --allow-same-version
+          pnpm -r exec pnpm pkg set version=${{ steps.semantic.outputs.new_release_version }}
           pnpm -r publish --no-git-checks --access public --provenance --tag "${NPM_TAG:-latest}"
         # env:
         #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
