@@ -898,6 +898,518 @@ export const ghoFmTakerAbi = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GhoFrxUSDLiquidator
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const ghoFrxUsdLiquidatorAbi = [
+  {
+    type: "constructor",
+    inputs: [
+      { name: "_owner", internalType: "address", type: "address" },
+      { name: "_ghoFlashMinter", internalType: "address", type: "address" },
+      { name: "_ghoFMTaker", internalType: "address", type: "address" },
+      { name: "_gho", internalType: "address", type: "address" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "CALLBACK_SUCCESS",
+    outputs: [{ name: "", internalType: "bytes32", type: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "", internalType: "address", type: "address" }],
+    name: "cmToCA",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "hfOptimal", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "getOptimalLiquidation",
+    outputs: [
+      { name: "tokenOut", internalType: "address", type: "address" },
+      { name: "optimalAmountIn", internalType: "uint256", type: "uint256" },
+      { name: "optimalRepaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      { name: "isOptimalRepayable", internalType: "bool", type: "bool" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "gho",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "ghoFMTaker",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "ghoFlashMinter",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "initiator", internalType: "address", type: "address" },
+      { name: "token", internalType: "address", type: "address" },
+      { name: "amount", internalType: "uint256", type: "uint256" },
+      { name: "fee", internalType: "uint256", type: "uint256" },
+      { name: "data", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onFlashLoan",
+    outputs: [{ name: "", internalType: "bytes32", type: "bytes32" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "owner",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "assetOut", internalType: "address", type: "address" },
+      { name: "repaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      {
+        name: "conversionCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "extraData", internalType: "bytes", type: "bytes" },
+    ],
+    name: "partialLiquidateAndConvert",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "assetOut", internalType: "address", type: "address" },
+      { name: "repaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "slippage", internalType: "uint256", type: "uint256" },
+      { name: "splits", internalType: "uint256", type: "uint256" },
+      { name: "extraData", internalType: "bytes", type: "bytes" },
+    ],
+    name: "previewPartialLiquidation",
+    outputs: [
+      {
+        name: "res",
+        internalType: "struct LiquidationResult",
+        type: "tuple",
+        components: [
+          {
+            name: "calls",
+            internalType: "struct MultiCall[]",
+            type: "tuple[]",
+            components: [
+              { name: "target", internalType: "address", type: "address" },
+              { name: "callData", internalType: "bytes", type: "bytes" },
+            ],
+          },
+          { name: "profit", internalType: "int256", type: "int256" },
+          { name: "amountIn", internalType: "uint256", type: "uint256" },
+          { name: "amountOut", internalType: "uint256", type: "uint256" },
+        ],
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "router",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "newRouter", internalType: "address", type: "address" }],
+    name: "setRouter",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "newOwner", internalType: "address", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "token", internalType: "address", type: "address" },
+      { name: "amount", internalType: "uint256", type: "uint256" },
+      { name: "to", internalType: "address", type: "address" },
+    ],
+    name: "withdrawToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "previousOwner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "newOwner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+    ],
+    name: "OwnershipTransferred",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "newRouter",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+    ],
+    name: "SetRouter",
+  },
+  { type: "error", inputs: [], name: "ForceApproveFailed" },
+  { type: "error", inputs: [], name: "SafeTransferFailed" },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GhoFrxUSDUnwinder
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const ghoFrxUsdUnwinderAbi = [
+  {
+    type: "constructor",
+    inputs: [
+      { name: "_owner", internalType: "address", type: "address" },
+      { name: "_ghoFlashMinter", internalType: "address", type: "address" },
+      { name: "_ghoFMTaker", internalType: "address", type: "address" },
+      { name: "_gho", internalType: "address", type: "address" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "CALLBACK_SUCCESS",
+    outputs: [{ name: "", internalType: "bytes32", type: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "", internalType: "address", type: "address" }],
+    name: "cmToCA",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "hfOptimal", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "getOptimalLiquidation",
+    outputs: [
+      { name: "tokenOut", internalType: "address", type: "address" },
+      { name: "optimalAmountIn", internalType: "uint256", type: "uint256" },
+      { name: "optimalRepaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      { name: "isOptimalRepayable", internalType: "bool", type: "bool" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "gho",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "ghoFMTaker",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "ghoFlashMinter",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "initiator", internalType: "address", type: "address" },
+      { name: "token", internalType: "address", type: "address" },
+      { name: "amount", internalType: "uint256", type: "uint256" },
+      { name: "fee", internalType: "uint256", type: "uint256" },
+      { name: "data", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onFlashLoan",
+    outputs: [{ name: "", internalType: "bytes32", type: "bytes32" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "owner",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "assetOut", internalType: "address", type: "address" },
+      { name: "repaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      {
+        name: "conversionCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "extraData", internalType: "bytes", type: "bytes" },
+    ],
+    name: "partialLiquidateAndConvert",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      { name: "creditAccount", internalType: "address", type: "address" },
+      { name: "assetOut", internalType: "address", type: "address" },
+      { name: "repaidAmount", internalType: "uint256", type: "uint256" },
+      { name: "flashLoanAmount", internalType: "uint256", type: "uint256" },
+      {
+        name: "priceUpdates",
+        internalType: "struct PriceUpdate[]",
+        type: "tuple[]",
+        components: [
+          { name: "priceFeed", internalType: "address", type: "address" },
+          { name: "data", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "slippage", internalType: "uint256", type: "uint256" },
+      { name: "splits", internalType: "uint256", type: "uint256" },
+      { name: "extraData", internalType: "bytes", type: "bytes" },
+    ],
+    name: "previewPartialLiquidation",
+    outputs: [
+      {
+        name: "res",
+        internalType: "struct LiquidationResult",
+        type: "tuple",
+        components: [
+          {
+            name: "calls",
+            internalType: "struct MultiCall[]",
+            type: "tuple[]",
+            components: [
+              { name: "target", internalType: "address", type: "address" },
+              { name: "callData", internalType: "bytes", type: "bytes" },
+            ],
+          },
+          { name: "profit", internalType: "int256", type: "int256" },
+          { name: "amountIn", internalType: "uint256", type: "uint256" },
+          { name: "amountOut", internalType: "uint256", type: "uint256" },
+        ],
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "router",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "newRouter", internalType: "address", type: "address" }],
+    name: "setRouter",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "newOwner", internalType: "address", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "token", internalType: "address", type: "address" },
+      { name: "amount", internalType: "uint256", type: "uint256" },
+      { name: "to", internalType: "address", type: "address" },
+    ],
+    name: "withdrawToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "previousOwner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "newOwner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+    ],
+    name: "OwnershipTransferred",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "newRouter",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+    ],
+    name: "SetRouter",
+  },
+  { type: "error", inputs: [], name: "ForceApproveFailed" },
+  { type: "error", inputs: [], name: "SafeTransferFailed" },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GhoLiquidator
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

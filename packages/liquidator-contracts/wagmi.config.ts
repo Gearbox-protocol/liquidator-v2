@@ -20,6 +20,8 @@ export default defineConfig({
         "AaveUnwinder.sol/AaveUnwinder.json",
         "BatchLiquidator.sol/BatchLiquidator.json",
         "GhoFMTaker.sol/GhoFMTaker.json",
+        "GhoFrxUSDLiquidator.sol/GhoFrxUSDLiquidator.json",
+        "GhoFrxUSDUnwinder.sol/GhoFrxUSDUnwinder.json",
         "GhoLiquidator.sol/GhoLiquidator.json",
         "GhoUnwinder.sol/GhoUnwinder.json",
         "IBatchLiquidator.sol/IBatchLiquidator.json",

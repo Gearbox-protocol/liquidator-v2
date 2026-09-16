@@ -11,6 +11,7 @@
  *
  * Usage:
  *   pnpm --filter @gearbox-protocol/liquidator-contracts generate -- --branch <branch>
+ *   pnpm --filter @gearbox-protocol/liquidator-contracts generate -- --source-dir <path>
  */
 import { execFileSync } from "node:child_process";
 import {
@@ -34,6 +35,8 @@ const BYTECODE_CONTRACTS = [
   "AaveUnwinder",
   "BatchLiquidator",
   "GhoFMTaker",
+  "GhoFrxUSDLiquidator",
+  "GhoFrxUSDUnwinder",
   "GhoLiquidator",
   "GhoUnwinder",
   "MorphoLiquidator",
@@ -60,6 +63,19 @@ function run(
     stdio: "inherit",
     env: { ...process.env, ...env },
   });
+}
+
+interface CompileRouterOptions {
+  clean: boolean;
+}
+
+function compileRouter(routerDir: string, { clean }: CompileRouterOptions): void {
+  run("yarn", ["install", "--frozen-lockfile"], routerDir);
+  if (clean) {
+    run("forge", ["clean"], routerDir);
+    run("forge", ["install"], routerDir);
+  }
+  run("forge", ["build"], routerDir);
 }
 
 function generateBytecode(routerDir: string): void {
@@ -89,58 +105,74 @@ function generateBytecode(routerDir: string): void {
   console.log(`Wrote ${out}`);
 }
 
+function generateFrom(routerDir: string): void {
+  run("pnpm", ["exec", "wagmi", "generate"], packageDir, {
+    ROUTER_V3_DIR: routerDir,
+  });
+
+  generateBytecode(routerDir);
+
+  run(
+    "pnpm",
+    [
+      "exec",
+      "biome",
+      "check",
+      "--write",
+      "packages/liquidator-contracts/src/abi/abi.generated.ts",
+      "packages/liquidator-contracts/src/bytecode/bytecode.generated.ts",
+    ],
+    repoRoot,
+  );
+}
+
+function cloneRouter(ref: string): string {
+  const tmp = mkdtempSync(join(tmpdir(), "router-v3-"));
+  run(
+    "git",
+    [
+      "clone",
+      "--branch",
+      ref,
+      "--recurse-submodules",
+      "--shallow-submodules",
+      "--depth",
+      "1",
+      ROUTER_V3_REPO,
+      tmp,
+    ],
+    repoRoot,
+  );
+  return tmp;
+}
+
 function main(): void {
   const {
-    values: { branch },
+    values: { branch, "source-dir": sourceDir },
   } = parseArgs({
     // Depending on how the script is invoked, package managers may forward a
     // literal `--` separator; drop it so `--branch` is parsed as an option.
     args: process.argv.slice(2).filter(arg => arg !== "--"),
     options: {
       branch: { type: "string", default: "main" },
+      "source-dir": { type: "string" },
     },
   });
-  const ref = branch ?? "main";
 
-  const tmp = mkdtempSync(join(tmpdir(), "router-v3-"));
+  if (sourceDir) {
+    const routerDir = resolve(process.cwd(), sourceDir);
+    if (!existsSync(routerDir)) {
+      throw new Error(`source-dir does not exist: ${routerDir}`);
+    }
+    compileRouter(routerDir, { clean: true });
+    generateFrom(routerDir);
+    return;
+  }
+
+  const tmp = cloneRouter(branch ?? "main");
   try {
-    run(
-      "git",
-      [
-        "clone",
-        "--branch",
-        ref,
-        "--recurse-submodules",
-        "--shallow-submodules",
-        "--depth",
-        "1",
-        ROUTER_V3_REPO,
-        tmp,
-      ],
-      repoRoot,
-    );
-
-    run("yarn", ["install", "--frozen-lockfile"], tmp);
-    run("forge", ["build"], tmp);
-
-    run("pnpm", ["exec", "wagmi", "generate"], packageDir, {
-      ROUTER_V3_DIR: tmp,
-    });
-
-    generateBytecode(tmp);
-
-    run(
-      "pnpm",
-      [
-        "exec",
-        "biome",
-        "check",
-        "--write",
-        "packages/liquidator-contracts/src/abi/abi.generated.ts",
-        "packages/liquidator-contracts/src/bytecode/bytecode.generated.ts",
-      ],
-      repoRoot,
-    );
+    compileRouter(tmp, { clean: false });
+    generateFrom(tmp);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
