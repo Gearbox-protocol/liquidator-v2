@@ -69,7 +69,10 @@ interface CompileRouterOptions {
   clean: boolean;
 }
 
-function compileRouter(routerDir: string, { clean }: CompileRouterOptions): void {
+function compileRouter(
+  routerDir: string,
+  { clean }: CompileRouterOptions,
+): void {
   run("yarn", ["install", "--frozen-lockfile"], routerDir);
   if (clean) {
     run("forge", ["clean"], routerDir);
