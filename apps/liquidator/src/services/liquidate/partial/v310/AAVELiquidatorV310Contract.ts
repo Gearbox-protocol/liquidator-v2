@@ -36,6 +36,7 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
     const curator = mustGetCuratorName(cm);
     const symbol = cm.sdk.tokensMeta.symbol(cm.underlying);
     switch (symbol) {
+      case "frxUSD":
       case "GHO":
       case "DOLA":
         return undefined;
