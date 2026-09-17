@@ -69,7 +69,7 @@ export abstract class AbstractPartialLiquidatorContract
     this.logger = DI.create(DI.Logger, this.name.replaceAll(" ", ""));
   }
 
-  public queueCreditManagerRegistration(cm: CreditSuite): void {
+  public async queueCreditManagerRegistration(cm: CreditSuite): Promise<void> {
     this.#pendingCreditManagers.push(cm);
     this.logger.debug(
       `queued credit manager ${cm.creditManager.name} (${cm.creditManager.address})`,
@@ -158,13 +158,18 @@ export abstract class AbstractPartialLiquidatorContract
 
   async #registerCM(cm: CreditSuite): Promise<void> {
     const { address, name } = cm.creditManager;
+    const openingCalls = await cm.openingCalls();
     try {
-      this.logger.debug(`need to register credit manager ${name} (${address})`);
+      this.logger.debug(
+        `need to register credit manager ${name} (${address}) with ${openingCalls.length} opening calls`,
+      );
       const receipt = await this.client.simulateAndWrite({
-        abi: parseAbi(["function registerCM(address creditManager)"]),
+        abi: parseAbi([
+          "function registerCM(address creditManager, (address target, bytes callData)[] openingCalls)",
+        ]),
         address: this.address,
         functionName: "registerCM",
-        args: [address],
+        args: [address, openingCalls],
       });
       if (receipt.status === "reverted") {
         throw new Error(

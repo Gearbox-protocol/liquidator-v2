@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@gearbox-protocol/cli-utils": "workspace:*",
-    "@gearbox-protocol/sdk": "^16.3.1",
+    "@gearbox-protocol/sdk": "16.6.0-next.1",
     "viem": "^2.56.3",
     "zod": "^4.6.1"
   },
