@@ -31,12 +31,12 @@ const ROUTER_V3_REPO = "git@github.com:Gearbox-protocol/router-v3.git";
 // Concrete contracts whose deployment bytecode we expose (interfaces excluded).
 const BYTECODE_CONTRACTS = [
   "AaveFLTaker",
+  "AaveFrxUSDLiquidator",
+  "AaveFrxUSDUnwinder",
   "AaveLiquidator",
   "AaveUnwinder",
   "BatchLiquidator",
   "GhoFMTaker",
-  "GhoFrxUSDLiquidator",
-  "GhoFrxUSDUnwinder",
   "GhoLiquidator",
   "GhoUnwinder",
   "MorphoLiquidator",
