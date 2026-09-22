@@ -4,6 +4,10 @@ import type {
   PartialLiquidatorSchema,
   PartialStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import {
+  DEFAULT_MIDAS_ADMIN,
+  greenlistMidasGateway,
+} from "@gearbox-protocol/sdk/dev";
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
@@ -11,9 +15,14 @@ import type {
   OnchainSDK,
   PriceUpdate,
 } from "@gearbox-protocol/sdk/onchain";
-import { ADDRESS_0X0, AddressMap } from "@gearbox-protocol/sdk/onchain";
+import {
+  ADDRESS_0X0,
+  AddressMap,
+  MidasDegenNFT,
+  MidasIssuanceVaultAdapterContract,
+} from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
-import { parseAbi } from "viem";
+import { isAddressEqual, parseAbi } from "viem";
 import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
@@ -24,6 +33,8 @@ import type {
   OptimalPartialLiquidation,
   RawPartialLiquidationPreview,
 } from "./types.js";
+
+const MGLOBAL_MTOKEN: Address = "0x7433806912Eae67919e66aea853d46Fa0aef98A8";
 
 export abstract class AbstractPartialLiquidatorContract
   implements IPartialLiquidatorContract
@@ -104,6 +115,7 @@ export abstract class AbstractPartialLiquidatorContract
         );
         this.#registeredCMs.upsert(address, true);
       }
+      await this.#workaroundMGLOBAL(cm);
     }
 
     this.logger.debug(
@@ -185,6 +197,57 @@ export abstract class AbstractPartialLiquidatorContract
         `failed to register credit manager ${name} (${address}): ${e}`,
       );
       this.#registeredCMs.upsert(address, false);
+    }
+  }
+
+  /**
+   * TODO: TO BE REMOVED
+   * Greenlists conversion account for mGLOBAL
+   */
+  async #workaroundMGLOBAL(cm: CreditSuite): Promise<void> {
+    if (!this.config.optimistic) {
+      return;
+    }
+    const isMGlobal = cm.creditManager.adapters
+      .values()
+      .some(
+        adapter =>
+          adapter instanceof MidasIssuanceVaultAdapterContract &&
+          isAddressEqual(adapter.mToken, MGLOBAL_MTOKEN),
+      );
+    if (!isMGlobal) {
+      return;
+    }
+    const { address, name } = cm.creditManager;
+    try {
+      const creditAccount = await this.client.pub.readContract({
+        abi: parseAbi([
+          "function cmToCA(address creditManager) view returns (address creditAccount)",
+        ]),
+        address: this.address,
+        functionName: "cmToCA",
+        args: [address],
+      });
+      const nft = await cm.degenNFT();
+      if (!(nft instanceof MidasDegenNFT)) {
+        throw new Error(
+          `mGLOBAL credit manager ${name} (${address}) has no Midas degen NFT`,
+        );
+      }
+      await greenlistMidasGateway({
+        anvil: this.client.anvil,
+        investor: creditAccount,
+        admin: DEFAULT_MIDAS_ADMIN,
+        gateway: nft.gateway,
+        logger: this.logger,
+      });
+      this.logger.info(
+        `greenlisted liquidator credit account ${creditAccount} on mGLOBAL gateway ${nft.gateway}`,
+      );
+    } catch (e) {
+      this.logger.error(
+        `mGLOBAL workaround failed for credit manager ${name} (${address}): ${e}`,
+      );
     }
   }
 
