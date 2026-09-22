@@ -50,22 +50,32 @@ export class MorphoLiquidatorV310Contract extends PartialLiquidatorV310Contract 
   }
 
   async #deployLiquidator(): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: morphoLiquidatorAbi,
       bytecode: MorphoLiquidator_bytecode,
       // constructor(address _owner, address _morpho)
       args: [this.owner, this.#morpho],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`MorphoLiquidator address: ${address}`);
     return address;
   }
 
   async #deployUnwinder(): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: morphoUnwinderAbi,
       bytecode: MorphoUnwinder_bytecode,
       // constructor(address _owner, address _morpho)
       args: [this.owner, this.#morpho],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`MorphoUnwinder address: ${address}`);
     return address;

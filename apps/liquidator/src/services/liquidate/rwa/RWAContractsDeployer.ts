@@ -6,6 +6,7 @@ import type { Account, Address, Chain, Transport } from "viem";
 import { DI } from "../../../di.js";
 import { type ILogger, Logger } from "../../../log/index.js";
 import type Client from "../../Client.js";
+import type { DeployReport } from "../DeployReport.js";
 
 export class RWAContractsDeployer extends SDKConstruct {
   @Logger("RWAContractsDeployer")
@@ -14,6 +15,9 @@ export class RWAContractsDeployer extends SDKConstruct {
 
   @DI.Inject(DI.Client)
   liquidatorClient!: Client;
+
+  @DI.Inject(DI.DeployReport)
+  report!: DeployReport;
 
   #deployer?: Create2Deployer<Transport, Chain, Account>;
   #address?: Address;
@@ -28,13 +32,18 @@ export class RWAContractsDeployer extends SDKConstruct {
         this.liquidatorClient.wallet,
       );
     }
-    const { address } = await this.#deployer.ensureExists({
+    const { address, hash } = await this.#deployer.ensureExists({
       abi: securitizeLiquidatorHelperAbi,
       bytecode: SecuritizeLiquidatorHelper_bytecode,
       args: [],
     });
     this.#address = address;
-    this.logger?.info(`SecuritizeLiquidatorHelper address: ${address}`);
+    this.report.recordContract({
+      name: "SecuritizeLiquidatorHelper",
+      address,
+      deployed: !!hash,
+    });
+    this.logger?.debug(`SecuritizeLiquidatorHelper address: ${address}`);
   }
 
   public get address(): Address {

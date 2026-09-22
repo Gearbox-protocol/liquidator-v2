@@ -97,22 +97,32 @@ export class AAVELiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   async #deployLiquidator(flTaker: Address): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: aaveLiquidatorAbi,
       bytecode: AaveLiquidator_bytecode,
       // constructor(address _owner, address _aavePool, address _aaveFLTaker)
       args: [this.owner, this.#aavePool, flTaker],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`AaveLiquidator address: ${address}`);
     return address;
   }
 
   async #deployUnwinder(flTaker: Address): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: aaveUnwinderAbi,
       bytecode: AaveUnwinder_bytecode,
       // constructor(address _owner, address _aavePool, address _aaveFLTaker)
       args: [this.owner, this.#aavePool, flTaker],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`AaveUnwinder address: ${address}`);
     return address;

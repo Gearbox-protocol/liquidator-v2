@@ -131,7 +131,7 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   async #deployLiquidator(ghoFMTaker: Address): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: ghoLiquidatorAbi,
       bytecode: GhoLiquidator_bytecode,
       // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
@@ -142,12 +142,17 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
       ],
     });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
+    });
     this.logger.debug(`ensured GHOLiquidator at ${address}`);
     return address;
   }
 
   async #deployUnwinder(ghoFMTaker: Address): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: ghoUnwinderAbi,
       bytecode: GhoUnwinder_bytecode,
       // constructor(address _owner, address _ghoFlashMinter, address _ghoFMTaker, address _gho)
@@ -157,6 +162,11 @@ export class GHOLiquidatorV310Contract extends PartialLiquidatorV310Contract {
         ghoFMTaker,
         this.sdk.tokensMeta.mustFindBySymbol(this.#token).addr,
       ],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`ensured GhoUnwinder at ${address}`);
     return address;

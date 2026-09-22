@@ -27,6 +27,7 @@ import { DI } from "../../../di.js";
 import type { ILogger } from "../../../log/index.js";
 import type Client from "../../Client.js";
 import type DeleverageService from "../../DeleverageService.js";
+import type { DeployReport } from "../DeployReport.js";
 import type { LiquidationRequest } from "../types.js";
 import type {
   IPartialLiquidatorContract,
@@ -58,6 +59,9 @@ export abstract class AbstractPartialLiquidatorContract
 
   @DI.Inject(DI.Deleverage)
   deleverage!: DeleverageService;
+
+  @DI.Inject(DI.DeployReport)
+  protected report!: DeployReport;
 
   #registeredCMs = new AddressMap<boolean>();
   #address?: Address;
@@ -114,12 +118,26 @@ export abstract class AbstractPartialLiquidatorContract
       if (ca === ADDRESS_0X0) {
         // liquidator contract must be greenlisted before it opens the conversion account
         await this.#workaroundMGLOBAL(cm, this.address);
-        await this.#registerCM(cm);
+        const registered = await this.#registerCM(cm);
+        this.report.recordCreditManager({
+          creditManager: name,
+          address,
+          contract: this.name,
+          contractAddress: this.address,
+          registration: registered ? "registered" : "failed",
+        });
       } else {
         this.logger.debug(
           `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
         this.#registeredCMs.upsert(address, true);
+        this.report.recordCreditManager({
+          creditManager: name,
+          address,
+          contract: this.name,
+          contractAddress: this.address,
+          registration: "existing",
+        });
       }
       // now greenlist conversion account for mGLOBAL
       await this.#workaroundMGLOBAL(cm);
@@ -143,7 +161,7 @@ export abstract class AbstractPartialLiquidatorContract
         `PartialLiquidator.setRouter(${router}) tx ${receipt.transactionHash} reverted`,
       );
     }
-    this.logger.info(
+    this.logger.debug(
       `set router to ${router} in tx ${receipt.transactionHash}`,
     );
   }
@@ -179,7 +197,7 @@ export abstract class AbstractPartialLiquidatorContract
     } as const;
   }
 
-  async #registerCM(cm: CreditSuite): Promise<void> {
+  async #registerCM(cm: CreditSuite): Promise<boolean> {
     const { address, name } = cm.creditManager;
     const openingCalls = await cm.openingCalls();
     try {
@@ -199,15 +217,17 @@ export abstract class AbstractPartialLiquidatorContract
           `Liquidator.registerCM(${address}) reverted: ${receipt.transactionHash}`,
         );
       }
-      this.logger.info(
+      this.logger.debug(
         `registered credit manager ${name} (${address}) in tx ${receipt.transactionHash}`,
       );
       this.#registeredCMs.upsert(address, true);
+      return true;
     } catch (e) {
       this.logger.error(
         `failed to register credit manager ${name} (${address}): ${e}`,
       );
       this.#registeredCMs.upsert(address, false);
+      return false;
     }
   }
 
@@ -255,7 +275,7 @@ export abstract class AbstractPartialLiquidatorContract
         gateway: nft.gateway,
         logger: this.logger,
       });
-      this.logger.info(
+      this.logger.debug(
         `greenlisted ${investor} on mGLOBAL gateway ${nft.gateway}`,
       );
     } catch (e) {
@@ -322,7 +342,7 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected set address(value: Address) {
     this.#address = value;
-    this.logger.info(`partial liquidator contract address: ${this.#address}`);
+    this.logger.debug(`partial liquidator contract address: ${this.#address}`);
   }
 
   public get address(): Address {

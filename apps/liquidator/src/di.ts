@@ -3,6 +3,7 @@ import { ContainerInstance } from "di-at-home";
 const Injectables = {
   Client: "Client",
   Config: "Config",
+  DeployReport: "DeployReport",
   Deleverage: "Deleverage",
   ErrorHandler: "ErrorHandler",
   HealthChecker: "HealthChecker",
@@ -21,6 +22,7 @@ export const DI = Object.assign(
   new ContainerInstance<{
     Client: [];
     Config: [];
+    DeployReport: [];
     Deleverage: [];
     ErrorHandler: [];
     HealthChecker: [];

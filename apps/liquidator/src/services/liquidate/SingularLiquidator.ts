@@ -33,6 +33,7 @@ import {
 import AbstractLiquidator, {
   type LiquidatorBalances,
 } from "./AbstractLiquidator.js";
+import type { DeployReport } from "./DeployReport.js";
 import LiquidationStrategyDeleverage from "./LiquidationStrategyDeleverage.js";
 import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyLossPolicy from "./LiquidationStrategyLossPolicy.js";
@@ -64,6 +65,9 @@ export default class SingularLiquidator
 {
   @DI.Inject(DI.Whitelist)
   whitelist!: CreditAccountWhitelist;
+
+  @DI.Inject(DI.DeployReport)
+  report!: DeployReport;
 
   #strategies: ILiquidationStrategy[] = [];
 
@@ -116,10 +120,12 @@ export default class SingularLiquidator
     this.logger.info(
       `launching strategies: ${this.#strategies.map(s => s.name).join(", ")}`,
     );
+    await this.report.start();
     // launch consecutively since there might be write transactions (contract deployments)
     for (const s of this.#strategies) {
       await s.launch();
     }
+    await this.report.finish();
   }
 
   public async syncState(_blockNumber: bigint): Promise<void> {

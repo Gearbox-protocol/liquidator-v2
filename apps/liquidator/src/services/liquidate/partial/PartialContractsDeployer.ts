@@ -1,6 +1,8 @@
 import { AddressMap, SDKConstruct } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
+import { DI } from "../../../di.js";
 import { type ILogger, Logger } from "../../../log/index.js";
+import type { DeployReport } from "../DeployReport.js";
 import type {
   IPartialLiqudatorContractFactory,
   IPartialLiquidatorContract,
@@ -25,6 +27,9 @@ export class PartialContractsDeployer extends SDKConstruct {
   @Logger("PartialContractsDeployer")
   // @ts-expect-error
   logger!: ILogger;
+
+  @DI.Inject(DI.DeployReport)
+  report!: DeployReport;
   /**
    * mapping of credit manager address to deployed partial liquidator
    */
@@ -86,6 +91,11 @@ export class PartialContractsDeployer extends SDKConstruct {
         this.logger?.warn(
           `could not find partial liquidator contract for ${cm.creditManager.name} (v${cm.creditManager.version})`,
         );
+        this.report.recordCreditManager({
+          creditManager: cm.creditManager.name,
+          address: cm.creditManager.address,
+          registration: "unsupported",
+        });
       }
     }
   }

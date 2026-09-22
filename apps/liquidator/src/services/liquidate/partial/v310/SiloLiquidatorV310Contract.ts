@@ -126,22 +126,32 @@ export class SiloLiquidatorV310Contract extends PartialLiquidatorV310Contract {
   }
 
   async #deployLiquidator(): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: siloLiquidatorAbi,
       bytecode: SiloLiquidator_bytecode,
       // constructor(address _owner, address _siloFLTaker)
       args: [this.owner, this.siloFLTaker],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`SiloLiquidator address: ${address}`);
     return address;
   }
 
   async #deployUnwinder(): Promise<Address> {
-    const { address } = await this.deployer.ensureExists({
+    const { address, hash } = await this.deployer.ensureExists({
       abi: siloUnwinderAbi,
       bytecode: SiloUnwinder_bytecode,
       // constructor(address _owner, address _siloFLTaker)
       args: [this.owner, this.siloFLTaker],
+    });
+    this.report.recordContract({
+      name: this.name,
+      address,
+      deployed: !!hash,
     });
     this.logger.debug(`SiloUnwinder address: ${address}`);
     return address;
