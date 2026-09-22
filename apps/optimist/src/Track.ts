@@ -300,14 +300,13 @@ export default class Track implements ITrack {
    * are eligible to receive RWA collateral
    */
   async #passKYC(kyc: KycConfig): Promise<void> {
-    const { securitizeAdmin, midasAdmin } = kyc;
+    const { midasAdmin } = kyc;
     for (const investor of this.#liquidatorAddresses()) {
       const { securitizeTokens, midasGateways, failed } =
         await registerRWAInvestor({
           anvil: this.anvil,
           sdk: this.sdk,
           investor,
-          securitizeAdmin,
           midasAdmin,
           logger: this.logger,
         });

@@ -36,12 +36,17 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     this.deployer = new Create2Deployer(this.sdk, this.client.wallet);
   }
 
-  public override queueCreditManagerRegistration(cm: CreditSuite): void {
-    // For v310, credit managers are registered automatically, unless they have degen NFT
+  public override async queueCreditManagerRegistration(
+    cm: CreditSuite,
+  ): Promise<void> {
     if (cm.creditFacade.degenNFT === ADDRESS_0X0) {
-      return;
+      // for midas credit managers, this will return midasGatewayAdapter.receiveGreenlist
+      const openingCalls = await cm.openingCalls();
+      if (openingCalls.length === 0) {
+        return;
+      }
     }
-    super.queueCreditManagerRegistration(cm);
+    await super.queueCreditManagerRegistration(cm);
   }
 
   /**

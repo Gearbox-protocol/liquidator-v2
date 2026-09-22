@@ -33,7 +33,7 @@ export interface IPartialLiquidatorContract {
    * Registraction will be performed during next syncState
    * @param cm
    */
-  queueCreditManagerRegistration: (cm: CreditSuite) => void;
+  queueCreditManagerRegistration: (cm: CreditSuite) => Promise<void>;
   /**
    * Performs all actions necessary to make the contract ready for use
    * This includes deploying contracts if necessary, setting router, registering credit managers, etc.

@@ -48,7 +48,7 @@ interface BalancesSnapshot {
  * contract). Unlike the other strategies, the transaction pulls underlying from
  * the liquidator, so an ERC-20 approval is granted in {@link prepare} first.
  */
-export default class WalletStrategy
+export default class LiquidatorStrategyWallet
   extends AccountHelper
   implements ILiquidationStrategy<"wallet">
 {

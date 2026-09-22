@@ -292,6 +292,24 @@ export const aaveFrxUsdLiquidatorAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -554,6 +572,24 @@ export const aaveFrxUsdUnwinderAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -795,6 +831,24 @@ export const aaveLiquidatorAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -1029,6 +1083,24 @@ export const aaveUnwinderAbi = [
     type: "function",
     inputs: [
       { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
     ],
     name: "registerCM",
     outputs: [],
@@ -1604,6 +1676,24 @@ export const ghoLiquidatorAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -1853,6 +1943,24 @@ export const ghoUnwinderAbi = [
     type: "function",
     inputs: [
       { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
     ],
     name: "registerCM",
     outputs: [],
@@ -2287,6 +2395,24 @@ export const morphoLiquidatorAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -2510,6 +2636,24 @@ export const morphoUnwinderAbi = [
     type: "function",
     inputs: [
       { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
     ],
     name: "registerCM",
     outputs: [],
@@ -2974,6 +3118,24 @@ export const siloLiquidatorAbi = [
   },
   {
     type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     inputs: [],
     name: "renounceOwnership",
     outputs: [],
@@ -3207,6 +3369,24 @@ export const siloUnwinderAbi = [
     type: "function",
     inputs: [
       { name: "creditManager", internalType: "address", type: "address" },
+    ],
+    name: "registerCM",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "creditManager", internalType: "address", type: "address" },
+      {
+        name: "openingCalls",
+        internalType: "struct MultiCall[]",
+        type: "tuple[]",
+        components: [
+          { name: "target", internalType: "address", type: "address" },
+          { name: "callData", internalType: "bytes", type: "bytes" },
+        ],
+      },
     ],
     name: "registerCM",
     outputs: [],

@@ -36,4 +36,3 @@ liquidators:
       # admins are impersonated on the fork, they must hold the corresponding role
       # kyc:
       #   midasAdmin: "0x..."
-      #   securitizeAdmin: "0x..."

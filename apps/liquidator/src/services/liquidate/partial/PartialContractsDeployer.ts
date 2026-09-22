@@ -35,13 +35,13 @@ export class PartialContractsDeployer extends SDKConstruct {
   #uniqueContracts: Record<string, IPartialLiquidatorContract> = {};
 
   public async syncState(): Promise<void> {
-    this.#createInstances();
+    await this.#createInstances();
     for (const contract of this.#liquidatorForCM.values()) {
       await contract.syncState();
     }
   }
 
-  #createInstances(): void {
+  async #createInstances(): Promise<void> {
     for (const cm of this.sdk.marketRegister.creditManagers) {
       if (this.#liquidatorForCM.has(cm.creditManager.address)) {
         continue;
@@ -75,7 +75,7 @@ export class PartialContractsDeployer extends SDKConstruct {
         liquidatorForCM =
           this.#uniqueContracts[liquidatorForCM.name] ?? liquidatorForCM;
         this.#uniqueContracts[liquidatorForCM.name] = liquidatorForCM;
-        this.#uniqueContracts[
+        await this.#uniqueContracts[
           liquidatorForCM.name
         ].queueCreditManagerRegistration(cm);
         this.#liquidatorForCM.upsert(cm.creditManager.address, liquidatorForCM);
