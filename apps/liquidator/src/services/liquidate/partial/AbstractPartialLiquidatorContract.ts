@@ -36,6 +36,10 @@ import type {
 
 const MGLOBAL_MTOKEN: Address = "0x7433806912Eae67919e66aea853d46Fa0aef98A8";
 
+const abstractLiquidatorAbi = parseAbi([
+  "function cmToCA(address creditManager) view returns (address creditAccount)",
+]);
+
 export abstract class AbstractPartialLiquidatorContract
   implements IPartialLiquidatorContract
 {
@@ -106,8 +110,10 @@ export abstract class AbstractPartialLiquidatorContract
 
     for (const cm of this.#pendingCreditManagers) {
       const { address, name } = cm.creditManager;
-      const ca = creditAccounts.get(address);
+      const ca = creditAccounts.mustGet(address);
       if (ca === ADDRESS_0X0) {
+        // liquidator contract must be greenlisted before it opens the conversion account
+        await this.#workaroundMGLOBAL(cm, this.address);
         await this.#registerCM(cm);
       } else {
         this.logger.debug(
@@ -115,6 +121,7 @@ export abstract class AbstractPartialLiquidatorContract
         );
         this.#registeredCMs.upsert(address, true);
       }
+      // now greenlist conversion account for mGLOBAL
       await this.#workaroundMGLOBAL(cm);
     }
 
@@ -150,14 +157,9 @@ export abstract class AbstractPartialLiquidatorContract
   async #getLiquidatorAccounts(): Promise<AddressMap<Address>> {
     const results = await this.client.pub.multicall({
       allowFailure: false,
-      contracts: this.#pendingCreditManagers.map(cm => ({
-        abi: parseAbi([
-          "function cmToCA(address creditManager) view returns (address creditAccount)",
-        ]),
-        address: this.address,
-        functionName: "cmToCA",
-        args: [cm.creditManager.address],
-      })),
+      contracts: this.#pendingCreditManagers.map(cm =>
+        this.#conversionAccount(cm.creditManager.address),
+      ),
     });
     this.logger.debug(`loaded ${results.length} liquidator credit accounts`);
     return new AddressMap(
@@ -166,6 +168,15 @@ export abstract class AbstractPartialLiquidatorContract
         results[i],
       ]),
     );
+  }
+
+  #conversionAccount(creditManager: Address) {
+    return {
+      abi: abstractLiquidatorAbi,
+      address: this.address,
+      functionName: "cmToCA",
+      args: [creditManager],
+    } as const;
   }
 
   async #registerCM(cm: CreditSuite): Promise<void> {
@@ -202,9 +213,11 @@ export abstract class AbstractPartialLiquidatorContract
 
   /**
    * TODO: TO BE REMOVED
-   * Greenlists conversion account for mGLOBAL
+   * Greenlists investor for mGLOBAL.
+   *
+   * @param investor Address to greenlist. Defaults to this liquidator's conversion account in `cm`.
    */
-  async #workaroundMGLOBAL(cm: CreditSuite): Promise<void> {
+  async #workaroundMGLOBAL(cm: CreditSuite, investor?: Address): Promise<void> {
     if (!this.config.optimistic) {
       return;
     }
@@ -220,14 +233,15 @@ export abstract class AbstractPartialLiquidatorContract
     }
     const { address, name } = cm.creditManager;
     try {
-      const creditAccount = await this.client.pub.readContract({
-        abi: parseAbi([
-          "function cmToCA(address creditManager) view returns (address creditAccount)",
-        ]),
-        address: this.address,
-        functionName: "cmToCA",
-        args: [address],
-      });
+      investor ??= await this.client.pub.readContract(
+        this.#conversionAccount(address),
+      );
+      if (isAddressEqual(investor, ADDRESS_0X0)) {
+        this.logger.debug(
+          `no conversion account for ${name} (${address}), skipping mGLOBAL greenlist`,
+        );
+        return;
+      }
       const nft = await cm.degenNFT();
       if (!(nft instanceof MidasDegenNFT)) {
         throw new Error(
@@ -236,13 +250,13 @@ export abstract class AbstractPartialLiquidatorContract
       }
       await greenlistMidasGateway({
         anvil: this.client.anvil,
-        investor: creditAccount,
+        investor,
         admin: DEFAULT_MIDAS_ADMIN,
         gateway: nft.gateway,
         logger: this.logger,
       });
       this.logger.info(
-        `greenlisted liquidator credit account ${creditAccount} on mGLOBAL gateway ${nft.gateway}`,
+        `greenlisted ${investor} on mGLOBAL gateway ${nft.gateway}`,
       );
     } catch (e) {
       this.logger.error(

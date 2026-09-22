@@ -213,8 +213,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/liquidator-contracts
       '@gearbox-protocol/sdk':
-        specifier: 16.6.0
-        version: 16.6.0(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
+        specifier: 16.6.1
+        version: 16.6.1(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
       '@types/node':
         specifier: ^26.6.2
         version: 26.6.2
@@ -283,8 +283,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli-utils
       '@gearbox-protocol/sdk':
-        specifier: 16.6.0
-        version: 16.6.0(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
+        specifier: 16.6.1
+        version: 16.6.1(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
       '@types/deepmerge':
         specifier: ^2.2.3
         version: 2.2.3
@@ -388,8 +388,8 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0(commander@15.0.0)
       '@gearbox-protocol/sdk':
-        specifier: 16.6.0
-        version: 16.6.0(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
+        specifier: 16.6.1
+        version: 16.6.1(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
       '@vlad-yakovlev/telegram-md':
         specifier: ^2.1.0
         version: 2.1.0
@@ -461,8 +461,8 @@ importers:
         specifier: workspace:*
         version: link:../cli-utils
       '@gearbox-protocol/sdk':
-        specifier: 16.6.0
-        version: 16.6.0(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
+        specifier: 16.6.1
+        version: 16.6.1(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))
       viem:
         specifier: ^2.56.8
         version: 2.56.8(typescript@7.0.2)(zod@4.6.5)
@@ -1127,8 +1127,8 @@ packages:
     peerDependencies:
       '@biomejs/biome': ^2.5.14
 
-  '@gearbox-protocol/sdk@16.6.0':
-    resolution: {integrity: sha512-eJVIUvsVsLPwwXDrqjsW2leG9z9jeVfg5T1aCDs+pm6AEABu3iXN4sg6Dv32O74OhJsWqO7HUi+xoNXVFu0K+g==}
+  '@gearbox-protocol/sdk@16.6.1':
+    resolution: {integrity: sha512-FeZ7cwh6McMuldvSfn5oKQQMo4WcBtaqR6zgsdugUA18RcSrF7pJPxl+HIiZs9d4QKT1QJtEe4MuhLbEWnf7FQ==}
     peerDependencies:
       viem-deal: ^2.0.4
     peerDependenciesMeta:
@@ -3858,7 +3858,7 @@ snapshots:
     dependencies:
       '@biomejs/biome': 2.5.14
 
-  '@gearbox-protocol/sdk@16.6.0(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))':
+  '@gearbox-protocol/sdk@16.6.1(debug@4.4.3)(typescript@7.0.2)(viem-deal@2.0.4(viem@2.56.8(typescript@7.0.2)(zod@4.6.5)))':
     dependencies:
       '@redstone-finance/evm-connector': 0.9.0(debug@4.4.3)
       '@redstone-finance/protocol': 0.9.0
