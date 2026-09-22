@@ -102,9 +102,7 @@ export class DeployReport {
     const existing = this.#contracts.filter(c => !c.deployed).length;
     const deployed = this.#contracts.filter(c => c.deployed).length;
 
-    log.info(
-      `${existing} liquidator contracts were already deployed`,
-    );
+    log.info(`${existing} liquidator contracts were already deployed`);
     log.info(
       `${deployed} liquidator contracts deployed, spent ${formatEther(spent)} ${symbol} (${formatBN(spentUsd, 8)} USD), balance after: ${formatEther(balanceAfter)} ${symbol}`,
     );
@@ -118,9 +116,7 @@ export class DeployReport {
     }
 
     for (const entry of this.#creditManagers) {
-      log.info(
-        this.#creditManagerMessage(entry),
-      );
+      log.info(this.#creditManagerMessage(entry));
     }
   }
 
