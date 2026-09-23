@@ -1,10 +1,10 @@
 liquidators:
   - id: ts
     env:
-      REDSTONE_RPC: "http://host.docker.internal:8080/redstone/1-vip,http://host.docker.internal:8080/redstone/1-finance,http://host.docker.internal:8080/redstone/2-finance"
+      PRICES_RPC: "http://host.docker.internal:8080/prices/1-vip,http://host.docker.internal:8080/prices/1-finance,http://host.docker.internal:8080/prices/2-finance"
       NAME: "ts"
   - id: go
     env:
-      REDSTONE_RPC: "http://host.docker.internal:8080/redstone/1-vip,http://host.docker.internal:8080/redstone/1-finance,http://host.docker.internal:8080/redstone/2-finance"
+      PRICES_RPC: "http://host.docker.internal:8080/prices/1-vip,http://host.docker.internal:8080/prices/1-finance,http://host.docker.internal:8080/prices/2-finance"
       NAME: "go"
 foo: bar

@@ -54,9 +54,6 @@ export default async function injectSDK(config: Config): Promise<void> {
     marketConfigurators: config.marketConfigurators,
     rwaFactories: config.rwaFactories,
     blockNumber,
-    redstone: {
-      historicTimestamp: true,
-    },
   });
 
   DI.set(DI.SDK, sdk);

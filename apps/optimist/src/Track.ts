@@ -37,9 +37,7 @@ import { Logger } from "./logger";
 import type { ITrack, OptimisticFile, TrackResult, TypedSDK } from "./types";
 import { formatTs, getChain } from "./utils";
 
-export type TrackOptions = LiquidatorConfig & {
-  optimisticTimestamp: number;
-};
+export type TrackOptions = LiquidatorConfig;
 
 /**
  * Amount of each underlying dealt to liquidator addresses, in whole tokens.
@@ -164,14 +162,7 @@ export default class Track implements ITrack {
   }
 
   async #runLiquidator(): Promise<ContainerInfo> {
-    const container = await this.docker.liquidator({
-      ...this.#options,
-      env: {
-        ...this.#options.env,
-        // make sure that all liquidators use the same timestamp
-        OPTIMISTIC_TIMESTAMP: this.#options.optimisticTimestamp.toString(),
-      },
-    });
+    const container = await this.docker.liquidator(this.#options);
     this.logger?.debug(
       { container: container.id, version: container.imageVersion },
       "started liquidator container",

@@ -156,10 +156,8 @@ export default class Optimist {
     );
     await this.docker.init();
 
-    const optimisticTimestamp = this.#getOptimisticTimestamp();
-
     this.#tracks = Object.values(this.config.liquidators).map(
-      t => new Track({ ...t, optimisticTimestamp }),
+      t => new Track(t),
     );
     this.logger.debug({ tracks: this.#tracks.length }, "created tracks");
     this.#callback({ progress: { completed: 0, total: this.#tracks.length } });
@@ -351,29 +349,6 @@ export default class Optimist {
         this.logger.error(`failed to notify anvil-manager: ${e}`);
       }
     }
-  }
-
-  #getOptimisticTimestamp(): number {
-    // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/c7569a8eb7da1d3ad6209dfcf59c7ca508ea947b/packages/sdk/src/request-data-packages.ts#L82
-    // we round the timestamp to full minutes for being compatible with
-    // oracle-nodes, which usually work with rounded 10s and 60s intervals
-    //
-    // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
-    // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
-    const nowMs = Date.now();
-    const redstoneIntervalMs = 60_000;
-    const anvilTsMs =
-      redstoneIntervalMs *
-      Math.floor((Number(this.sdk.timestamp) * 1000) / redstoneIntervalMs);
-    const fromNowTsMs =
-      redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
-    const optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
-    const deltaS = Math.floor((nowMs - optimisticTimestamp) / 1000);
-    this.logger.info(
-      { tag: "timing" },
-      `will use optimistic timestamp: ${new Date(optimisticTimestamp)} (${optimisticTimestamp}, delta: ${deltaS}s)`,
-    );
-    return optimisticTimestamp;
   }
 
   #reportError(e: unknown): void {

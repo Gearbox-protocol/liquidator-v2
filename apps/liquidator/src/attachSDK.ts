@@ -17,42 +17,6 @@ export default async function attachSDK(): Promise<
   const transport: Transport = DI.get(DI.Transport);
 
   await client.launch();
-  let optimisticTimestamp: number | undefined;
-  if (config.optimistic) {
-    const block = await client.pub.getBlock({
-      blockNumber: client.anvilForkBlock,
-    });
-    if (!block) {
-      throw new Error("cannot get latest block");
-    }
-    logger.info(
-      { tag: "timing" },
-      `optimistic fork block ${block.number} ${new Date(Number(block.timestamp) * 1000)}`,
-    );
-    // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/c7569a8eb7da1d3ad6209dfcf59c7ca508ea947b/packages/sdk/src/request-data-packages.ts#L82
-    // we round the timestamp to full minutes for being compatible with
-    // oracle-nodes, which usually work with rounded 10s and 60s intervals
-    //
-    // Also, when forking anvil->anvil (when running on testnets) block.timestamp can be in future because min ts for block is 1 seconds,
-    // and scripts can take dozens of blocks (hundreds for faucet). So we take min value;
-    const nowMs = Date.now();
-    if (config.optimisticTimestamp) {
-      optimisticTimestamp = config.optimisticTimestamp;
-    } else {
-      const redstoneIntervalMs = 60_000;
-      const anvilTsMs =
-        redstoneIntervalMs *
-        Math.floor((Number(block.timestamp) * 1000) / redstoneIntervalMs);
-      const fromNowTsMs =
-        redstoneIntervalMs * Math.floor(nowMs / redstoneIntervalMs - 1);
-      optimisticTimestamp = Math.min(anvilTsMs, fromNowTsMs);
-    }
-    const deltaS = Math.floor((nowMs - optimisticTimestamp) / 1000);
-    logger.info(
-      { tag: "timing" },
-      `will use optimistic timestamp: ${new Date(optimisticTimestamp)} (${optimisticTimestamp}, delta: ${deltaS}s)`,
-    );
-  }
 
   let gasLimit: bigint | undefined | null = config.gasLimit;
   if (config.gasLimit === -1n) {
@@ -76,11 +40,6 @@ export default async function attachSDK(): Promise<
     rwaFactories: config.rwaFactories,
     // we need prices to calculate things like numsplits
     ignoreUpdateablePrices: false,
-    redstone: {
-      historicTimestamp: optimisticTimestamp,
-      gateways: config.redstoneGateways,
-      failOnMissingFeeds: config.failOnMissingFeeds,
-    },
   });
   // trying to set default numSplits for router v3.1 contract
   try {
@@ -91,8 +50,8 @@ export default async function attachSDK(): Promise<
     );
   } catch {}
 
-  if (config.optimistic) {
-    // in optimistic mode, warp time if redstone timestamp does not match it
+  if (config.optimistic && sdk.priceFeeds.updatesSupported) {
+    // warp time if price update timestamp does not match block timestamp
     sdk.priceFeeds.addHook("updatesGenerated", async ({ timestamp }) => {
       try {
         const block = await client.anvil.evmMineDetailed(timestamp);

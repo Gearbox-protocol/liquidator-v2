@@ -18,5 +18,7 @@ typechain/
 *.log
 *.tsbuildinfo
 
+*.local.toml
+
 # Optimistic output
 output/

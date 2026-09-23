@@ -5,7 +5,6 @@ import {
   clientWhitelistItemSchema,
   optionalAddressArrayLike,
   ProvidersSchema,
-  stringArrayLike,
   zommandRegistry,
 } from "@gearbox-protocol/cli-utils";
 import { MAX_UINT256, WAD } from "@gearbox-protocol/sdk/onchain";
@@ -250,27 +249,6 @@ export const CommonSchema = z.object({
     env: "USE_PRODUCTION_SCANNER",
   }),
   /**
-   * Optimistic timestamp to pass from external runner, in ms
-   */
-  optimisticTimestamp: z.coerce
-    .number()
-    .int()
-    .positive()
-    .nullish()
-    .register(zommandRegistry, {
-      flags: "--optimistic-timestamp <timestamp>",
-      description: "Optimistic timestamp to pass from external runner, in ms",
-      env: "OPTIMISTIC_TIMESTAMP",
-    }),
-  /**
-   * Fail on missing feeds (redstone and pyth)
-   */
-  failOnMissingFeeds: boolLike().optional().register(zommandRegistry, {
-    flags: "--fail-on-missing-feeds",
-    description: "Fail on missing feeds (redstone and pyth)",
-    env: "FAIL_ON_MISSING_FEEDS",
-  }),
-  /**
    * Explicitly set gas limit for SDK
    * -1 to disable explicitly setting gas limit in SDK
    * If not set, SDK will use default gas limit
@@ -289,20 +267,6 @@ export const CommonSchema = z.object({
       "Do not send transactions in non-optimistic mode, just log them",
     env: "DRY_RUN",
   }),
-  /**
-   * Redstone gateways override
-   * Set local caching proxies to avoid rate limiting in test environment
-   */
-  redstoneGateways: stringArrayLike()
-    .pipe(z.array(z.url()))
-    .transform(a => (a.length ? a : undefined))
-    .optional()
-    .register(zommandRegistry, {
-      flags: "--redstone-gateways <urls...>",
-      description: "Redstone gateways to use, comma separated",
-      env: "REDSTONE_GATEWAYS",
-    }),
-
   /**
    * Limit number of accounts to load from compressor. 0 = unlimited, let compressor decide
    */

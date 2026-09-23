@@ -76,7 +76,7 @@ export interface PartialStrategyPreview<N extends Numberish = Numberish> {
    */
   previewedProfit: N;
   /**
-   * On-demand (redstone) price updates included in the liquidation call.
+   * On-demand price updates included in the liquidation call.
    */
   priceUpdates: PriceUpdate[];
   /**
@@ -95,7 +95,7 @@ export interface RwaStrategyPreview {
    */
   redemptionGateway: Address;
   /**
-   * On-demand (redstone) price updates included in the liquidation call.
+   * On-demand price updates included in the liquidation call.
    */
   priceUpdates: PriceUpdate[];
   /**

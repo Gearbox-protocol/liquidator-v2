@@ -70,9 +70,7 @@ For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy -
 --hf-threshold <threshold>                   Filter out all accounts with HF >= threshold during scan stage (env variable HF_THRESHOLD)
 --num-splits <splits>                        Default numSplits for router v3.1 contract (env variable NUM_SPLITS)
 --liquidation-mode <mode>                    Liquidator mode (full/partial/batch/deleverage/wallet) (env variable LIQUIDATION_MODE)
---ignore-missing-feeds                       Ignore missing feeds (redstone/pyth) (env variable IGNORE_MISSING_FEEDS)
 --dry-run                                    Do not send transactions in non-optimistic mode, just log them (env variable DRY_RUN)
---redstone-gateways <urls...>                Redstone gateways to use, comma separated (env variable REDSTONE_GATEWAYS)
 --compressor-batch-size <size>               Limit number of accounts to load from compressor. 0 = unlimited, let compressor decide (env variable COMPRESSOR_BATCH_SIZE)
 --slippage <value>                           Slippage value for pathfinder (env variable SLIPPAGE)
 --update-reserve-prices                      Update reserve prices (env variable UPDATE_RESERVE_PRICES)
@@ -102,7 +100,6 @@ In optimistic mode no private key is used. Instead, transactions are sent from a
 ```
 --optimistic                                 Enable optimistic liquidations (env variable OPTIMISTIC)
 --liquidator-address <address>               Address to impersonate as transaction sender on anvil fork. Required in optimistic mode, must not be set in non-optimistic mode (env variable LIQUIDATOR_ADDRESS)
---optimistic-timestamp <timestamp>           Optimistic timestamp to pass from external runner, in ms (env variable OPTIMISTIC_TIMESTAMP)
 --out-dir <dir>                              Directory to save json with optimistic liquidation results (env variable OUT_DIR)
 --out-endpoint <url>                         REST endpoint to POST json with optimistic liquidation results (env variable OUT_ENDPOINT)
 --out-headers <headers>                      Headers for REST endpoint (env variable OUT_HEADERS)

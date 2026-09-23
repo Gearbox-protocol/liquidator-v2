@@ -116,11 +116,10 @@ export class Scanner {
       "final health factor range",
     );
 
-    // we should not pin block during optimistic liquidations
-    // because during optimistic liquidations we need to call evm_mine to make redstone work
-    await this.#updateAccounts(
-      this.config.optimistic ? undefined : block.number,
-    );
+    // updatable price feeds may require evm_mine, so the block must stay unpinned
+    const unpinned =
+      this.config.optimistic && this.sdk.priceFeeds.updatesSupported;
+    await this.#updateAccounts(unpinned ? undefined : block.number);
     if (!this.config.optimistic) {
       this.#unwatch = watchBlocksAsync(this.client.pub, {
         onBlock: b => this.#onBlock(b),
@@ -137,7 +136,7 @@ export class Scanner {
         // this effectively updates chainlink prices
         // we don't need this
         // if there're new price feeds, syncState will pick them up anyway
-        // and redstone price updates will be updated in credit account service calls
+        // and on-demand price updates will be updated in credit account service calls
         ignoreUpdateablePrices: true,
       });
       if (ok) {

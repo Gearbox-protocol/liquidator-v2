@@ -11,12 +11,6 @@ export interface ILiquidatorService {
   launch: () => Promise<void>;
   syncState: (blockNumber: bigint) => Promise<void>;
   liquidate: (accounts: CreditAccountData[]) => Promise<void>;
-  /**
-   *
-   * @param ca
-   * @param redstoneTokens
-   * @returns true is account was successfully liquidated
-   */
   liquidateOptimistic: (accounts: CreditAccountData[]) => Promise<void>;
 }
 
