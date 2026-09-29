@@ -38,26 +38,26 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1137.0",
-    "@aws-sdk/client-secrets-manager": "^3.1137.0",
-    "@aws-sdk/client-ssm": "^3.1137.0",
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-secrets-manager": "^3.1141.0",
+    "@aws-sdk/client-ssm": "^3.1141.0",
     "@commander-js/extra-typings": "^15.0.0",
-    "@gearbox-protocol/sdk": "17.1.1",
+    "@gearbox-protocol/sdk": "17.4.0",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.3.0",
     "commander": "^15.0.0",
     "lodash-es": "^4.18.1",
     "lru-cache": "^11.5.3",
     "p-queue": "^9.3.3",
-    "viem": "^2.56.8",
+    "viem": "^2.56.9",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   }
 }
