@@ -40,6 +40,10 @@ export interface CreditManagerEntry {
    */
   contract?: string;
   contractAddress?: Address;
+  /**
+   * Liquidator contract's conversion credit account in this credit manager
+   */
+  conversionAccount?: Address;
   registration: CreditManagerRegistration;
 }
 
@@ -129,11 +133,14 @@ export class DeployReport {
 
   #creditManagerMessage(entry: CreditManagerEntry): string {
     const where = `${entry.contract} (${entry.contractAddress})`;
+    const account = entry.conversionAccount
+      ? ` with conversion account ${entry.conversionAccount}`
+      : "";
     switch (entry.registration) {
       case "registered":
-        return `registered ${entry.creditManager} in ${where}`;
+        return `registered ${entry.creditManager} in ${where}${account}`;
       case "existing":
-        return `${entry.creditManager} already registered in ${where}`;
+        return `${entry.creditManager} already registered in ${where}${account}`;
       case "failed":
         return `failed to register ${entry.creditManager} in ${where}`;
       case "unsupported":

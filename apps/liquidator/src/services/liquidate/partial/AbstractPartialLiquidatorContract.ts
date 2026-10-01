@@ -119,11 +119,15 @@ export abstract class AbstractPartialLiquidatorContract
         // liquidator contract must be greenlisted before it opens the conversion account
         await this.#workaroundMGLOBAL(cm, this.address);
         const registered = await this.#registerCM(cm);
+        const conversionAccount = registered
+          ? await this.client.pub.readContract(this.#conversionAccount(address))
+          : undefined;
         this.report.recordCreditManager({
           creditManager: name,
           address,
           contract: this.name,
           contractAddress: this.address,
+          conversionAccount,
           registration: registered ? "registered" : "failed",
         });
       } else {
@@ -136,6 +140,7 @@ export abstract class AbstractPartialLiquidatorContract
           address,
           contract: this.name,
           contractAddress: this.address,
+          conversionAccount: ca,
           registration: "existing",
         });
       }
