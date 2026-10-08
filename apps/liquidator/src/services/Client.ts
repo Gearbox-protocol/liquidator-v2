@@ -1,5 +1,8 @@
 import { nextTick } from "node:process";
-import type { INotificationService } from "@gearbox-protocol/cli-utils";
+import type {
+  HealthStatusValue,
+  INotificationService,
+} from "@gearbox-protocol/cli-utils";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type {
   AnvilClient,
@@ -40,7 +43,6 @@ import { DI } from "../di.js";
 import { errorAbis } from "../errors/abis.js";
 import { TransactionRevertedError } from "../errors/TransactionRevertedError.js";
 import { type ILogger, Logger } from "../log/index.js";
-import type { StatusCode } from "../utils/index.js";
 import type { LiquidationRequest } from "./liquidate/types.js";
 import { LowBalanceNotification } from "./notifier/index.js";
 
@@ -74,7 +76,7 @@ export default class Client {
 
   #testClient?: AnvilClient;
 
-  #balance?: { value: bigint; status: StatusCode };
+  #balance?: HealthStatusValue<bigint>;
 
   #gasFees: { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint } = {};
 
@@ -411,7 +413,7 @@ export default class Client {
     return this.wallet.account.address;
   }
 
-  public get balance(): { value: bigint; status: StatusCode } | undefined {
+  public get balance(): HealthStatusValue<bigint> | undefined {
     return this.#balance;
   }
 

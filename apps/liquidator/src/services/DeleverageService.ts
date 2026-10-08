@@ -1,3 +1,4 @@
+import type { IDeleverageStatus } from "@gearbox-protocol/cli-utils";
 import type {
   DeleverageLiquidatorSchema,
   LiqduiatorConfig,
@@ -16,23 +17,10 @@ import type { Address } from "viem";
 import { DI } from "../di.js";
 import { type ILogger, Logger } from "../log/index.js";
 import { DELEVERAGE_PERMISSIONS } from "../utils/permissions.js";
-import type { StatusCode } from "../utils/status.js";
 import type Client from "./Client.js";
 
 export interface BotParameters extends TBotParameters {
   address: Address;
-}
-
-export interface DeleverageBotStatus {
-  address: Address;
-  status: StatusCode;
-  minHealthFactor: number;
-  maxHealthFactor: number;
-}
-
-export interface DeleverageStatus {
-  status: StatusCode;
-  bots: DeleverageBotStatus[];
 }
 
 @DI.Injectable(DI.Deleverage)
@@ -108,7 +96,7 @@ export default class DeleverageService {
     return result;
   }
 
-  public get status(): DeleverageStatus | undefined {
+  public get status(): IDeleverageStatus | undefined {
     if (this.config.liquidationMode !== "deleverage") {
       return undefined;
     }

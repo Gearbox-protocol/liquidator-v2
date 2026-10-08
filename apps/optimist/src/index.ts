@@ -6,7 +6,7 @@ import {
   secretsManagerProxy,
   ssmManagerProxy,
   Zommand,
-} from "@gearbox-protocol/cli-utils";
+} from "@gearbox-protocol/cli-utils/node";
 import { customAlphabet } from "nanoid";
 import { Config } from "./config";
 import DI from "./di";

@@ -2,12 +2,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod/v4";
-import { compressObject } from "./compressedConfig.js";
 import {
   boolLike,
   optionalAddressArrayLike,
-} from "./schemas/schema-primitives.js";
-import { Zommand, zommandRegistry } from "./Zommand.js";
+} from "../schemas/schema-primitives.js";
+import { zommandRegistry } from "../zommandRegistry.js";
+import { compressObject } from "./compressedConfig.js";
+import { Zommand } from "./Zommand.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

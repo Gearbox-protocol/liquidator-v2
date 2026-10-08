@@ -1,14 +1,9 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import * as z4 from "zod/v4/core";
+import { zommandRegistry } from "../zommandRegistry.js";
 import { decompressObject } from "./compressedConfig.js";
 import type { TemplateData } from "./resolveYamlFiles.js";
 import { resolveYamlFiles } from "./resolveYamlFiles.js";
-
-export const zommandRegistry = z4.registry<{
-  flags: string;
-  env?: string;
-  description?: string;
-}>();
 
 export interface ZommandOptions<T extends z4.$ZodTypes> {
   schema: T;

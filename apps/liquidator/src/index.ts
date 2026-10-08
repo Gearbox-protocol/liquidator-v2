@@ -15,7 +15,7 @@ import {
   secretsManagerProxy,
   ssmManagerProxy,
   Zommand,
-} from "@gearbox-protocol/cli-utils";
+} from "@gearbox-protocol/cli-utils/node";
 import {
   ConfigImplementation,
   ConfigSchema,

@@ -89,8 +89,8 @@ export function getProviders(
 
               // Create Basic Auth header
               const credentials = `${urlObj.username}:${urlObj.password}`;
-              const encodedCredentials =
-                Buffer.from(credentials).toString("base64");
+              // URL username/password are percent-encoded, so btoa sees only ASCII
+              const encodedCredentials = btoa(credentials);
 
               httpTransportOptions = {
                 fetchOptions: {

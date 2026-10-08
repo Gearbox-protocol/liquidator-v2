@@ -1,9 +1,9 @@
+import type { IOptimistExecutionSummary } from "@gearbox-protocol/cli-utils";
 import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
-import type { ExecutionSummary } from "../types";
 import { version } from "../version";
 import { getFailedAccounts } from "./getFailedAccounts";
 
-export function getSummary(report: ExecutionReport): ExecutionSummary {
+export function getSummary(report: ExecutionReport): IOptimistExecutionSummary {
   if (report.error) {
     return {
       version,

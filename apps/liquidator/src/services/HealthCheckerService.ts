@@ -1,19 +1,21 @@
-import { createServer, type Server } from "node:http";
+import {
+  type HealthPayload,
+  type HealthStatusCode,
+  type ILiquidatorHealthResponse,
+  maxHealthStatusCode,
+} from "@gearbox-protocol/cli-utils";
+import { HealthServer } from "@gearbox-protocol/cli-utils/node";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import type { RevolverTransportValue } from "@gearbox-protocol/sdk/dev";
-import { json_stringify, type OnchainSDK } from "@gearbox-protocol/sdk/onchain";
-import { customAlphabet } from "nanoid";
+import type { OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import type { PublicClient, Transport } from "viem";
 import { DI } from "../di.js";
 import type { ILogger } from "../log/index.js";
 import { Logger } from "../log/index.js";
-import { maxStatusCode, type StatusCode } from "../utils/index.js";
 import version from "../version.js";
 import type Client from "./Client.js";
 import type DeleverageService from "./DeleverageService.js";
 import type { Scanner } from "./Scanner.js";
-
-const nanoid = customAlphabet("1234567890abcdef", 8);
 
 @DI.Injectable(DI.HealthChecker)
 export default class HealthCheckerService {
@@ -35,9 +37,7 @@ export default class HealthCheckerService {
   @DI.Inject(DI.Client)
   client!: Client;
 
-  #start = Math.round(Date.now() / 1000);
-  #id = nanoid();
-  #server?: Server;
+  #server?: HealthServer<ILiquidatorHealthResponse>;
 
   /**
    * Launches health checker - simple web server
@@ -46,59 +46,52 @@ export default class HealthCheckerService {
     if (this.config.optimistic) {
       return;
     }
-
-    const server = createServer(async (req, res) => {
-      // Routing
-      if (req.url === "/") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(json_stringify(this.#healthStatus));
-      } else if (req.url === "/metrics") {
-        try {
-          res.writeHead(200, { "Content-Type": "text/plain" });
-          res.end(this.#metrics());
-        } catch (_ex) {
-          res.writeHead(500, { "Content-Type": "text/plain" });
-          res.end("error");
-        }
-      } else {
-        res.writeHead(404, { "Content-Type": "text/plain" });
-        res.end("not found");
-      }
+    this.#server = new HealthServer<ILiquidatorHealthResponse>({
+      port: this.config.port,
+      version,
+      labels: { network: this.config.network.toLowerCase() },
+      logger: this.log,
+      unref: true,
+      status: () => this.#healthStatus,
+      gauges: () => [
+        {
+          name: "block_number",
+          help: "Latest processed block",
+          samples: [{ value: this.scanner.lastUpdated }],
+        },
+      ],
     });
-
-    const host = "0.0.0.0";
-    server.listen({ host, port: this.config.port }, () => {
-      this.log.debug(`listening on ${host}:${this.config.port}`);
-    });
-    server.on("error", e => {
-      this.log.error(e);
-    });
-    server.unref();
-    this.#server = server;
-    this.log.info("launched");
+    this.#server.launch();
   }
 
-  get #healthStatus() {
+  get #healthStatus(): HealthPayload<ILiquidatorHealthResponse> {
     const timestamp = Number(this.sdk.timestamp);
     const now = Math.ceil(Date.now() / 1000);
     const threshold = this.config.staleBlockThreshold;
-    const result = {
-      status: "healthy" as StatusCode,
-      startTime: this.#start,
-      version,
+    const timestampStatus: HealthStatusCode =
+      threshold && now - timestamp <= threshold ? "healthy" : "alert";
+    const liquidatableStatus: HealthStatusCode =
+      this.scanner.liquidatableAccounts > 0 ? "alert" : "healthy";
+    const balance = this.client.balance;
+    const deleverage = this.deleverage.status;
+    return {
+      status: maxHealthStatusCode(
+        timestampStatus,
+        balance?.status,
+        liquidatableStatus,
+        deleverage?.status,
+      ),
       network: this.config.network,
       family: "liquidators",
       liquidationMode: this.config.liquidationMode,
       address: this.client.address,
-      balance: this.client.balance,
+      balance,
       currentBlock: this.sdk.currentBlock,
       minHealthFactor: this.scanner.minHealthFactor,
       maxHealthFactor: this.scanner.maxHealthFactor,
       timestamp: {
         value: timestamp,
-        status: (threshold && now - timestamp <= threshold
-          ? "healthy"
-          : "alert") as StatusCode,
+        status: timestampStatus,
       },
       marketsConfigurators: this.sdk.marketRegister.marketConfigurators.map(
         mc => mc.address,
@@ -109,62 +102,18 @@ export default class HealthCheckerService {
       ),
       liquidatableAccounts: {
         value: this.scanner.liquidatableAccounts,
-        status: (this.scanner.liquidatableAccounts > 0
-          ? "alert"
-          : "healthy") as StatusCode,
+        status: liquidatableStatus,
       },
-      deleverage: this.deleverage.status,
+      deleverage,
       providers: (
         this.sdk.client as unknown as PublicClient<
           Transport<"revolver", RevolverTransportValue>
         >
       ).transport.statuses(),
     };
-    result.status = maxStatusCode(
-      result.status,
-      result.timestamp.status,
-      result.balance?.status,
-      result.liquidatableAccounts.status,
-      result.deleverage?.status,
-    );
-    return result;
   }
 
   public async stop(): Promise<void> {
-    this.log.info("stopping");
-    return new Promise(resolve => {
-      if (!this.#server) {
-        resolve();
-        return;
-      }
-      this.#server.close(() => resolve());
-    });
-  }
-
-  /**
-   * Returns metrics in prometheus format
-   * https://prometheus.io/docs/concepts/data_model/
-   */
-  #metrics(): string {
-    const labels = Object.entries({
-      instance_id: this.#id,
-      network: this.config.network.toLowerCase(),
-      version,
-    })
-      .map(([k, v]) => `${k}="${v}"`)
-      .join(", ");
-    return `# HELP service_up Simple binary flag to indicate being alive
-# TYPE service_up gauge
-service_up{${labels}} 1
-
-# HELP start_time Start time, in unixtime
-# TYPE start_time gauge
-start_time{${labels}} ${this.#start}
-
-# HELP block_number Latest processed block
-# TYPE block_number gauge
-block_number{${labels}} ${this.scanner.lastUpdated}
-
-`;
+    await this.#server?.stop();
   }
 }

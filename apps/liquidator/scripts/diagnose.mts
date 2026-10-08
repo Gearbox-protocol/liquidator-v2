@@ -1,8 +1,5 @@
-import {
-  addressLike,
-  Zommand,
-  zommandRegistry,
-} from "@gearbox-protocol/cli-utils";
+import { addressLike, zommandRegistry } from "@gearbox-protocol/cli-utils";
+import { Zommand } from "@gearbox-protocol/cli-utils/node";
 import {
   iCreditManagerV310Abi,
   iPoolV310Abi,

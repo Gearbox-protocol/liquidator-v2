@@ -50,29 +50,3 @@ export interface CreditManagerSlice {
 export type TypedSDK = OnchainSDK<{
   readonly accounts: AccountsPlugin;
 }>;
-
-export interface ExecutionSummarySuccess {
-  version: string;
-  startedAt: string;
-  executionId: string;
-  network: NetworkType;
-  status: "success";
-  /**
-   * Number of discovered accounts
-   */
-  discovered: number;
-  /**
-   * Number of accounts that none of liquidators could liquidate
-   */
-  failed: number;
-}
-
-export interface ExecutionSummaryFailed {
-  version: string;
-  startedAt: string;
-  executionId: string;
-  network: NetworkType;
-  status: "failed";
-}
-
-export type ExecutionSummary = ExecutionSummarySuccess | ExecutionSummaryFailed;

@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { CensoredString } from "./CensoredString.js";
 import { CensoredURL } from "./CensoredURL.js";
 import { stringArrayLike } from "./schemas/schema-primitives.js";
-import { zommandRegistry } from "./Zommand.js";
+import { zommandRegistry } from "./zommandRegistry.js";
 
 export const RpcProvider = z.enum([
   "alchemy",
