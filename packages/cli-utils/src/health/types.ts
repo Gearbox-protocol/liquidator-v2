@@ -253,7 +253,7 @@ export interface ILiquidatorHealthResponse
 export interface IInsolvencyMonitorHealthResponse
   extends ISDKHealthResponse,
     IWalletHealthResponse {
-  family: "insolvency-monitor";
+  family: "insolvency-monitors";
   /**
    * Solvency check over pools.
    *
@@ -267,7 +267,7 @@ export interface IInsolvencyMonitorHealthResponse
  * Health response of the price monitor.
  */
 export interface IPriceMonitorHealthResponse extends ISDKHealthResponse {
-  family: "price-monitor";
+  family: "price-monitors";
   /**
    * Check over price feeds.
    *
