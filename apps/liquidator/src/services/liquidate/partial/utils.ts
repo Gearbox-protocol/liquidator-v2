@@ -1,9 +1,11 @@
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
-import type { CreditSuite, PriceUpdate } from "@gearbox-protocol/sdk/onchain";
+import type {
+  CreditSuite,
+  OptimalPartialLiquidation,
+  PriceUpdate,
+} from "@gearbox-protocol/sdk/onchain";
 import { formatBN, getCuratorName } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "abitype";
-
-import type { OptimalPartialLiquidation } from "./types.js";
 
 export function humanizeOptimalLiquidation(
   cm: CreditSuite,

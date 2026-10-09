@@ -5,6 +5,7 @@ import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   CreditSuite,
+  OptimalPartialLiquidation,
   PriceUpdate,
 } from "@gearbox-protocol/sdk/onchain";
 import { ADDRESS_0X0, hexEq } from "@gearbox-protocol/sdk/onchain";
@@ -21,10 +22,7 @@ import {
 import { errorAbis } from "../../../../errors/index.js";
 import type { LiquidationRequest } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
-import type {
-  OptimalPartialLiquidation,
-  RawPartialLiquidationPreview,
-} from "../types.js";
+import type { RawPartialLiquidationPreview } from "../types.js";
 import { humanizePreviewPartialLiquidation } from "../utils.js";
 
 export default abstract class PartialLiquidatorV310Contract extends AbstractPartialLiquidatorContract {
@@ -75,34 +73,13 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
     await super.configure();
   }
 
-  public async getOptimalLiquidation(
+  public getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: PriceUpdate[],
-  ): Promise<OptimalPartialLiquidation> {
-    const optimalHF = this.getOptimalHealthFactor(ca);
-    const {
-      result: [
-        tokenOut,
-        optimalAmount,
-        repaidAmount,
-        flashLoanAmount,
-        isOptimalRepayable,
-      ],
-    } = await this.client.pub.simulateContract({
-      account: this.client.account,
-      abi: [...iPartialLiquidatorAbi, ...errorAbis],
-      address: this.address,
-      functionName: "getOptimalLiquidation",
-      args: [ca.creditAccount, optimalHF, priceUpdates],
-      gas: this.sdk.gasLimit,
-    });
-    return {
-      tokenOut,
-      optimalAmount,
-      repaidAmount,
-      flashLoanAmount,
-      isOptimalRepayable,
-    };
+  ): OptimalPartialLiquidation {
+    return this.sdk.liquidations.getOptimalPartialLiquidation(
+      ca,
+      this.getOptimalHealthFactor(ca),
+    );
   }
 
   public async previewPartialLiquidation(

@@ -154,14 +154,16 @@ export default abstract class LiquidationStrategyPartialBase<
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
       );
     }
-    const optimalLiquidation = await liquidatorContract.getOptimalLiquidation(
-      ca,
-      priceUpdates,
-    );
+    const optimalLiquidation = liquidatorContract.getOptimalLiquidation(ca);
     this.logger.debug(
       humanizeOptimalLiquidation(cm, optimalLiquidation),
       "found optimal liquidation",
     );
+    if (optimalLiquidation.optimalAmount === 0n) {
+      throw new Error(
+        "warning: optimal liquidation amount is zero, account is either healthy enough or its debt is below min debt",
+      );
+    }
 
     try {
       const preview = await liquidatorContract.previewPartialLiquidation(

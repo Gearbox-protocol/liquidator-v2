@@ -13,6 +13,7 @@ import type {
   CreditAccountData,
   CreditSuite,
   OnchainSDK,
+  OptimalPartialLiquidation,
   PriceUpdate,
 } from "@gearbox-protocol/sdk/onchain";
 import {
@@ -31,7 +32,6 @@ import type { DeployReport } from "../DeployReport.js";
 import type { LiquidationRequest } from "../types.js";
 import type {
   IPartialLiquidatorContract,
-  OptimalPartialLiquidation,
   RawPartialLiquidationPreview,
 } from "./types.js";
 
@@ -292,8 +292,7 @@ export abstract class AbstractPartialLiquidatorContract
 
   public abstract getOptimalLiquidation(
     ca: CreditAccountData,
-    priceUpdates: PriceUpdate[],
-  ): Promise<OptimalPartialLiquidation>;
+  ): OptimalPartialLiquidation;
 
   public abstract previewPartialLiquidation(
     ca: CreditAccountData,
