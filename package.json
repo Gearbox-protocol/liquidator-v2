@@ -34,12 +34,5 @@
       "biome check --no-errors-on-unmatched --write"
     ]
   },
-  "packageManager": "pnpm@12.4.0",
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": "24.x",
-      "onFail": "download"
-    }
-  }
+  "packageManager": "pnpm@12.4.0"
 }
