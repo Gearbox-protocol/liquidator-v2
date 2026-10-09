@@ -5,9 +5,10 @@ import type {
   PartialStrategySetup,
 } from "@gearbox-protocol/liquidator-v2-config";
 import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
-import type {
-  CreditAccountData,
-  OnchainSDK,
+import {
+  AddressMap,
+  type CreditAccountData,
+  type OnchainSDK,
 } from "@gearbox-protocol/sdk/onchain";
 import type { Address, Hex } from "viem";
 import { DI } from "../../di.js";
@@ -57,6 +58,12 @@ export default abstract class LiquidationStrategyPartialBase<
   }
 
   #deployer: PartialContractsDeployer;
+  /**
+   * LTs lowered by makePartialLiquidatable, keyed by credit account, consumed by preview.
+   * The sdk's cached credit manager state still holds the old LTs.
+   * For Optimistic mode only.
+   */
+  #ltOverrides = new AddressMap<AddressMap<number>>();
 
   constructor() {
     super();
@@ -110,6 +117,7 @@ export default abstract class LiquidationStrategyPartialBase<
     const snapshotId = await this.client.anvil.snapshot();
 
     await setLTs(this.client.anvil, cm.state, newLTs, this.logger);
+    this.#ltOverrides.upsert(ca.creditAccount, AddressMap.fromRecord(newLTs));
     const account = await this.sdk.accounts.getCreditAccountData(
       ca.creditAccount,
     );
@@ -154,7 +162,12 @@ export default abstract class LiquidationStrategyPartialBase<
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
       );
     }
-    const optimalLiquidation = liquidatorContract.getOptimalLiquidation(ca);
+    const ltOverrides = this.#ltOverrides.get(ca.creditAccount);
+    this.#ltOverrides.delete(ca.creditAccount);
+    const optimalLiquidation = liquidatorContract.getOptimalLiquidation(
+      ca,
+      ltOverrides,
+    );
     this.logger.debug(
       humanizeOptimalLiquidation(cm, optimalLiquidation),
       "found optimal liquidation",

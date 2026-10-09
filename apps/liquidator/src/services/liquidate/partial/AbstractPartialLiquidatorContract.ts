@@ -292,6 +292,7 @@ export abstract class AbstractPartialLiquidatorContract
 
   public abstract getOptimalLiquidation(
     ca: CreditAccountData,
+    liquidationThresholds?: AddressMap<number>,
   ): OptimalPartialLiquidation;
 
   public abstract previewPartialLiquidation(
