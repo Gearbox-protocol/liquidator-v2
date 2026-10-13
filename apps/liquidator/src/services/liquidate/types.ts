@@ -57,12 +57,6 @@ export interface ILiquidationStrategy<
   syncState: (blockNumber: bigint) => Promise<void>;
   isApplicable: (ca: CreditAccountData, optimistic: boolean) => boolean;
   /**
-   * For optimistic liquidations only: read-only calls that load storage the strategy will need into the fork cache.
-   * Called once before any evm_snapshot, so loaded slots survive later reverts. Must not write. Failures are not fatal.
-   * @param accounts accounts this strategy is applicable to
-   */
-  warmUp?: (accounts: CreditAccountData[]) => Promise<void>;
-  /**
    * For optimistic liquidations only: create conditions that make this account liquidatable
    * If strategy implements this scenario, it must make evm_snapshot beforehand and return it as a result
    * Id strategy does not support this, return undefined
