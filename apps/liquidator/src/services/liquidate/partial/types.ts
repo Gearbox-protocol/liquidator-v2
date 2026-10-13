@@ -17,6 +17,19 @@ export interface RawPartialLiquidationPreview {
   amountOut: bigint;
 }
 
+/**
+ * Conversion of seized collateral into underlying, routed only to load router state into fork cache
+ */
+export interface ConversionWarmUpTask {
+  creditManager: Address;
+  /**
+   * Token to convert, already mapped from phantom token to its deposited token
+   */
+  tokenIn: Address;
+  amountIn: bigint;
+  underlying: Address;
+}
+
 export interface IPartialLiquidatorContract {
   address: Address;
   name: string;
@@ -64,6 +77,12 @@ export interface IPartialLiquidatorContract {
     account: CreditAccountData,
     preview: PartialStrategyPreview<bigint>,
   ) => Promise<LiquidationRequest>;
+  /**
+   * Read-only router call with the same arguments previewPartialLiquidation uses for conversion,
+   * result is discarded. Throws if the call reverts
+   * @param task
+   */
+  warmUpConversion: (task: ConversionWarmUpTask) => Promise<void>;
 }
 
 export interface IPartialLiqudatorContractFactory {

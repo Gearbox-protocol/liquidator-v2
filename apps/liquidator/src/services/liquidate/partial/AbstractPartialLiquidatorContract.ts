@@ -31,6 +31,7 @@ import type DeleverageService from "../../DeleverageService.js";
 import type { DeployReport } from "../DeployReport.js";
 import type { LiquidationRequest } from "../types.js";
 import type {
+  ConversionWarmUpTask,
   IPartialLiquidatorContract,
   RawPartialLiquidationPreview,
 } from "./types.js";
@@ -64,6 +65,10 @@ export abstract class AbstractPartialLiquidatorContract
   protected report!: DeployReport;
 
   #registeredCMs = new AddressMap<boolean>();
+  /**
+   * Credit manager => liquidator contract's conversion account in it
+   */
+  #conversionAccounts = new AddressMap<Address>();
   #address?: Address;
   #router: Address;
   /**
@@ -122,6 +127,9 @@ export abstract class AbstractPartialLiquidatorContract
         const conversionAccount = registered
           ? await this.client.pub.readContract(this.#conversionAccount(address))
           : undefined;
+        if (conversionAccount && conversionAccount !== ADDRESS_0X0) {
+          this.#conversionAccounts.upsert(address, conversionAccount);
+        }
         this.report.recordCreditManager({
           creditManager: name,
           address,
@@ -135,6 +143,7 @@ export abstract class AbstractPartialLiquidatorContract
           `credit manager ${name} (${address}) already registered with account ${ca}`,
         );
         this.#registeredCMs.upsert(address, true);
+        this.#conversionAccounts.upsert(address, ca);
         this.report.recordCreditManager({
           creditManager: name,
           address,
@@ -307,6 +316,8 @@ export abstract class AbstractPartialLiquidatorContract
     preview: PartialStrategyPreview<bigint>,
   ): Promise<LiquidationRequest>;
 
+  public abstract warmUpConversion(task: ConversionWarmUpTask): Promise<void>;
+
   /**
    * Returns partial liquidation bot, or deleverage bot
    */
@@ -363,6 +374,13 @@ export abstract class AbstractPartialLiquidatorContract
 
   protected get router(): Address {
     return this.#router;
+  }
+
+  /**
+   * Conversion accounts of registered credit managers, filled during configure
+   */
+  protected get conversionAccounts(): AddressMap<Address> {
+    return this.#conversionAccounts;
   }
 
   protected get owner(): Address {

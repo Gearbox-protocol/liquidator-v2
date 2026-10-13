@@ -23,8 +23,15 @@ import {
 import { errorAbis } from "../../../../errors/index.js";
 import type { LiquidationRequest } from "../../types.js";
 import { AbstractPartialLiquidatorContract } from "../AbstractPartialLiquidatorContract.js";
-import type { RawPartialLiquidationPreview } from "../types.js";
+import type {
+  ConversionWarmUpTask,
+  RawPartialLiquidationPreview,
+} from "../types.js";
 import { humanizePreviewPartialLiquidation } from "../utils.js";
+
+const routeOneToOneDiffAbi = parseAbi([
+  "function routeOneToOneDiff(address creditAccount, address tokenIn, uint256 balance, uint256 leftoverBalance, address target, uint256 slippage, uint256 numSplits)",
+]);
 
 export default abstract class PartialLiquidatorV310Contract extends AbstractPartialLiquidatorContract {
   protected readonly deployer: Create2Deployer<Transport, Chain, Account>;
@@ -146,6 +153,33 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
       abis: [iPartialLiquidatorAbi, errorAbis],
     });
     return { to: this.address, data };
+  }
+
+  public async warmUpConversion(task: ConversionWarmUpTask): Promise<void> {
+    const conversionAccount = this.conversionAccounts.get(task.creditManager);
+    if (!conversionAccount) {
+      throw new Error(
+        `no conversion account for credit manager ${task.creditManager}`,
+      );
+    }
+    await this.client.pub.call({
+      account: ADDRESS_0X0,
+      to: this.router,
+      gas: this.sdk.gasLimit,
+      data: encodeFunctionData({
+        abi: routeOneToOneDiffAbi,
+        functionName: "routeOneToOneDiff",
+        args: [
+          conversionAccount,
+          task.tokenIn,
+          task.amountIn,
+          0n,
+          task.underlying,
+          BigInt(this.config.slippage),
+          4n, // same as previewPartialLiquidation
+        ],
+      }),
+    });
   }
 
   protected get partialLiquidationBot(): Address {

@@ -154,6 +154,8 @@ export default class SingularLiquidator
     const debugS = this.config.debugAccount ? "selective " : "";
     this.logger.info(`${debugS}optimistic liquidation for ${total} accounts`);
 
+    await this.#warmUp(accounts);
+
     for (let i = 0; i < total; i++) {
       const acc = accounts[i];
       LoggerFactory.setLogContext({ account: acc.creditAccount });
@@ -171,6 +173,30 @@ export default class SingularLiquidator
     this.logger.info(
       `optimistic liquidation finished: ${success}/${total} accounts liquidated`,
     );
+  }
+
+  /**
+   * Must run before the first evm_snapshot: slots loaded after a snapshot are dropped from fork cache on revert
+   */
+  async #warmUp(accounts: CreditAccountData[]): Promise<void> {
+    for (const s of this.#strategies) {
+      if (!s.warmUp) {
+        continue;
+      }
+      const applicable = accounts.filter(ca => s.isApplicable(ca, true));
+      if (applicable.length === 0) {
+        continue;
+      }
+      const start = Date.now();
+      try {
+        await s.warmUp(applicable);
+      } catch (e) {
+        this.logger.warn(`warm-up for ${s.name} failed: ${e}`);
+      }
+      this.logger.info(
+        `warm-up for ${s.name} took ${Math.round((Date.now() - start) / 1000)}s`,
+      );
+    }
   }
 
   async #liquidateOne(ca: CreditAccountData): Promise<void> {
