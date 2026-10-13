@@ -1,20 +1,14 @@
 import type { PartialStrategyPreview } from "@gearbox-protocol/liquidator-v2-config";
 import type {
+  AddressMap,
   CreditAccountData,
   CreditSuite,
   MultiCall,
+  OptimalPartialLiquidation,
   PriceUpdate,
 } from "@gearbox-protocol/sdk/onchain";
 import type { Address } from "viem";
 import type { LiquidationRequest } from "../types.js";
-
-export interface OptimalPartialLiquidation {
-  tokenOut: Address;
-  optimalAmount: bigint;
-  repaidAmount: bigint;
-  flashLoanAmount: bigint;
-  isOptimalRepayable: boolean;
-}
 
 export interface RawPartialLiquidationPreview {
   profit: bigint;
@@ -40,14 +34,14 @@ export interface IPartialLiquidatorContract {
    */
   syncState: () => Promise<void>;
   /**
-   * Call to getOptimalLiquidation on liquidator contracts for v310 routers
+   * Computes optimal partial liquidation off-chain via sdk, using this contract's optimal health factor
    * @param ca
-   * @param priceUpdates
+   * @param liquidationThresholds LTs to use instead of the credit manager's cached ones, e.g. LTs just lowered on a fork
    */
   getOptimalLiquidation: (
     ca: CreditAccountData,
-    priceUpdates: PriceUpdate[],
-  ) => Promise<OptimalPartialLiquidation>;
+    liquidationThresholds?: AddressMap<number>,
+  ) => OptimalPartialLiquidation;
   /**
    * Call to previewPartialLiquidation on liquidator contracts for v310 routers
    * @param ca

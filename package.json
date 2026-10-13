@@ -17,10 +17,10 @@
     "check:ci": "biome check"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.14",
+    "@biomejs/biome": "^2.5.15",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
-    "@gearbox-protocol/biome-config": "^1.1.9",
+    "@gearbox-protocol/biome-config": "^1.1.10",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0"
   },
@@ -34,12 +34,5 @@
       "biome check --no-errors-on-unmatched --write"
     ]
   },
-  "packageManager": "pnpm@12.4.0",
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": "24.x",
-      "onFail": "download"
-    }
-  }
+  "packageManager": "pnpm@12.10.0"
 }
