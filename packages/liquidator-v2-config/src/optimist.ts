@@ -18,7 +18,8 @@ export type LiquidationStrategyKind =
   | "rwa-via-stablecoins"
   | "partial"
   | "deleverage"
-  | "wallet"
+  | "wallet-full"
+  | "wallet-partial"
   | "none";
 
 /**
@@ -152,8 +153,8 @@ export interface Redeemer<N extends Numberish = Numberish> {
 }
 
 /**
- * Preview data of the wallet strategy: a liquidation paid from the liquidator's
- * own funds, previewed by the liquidation compressor.
+ * Preview data of the wallet strategies: a liquidation paid from the liquidator's
+ * own funds, previewed by the sdk.
  */
 export interface WalletStrategyPreview<N extends Numberish = Numberish> {
   /**
@@ -166,18 +167,42 @@ export interface WalletStrategyPreview<N extends Numberish = Numberish> {
    */
   redeemers: Redeemer<N>[];
   /**
-   * Top-level liquidation call built by the compressor, targeting either the
-   * credit facade or a dedicated Midas/Securitize liquidator contract.
+   * Top-level liquidation call, targeting either the credit facade or a
+   * dedicated Midas/Securitize liquidator contract.
    */
   calls: readonly MultiCall[];
   /**
-   * Liquidation transaction built by the liquidation compressor.
+   * Liquidation transaction built by the sdk.
    */
   rawTx: RawTx;
   /**
    * If true, will not attempt to liquidate this account again.
    */
   skipOnFailure?: boolean;
+}
+
+/**
+ * Preview data of the partial wallet strategy: part of the debt is repaid from
+ * the liquidator's own funds in exchange for discounted collateral.
+ */
+export interface WalletPartialStrategyPreview<N extends Numberish = Numberish>
+  extends WalletStrategyPreview<N> {
+  /**
+   * Collateral token seized from the account.
+   */
+  assetOut: Address;
+  /**
+   * Estimated amount of {@link assetOut} received by the liquidator.
+   */
+  amountOut: N;
+  /**
+   * Underlying paid by the liquidator.
+   */
+  repaidAmount: N;
+  /**
+   * Sdk's estimate of the liquidator's profit, in underlying.
+   */
+  estimatedProfit: N;
 }
 
 /**
@@ -257,7 +282,8 @@ export interface StrategyPreviews<N extends Numberish = Numberish> {
   partial: PartialStrategyPreview<N>;
   deleverage: PartialStrategyPreview<N>;
   "rwa-via-stablecoins": RwaStrategyPreview;
-  wallet: WalletStrategyPreview<N>;
+  "wallet-full": WalletStrategyPreview<N>;
+  "wallet-partial": WalletPartialStrategyPreview<N>;
   none: never;
 }
 
@@ -272,7 +298,8 @@ export interface StrategyOutcomes<N extends Numberish = Numberish> {
   partial: never;
   deleverage: never;
   "rwa-via-stablecoins": never;
-  wallet: WalletStrategyOutcome<N>;
+  "wallet-full": WalletStrategyOutcome<N>;
+  "wallet-partial": WalletStrategyOutcome<N>;
   none: never;
 }
 
@@ -286,7 +313,8 @@ export interface StrategySetups<N extends Numberish = Numberish> {
   partial: PartialStrategySetup<N>;
   deleverage: DeleverageStrategySetup<N>;
   "rwa-via-stablecoins": RwaStrategySetup;
-  wallet: never;
+  "wallet-full": never;
+  "wallet-partial": PartialStrategySetup<N>;
   none: never;
 }
 

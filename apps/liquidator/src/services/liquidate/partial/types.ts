@@ -1,6 +1,5 @@
 import type { PartialStrategyPreview } from "@gearbox-protocol/liquidator-v2-config";
 import type {
-  AddressMap,
   CreditAccountData,
   CreditSuite,
   MultiCall,
@@ -36,12 +35,8 @@ export interface IPartialLiquidatorContract {
   /**
    * Computes optimal partial liquidation off-chain via sdk, using this contract's optimal health factor
    * @param ca
-   * @param liquidationThresholds LTs to use instead of the credit manager's cached ones, e.g. LTs just lowered on a fork
    */
-  getOptimalLiquidation: (
-    ca: CreditAccountData,
-    liquidationThresholds?: AddressMap<number>,
-  ) => OptimalPartialLiquidation;
+  getOptimalLiquidation: (ca: CreditAccountData) => OptimalPartialLiquidation;
   /**
    * Call to previewPartialLiquidation on liquidator contracts for v310 routers
    * @param ca

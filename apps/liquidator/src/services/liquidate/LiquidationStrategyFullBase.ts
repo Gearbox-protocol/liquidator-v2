@@ -97,7 +97,7 @@ export default abstract class LiquidationStrategyFullBase<
         this.config.debtPolicy === "debt-only" ||
         (this.config.debtPolicy === "debt-expired" && cm.isExpired);
       const { tx, routerCloseResult, calls } =
-        await this.sdk.accounts.fullyLiquidate({
+        await this.sdk.liquidations.fullyLiquidate({
           account: ca,
           to: this.premiumReceiver,
           slippage: BigInt(this.config.slippage),

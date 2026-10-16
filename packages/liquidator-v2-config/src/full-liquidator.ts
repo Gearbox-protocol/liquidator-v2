@@ -10,7 +10,8 @@ export const FullLiquidatorSchema = z
      */
     liquidationMode: z.literal("full").register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
-      description: "Liquidator mode (full/partial/batch/deleverage/wallet)",
+      description:
+        "Liquidator mode (full/partial/batch/deleverage/wallet-full/wallet-partial)",
       env: "LIQUIDATION_MODE",
     }),
     /**

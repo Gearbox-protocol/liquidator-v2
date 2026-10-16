@@ -221,11 +221,19 @@ export const CommonSchema = z.object({
    * Liquidator mode
    */
   liquidationMode: z
-    .enum(["full", "partial", "batch", "deleverage", "wallet"])
+    .enum([
+      "full",
+      "partial",
+      "batch",
+      "deleverage",
+      "wallet-full",
+      "wallet-partial",
+    ])
     .default("full")
     .register(zommandRegistry, {
       flags: "--liquidation-mode <mode>",
-      description: "Liquidator mode (full/partial/batch/deleverage/wallet)",
+      description:
+        "Liquidator mode (full/partial/batch/deleverage/wallet-full/wallet-partial)",
       env: "LIQUIDATION_MODE",
     }),
   /**

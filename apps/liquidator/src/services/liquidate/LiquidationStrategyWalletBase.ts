@@ -2,17 +2,19 @@ import type {
   LiqduiatorConfig,
   OptimisticAsset,
   Redeemer,
+  StrategyPreviews,
   WalletLiquidatorSchema,
   WalletStrategyOutcome,
   WalletStrategyPreview,
 } from "@gearbox-protocol/liquidator-v2-config";
+import type { LiquidationDetails, TxCall } from "@gearbox-protocol/sdk/model";
 import type {
   CreditAccountData,
   OnchainSDK,
 } from "@gearbox-protocol/sdk/onchain";
 import { AddressSet } from "@gearbox-protocol/sdk/onchain";
 import type { Address, Hex, TransactionReceipt } from "viem";
-import { BaseError, encodeFunctionData, erc20Abi } from "viem";
+import { encodeFunctionData, erc20Abi } from "viem";
 import { DI } from "../../di.js";
 import { errorAbis } from "../../errors/index.js";
 import { type ILogger, Logger } from "../../log/index.js";
@@ -39,18 +41,18 @@ interface BalancesSnapshot {
 }
 
 /**
- * Liquidates a credit account with the liquidator's own funds: the debt is
- * repaid in underlying and all the account collateral is received by the
- * liquidator wallet.
+ * Shared logic for strategies that liquidate with the liquidator's own funds:
+ * the debt (or part of it) is repaid in underlying, and the collateral is
+ * received by the liquidator wallet. Since the transaction pulls underlying
+ * from the liquidator, an ERC-20 approval is granted in {@link prepare} first.
  *
- * Applies to every account, RWA or not: the liquidation compressor picks the
- * path (credit facade directly, or a dedicated Midas/Securitize liquidator
- * contract). Unlike the other strategies, the transaction pulls underlying from
- * the liquidator, so an ERC-20 approval is granted in {@link prepare} first.
+ * Concrete leaves provide `kind`, `name`, `makeLiquidatable` and `preview`.
  */
-export default class LiquidatorStrategyWallet
+export default abstract class LiquidationStrategyWalletBase<
+    K extends "wallet-full" | "wallet-partial",
+  >
   extends AccountHelper
-  implements ILiquidationStrategy<"wallet">
+  implements ILiquidationStrategy<K>
 {
   @DI.Inject(DI.SDK)
   sdk!: OnchainSDK;
@@ -64,9 +66,9 @@ export default class LiquidatorStrategyWallet
   @Logger("WalletStrategy")
   logger!: ILogger;
 
-  public readonly kind = "wallet" as const;
+  public abstract readonly kind: K;
 
-  public readonly name = "wallet";
+  public abstract readonly name: string;
 
   /**
    * Liquidator balances taken in `prepare`, consumed by `collectOutcome`.
@@ -78,13 +80,7 @@ export default class LiquidatorStrategyWallet
     return this.client.address;
   }
 
-  /**
-   * Registers the dedicated Midas/Securitize liquidator contracts in the sdk,
-   * so that the compressor's calldata targeting them can be stringified.
-   */
-  public async launch(): Promise<void> {
-    await this.sdk.liquidations.loadRWALiquidators();
-  }
+  public async launch(): Promise<void> {}
 
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
@@ -92,89 +88,13 @@ export default class LiquidatorStrategyWallet
     return true;
   }
 
-  public async makeLiquidatable(
+  public abstract makeLiquidatable(
     ca: CreditAccountData,
-  ): Promise<MakeLiquidatableResult<"wallet">> {
-    // is handled on optimistic runner level (funding, kyc and zero-lt scripts)
-    return { account: ca };
-  }
+  ): Promise<MakeLiquidatableResult<K>>;
 
-  public async preview(
+  public abstract preview(
     ca: CreditAccountData,
-  ): Promise<WalletStrategyPreview<bigint>> {
-    const liquidator = this.client.address;
-    const ignoreReservePrices = !this.config.updateReservePrices;
-    try {
-      const details = await this.sdk.liquidations.getLiquidationDetails({
-        creditAccount: ca.creditAccount,
-        liquidator,
-        ignoreReservePrices,
-      });
-      if (!details.isLiquidatorEligible) {
-        const token = details.kycToken
-          ? details.kycToken.symbol
-          : "liquidated assets";
-        throw new Error(
-          `warning: liquidator is not whitelisted in ${details.kycProtocol} for ${token}`,
-        );
-      }
-      const rawTx = await this.sdk.liquidations.buildLiquidationTx({
-        creditAccount: ca.creditAccount,
-        liquidator,
-        ignoreReservePrices,
-      });
-      const redeemers: Redeemer<bigint>[] = details.receivedAssets
-        .filter(a => a.isDelayed)
-        .map(a => ({
-          address: a.redeemer,
-          token: a.token.address,
-          amount: a.value,
-          claimableAt: a.claimableAt,
-        }));
-      this.logger.debug(
-        {
-          repayment: this.sdk.tokensMeta.formatBN(
-            details.repaymentAmount.token.address,
-            details.repaymentAmount.value,
-            { symbol: true },
-          ),
-          target: this.sdk.labelAddress(rawTx.to),
-          approve: details.approve
-            ? this.sdk.tokensMeta.formatBN(
-                details.approve.token.address,
-                details.approve.value,
-                { symbol: true },
-              )
-            : undefined,
-          redeemers: redeemers.length,
-        },
-        "previewed wallet liquidation",
-      );
-      return {
-        approve: details.approve
-          ? {
-              token: details.approve.token.address,
-              amount: details.approve.value,
-              spender: details.approve.spender,
-            }
-          : undefined,
-        redeemers,
-        calls: [{ target: rawTx.to, callData: rawTx.callData as Hex }],
-        rawTx: {
-          to: rawTx.to,
-          callData: rawTx.callData as Hex,
-          signature: "",
-          contractMethod: { inputs: [], name: "", payable: false },
-          contractInputsValues: {},
-          value: rawTx.value?.toString() ?? "0",
-        },
-      };
-    } catch (e) {
-      throw new BaseError("cant preview wallet liquidation", {
-        cause: e as Error,
-      });
-    }
-  }
+  ): Promise<StrategyPreviews<bigint>[K]>;
 
   /**
    * Grants the approval the liquidation call needs and, in optimistic mode,
@@ -267,6 +187,76 @@ export default class LiquidatorStrategyWallet
       }
     }
     return { received, redeemers: preview.redeemers };
+  }
+
+  /**
+   * @throws If the liquidator is not eligible to receive the liquidated assets
+   */
+  protected assertLiquidatorEligible(details: LiquidationDetails): void {
+    if (!details.isLiquidatorEligible) {
+      const token = details.kycToken
+        ? details.kycToken.symbol
+        : "liquidated assets";
+      throw new Error(
+        `warning: liquidator is not whitelisted in ${details.kycProtocol} for ${token}`,
+      );
+    }
+  }
+
+  /**
+   * Builds the preview shared by wallet strategies from the sdk's liquidation
+   * details and transaction.
+   */
+  protected walletPreview(
+    details: LiquidationDetails,
+    rawTx: TxCall,
+  ): WalletStrategyPreview<bigint> {
+    const redeemers: Redeemer<bigint>[] = details.receivedAssets
+      .filter(a => a.isDelayed)
+      .map(a => ({
+        address: a.redeemer,
+        token: a.token.address,
+        amount: a.value,
+        claimableAt: a.claimableAt,
+      }));
+    this.logger.debug(
+      {
+        repayment: this.sdk.tokensMeta.formatBN(
+          details.repaymentAmount.token.address,
+          details.repaymentAmount.value,
+          { symbol: true },
+        ),
+        target: this.sdk.labelAddress(rawTx.to),
+        approve: details.approve
+          ? this.sdk.tokensMeta.formatBN(
+              details.approve.token.address,
+              details.approve.value,
+              { symbol: true },
+            )
+          : undefined,
+        redeemers: redeemers.length,
+      },
+      `previewed ${this.name} liquidation`,
+    );
+    return {
+      approve: details.approve
+        ? {
+            token: details.approve.token.address,
+            amount: details.approve.value,
+            spender: details.approve.spender,
+          }
+        : undefined,
+      redeemers,
+      calls: [{ target: rawTx.to, callData: rawTx.callData as Hex }],
+      rawTx: {
+        to: rawTx.to,
+        callData: rawTx.callData as Hex,
+        signature: "",
+        contractMethod: { inputs: [], name: "", payable: false },
+        contractInputsValues: {},
+        value: rawTx.value?.toString() ?? "0",
+      },
+    };
   }
 
   /**
