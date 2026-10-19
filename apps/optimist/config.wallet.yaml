@@ -11,6 +11,7 @@ ghcrCredentials:
 liquidators:
   - id: wallet
     name: "Wallet"
+    role: manual
     imageTag: "beta"
     env:
       LIQUIDATION_MODE: "wallet-full"
@@ -21,6 +22,7 @@ liquidators:
       kyc: {}
   - id: wallet-partial
     name: "Wallet Partial"
+    role: manual
     imageTag: "beta"
     env:
       LIQUIDATION_MODE: "wallet-partial"

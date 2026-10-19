@@ -8,11 +8,13 @@ import {
   addressLike,
   clientWhitelistItemSchema,
 } from "@gearbox-protocol/cli-utils";
-import type {
-  AccountLabels,
-  ExecutionReport,
-  TrackReport,
-  WhitelistEntry,
+import {
+  type AccountLabels,
+  type ExecutionReport,
+  filterReportByRole,
+  reportRoles,
+  type TrackReport,
+  type WhitelistEntry,
 } from "@gearbox-protocol/liquidator-v2-config";
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import { AddressSet, json_stringify } from "@gearbox-protocol/sdk/onchain";
@@ -124,6 +126,7 @@ export default class Optimist {
           id: t.id,
           name: t.name,
           emergency: !!this.config.liquidators[t.id]?.setup.emergencyMode,
+          role: this.config.liquidators[t.id]?.role,
           version: t.version,
           start: t.start,
           end: t.end,
@@ -244,9 +247,19 @@ export default class Optimist {
         );
         continue;
       }
+      const curator = n.curator as CuratorName;
       const notifier = new Notifier(n);
-      const fails = await analyzer.check(report, n.curator as CuratorName);
-      await notifier.notify(report, fails);
+      const executionFails = await analyzer.checkExecution(report, curator);
+      const roles = reportRoles(report);
+      if (roles.length === 0) {
+        roles.push("service");
+      }
+      for (const [i, role] of roles.entries()) {
+        const roleReport = filterReportByRole(report, role);
+        const roleFails = await analyzer.checkRole(roleReport, role, curator);
+        const fails = i === 0 ? [...executionFails, ...roleFails] : roleFails;
+        await notifier.notify(roleReport, role, fails);
+      }
     }
   }
 
