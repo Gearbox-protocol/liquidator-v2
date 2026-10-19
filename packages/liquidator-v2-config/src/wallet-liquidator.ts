@@ -7,11 +7,14 @@ export const WalletLiquidatorSchema = z.object({
   /**
    * Liquidator mode
    */
-  liquidationMode: z.literal("wallet").register(zommandRegistry, {
-    flags: "--liquidation-mode <mode>",
-    description: "Liquidator mode (full/partial/batch/deleverage/wallet)",
-    env: "LIQUIDATION_MODE",
-  }),
+  liquidationMode: z
+    .enum(["wallet-full", "wallet-partial"])
+    .register(zommandRegistry, {
+      flags: "--liquidation-mode <mode>",
+      description:
+        "Liquidator mode (full/partial/batch/deleverage/wallet-full/wallet-partial)",
+      env: "LIQUIDATION_MODE",
+    }),
 });
 
 export type WalletLiquidatorSchema = z.infer<typeof WalletLiquidatorSchema>;

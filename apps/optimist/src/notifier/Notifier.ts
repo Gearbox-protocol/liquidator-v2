@@ -2,6 +2,7 @@ import type {
   ExecutionReport,
   OptimisticResult,
   TrackReport,
+  TrackRole,
 } from "@gearbox-protocol/liquidator-v2-config";
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import {
@@ -44,13 +45,20 @@ export class Notifier {
     this.#curator = options.curator as CuratorName;
   }
 
+  /**
+   * @param result report filtered by role
+   */
   public async notify(
     result: ExecutionReport,
+    role: TrackRole,
     failedChecks: INotification[],
   ): Promise<void> {
+    if (role === "manual" && failedChecks.length === 0) {
+      return;
+    }
     try {
-      this.logger.debug("notifying");
-      let msgs = this.#generateMessages(result, failedChecks);
+      this.logger.debug({ role }, "notifying");
+      let msgs = this.#generateMessages(result, role, failedChecks);
       if (this.#curator) {
         // only send severe messages for curators
         msgs = msgs.filter(m => m.severe);
@@ -65,6 +73,7 @@ export class Notifier {
 
   #generateMessages(
     result: ExecutionReport,
+    role: TrackRole,
     failedChecks: INotification[],
   ): INotification[] {
     const severe = failedChecks.some(e => e.severe);
@@ -83,12 +92,12 @@ export class Notifier {
         ? "❌"
         : "⚠️";
 
-    const header = this.#generateHeader(emoji, title);
+    const header = this.#generateHeader(emoji, role, title);
     const warnings = failedChecks.map(w =>
       w.severe ? md`❌ ${w.md}` : md`⚠️ ${w.md}`,
     );
     const stats = this.#generateStats(result);
-    const footer = this.#generateFooter(this.sdk.currentBlock, undefined);
+    const footer = this.#generateFooter(this.sdk.currentBlock, role, undefined);
 
     const messages = this.#splitMessage(
       header,
@@ -207,10 +216,15 @@ export class Notifier {
     return md`${md.bold(track.name)}: ${success}/${total}`;
   }
 
-  #generateHeader(emoji: string, message: string): Markdown {
+  #generateHeader(emoji: string, role: TrackRole, message: string): Markdown {
     const { extraHeaderTag, network } = this.config;
     const tags = md.join(
-      [extraHeaderTag, this.#curator, network.toUpperCase()]
+      [
+        extraHeaderTag,
+        this.#curator,
+        network.toUpperCase(),
+        role === "manual" ? role : undefined,
+      ]
         .filter(Boolean)
         .map(s => `[${s}]`),
       "",
@@ -220,6 +234,7 @@ export class Notifier {
 
   #generateFooter(
     blockNumber: bigint,
+    role: TrackRole,
     duration?: { start: Date; end: Date },
   ): Markdown {
     const { executionId } = this.config;
@@ -227,16 +242,21 @@ export class Notifier {
       md`block: ${md.inlineCode(blockNumber)}`,
     ];
 
-    let link = `https://anvil.gearbox.foundation/optimist/${executionId}`;
+    const query = new URLSearchParams();
     if (this.#curator) {
       const mc = findCuratorMarketConfigurator(
         this.#curator,
         this.config.network,
       );
       if (mc) {
-        link = `https://anvil.gearbox.foundation/optimist/${executionId}?marketConfigurator=${mc}`;
+        query.set("marketConfigurator", mc);
       }
     }
+    if (role === "manual") {
+      query.set("role", role);
+    }
+    const search = query.size ? `?${query}` : "";
+    const link = `https://anvil.gearbox.foundation/optimist/${executionId}${search}`;
 
     report = md.link("[report]", link);
 

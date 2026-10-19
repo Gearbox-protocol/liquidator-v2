@@ -16,7 +16,8 @@ export class LiquidatorFactory implements IFactory<ILiquidatorService, []> {
       case "full":
       case "partial":
       case "deleverage":
-      case "wallet":
+      case "wallet-full":
+      case "wallet-partial":
         return new SingularLiquidator();
       case "batch":
         return new BatchLiquidator();

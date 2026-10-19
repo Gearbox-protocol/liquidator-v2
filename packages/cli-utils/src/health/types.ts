@@ -177,7 +177,8 @@ export type LiquidationMode =
   | "partial"
   | "batch"
   | "deleverage"
-  | "wallet";
+  | "wallet-full"
+  | "wallet-partial";
 
 /**
  * Status of a single deleverage bot.

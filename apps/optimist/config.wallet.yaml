@@ -11,11 +11,23 @@ ghcrCredentials:
 liquidators:
   - id: wallet
     name: "Wallet"
+    role: manual
     imageTag: "beta"
     env:
-      LIQUIDATION_MODE: "wallet"
+      LIQUIDATION_MODE: "wallet-full"
       LIQUIDATOR_ADDRESS: "0x185E17894F5716753F857129C98E2BCCEd7e36FD"
     setup:
       zeroLT: true
+      fundUnderlying: true
+      kyc: {}
+  - id: wallet-partial
+    name: "Wallet Partial"
+    role: manual
+    imageTag: "beta"
+    env:
+      LIQUIDATION_MODE: "wallet-partial"
+      LIQUIDATOR_ADDRESS: "0x185E17894F5716753F857129C98E2BCCEd7e36FD"
+    setup:
+      # liquidator lowers LTs of each account itself
       fundUnderlying: true
       kyc: {}

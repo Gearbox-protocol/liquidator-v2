@@ -14,7 +14,6 @@ extraMessage: "[LOCAL-DEV]"
 liquidators:
   - id: ts
     name: "TS Full"
-    group: "full"
     imageTag: beta
     rpc: "${sm.ANVIL_NODE.chainstack_ethereum}"
     env:
@@ -25,10 +24,11 @@ liquidators:
 
   - id: wallet
     name: "Wallet"
+    role: manual
     imageTag: beta
     rpc: "${sm.ANVIL_NODE.chainstack_ethereum}"
     env:
-      LIQUIDATION_MODE: "wallet"
+      LIQUIDATION_MODE: "wallet-full"
       LIQUIDATOR_ADDRESS: "0x185E17894F5716753F857129C98E2BCCEd7e36FD"
     setup:
       zeroLT: true

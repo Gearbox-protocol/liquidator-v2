@@ -59,7 +59,7 @@ export class Scanner {
    */
   get #fullScan(): boolean {
     const { liquidationMode } = this.config;
-    return liquidationMode === "full" || liquidationMode === "wallet";
+    return liquidationMode === "full" || liquidationMode === "wallet-full";
   }
 
   public async launch(): Promise<void> {

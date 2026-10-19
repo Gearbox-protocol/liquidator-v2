@@ -4,6 +4,7 @@ import {
   CensoredString,
   CensoredURL,
 } from "@gearbox-protocol/cli-utils";
+import { TRACK_ROLES } from "@gearbox-protocol/liquidator-v2-config";
 import { z } from "zod/v4";
 
 export const DegenConfig = z.object({
@@ -76,69 +77,78 @@ export const LiquidatorAddressConfig = z.object({
 
 export type LiquidatorAddressConfig = z.infer<typeof LiquidatorAddressConfig>;
 
-export const LiquidatorConfig = z.object({
-  /**
-   * Id to distinguish full/partial etc tracks,
-   * Used as
-   * - a part of container ids
-   * - a part of output file name
-   * - loki label
-   */
-  id: z
-    .string()
-    .regex(/[0-9A-Za-z_]+/)
-    .min(2),
-  /**
-   * Addresses of instances that run this config
-   */
-  addresses: z
-    .record(addressLike(), LiquidatorAddressConfig.nullish())
-    .default({}),
-  /**
-   * Name of the track to show in reports
-   */
-  name: z.string(),
-  /**
-   * RPC to use for anvil fork, default to originRPC from root config
-   */
-  rpc: z.string().transform(CensoredURL.transform).optional(),
-  /**
-   * Disables anvil fork rate limit by setting --no-rate-limit anvil flag
-   */
-  disableRateLimit: z.boolean().optional(),
-  /**
-   * Anvil memory limit in MB, if not set, will use default value from anvil itself
-   */
-  anvilMemoryLimit: z.number().positive().optional(),
-  /**
-   * ENV to pass to liquidator container - everything here is uncensored
-   */
-  env: z.record(z.string(), z.string()).default({}),
-  /**
-   * Secrets to pass to liquidator container - everything here is censored
-   * Still passed as ENV to container, the purpose is to censor strings in optimist logs
-   */
-  secrets: z
-    .record(z.string(), z.string().transform(CensoredString.transform))
-    .default({}),
-  /**
-   * Override docker image to use
-   */
-  image: z.string().optional(),
-  /**
-   * Tag of docker image.
-   * Secret is required to be able to load latest production version from AWS
-   */
-  imageTag: z.string().default("latest"),
-  /**
-   * Delay before start, in minutes
-   */
-  delay: z.number().positive().optional(),
-  /**
-   * Disables zeroDiscovery warning for this track
-   */
-  disableZeroDiscoveryWarning: z.boolean().optional(),
-  setup: SetupConfig.prefault({}),
-});
+export const LiquidatorConfig = z
+  .object({
+    /**
+     * Id to distinguish full/partial etc tracks,
+     * Used as
+     * - a part of container ids
+     * - a part of output file name
+     * - loki label
+     */
+    id: z
+      .string()
+      .regex(/[0-9A-Za-z_]+/)
+      .min(2),
+    /**
+     * Addresses of instances that run this config
+     */
+    addresses: z
+      .record(addressLike(), LiquidatorAddressConfig.nullish())
+      .default({}),
+    /**
+     * Name of the track to show in reports
+     */
+    name: z.string(),
+    /**
+     * `service` tracks stand for production liquidation services, `manual` tracks
+     * for liquidations performed by hand. Roles are analyzed and reported separately
+     */
+    role: z.enum(TRACK_ROLES).default("service"),
+    /**
+     * RPC to use for anvil fork, default to originRPC from root config
+     */
+    rpc: z.string().transform(CensoredURL.transform).optional(),
+    /**
+     * Disables anvil fork rate limit by setting --no-rate-limit anvil flag
+     */
+    disableRateLimit: z.boolean().optional(),
+    /**
+     * Anvil memory limit in MB, if not set, will use default value from anvil itself
+     */
+    anvilMemoryLimit: z.number().positive().optional(),
+    /**
+     * ENV to pass to liquidator container - everything here is uncensored
+     */
+    env: z.record(z.string(), z.string()).default({}),
+    /**
+     * Secrets to pass to liquidator container - everything here is censored
+     * Still passed as ENV to container, the purpose is to censor strings in optimist logs
+     */
+    secrets: z
+      .record(z.string(), z.string().transform(CensoredString.transform))
+      .default({}),
+    /**
+     * Override docker image to use
+     */
+    image: z.string().optional(),
+    /**
+     * Tag of docker image.
+     * Secret is required to be able to load latest production version from AWS
+     */
+    imageTag: z.string().default("latest"),
+    /**
+     * Delay before start, in minutes
+     */
+    delay: z.number().positive().optional(),
+    /**
+     * Disables zeroDiscovery warning for this track
+     */
+    disableZeroDiscoveryWarning: z.boolean().optional(),
+    setup: SetupConfig.prefault({}),
+  })
+  .refine(v => !(v.role === "manual" && Object.keys(v.addresses).length), {
+    error: "manual tracks cannot have instance addresses",
+  });
 
 export type LiquidatorConfig = z.infer<typeof LiquidatorConfig>;

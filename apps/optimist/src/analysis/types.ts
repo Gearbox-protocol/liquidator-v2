@@ -1,7 +1,4 @@
-import type {
-  ExecutionReport,
-  TrackReport,
-} from "@gearbox-protocol/liquidator-v2-config";
+import type { ExecutionReport } from "@gearbox-protocol/liquidator-v2-config";
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type { Address } from "viem";
 import type { INotification } from "../notifier";
@@ -31,5 +28,3 @@ export interface LiquidatorInstance {
    */
   address: Address;
 }
-
-export type TrackFilter = (track?: TrackReport) => boolean;

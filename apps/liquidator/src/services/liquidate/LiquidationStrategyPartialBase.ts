@@ -2,19 +2,17 @@ import type {
   CommonSchema,
   LiqduiatorConfig,
   PartialStrategyPreview,
-  PartialStrategySetup,
 } from "@gearbox-protocol/liquidator-v2-config";
-import { calcLiquidatableLTs, setLTs } from "@gearbox-protocol/sdk/dev";
-import {
-  AddressMap,
-  type CreditAccountData,
-  type OnchainSDK,
+import type {
+  CreditAccountData,
+  OnchainSDK,
 } from "@gearbox-protocol/sdk/onchain";
-import type { Address, Hex } from "viem";
+import type { Address } from "viem";
 import { DI } from "../../di.js";
 import { type ILogger, Logger } from "../../log/index.js";
 import type Client from "../Client.js";
 import AccountHelper from "./AccountHelper.js";
+import { type LoweredLTs, OptimisticLTs } from "./OptimisticLTs.js";
 import {
   humanizeOptimalLiquidation,
   type IPartialLiquidatorContract,
@@ -58,12 +56,7 @@ export default abstract class LiquidationStrategyPartialBase<
   }
 
   #deployer: PartialContractsDeployer;
-  /**
-   * LTs lowered by makePartialLiquidatable, keyed by credit account, consumed by preview.
-   * The sdk's cached credit manager state still holds the old LTs.
-   * For Optimistic mode only.
-   */
-  #ltOverrides = new AddressMap<AddressMap<number>>();
+  #lts = new OptimisticLTs();
 
   constructor() {
     super();
@@ -90,65 +83,29 @@ export default abstract class LiquidationStrategyPartialBase<
    * Lowers liquidation thresholds (and snapshots) to make the account partially
    * liquidatable. Shared core used by both partial and deleverage.
    */
-  protected async makePartialLiquidatable(ca: CreditAccountData): Promise<{
-    account: CreditAccountData;
-    snapshotId: Hex;
-    setup: PartialStrategySetup<bigint>;
-  }> {
-    if (!this.config.optimistic) {
-      throw new Error("makeLiquidatable only works in optimistic mode");
-    }
-    if (ca.debt === 0n) {
-      throw new Error("warning: zero-debt account");
-    }
-    this.#assertReserveFeeds(ca);
+  protected async makePartialLiquidatable(
+    ca: CreditAccountData,
+  ): Promise<LoweredLTs> {
     if (!this.#liquidatorForCA(ca)) {
       throw new Error(
         "warning: account's credit manager is not registered in partial liquidator",
       );
     }
-    const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
-    const newLTs = await calcLiquidatableLTs(
-      this.sdk,
-      ca,
-      this.optimisticHF(ca),
-      this.logger,
-    );
-    const snapshotId = await this.client.anvil.snapshot();
-
-    await setLTs(this.client.anvil, cm.state, newLTs, this.logger);
-    this.#ltOverrides.upsert(ca.creditAccount, AddressMap.fromRecord(newLTs));
-    const account = await this.sdk.accounts.getCreditAccountData(
-      ca.creditAccount,
-    );
-    if (!account) {
-      throw new Error(`cannot find credit account ${ca.creditAccount}`);
-    }
-    this.logger.debug({
-      hfNew: account.healthFactor.toString(),
-      hfOld: ca.healthFactor.toString(),
-    });
-    return {
-      account,
-      snapshotId,
-      setup: {
-        hfNew: account.healthFactor,
-        ltChanges: Object.fromEntries(
-          Object.entries(newLTs).map(([t, newLT]) => [
-            t,
-            [
-              BigInt(
-                cm.creditManager.liquidationThresholds.mustGet(t as Address),
-              ),
-              BigInt(newLT),
-            ],
-          ]),
-        ),
-      },
-    };
+    return this.#lts.lower(ca, this.optimisticHF(ca));
   }
 
   public async preview(
+    ca: CreditAccountData,
+  ): Promise<PartialStrategyPreview<bigint>> {
+    this.#lts.apply(ca);
+    try {
+      return await this.#preview(ca);
+    } finally {
+      this.#lts.revert(ca);
+    }
+  }
+
+  async #preview(
     ca: CreditAccountData,
   ): Promise<PartialStrategyPreview<bigint>> {
     const cm = this.sdk.marketRegister.findCreditManager(ca.creditManager);
@@ -162,12 +119,7 @@ export default abstract class LiquidationStrategyPartialBase<
         `no partial liquidator contract found for account ${ca.creditAccount} in ${cm.name}`,
       );
     }
-    const ltOverrides = this.#ltOverrides.get(ca.creditAccount);
-    this.#ltOverrides.delete(ca.creditAccount);
-    const optimalLiquidation = liquidatorContract.getOptimalLiquidation(
-      ca,
-      ltOverrides,
-    );
+    const optimalLiquidation = liquidatorContract.getOptimalLiquidation(ca);
     this.logger.debug(
       humanizeOptimalLiquidation(cm, optimalLiquidation),
       "found optimal liquidation",
@@ -236,27 +188,6 @@ export default abstract class LiquidationStrategyPartialBase<
     ca: CreditAccountData,
   ): IPartialLiquidatorContract | undefined {
     return this.#deployer.getLiquidatorForCM(ca.creditManager);
-  }
-
-  /**
-   * Throws if account has non-dust tokens without reserve price feeds
-   * @param ca
-   */
-  #assertReserveFeeds(ca: CreditAccountData): void {
-    const market = this.sdk.marketRegister.findByCreditManager(
-      ca.creditManager,
-    );
-    const feeds = market.priceOracle.reservePriceFeeds;
-    for (const { token, balance } of ca.tokens) {
-      if (token === ca.underlying) {
-        continue;
-      }
-      if (balance > 10n && !feeds.has(token)) {
-        throw new Error(
-          "warning: account has tokens without reserve price feeds",
-        );
-      }
-    }
   }
 
   protected ignoreReservePrices(_ca: CreditAccountData): boolean {

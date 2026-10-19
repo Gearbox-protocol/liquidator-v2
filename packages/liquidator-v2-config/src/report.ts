@@ -16,6 +16,13 @@ export type WhitelistEntry = ClientWhitelistItem;
  */
 export type AccountLabels = Record<Address, string>;
 
+/**
+ * Who a track stands for:
+ * - `service` is a liquidation service that runs in production;
+ * - `manual` is a liquidation that someone performs by hand, e.g. from their wallet.
+ */
+export type TrackRole = "service" | "manual";
+
 export interface TrackReport {
   id: string;
   name: string;
@@ -23,6 +30,10 @@ export interface TrackReport {
   end: Date;
   version: string;
   emergency: boolean;
+  /**
+   * Missing in reports produced before roles were introduced, which means `service`
+   */
+  role?: TrackRole;
 }
 
 export interface ExecutionReport {

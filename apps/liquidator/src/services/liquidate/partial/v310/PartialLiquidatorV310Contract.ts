@@ -3,7 +3,6 @@ import type { PartialStrategyPreview } from "@gearbox-protocol/liquidator-v2-con
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import type {
-  AddressMap,
   CreditAccountData,
   CreditSuite,
   OptimalPartialLiquidation,
@@ -76,12 +75,10 @@ export default abstract class PartialLiquidatorV310Contract extends AbstractPart
 
   public getOptimalLiquidation(
     ca: CreditAccountData,
-    liquidationThresholds?: AddressMap<number>,
   ): OptimalPartialLiquidation {
     return this.sdk.liquidations.getOptimalPartialLiquidation(
       ca,
       this.getOptimalHealthFactor(ca),
-      liquidationThresholds,
     );
   }
 

@@ -3,15 +3,15 @@ import type { CuratorName } from "@gearbox-protocol/sdk/model";
 import { TypedObjectUtils } from "@gearbox-protocol/sdk/onchain";
 import type { Markdown } from "@vlad-yakovlev/telegram-md";
 import { md } from "@vlad-yakovlev/telegram-md";
-import { groupBy, keyBy } from "lodash-es";
+import { groupBy } from "lodash-es";
 import type { Address } from "viem";
 import type { Config } from "../config";
 import DI from "../di";
 import type { INotification } from "../notifier";
 import type { TypedSDK } from "../types";
 import { mdList } from "../utils";
-import { type AccCheckStatus, getFailedAccounts } from "./getFailedAccounts";
-import type { ICheck, TrackFilter } from "./types";
+import { type FailedAccount, getFailedAccounts } from "./getFailedAccounts";
+import type { ICheck } from "./types";
 
 interface CMCheck {
   name?: string;
@@ -21,8 +21,11 @@ interface CMCheck {
 
 interface CheckCoverageOptions {
   title?: string;
-  filter?: TrackFilter;
   severe?: boolean;
+  /**
+   * Whether whitelisted accounts are excluded. The whitelist is always ignored for curators
+   */
+  useWhitelist?: boolean;
 }
 
 /**
@@ -36,38 +39,32 @@ export class CheckCoverage implements ICheck {
 
   public readonly name = "check-coverage";
 
-  readonly #filter: TrackFilter;
   readonly #title: string;
   readonly #severe: boolean;
+  readonly #useWhitelist: boolean;
 
   constructor(opts: CheckCoverageOptions = {}) {
-    const { title, filter, severe = true } = opts;
-    this.#filter = filter ?? (() => true);
+    const { title, severe = true, useWhitelist = true } = opts;
     this.#title = title ?? "any liquidator";
     this.#severe = severe;
+    this.#useWhitelist = useWhitelist;
   }
 
   async check(
     report: ExecutionReport,
     curator?: CuratorName,
   ): Promise<INotification | undefined> {
-    const { tracks, whitelist } = report;
-    const tracksById = keyBy(tracks, "id");
-    const results = report.results.filter(r =>
-      this.#filter(tracksById[r.trackId]),
-    );
-    const { nonWhitelisted, whitelisted } = getFailedAccounts(
-      { results, whitelist },
-      curator,
-    );
+    const failed = getFailedAccounts(report, {
+      useWhitelist: this.#useWhitelist && !curator,
+    });
 
-    if (nonWhitelisted.length === 0) {
+    if (failed.length === 0) {
       return;
     }
 
-    const failedByCm = groupBy(nonWhitelisted, "cm") as Record<
+    const failedByCm = groupBy(failed, "cm") as Record<
       Address,
-      AccCheckStatus[]
+      FailedAccount[]
     >;
     const cmFails = TypedObjectUtils.entries(failedByCm).map(
       ([address, accs]): CMCheck => {
@@ -80,7 +77,6 @@ export class CheckCoverage implements ICheck {
     );
     return new CheckCoverageFail({
       fails: cmFails,
-      numWhitelisted: whitelisted.length,
       title: this.#title,
       severe: this.#severe,
     });
@@ -89,7 +85,6 @@ export class CheckCoverage implements ICheck {
 
 interface CheckCoverageFailOptions {
   fails: CMCheck[];
-  numWhitelisted: number;
   title: string;
   severe?: boolean;
 }
@@ -97,22 +92,17 @@ interface CheckCoverageFailOptions {
 export class CheckCoverageFail implements INotification {
   public readonly severe: boolean;
   public readonly fails: CMCheck[];
-  public readonly numWhitelisted: number;
   public readonly title: string;
 
   constructor(opts: CheckCoverageFailOptions) {
-    const { fails, numWhitelisted, title, severe = true } = opts;
+    const { fails, title, severe = true } = opts;
     this.fails = fails;
-    this.numWhitelisted = numWhitelisted;
     this.severe = severe && fails.length > 0;
     this.title = title;
   }
 
   public get md(): Markdown {
-    const whitelisted = this.numWhitelisted
-      ? ` (${this.numWhitelisted} whitelisted)`
-      : "";
-    const msg = md`Some credit accounts cannot be liquidated by ${this.title}${whitelisted}:`;
+    const msg = md`Some credit accounts cannot be liquidated by ${this.title}:`;
     const cms = this.fails?.length
       ? mdList(
           this.fails.map(({ name, address, accounts }) => {

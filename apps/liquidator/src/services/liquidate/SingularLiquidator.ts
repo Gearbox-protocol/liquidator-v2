@@ -39,7 +39,8 @@ import LiquidationStrategyFull from "./LiquidationStrategyFull.js";
 import LiquidationStrategyLossPolicy from "./LiquidationStrategyLossPolicy.js";
 import LiquidationStrategyPartial from "./LiquidationStrategyPartial.js";
 import LiquidationStrategyRWAViaStablecoins from "./LiquidationStrategyRWAViaStablecoins.js";
-import LiquidatorStrategyWallet from "./LiquidatorStrategyWallet.js";
+import LiquidationStrategyWalletFull from "./LiquidationStrategyWalletFull.js";
+import LiquidationStrategyWalletPartial from "./LiquidationStrategyWalletPartial.js";
 import type {
   ILiquidationStrategy,
   ILiquidatorService,
@@ -101,8 +102,11 @@ export default class SingularLiquidator
       case "deleverage":
         add(new LiquidationStrategyDeleverage());
         return;
-      case "wallet":
-        add(new LiquidatorStrategyWallet());
+      case "wallet-full":
+        add(new LiquidationStrategyWalletFull());
+        return;
+      case "wallet-partial":
+        add(new LiquidationStrategyWalletPartial());
         return;
       case "partial": {
         const cfg = this.config as unknown as PartialLiquidatorSchema;

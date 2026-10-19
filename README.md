@@ -12,11 +12,12 @@ Possible values:
 - `partial` - some assets are sold to bring account's health factor above 1
 - `batch` - similar to `full`, but many accounts can be liquidated with single transaction (discontinued)
 - `deleverage` - similar to `partial`, but triggered when HF drops below certain minimum, and tries to bring it close to certain maximum. (not yet implemented fully)
-- `wallet` - similar to `full`, but the debt is repaid from the liquidator's own funds and all the account collateral is received by the liquidator wallet. Requires the liquidator to hold enough underlying and to pass KYC for the liquidated assets
+- `wallet-full` - similar to `full`, but the debt is repaid from the liquidator's own funds and all the account collateral is received by the liquidator wallet. Requires the liquidator to hold enough underlying and to pass KYC for the liquidated assets
+- `wallet-partial` - similar to `partial`, but part of the debt is repaid from the liquidator's own funds in exchange for discounted collateral sent to the liquidator wallet. Same requirements as `wallet-full`
 
 ## Optimistic Liquidations
 
-Liqudator has special optimitic (`--optimistic` cli flag, or `OPTIMISTIC=true` env variable) mode which is designed to predict potential problem with liqudation. To run optimistic liquidations, you'll need to use anvil form as json rpc provider. For full/batch mode you'll need to run script to bring LTs of collateral tokens to zero, thus bringing HF of all accounts to zero and making them liquidatable. For partial/deleverage mode liquidator will simulate LT changes that trigger HF drop below 1. Then liquidator makes network state snapshot and liquidation account one by one, reverting to saved snapshot each time liquidation was done.
+Liqudator has special optimitic (`--optimistic` cli flag, or `OPTIMISTIC=true` env variable) mode which is designed to predict potential problem with liqudation. To run optimistic liquidations, you'll need to use anvil form as json rpc provider. For full/batch/wallet-full mode you'll need to run script to bring LTs of collateral tokens to zero, thus bringing HF of all accounts to zero and making them liquidatable. For partial/deleverage/wallet-partial mode liquidator will simulate LT changes that trigger HF drop below 1. Then liquidator makes network state snapshot and liquidation account one by one, reverting to saved snapshot each time liquidation was done.
 
 After testing all liquidation, it exists and save json file or uploads it to S3.
 
@@ -69,7 +70,7 @@ For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy -
 --min-balance-gas <gas>                      Minimum executor gas budget (in gas units); required balance = this * current gas price (env variable MIN_BALANCE_GAS)
 --hf-threshold <threshold>                   Filter out all accounts with HF >= threshold during scan stage (env variable HF_THRESHOLD)
 --num-splits <splits>                        Default numSplits for router v3.1 contract (env variable NUM_SPLITS)
---liquidation-mode <mode>                    Liquidator mode (full/partial/batch/deleverage/wallet) (env variable LIQUIDATION_MODE)
+--liquidation-mode <mode>                    Liquidator mode (full/partial/batch/deleverage/wallet-full/wallet-partial) (env variable LIQUIDATION_MODE)
 --dry-run                                    Do not send transactions in non-optimistic mode, just log them (env variable DRY_RUN)
 --compressor-batch-size <size>               Limit number of accounts to load from compressor. 0 = unlimited, let compressor decide (env variable COMPRESSOR_BATCH_SIZE)
 --slippage <value>                           Slippage value for pathfinder (env variable SLIPPAGE)

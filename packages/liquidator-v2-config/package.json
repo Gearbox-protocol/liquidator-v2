@@ -19,16 +19,18 @@
   "scripts": {
     "build": "tsdown",
     "prepack": "tsdown",
-    "typecheck:ci": "tsc --noEmit"
+    "typecheck:ci": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@gearbox-protocol/cli-utils": "workspace:*",
-    "@gearbox-protocol/sdk": "17.13.0-next.2",
+    "@gearbox-protocol/sdk": "17.13.0-next.10",
     "viem": "^2.57.4",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "tsdown": "^0.23.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

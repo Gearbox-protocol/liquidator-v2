@@ -11,6 +11,10 @@ import type { INotification } from "../notifier";
 import type { TypedSDK } from "../types";
 import type { ICheck } from "./types";
 
+interface CheckZeroDiscoveryOptions {
+  severe?: boolean;
+}
+
 /**
  * Checks that all liquidators discover at least one credit account
  */
@@ -22,6 +26,12 @@ export class CheckZeroDiscovery implements ICheck {
 
   @DI.Inject(DI.Config)
   public readonly config!: Config;
+
+  readonly #severe: boolean;
+
+  constructor(opts: CheckZeroDiscoveryOptions = {}) {
+    this.#severe = opts.severe ?? true;
+  }
 
   async check(
     report: ExecutionReport,
@@ -55,17 +65,18 @@ export class CheckZeroDiscovery implements ICheck {
         return undefined;
       }
 
-      return new ZeroDiscoveryFail(failedTracks);
+      return new ZeroDiscoveryFail(failedTracks, this.#severe);
     }
   }
 }
 
 export class ZeroDiscoveryFail implements INotification {
-  public readonly severe = true;
+  public readonly severe: boolean;
   public readonly tracks: TrackReport[];
 
-  constructor(tracks: TrackReport[]) {
+  constructor(tracks: TrackReport[], severe: boolean) {
     this.tracks = tracks;
+    this.severe = severe;
   }
 
   public get md(): Markdown {
