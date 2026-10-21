@@ -1,7 +1,7 @@
 # ---- shared: install the whole workspace once ----
 # Built on the native build platform: the workspace install and esbuild bundle
 # are arch-independent, so we avoid emulating this heavy step under QEMU.
-FROM --platform=$BUILDPLATFORM node:24.15.0-trixie AS deps
+FROM --platform=$BUILDPLATFORM node:24.22.1-trixie AS deps
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
@@ -29,7 +29,7 @@ FROM deps AS build
 RUN pnpm -r build
 
 # ---- liquidator: production node_modules (flat) ----
-FROM node:24.15.0-trixie AS liquidator-prod
+FROM node:24.22.1-trixie AS liquidator-prod
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"

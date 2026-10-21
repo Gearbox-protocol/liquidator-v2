@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "@gearbox-protocol/cli-utils": "workspace:*",
-    "@gearbox-protocol/sdk": "17.13.0-next.10",
-    "viem": "^2.57.4",
+    "@gearbox-protocol/sdk": "18.0.1",
+    "viem": "^2.57.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.1",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   }
 }
