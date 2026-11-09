@@ -384,9 +384,6 @@ importers:
       '@commander-js/extra-typings':
         specifier: ^15.0.0
         version: 15.0.0(commander@15.0.0)
-      '@gearbox-protocol/sdk':
-        specifier: 18.0.1
-        version: 18.0.1(typescript@7.0.2)(viem-deal@2.0.4(viem@2.57.7(typescript@7.0.2)(zod@4.6.7)))
       '@vlad-yakovlev/telegram-md':
         specifier: ^2.1.0
         version: 2.1.0
@@ -406,7 +403,7 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
       viem:
-        specifier: ^2.57.7
+        specifier: '>=2.23.15 <3.0.0'
         version: 2.57.7(typescript@7.0.2)(zod@4.6.7)
       yaml:
         specifier: ^2.9.1
@@ -415,6 +412,9 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@gearbox-protocol/sdk':
+        specifier: 18.0.1
+        version: 18.0.1(typescript@7.0.2)(viem-deal@2.0.4(viem@2.57.7(typescript@7.0.2)(zod@4.6.7)))
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -457,16 +457,16 @@ importers:
       '@gearbox-protocol/cli-utils':
         specifier: workspace:*
         version: link:../cli-utils
-      '@gearbox-protocol/sdk':
-        specifier: 18.0.1
-        version: 18.0.1(typescript@7.0.2)(viem-deal@2.0.4(viem@2.57.7(typescript@7.0.2)(zod@4.6.7)))
       viem:
-        specifier: ^2.57.7
+        specifier: '>=2.23.15 <3.0.0'
         version: 2.57.7(typescript@7.0.2)(zod@4.6.7)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@gearbox-protocol/sdk':
+        specifier: 18.0.1
+        version: 18.0.1(typescript@7.0.2)(viem-deal@2.0.4(viem@2.57.7(typescript@7.0.2)(zod@4.6.7)))
       tsdown:
         specifier: ^0.23.1
         version: 0.23.1(tsx@4.23.15)(typescript@7.0.2)
