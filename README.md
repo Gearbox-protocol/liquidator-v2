@@ -1,6 +1,6 @@
 # Gearbox Liquidator
 
-Liquidator designed for V3.1 version. 
+Liquidator designed for V3.1 version.
 
 ## Liquidations mode
 
@@ -8,7 +8,7 @@ Set via `--liquidation-mode` cli flag or `LIQUIDATION_MODE` env var.
 
 Possible values:
 
-- `full` - accounts are liquidated fully 
+- `full` - accounts are liquidated fully
 - `partial` - some assets are sold to bring account's health factor above 1
 - `batch` - similar to `full`, but many accounts can be liquidated with single transaction (discontinued)
 - `deleverage` - similar to `partial`, but triggered when HF drops below certain minimum, and tries to bring it close to certain maximum. (not yet implemented fully)
@@ -50,7 +50,7 @@ Following cli flags/env variables are used to configure RPC providers:
 --thirdweb-keys <keys...>                    Thirdweb API keys to use, comma separated (env variable THIRDWEB_KEYS)
 ```
 
-For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy --drpc-keys zzz --enabled-providers alchemy,drpc,custom` will use alchemy as preferred provider, if it fails, will try to switch to drpc, and as a last resort will try to use local rpc. 
+For example `--json-rpc-providers http://127.0.0.1:8545 --alchemy-keys xxx,yyy --drpc-keys zzz --enabled-providers alchemy,drpc,custom` will use alchemy as preferred provider, if it fails, will try to switch to drpc, and as a last resort will try to use local rpc.
 
 ### General config
 

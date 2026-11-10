@@ -8,26 +8,63 @@ on:
       - "*.x"
   workflow_dispatch:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   HUSKY: 0
   CI: true
 
 jobs:
+  audit:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+        with:
+          install: false
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+
+  zizmor:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          advanced-security: false
+          annotations: true
+
   release:
+    needs: [audit, zizmor]
     runs-on: ubuntu-26.04
     environment: ${{ github.ref_name }}
     permissions:
-      contents: write
-      issues: write
-      id-token: write
-      packages: write
+      contents: write # create tag and GitHub release
+      id-token: write # npm provenance and trusted publishing
+      packages: write # push images to ghcr.io
 
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/setup@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          cache: true
+          persist-credentials: false
+
+      - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+        with:
           require-lockfile: true
 
       - name: Verify
@@ -38,7 +75,7 @@ jobs:
           pnpm test --passWithNoTests
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -46,30 +83,31 @@ jobs:
 
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@ad51787758d9654d5a75150a89a6fa9b3ccef95e # v8.1.4
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Publish packages
         if: steps.semantic.outputs.new_release_published == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.semantic.outputs.new_release_version }}
+          RELEASE_CHANNEL: ${{ steps.semantic.outputs.new_release_channel }}
+          # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          NPM_TAG="${{ steps.semantic.outputs.new_release_channel }}"
-          pnpm -r exec pnpm pkg set version=${{ steps.semantic.outputs.new_release_version }}
-          pnpm -r publish --no-git-checks --access public --provenance --tag "${NPM_TAG:-latest}"
-        # env:
-        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          pnpm -r exec pnpm pkg set version="$RELEASE_VERSION"
+          pnpm -r publish --no-git-checks --access public --provenance --tag "${RELEASE_CHANNEL:-latest}"
 
       - name: Set up QEMU
         if: steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Set up Docker Buildx
         if: steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build & push liquidator-v2
         if: steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: ./Dockerfile
@@ -86,7 +124,7 @@ jobs:
 
       - name: Build & push optimist
         if: steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: ./Dockerfile
