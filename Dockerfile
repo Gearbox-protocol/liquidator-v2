@@ -3,9 +3,12 @@
 # are arch-independent, so we avoid emulating this heavy step under QEMU.
 FROM --platform=$BUILDPLATFORM node:24.22.1-trixie AS deps
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 ENV HUSKY=0
+
+# Must match `packageManager` in package.json. Installed outside the store:
+# pnpm links global packages into the store, which is a cache mount below and
+# therefore absent from later layers.
+RUN npm install -g pnpm@12.18.0
 
 WORKDIR /app
 
@@ -18,8 +21,7 @@ COPY packages/liquidator-v2-config/package.json packages/liquidator-v2-config/
 COPY packages/cli-utils/package.json packages/cli-utils/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    wget -qO- https://get.pnpm.io/install.sh | env ENV="$HOME/.shrc" SHELL="$(which sh)" sh - \
-    && pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --store-dir /pnpm/store
 
 COPY . .
 
@@ -31,8 +33,7 @@ RUN pnpm -r build
 # ---- liquidator: production node_modules (flat) ----
 FROM node:24.22.1-trixie AS liquidator-prod
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
+RUN npm install -g pnpm@12.18.0
 
 WORKDIR /app
 
@@ -44,9 +45,8 @@ COPY --from=build /app/packages/cli-utils/package.json /app/packages/cli-utils/p
 COPY --from=build /app/apps/liquidator/build/ /app/apps/liquidator/build
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    wget -qO- https://get.pnpm.io/install.sh | env ENV="$HOME/.shrc" SHELL="$(which sh)" sh - \
-    && pnpm pkg delete scripts.prepare \
-    && pnpm install --prod --frozen-lockfile
+    pnpm pkg delete scripts.prepare \
+    && pnpm install --prod --frozen-lockfile --store-dir /pnpm/store
 
 # The bundled entry runs from /app/index.mjs and imports the only external
 # runtime dependency (@homebridge/node-pty-prebuilt-multiarch, native bindings)
