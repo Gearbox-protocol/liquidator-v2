@@ -139,7 +139,9 @@ export default class Optimist {
     }
     executionReport.end = new Date();
     // output.json is conventional name for main output file of any testnet task
-    const exFile = resolve(this.config.containerOutDir, "output.json");
+    const exFile =
+      this.config.outputJson ??
+      resolve(this.config.containerOutDir, "output.json");
     await writeFile(exFile, json_stringify(executionReport), "utf-8");
     this.logger.info(`saved execution result to ${exFile}`);
     await this.#analyze(executionReport);

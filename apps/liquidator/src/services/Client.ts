@@ -193,6 +193,9 @@ export default class Client {
       req.maxPriorityFeePerGas = PRIORITY_FEE_MULTIPLIER * maxPriorityFeePerGas;
       req.maxFeePerGas =
         MAX_FEE_MULTIPLIER * maxFeePerGas + req.maxPriorityFeePerGas;
+      // eth_fillTransaction reports the effective gasPrice even for type-2 txs;
+      // nodes reject a request carrying both fee styles
+      (req as { gasPrice?: bigint }).gasPrice = undefined;
     }
     if (gas) {
       req.gas = (gas * (GAS_X + PERCENTAGE_FACTOR)) / PERCENTAGE_FACTOR;

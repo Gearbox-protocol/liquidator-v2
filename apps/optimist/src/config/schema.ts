@@ -168,6 +168,15 @@ export const Config = z
       env: "OUTPUT_DIR_HOST",
     }),
     /**
+     * Path to execution report inside optimist container
+     * Defaults to output.json in containerOutDir
+     */
+    outputJson: z.string().min(1).optional().register(zommandRegistry, {
+      flags: "--output-json <path>",
+      description: "Path to execution report inside optimist container",
+      env: "OUTPUT_JSON",
+    }),
+    /**
      * Path to json file with credit account labels inside optimist container
      * Failure to read this file is not fatal
      */
