@@ -3,9 +3,6 @@ containerOutDir: /Users/doomsower/projects/gearbox/liquidator-v2/apps/optimist/o
 hostOutDir: /Users/doomsower/projects/gearbox/liquidator-v2/apps/optimist/output
 originRPC: "${sm.ANVIL_NODE.chainstack_ethereum}"
 logLevel: debug
-ghcrCredentials:
-  username: "${sm.ANVIL_NODE.githubUser}"
-  password: "${sm.ANVIL_NODE.githubToken}"
 # s3Bucket:
 # s3Prefix:
 # grafanaDashboardURL:

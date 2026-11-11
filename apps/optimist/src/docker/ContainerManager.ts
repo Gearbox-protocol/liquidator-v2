@@ -378,13 +378,7 @@ export class ContainerManager {
 
   async #forcePull(imageTag: string): Promise<ImageInspectInfo> {
     this.logger.debug({ imageTag }, "pulling");
-    const pullStream = await this.#docker.pull(imageTag, {
-      authconfig: {
-        username: this.config.ghcrCredentials?.username.value,
-        password: this.config.ghcrCredentials?.password.value,
-        serveraddress: "https://ghcr.io",
-      },
-    });
+    const pullStream = await this.#docker.pull(imageTag);
     // Wait for pull to finish
     await new Promise(res => {
       this.#docker.modem.followProgress(

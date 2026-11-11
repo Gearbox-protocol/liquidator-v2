@@ -13,11 +13,6 @@ import { LiquidatorConfig } from "./liquidators";
 import { LokiConfig } from "./loki";
 import { NotificationsConfig } from "./notifications";
 
-export const GithubCredentials = z.object({
-  username: z.string().transform(CensoredString.transform),
-  password: z.string().transform(CensoredString.transform),
-});
-
 export const S3Config = z.object({
   endpoint: z.string().optional(),
   region: z.string().optional(),
@@ -28,8 +23,6 @@ export const S3Config = z.object({
   accessKey: z.string().transform(CensoredString.transform).optional(),
   forcePathStyle: z.boolean().optional(),
 });
-
-export type GithubCredentials = z.infer<typeof GithubCredentials>;
 
 export const Config = z
   .object({
@@ -90,10 +83,6 @@ export const Config = z
         env: "LOG_LEVEL",
       }),
     loki: LokiConfig,
-    /**
-     * Github credentials to pull docker images from ghcr.io
-     */
-    ghcrCredentials: GithubCredentials.optional(),
     anvilImage: z
       .string()
       .optional()

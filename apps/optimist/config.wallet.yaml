@@ -4,9 +4,6 @@ dockerNetwork: "${DOCKER_NETWORK}"
 originRPC: "${ANVIL_URL}"
 anvilManagerApiURL: "https://anvil.gearbox.foundation/api"
 logLevel: debug
-ghcrCredentials:
-  username: ${sm.ANVIL_NODE.githubUser}
-  password: ${sm.ANVIL_NODE.githubToken}
 
 liquidators:
   - id: wallet
