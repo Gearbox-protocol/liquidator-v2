@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 
 import { uncensorMap } from "@gearbox-protocol/cli-utils";
@@ -64,7 +63,6 @@ export class ContainerManager {
     timeout: 30_000, // in ms
   });
   #images: Record<string, Promise<ImageInspectInfo>> = {};
-  #optimistContainerEnv: Record<string, string> = {};
 
   public async init(): Promise<void> {
     await this.#docker.ping();
@@ -84,27 +82,6 @@ export class ContainerManager {
     const exists = networks.some(n => n.Name === this.#dockerNetwork);
     if (!exists) {
       throw new Error(`docker network ${this.#dockerNetwork} does not exist`);
-    }
-
-    try {
-      const containerId = await this.#getCurrentContainerId();
-      const envVars = await this.#getContainerEnvVars(containerId);
-      // clean up some env vars that we definitely don't need to pass down to liquidator containers
-      delete envVars.SSL_CERT_FILE;
-      delete envVars.PATH;
-      delete envVars.TASK_TOKEN;
-      for (const key of Object.keys(envVars)) {
-        if (/^(GITHUB_|GH_|NPM_|AWS_)/.test(key)) {
-          delete envVars[key];
-        }
-      }
-      this.logger.debug(
-        { containerId, envVars: Object.keys(envVars) },
-        "container env vars",
-      );
-      this.#optimistContainerEnv = envVars;
-    } catch (e) {
-      this.logger.warn(e, "failed to get container vars");
     }
   }
 
@@ -313,9 +290,11 @@ export class ContainerManager {
     image: string,
     env: Record<string, string>,
   ): string[] {
+    const { addressProvider, marketConfigurators, rwaFactories } = this.config;
     const combinedEnv = {
-      // pass down env vars from optimist container itself
-      ...this.#optimistContainerEnv,
+      ADDRESS_PROVIDER: addressProvider,
+      MARKET_CONFIGURATORS: marketConfigurators?.join(","),
+      RWA_FACTORIES: rwaFactories?.join(","),
       // common env from config
       ...this.config.env,
       ...uncensorMap(this.config.secrets),
@@ -430,60 +409,6 @@ export class ContainerManager {
       return `optimist_${this.config.network}`.toLowerCase();
     }
     return this.config.dockerNetwork;
-  }
-
-  /**
-   * Gets container ID from inside the running container
-   * https://stackoverflow.com/a/72565733
-   * @returns
-   */
-  async #getCurrentContainerId(): Promise<string> {
-    // Method 1: From /proc/self/cgroup
-    try {
-      const cgroup = await readFile("/proc/self/cgroup", "utf8");
-      // this.logger.debug({ cgroup }, "cgroup");
-      const matches = cgroup.match(/[0-9a-f]{64}/);
-      if (matches) {
-        this.logger.debug(`found container ID in cgroup: ${matches[0]}`);
-        return matches[0];
-      }
-    } catch (e) {
-      this.logger.warn(e, "failed to read cgroup");
-    }
-
-    // Method 2: From /proc/self/mountinfo
-    try {
-      const mountinfo = await readFile("/proc/self/mountinfo", "utf8");
-      // this.logger.debug({ mountinfo }, "mountinfo");
-      const matches = mountinfo.match(
-        /\/var\/lib\/docker\/containers\/([0-9a-f]{64})\//,
-      );
-      if (matches) {
-        this.logger.debug(`found container ID in mountinfo: ${matches[1]}`);
-        return matches[1];
-      }
-    } catch (e) {
-      this.logger.warn(e, "failed to read mountinfo");
-    }
-
-    // Method 3: From hostname (least reliable)
-    const hostname = process.env.HOSTNAME;
-    if (hostname) {
-      this.logger.debug(`found container ID in hostname: ${hostname}`);
-      return hostname;
-    }
-
-    throw new Error("Could not determine container ID");
-  }
-
-  async #getContainerEnvVars(
-    containerId: string,
-  ): Promise<Record<string, string>> {
-    const container = this.#docker.getContainer(containerId);
-    const info = await container.inspect();
-    return Object.fromEntries(
-      (info.Config.Env || []).map(v => v.split("=").slice(0, 2)),
-    );
   }
 }
 
