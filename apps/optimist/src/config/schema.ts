@@ -140,6 +140,7 @@ export const Config = z
       description: "Docker network to use for the process",
       env: "DOCKER_NETWORK",
     }),
+    // follow anvil-manager i/o conventions for tasks (STEP_CONVENTION.md) when changing env names below
     /**
      * Output dir path inside optimist container
      */
