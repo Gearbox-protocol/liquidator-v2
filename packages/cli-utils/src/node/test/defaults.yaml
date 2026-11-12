@@ -1,0 +1,6 @@
+set: "${SET:-fallback}"
+missing: "${MISSING:-fallback}"
+empty: "${EMPTY:-fallback}"
+deepMissing: "${sm.MISSING:-deep-default}"
+noDefault: "${UNRESOLVED}"
+interpolated: "prefix-${MISSING:-mid}-suffix"

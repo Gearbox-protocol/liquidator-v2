@@ -1,7 +1,6 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import * as z4 from "zod/v4/core";
 import { zommandRegistry } from "../zommandRegistry.js";
-import { decompressObject } from "./compressedConfig.js";
 import type { TemplateData } from "./resolveYamlFiles.js";
 import { resolveYamlFiles } from "./resolveYamlFiles.js";
 
@@ -12,10 +11,6 @@ export interface ZommandOptions<T extends z4.$ZodTypes> {
    * If value is string, it's used as default value for config file
    */
   configFile?: boolean | string;
-  /**
-   * If true, allows to pass config zlib compressed config as --inline-config=... or INLINE_CONFIG env var
-   */
-  inlineConfig?: boolean;
 }
 
 export class Zommand<
@@ -28,12 +23,7 @@ export class Zommand<
 
   constructor(name: string, opts: ZommandOptions<T>) {
     super(name);
-    const {
-      schema,
-      templateData,
-      configFile = true,
-      inlineConfig = true,
-    } = opts;
+    const { schema, templateData, configFile = true } = opts;
     this.#schema = schema;
     this.#templatedData = templateData;
     const def = this.#schema._zod.def;
@@ -59,10 +49,6 @@ export class Zommand<
         opt = opt.default(configFile);
       }
       this.addOption(opt);
-    }
-
-    if (inlineConfig) {
-      this.addOption(new Option("--inline-config [config]", "inline config"));
     }
   }
 
@@ -97,7 +83,7 @@ export class Zommand<
     return super.action(async (...args: [...Args, any, this]) => {
       const argz = args;
       const _cmd = argz.splice(-1);
-      const [{ config, inlineConfig, ...opts }] = argz.splice(-1);
+      const [{ config, ...opts }] = argz.splice(-1);
 
       let fromYaml: object = {};
       if (config) {
@@ -105,18 +91,6 @@ export class Zommand<
           ...(process.env as Record<string, string>),
           ...this.#templatedData,
         });
-      }
-      let fromInlineConfig: object = {};
-      if (inlineConfig) {
-        fromInlineConfig = await decompressObject(
-          inlineConfig,
-          this.#templatedData,
-        );
-      } else if (process.env.INLINE_CONFIG) {
-        fromInlineConfig = await decompressObject(
-          process.env.INLINE_CONFIG,
-          this.#templatedData,
-        );
       }
 
       const schemaFromEnv: Record<string, string> = {};
@@ -130,7 +104,6 @@ export class Zommand<
       const combined = {
         ...schemaFromEnv,
         ...fromYaml,
-        ...fromInlineConfig,
         ...opts,
       };
 
