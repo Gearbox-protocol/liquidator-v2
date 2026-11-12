@@ -116,31 +116,6 @@ export async function resolveYamlDoc(
   return cfgRaw;
 }
 
-/**
- * Helper function that gets object with templated values
- * Just because async ast already exists in yaml, but not in json reviver
- * @param json
- * @param templateData
- * @returns
- */
-export async function resolveFromObject(
-  json: object,
-  templateData?: TemplateData,
-): Promise<object> {
-  const content = YAML.stringify(json);
-  const cfgRaw: YAML.Document = YAML.parseDocument(content, { merge: true });
-
-  await YAML.visitAsync(cfgRaw, {
-    Scalar: async (_, node) => {
-      if (typeof node.value === "string") {
-        node.value = await resolveScalarValue(node.value, templateData);
-      }
-    },
-  });
-
-  return cfgRaw.toJSON();
-}
-
 function getNodesPath(
   nodes: readonly (YAML.Node | YAML.Document | YAML.Pair)[],
 ): unknown[] {

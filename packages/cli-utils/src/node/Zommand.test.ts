@@ -7,7 +7,6 @@ import {
   optionalAddressArrayLike,
 } from "../schemas/schema-primitives.js";
 import { zommandRegistry } from "../zommandRegistry.js";
-import { compressObject } from "./compressedConfig.js";
 import { Zommand } from "./Zommand.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -367,71 +366,6 @@ describe("should support discriminated union schemas", () => {
     await cmd.parseAsync(["--mode", "foo"], { from: "user" });
     expect(spy).toHaveBeenCalledWith(
       { mode: "foo", foo: "xxx" },
-      expect.any(Zommand),
-    );
-  });
-});
-
-describe("should load inline config", () => {
-  const schema = z.object({
-    name: z.string().register(zommandRegistry, {
-      flags: "--name <value>",
-      description: "name of the user",
-      env: "USER_NAME",
-    }),
-    age: z.coerce.number().register(zommandRegistry, {
-      flags: "--age <value>",
-      description: "age of the user",
-      env: "USER_AGE",
-    }),
-    admin: boolLike().optional().register(zommandRegistry, {
-      flags: "--admin",
-      description: "is the user an admin",
-      env: "USER_ADMIN",
-    }),
-  });
-
-  it("should load inline config from cli flag", async () => {
-    const spy = vi.fn();
-    const cmd = new Zommand("test", { schema }).action(spy);
-
-    const inlineConfig = compressObject({
-      name: "Alice",
-      age: 25,
-      admin: true,
-    });
-
-    await cmd.parseAsync(["--inline-config", inlineConfig], {
-      from: "user",
-    });
-    expect(spy).toHaveBeenCalledWith(
-      {
-        name: "Alice",
-        age: 25,
-        admin: true,
-      },
-      expect.any(Zommand),
-    );
-  });
-
-  it("should load inline config from INLINE_CONFIG env variable", async () => {
-    const spy = vi.fn();
-    const cmd = new Zommand("test", { schema }).action(spy);
-
-    const inlineConfig = compressObject({
-      name: "Bob",
-      age: 30,
-      admin: false,
-    });
-
-    vi.stubEnv("INLINE_CONFIG", inlineConfig);
-    await cmd.parseAsync([], { from: "user" });
-    expect(spy).toHaveBeenCalledWith(
-      {
-        name: "Bob",
-        age: 30,
-        admin: false,
-      },
       expect.any(Zommand),
     );
   });
