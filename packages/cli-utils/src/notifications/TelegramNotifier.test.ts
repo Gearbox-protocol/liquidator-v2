@@ -1,3 +1,4 @@
+import type { ILogger } from "@gearbox-protocol/sdk/onchain";
 import { md } from "@vlad-yakovlev/telegram-md";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CensoredString } from "../CensoredString.js";
@@ -14,17 +15,24 @@ beforeEach(() => {
   mockFetch.mockResolvedValue(
     new Response(JSON.stringify({ ok: true }), { status: 200 }),
   );
-  notifier = new TelegramNotifier({
-    type: "telegram",
-    token: new CensoredString("test-token"),
-    alertsChannel: new CensoredString("alerts"),
-    notificationsChannel: new CensoredString("notifications"),
-    prefix: "ALERT",
-    retryInterval: 10,
-    maxChunkSize: 20,
-    fetchFn: mockFetch as typeof fetch,
-  });
+  notifier = createNotifier();
 });
+
+function createNotifier(logger?: ILogger): TelegramNotifier {
+  return new TelegramNotifier(
+    {
+      type: "telegram",
+      token: new CensoredString("test-token"),
+      alertsChannel: new CensoredString("alerts"),
+      notificationsChannel: new CensoredString("notifications"),
+      prefix: "ALERT",
+      retryInterval: 10,
+      maxChunkSize: 20,
+      fetchFn: mockFetch as typeof fetch,
+    },
+    logger,
+  );
+}
 
 afterEach(() => {
   vi.useRealTimers();
@@ -105,6 +113,35 @@ it("should retry telegram api errors", async () => {
   await vi.waitFor(() => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
+});
+
+it("should abort and log a send that exceeds the queue timeout", async () => {
+  const logger: ILogger = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+  let signal: AbortSignal | null | undefined;
+  // never answers; settles only when aborted, like a stalled connection
+  mockFetch.mockImplementation((_url, init) => {
+    signal = init?.signal;
+    return new Promise((_resolve, reject) => {
+      signal?.addEventListener("abort", () => reject(signal?.reason));
+    });
+  });
+
+  createNotifier(logger).notify({ plain: "it happened" }, "alert");
+
+  // retryInterval 10 * default retryCount 5 * 2
+  await vi.waitFor(() => {
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("timed out after 100ms"),
+    );
+  });
+  expect(signal?.aborted).toBe(true);
+  expect(mockFetch).toHaveBeenCalledTimes(1);
+  expect(logger.error).toHaveBeenCalledTimes(1);
 });
 
 describe("deduplication with throttle manager", () => {
