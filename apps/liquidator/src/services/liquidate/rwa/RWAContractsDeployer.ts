@@ -1,8 +1,9 @@
 import { securitizeLiquidatorHelperAbi } from "@gearbox-protocol/liquidator-contracts/abi";
 import { SecuritizeLiquidatorHelper_bytecode } from "@gearbox-protocol/liquidator-contracts/bytecode";
+import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import { Create2Deployer } from "@gearbox-protocol/sdk/dev";
 import { SDKConstruct } from "@gearbox-protocol/sdk/onchain";
-import type { Account, Address, Chain, Transport } from "viem";
+import type { Account, Address, Chain, Hash, Transport } from "viem";
 import { DI } from "../../../di.js";
 import { type ILogger, Logger } from "../../../log/index.js";
 import type Client from "../../Client.js";
@@ -19,6 +20,9 @@ export class RWAContractsDeployer extends SDKConstruct {
   @DI.Inject(DI.DeployReport)
   report!: DeployReport;
 
+  @DI.Inject(DI.Config)
+  config!: Config;
+
   #deployer?: Create2Deployer<Transport, Chain, Account>;
   #address?: Address;
 
@@ -32,11 +36,21 @@ export class RWAContractsDeployer extends SDKConstruct {
         this.liquidatorClient.wallet,
       );
     }
-    const { address, hash } = await this.#deployer.ensureExists({
-      abi: securitizeLiquidatorHelperAbi,
-      bytecode: SecuritizeLiquidatorHelper_bytecode,
-      args: [],
-    });
+    let address: Address;
+    let hash: Hash | undefined;
+    try {
+      ({ address, hash } = await this.#deployer.ensureExists({
+        abi: securitizeLiquidatorHelperAbi,
+        bytecode: SecuritizeLiquidatorHelper_bytecode,
+        args: [],
+      }));
+    } catch (e) {
+      if (this.config.optimistic) {
+        throw e;
+      }
+      this.report.recordFailure("SecuritizeLiquidatorHelper", e);
+      return;
+    }
     this.#address = address;
     this.report.recordContract({
       name: "SecuritizeLiquidatorHelper",
@@ -44,6 +58,10 @@ export class RWAContractsDeployer extends SDKConstruct {
       deployed: !!hash,
     });
     this.logger?.debug(`SecuritizeLiquidatorHelper address: ${address}`);
+  }
+
+  public get isDeployed(): boolean {
+    return !!this.#address;
   }
 
   public get address(): Address {
