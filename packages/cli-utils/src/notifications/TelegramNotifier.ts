@@ -80,18 +80,23 @@ export class TelegramNotifier implements INotifier {
       return;
     }
 
+    const severity = severe ? "alert" : "notification";
     const payloads = this.#toTelegramPayloads(message);
     for (const payload of payloads) {
-      this.#queue.add(
-        () =>
-          this.#sendToTelegram(payload, channelId, severe).catch(e =>
-            this.#logger?.error(e),
-          ),
-        {
-          priority: severe ? 100 : 0,
-          timeout: this.#retryInterval * this.#retryCount * 2,
-        },
-      );
+      // The queue timeout rejects the promise returned by add(), not the task,
+      // so the catch must sit here: an unhandled rejection exits the process.
+      this.#queue
+        .add(
+          ({ signal }) =>
+            this.#sendToTelegram(payload, channelId, severity, signal),
+          {
+            priority: severe ? 100 : 0,
+            timeout: this.#retryInterval * this.#retryCount * 2,
+          },
+        )
+        .catch(e =>
+          this.#logger?.error(`cannot send telegram ${severity}: ${e}`),
+        );
     }
 
     this.#throttleManager.onSent(message.dedupeKey, message.throttleFn);
@@ -100,39 +105,36 @@ export class TelegramNotifier implements INotifier {
   async #sendToTelegram(
     payload: TelegramPayload,
     channelId: string,
-    severe = false,
+    severity: NotificationSeverity,
+    signal?: AbortSignal,
   ): Promise<void> {
-    const severity = severe ? "alert" : "notification";
     this.#logger?.debug(
       `sending telegram ${severity} to channel ${channelId}...`,
     );
     const url = `https://api.telegram.org/bot${this.#botToken}/sendMessage`;
 
-    try {
-      await withRetry(
-        async () => {
-          const resp = await this.#fetchFn(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              ...payload,
-              chat_id: channelId,
-            }),
-          });
-          if (resp.ok) {
-            this.#logger?.debug(`telegram ${severity} sent successfully`);
-          } else {
-            const txt = await resp.text();
-            throw new Error(`api error ${resp.status}: ${txt}`);
-          }
-        },
-        { delay: this.#retryInterval, retryCount: this.#retryCount },
-      );
-    } catch (e) {
-      this.#logger?.error(`cannot send telegram ${severity}: ${e}`);
-    }
+    await withRetry(
+      async () => {
+        const resp = await this.#fetchFn(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...payload,
+            chat_id: channelId,
+          }),
+          signal,
+        });
+        if (resp.ok) {
+          this.#logger?.debug(`telegram ${severity} sent successfully`);
+        } else {
+          const txt = await resp.text();
+          throw new Error(`api error ${resp.status}: ${txt}`);
+        }
+      },
+      { delay: this.#retryInterval, retryCount: this.#retryCount, signal },
+    );
   }
 
   #toTelegramPayloads(message: IDedupableNotification): TelegramPayload[] {

@@ -138,7 +138,7 @@ export default class Optimist {
       executionReport.error = `${e}`;
     }
     executionReport.end = new Date();
-    // output.json is conventional name for main output file of any testnet task
+    // follow anvil-manager i/o conventions for tasks (STEP_CONVENTION.md): main result goes to $OUTPUT_JSON
     const exFile =
       this.config.outputJson ??
       resolve(this.config.containerOutDir, "output.json");

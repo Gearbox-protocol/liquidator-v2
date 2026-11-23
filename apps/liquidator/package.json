@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@gearbox-protocol/liquidator-v2-config": "workspace:*",
-    "@homebridge/node-pty-prebuilt-multiarch": "^0.14.1",
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.15.0",
     "pino-pretty": "^13.2.0",
     "viem-deal": "^2.0.4"
   },
@@ -23,11 +23,11 @@
     "@aws-sdk/client-s3": "^3.1153.0",
     "@gearbox-protocol/cli-utils": "workspace:*",
     "@gearbox-protocol/liquidator-contracts": "workspace:*",
-    "@gearbox-protocol/sdk": "18.0.1",
+    "@gearbox-protocol/sdk": "18.4.0",
     "@types/node": "^26.6.5",
     "@vlad-yakovlev/telegram-md": "^2.1.0",
     "abitype": "^1.3.0",
-    "axios": "^1.20.0",
+    "axios": "^1.21.0",
     "axios-retry": "^4.5.0",
     "date-fns": "^4.4.0",
     "di-at-home": "^0.0.7",
@@ -36,7 +36,7 @@
     "pino": "^10.4.0",
     "tsx": "4.23.15",
     "typescript": "^7.0.2",
-    "viem": "^2.57.7",
+    "viem": "^2.57.17",
     "vitest": "^5.0.5",
     "zod": "^4.6.7"
   }
