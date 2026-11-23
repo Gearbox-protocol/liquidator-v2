@@ -2,16 +2,13 @@ import "./docker";
 
 import { setTimeout } from "node:timers/promises";
 
-import {
-  secretsManagerProxy,
-  ssmManagerProxy,
-  Zommand,
-} from "@gearbox-protocol/cli-utils/node";
+import { secretsManagerProxy, Zommand } from "@gearbox-protocol/cli-utils/node";
 import { customAlphabet } from "nanoid";
 import { Config } from "./config";
 import DI from "./di";
 import injectSDK from "./injectSDK";
 import Optimist from "./Optimist";
+import { productionVersions } from "./productionVersions";
 import { tag, version } from "./version";
 
 const nanoid = customAlphabet(
@@ -29,7 +26,7 @@ const program = new Zommand("optimist", {
     ...process.env,
     EXECUTION_ID,
     sm: secretsManagerProxy(),
-    ssm: ssmManagerProxy(),
+    versions: productionVersions(),
     optimist: {
       version,
       tag,

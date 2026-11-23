@@ -134,7 +134,7 @@ export const LiquidatorConfig = z
     image: z.string().optional(),
     /**
      * Tag of docker image.
-     * Secret is required to be able to load latest production version from AWS
+     * Use `${versions.liquidator}` to run the version deployed in production
      */
     imageTag: z.string().default("latest"),
     /**
