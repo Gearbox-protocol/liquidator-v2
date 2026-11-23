@@ -90,6 +90,9 @@ export class Scanner {
     if (this.config.liquidationMode === "deleverage") {
       if (this.deleverage.bots.length === 0) {
         this.log.error("no deleverage bots found");
+        this.notifier.alert(
+          `[${this.config.network}] no deleverage bots found, liquidator is idle`,
+        );
         // will hang indefinitely
         return;
       }

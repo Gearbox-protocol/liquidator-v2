@@ -1,3 +1,4 @@
+import type { INotificationService } from "@gearbox-protocol/cli-utils";
 import type { Config } from "@gearbox-protocol/liquidator-v2-config";
 import {
   chains,
@@ -58,6 +59,9 @@ export class DeployReport {
   @DI.Inject(DI.Config)
   config!: Config;
 
+  @DI.Inject(DI.Notifier)
+  notifier!: INotificationService;
+
   @Logger("DeployReport")
   logger!: ILogger;
 
@@ -65,6 +69,28 @@ export class DeployReport {
   #creditManagers: CreditManagerEntry[] = [];
   #balanceBefore = 0n;
   #done = false;
+  #failed = 0;
+
+  /**
+   * Records a failed contract deploy, at startup or on a later block.
+   * Alerts only on the first failure in the process.
+   */
+  public recordFailure(name: string, error: unknown): void {
+    this.logger.error(new Error(`failed to deploy ${name}`, { cause: error }));
+    this.#failed++;
+    if (this.#failed === 1) {
+      this.notifier.alert(
+        `[${this.config.network}] some liquidator contracts failed to deploy, see logs`,
+      );
+    }
+  }
+
+  /**
+   * Number of contracts that failed to deploy
+   */
+  public get failed(): number {
+    return this.#failed;
+  }
 
   public recordContract(entry: DeployedContractEntry): void {
     if (this.#done) {

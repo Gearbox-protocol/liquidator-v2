@@ -149,6 +149,13 @@ export interface IWalletHealthResponse {
    * Absent until the balance is checked for the first time, or when the check is disabled.
    */
   balance?: HealthStatusValue<bigint>;
+  /**
+   * Number of contracts that the service failed to deploy, at startup or later.
+   *
+   * Its status turns to `alert` when the value is above zero.
+   * Absent for services that do not deploy contracts.
+   */
+  failedDeploys?: HealthStatusValue<number>;
 }
 
 /**

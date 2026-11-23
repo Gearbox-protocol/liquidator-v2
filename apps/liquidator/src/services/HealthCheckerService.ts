@@ -1,6 +1,7 @@
 import {
   type HealthPayload,
   type HealthStatusCode,
+  type HealthStatusValue,
   type ILiquidatorHealthResponse,
   maxHealthStatusCode,
 } from "@gearbox-protocol/cli-utils";
@@ -15,6 +16,7 @@ import { Logger } from "../log/index.js";
 import version from "../version.js";
 import type Client from "./Client.js";
 import type DeleverageService from "./DeleverageService.js";
+import type { DeployReport } from "./liquidate/index.js";
 import type { Scanner } from "./Scanner.js";
 
 @DI.Injectable(DI.HealthChecker)
@@ -36,6 +38,9 @@ export default class HealthCheckerService {
 
   @DI.Inject(DI.Client)
   client!: Client;
+
+  @DI.Inject(DI.DeployReport)
+  report!: DeployReport;
 
   #server?: HealthServer<ILiquidatorHealthResponse>;
 
@@ -74,18 +79,24 @@ export default class HealthCheckerService {
       this.scanner.liquidatableAccounts > 0 ? "alert" : "healthy";
     const balance = this.client.balance;
     const deleverage = this.deleverage.status;
+    const failedDeploys: HealthStatusValue<number> = {
+      value: this.report.failed,
+      status: this.report.failed > 0 ? "alert" : "healthy",
+    };
     return {
       status: maxHealthStatusCode(
         timestampStatus,
         balance?.status,
         liquidatableStatus,
         deleverage?.status,
+        failedDeploys.status,
       ),
       network: this.config.network,
       family: "liquidators",
       liquidationMode: this.config.liquidationMode,
       address: this.client.address,
       balance,
+      failedDeploys,
       currentBlock: this.sdk.currentBlock,
       minHealthFactor: this.scanner.minHealthFactor,
       maxHealthFactor: this.scanner.maxHealthFactor,

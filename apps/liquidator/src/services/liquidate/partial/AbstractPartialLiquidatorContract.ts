@@ -65,6 +65,7 @@ export abstract class AbstractPartialLiquidatorContract
 
   #registeredCMs = new AddressMap<boolean>();
   #address?: Address;
+  #deployFailed = false;
   #router: Address;
   /**
    * Credit managers for which async write operations (register, etc.) are pending
@@ -96,8 +97,21 @@ export abstract class AbstractPartialLiquidatorContract
   }
 
   public async syncState(): Promise<void> {
+    // failed deploy is not retried until the service is restarted
+    if (this.#deployFailed) {
+      return;
+    }
     if (!this.isDeployed) {
-      await this.deploy();
+      try {
+        await this.deploy();
+      } catch (e) {
+        if (this.config.optimistic) {
+          throw e;
+        }
+        this.#deployFailed = true;
+        this.report.recordFailure(this.name, e);
+        return;
+      }
     }
     await this.configure();
   }

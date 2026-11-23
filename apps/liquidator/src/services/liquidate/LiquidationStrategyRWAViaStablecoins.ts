@@ -77,6 +77,9 @@ export default class LiquidationStrategyRWAViaStablecoins
   public async syncState(_blockNumber: bigint): Promise<void> {}
 
   public isApplicable(ca: CreditAccountData, _optimistic: boolean): boolean {
+    if (!this.#deployer.isDeployed) {
+      return false;
+    }
     const ctx = resolveRWAContext(this.sdk, ca, this.logger);
     return !!ctx;
   }
