@@ -4,6 +4,7 @@ import type { OnchainSDK } from "@gearbox-protocol/sdk/onchain";
 import { BaseError, type PublicClient, type Transport } from "viem";
 import { DI } from "./di.js";
 import { type ILogger, Logger } from "./log/index.js";
+import type Client from "./services/Client.js";
 import type DeleverageService from "./services/DeleverageService.js";
 import type HealthCheckerService from "./services/HealthCheckerService.js";
 import type { IOptimisticOutputWriter } from "./services/output/index.js";
@@ -28,12 +29,17 @@ export default class Liquidator {
   @DI.Inject(DI.HealthChecker)
   healthChecker!: HealthCheckerService;
 
+  @DI.Inject(DI.Client)
+  client!: Client;
+
   @DI.Inject(DI.Output)
   outputWriter!: IOptimisticOutputWriter;
 
   #staleBlockInterval?: NodeJS.Timeout;
 
   public async launch(): Promise<void> {
+    await this.client.launch();
+
     this.healthChecker.launch();
     await this.scanner.launch();
 
